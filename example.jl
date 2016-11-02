@@ -1,5 +1,4 @@
-include("nuts.jl")
-using NUTSJulia
+include("nuts.jl"); using NUTSJulia;
 using Gadfly
 
 function f(x::Vector)
