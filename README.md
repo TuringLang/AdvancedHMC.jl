@@ -1,4 +1,4 @@
-# A No-U-Turn Sampler (NUTS) Implementation in Julia — Edit
+# A No-U-Turn Sampler (NUTS) Implementation in Julia
 
 This package implements the No-U-Turn Sampler (NUTS) described in Algorithm 2, 3 and 6 from ([Hoffman & Gelman, 2011][1]).
 
