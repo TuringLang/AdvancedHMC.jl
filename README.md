@@ -12,7 +12,7 @@ See `example.jl` for an example of sampling from a mixture of Gaussians.
 
 ## API
 
-### Naive NUTS (Algorithm 2 in ([Hoffman & Gelman, 2011][1]))
+### Naive NUTS - Algorithm 2 in ([Hoffman & Gelman, 2011][1])
 
 ```
 # eff_NUTS(initial_parameter, step_size, log-probablity, number_of_samples)
@@ -20,14 +20,14 @@ See `example.jl` for an example of sampling from a mixture of Gaussians.
 naive_NUTS(θ0, 0.75, x -> log(f(x)), 2000)
 ```
 
-### Effective NUTS (Algorithm 3 in ([Hoffman & Gelman, 2011][1]))
+### Effective NUTS - Algorithm 3 in ([Hoffman & Gelman, 2011][1])
 
 ```
 # eff_NUTS(initial_parameter, step_size, log-probablity, number_of_samples)
 eff_NUTS(θ0, 0.75, x -> log(f(x)), 2000)
 ```
 
-### NUTS with Dual Averaging (Algorithm 6 in ([Hoffman & Gelman, 2011][1]))
+### NUTS with Dual Averaging - Algorithm 6 in ([Hoffman & Gelman, 2011][1])
 
 ```
 # NUTS(initial_parameter, target_accept_rate, log-probablity, number_of_samples, number_of_adaptations)
