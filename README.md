@@ -5,7 +5,7 @@ This package implements the No-U-Turn Sampler (NUTS) described in Algorithm 2, 3
 ## Usage
 
 1. Clone this repository in a location (call `PATH`)
-2. In order to use this package, add `include("$PATH$/nuts.jl"); using NUTSJulia;`in the top of you file
+2. In order to use this package, add `include("$PATH/nuts.jl"); using NUTSJulia;`in the top of you file
 3. Generate your own initial parameter & log-probaiblity function and pass it with the corresponding setting parameters to the sampler (see API below)
 
 See `example.jl` for an example of sampling from a mixture of Gaussians.
