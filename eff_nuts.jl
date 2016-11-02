@@ -2,12 +2,6 @@
 # Author: Kai Xu
 # Date: 06/10/2016
 
-using ForwardDiff
-using Gadfly
-
-const Δ_max = 1000  # constant used in the base case of `build_tree`
-                    # recommended value from Hoffman et al. (2011)
-
 function eff_NUTS(θ0, ϵ, L, M)
   doc"""
     - θ0      : initial model parameter
@@ -99,16 +93,3 @@ function eff_NUTS(θ0, ϵ, L, M)
 
   return θs
 end
-
-
-
-
-
-function f(x::Vector)
-  d = ones(length(x)) * 3
-  exp(-(dot(x, x))) + exp(-(dot(x - d, x - d))) + exp(-(dot(x + d, x + d))) / (3 * sqrt(2 * pi))
-end
-
-θ0 = rand(2)
-@time samples = eff_NUTS(θ0, 1.25, x -> log(f(x)), 2000)
-plot(x=[s[1] for s in samples], y=[s[2] for s in samples], Geom.point)

@@ -2,12 +2,6 @@
 # Author: Kai Xu
 # Date: 05/10/2016
 
-using ForwardDiff
-using Gadfly
-
-Δ_max = 1000  # constant used in the base case of `build_tree`
-              # recommended value from Hoffman et al. (2011)
-
 function naive_NUTS(θ0, ϵ, L, M)
   doc"""
     - θ0  : initial model parameter
@@ -98,16 +92,3 @@ function naive_NUTS(θ0, ϵ, L, M)
 
   return θ
 end
-
-
-
-
-
-function f(x::Vector)
-  d = ones(length(x)) * 3
-  exp(-(dot(x, x))) + exp(-(dot(x - d, x - d))) + exp(-(dot(x + d, x + d)))
-end
-
-θ0 = rand(2)
-@time samples = naive_NUTS(θ0, 0.75, x -> log(f(x)), 2000)
-plot(x=[s[1] for s in samples], y=[s[2] for s in samples], Geom.point)

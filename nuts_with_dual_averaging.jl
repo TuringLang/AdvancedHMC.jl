@@ -2,12 +2,6 @@
 # Author: Kai Xu
 # Date: 06/10/2016
 
-using ForwardDiff
-using Gadfly
-
-const Δ_max = 1000  # constant used in the base case of `build_tree`
-                    # recommended value from Hoffman et al. (2011)
-
 function NUTS(θ0, δ, L, M, Madapt, verbose=true)
   doc"""
     - θ0      : initial model parameter
@@ -141,19 +135,3 @@ function NUTS(θ0, δ, L, M, Madapt, verbose=true)
 
   return θs
 end
-
-
-# Test
-
-
-function f(x::Vector)
-  d = ones(length(x)) * 3
-  exp(-(dot(x, x))) + exp(-(dot(x - d, x - d))) + exp(-(dot(x + d, x + d))) / (3 * sqrt(2 * pi))
-end
-
-θ0 = rand(2)
-θ0[1], θ0[2] = 0, 0 # force [0, 0] for consistent testing purpose
-# TODO: debug the explosive increasing of ϵ
-# NOTE: this only happens when H̄ goes to negative
-@time samples = NUTS(θ0, 0.65, x -> log(f(x)), 4, 4)
-plot(x=[s[1] for s in samples], y=[s[2] for s in samples], Geom.point)
