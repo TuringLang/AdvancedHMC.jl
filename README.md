@@ -1,6 +1,6 @@
 # A No-U-Turn Sampler (NUTS) Implementation in Julia
 
-**The code from this repository is already adapted to be sued in [Turing.jl](https://github.com/yebai/Turing.jl). Try it out!**
+**The code from this repository is already adapted to be used to implement NUTS in [Turing.jl](https://github.com/yebai/Turing.jl). Try it out!**
 
 This package implements the No-U-Turn Sampler (NUTS) described in Algorithm 2, 3 and 6 from ([Hoffman & Gelman, 2011][1]).
 
