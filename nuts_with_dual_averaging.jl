@@ -31,7 +31,7 @@ function NUTS(θ0, δ, L, M, Madapt, verbose=true)
     # This trick prevents the log-joint or its graident from being infinte
     # Ref: code start from Line 111 in https://github.com/mfouesneau/NUTS/blob/master/nuts.py
     # QUES: will this lead to some bias of the sampler?
-    while L(θ′) == -Inf || ∇L(θ′) == -Inf
+    while isinf(L(θ′)) || any(isinf(∇L(θ′)))
       ϵ = ϵ * 0.5
       θ′, r′ = leapfrog(θ, r, ϵ)
     end
