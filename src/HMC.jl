@@ -1,6 +1,7 @@
 module HMC
 
 using LinearAlgebra: cholesky
+using Statistics: mean, var
 
 # Notations
 # d - dimension of sampling sapce
@@ -19,8 +20,7 @@ export Leapfrog
 include("trajectory.jl")
 export LastFromTraj
 export StaticTrajectory
-include("sampler.jl")
-export sample
 include("diagnosis.jl")
+include("sampler.jl")
 
 end # module

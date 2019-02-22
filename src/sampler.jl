@@ -1,13 +1,22 @@
-function _is_accept(H::Real, H_new::Real)
-    return log(rand()) + H_new < min(H_new, H), min(0, -(H_new - H))
+function _logα(H::Real, H_new::Real)
+    return min(0, H - H_new)
+end
+
+function is_accept(logα::Real)
+    return log(rand()) < logα
 end
 
 function sample(h::Hamiltonian, t::AbstractTrajectory, θ::AbstractVector{T}, n_samples::Integer) where {T<:Real}
     samples = Vector{Vector{T}}(undef, n_samples)
+    Es = Vector{T}(undef, n_samples)
+    αs = Vector{T}(undef, n_samples)
     for n = 1:n_samples
-        θ = step(h, t, θ)
+        θ, H , α = step(h, t, θ)
         samples[n] = θ
+        Es[n] = H
+        αs[n] = α
     end
+    @info "Sampling statistics" EBFMI(Es) mean(αs)
     return samples
 end
 
@@ -17,11 +26,12 @@ function step(h::Hamiltonian, st::StaticTrajectory, θ::AbstractVector{T}) where
     H = _H(h, θ, r)
     θ_new, r_new = build_and_sample(st, h, θ, r)
     H_new = _H(h, θ_new, r_new)
-    is_accept, _ = _is_accept(H, H_new)
-    if is_accept
+    logα = _logα(H, H_new)
+    if is_accept(logα)
         θ = θ_new
+        H = H_new
     end
-    return θ
+    return θ, H, exp(logα)
 end
 
 # # Constant used in the base case of `build_tree`

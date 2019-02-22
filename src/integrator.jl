@@ -19,3 +19,5 @@ function step(l::Leapfrog{T}, h::Hamiltonian, θ::AbstractVector{T}, r::Abstract
     end
     return θ, r
 end
+
+# TODO: implement a version which returns all samples in the trajectory
