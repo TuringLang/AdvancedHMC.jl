@@ -3,7 +3,7 @@ using Gadfly
 
 function f(x::Vector)
   d = ones(length(x)) * 3
-  exp(-(dot(x, x))) + exp(-(dot(x - d, x - d))) + exp(-(dot(x + d, x + d)))
+  return exp(-(dot(x, x))) + exp(-(dot(x - d, x - d))) + exp(-(dot(x + d, x + d)))
 end
 
 θ0 = rand(2)

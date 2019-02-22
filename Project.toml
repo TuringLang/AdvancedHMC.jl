@@ -1,6 +1,7 @@
-authors = ["Kai Xu <xukai921110@gmail.com>"]
 name = "HMC"
 uuid = "a9f64520-3624-11e9-1c8c-cd45114cac40"
+authors = ["Kai Xu <xukai921110@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
