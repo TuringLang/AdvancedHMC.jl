@@ -1,3 +1,5 @@
+# TODO: add a type for kinetic energy
+
 struct Hamiltonian{M<:AbstractMetric}
     metric      ::  M
     _logπ       ::  Function
@@ -7,7 +9,7 @@ end
 # TODO: implement a helper function for those only _logπ is provided and use AD to provide _dlogπdθ
 
 function _dHdθ(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
-    return h._dlogπdθ(θ)
+    return -h._dlogπdθ(θ)
 end
 
 function _dHdr(h::Hamiltonian{UnitMetric}, r::AbstractVector{T}) where {T<:Real}

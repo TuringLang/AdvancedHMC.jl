@@ -14,11 +14,11 @@ end
 function _lf_momentum(ϵ::T, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
     dHdθ = _dHdθ(h, θ)
     !_is_valid(dHdθ) && return r, false
-    return r - ϵ .* dHdθ, true
+    return r - ϵ * dHdθ, true
 end
 
 function _lf_position(ϵ::T, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
-    return θ + ϵ .* _dHdr(h, r)
+    return θ + ϵ * _dHdr(h, r)
 end
 
 function step(lf::Leapfrog{T}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
