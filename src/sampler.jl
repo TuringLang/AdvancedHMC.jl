@@ -7,17 +7,14 @@ function is_accept(logα::Real)
 end
 
 function sample(h::Hamiltonian, p::AbstractProposal, θ::AbstractVector{T}, n_samples::Integer) where {T<:Real}
-    samples = Vector{Vector{T}}(undef, n_samples)
-    Es = Vector{T}(undef, n_samples)
+    θs = Vector{Vector{T}}(undef, n_samples)
+    Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
-    for n = 1:n_samples
-        θ, H , α = step(h, p, θ)
-        samples[n] = θ
-        Es[n] = H
-        αs[n] = α
+    time = @elapsed for i = 1:n_samples
+        θs[i], Hs[i], αs[i] = step(h, p, θ)
     end
-    @info "Sampling statistics" EBFMI(Es) mean(αs)
-    return samples
+    @info "Finished sampling with $time (s)" typeof(h) typeof(p) EBFMI(Hs) mean(αs)
+    return θs
 end
 
 # HMC is just one speical example with static trajectory
@@ -27,11 +24,11 @@ function step(h::Hamiltonian, p::AbstractProposal{StaticTrajectory}, θ::Abstrac
     θ_new, r_new = propose(p, h, θ, r)
     H_new = _H(h, θ_new, r_new)
     logα = _logα(H, H_new)
-    if is_accept(logα)
-        θ = θ_new
-        H = H_new
+    α = exp(logα)
+    if !is_accept(logα)
+        return θ, H, α
     end
-    return θ, H, exp(logα)
+    return θ_new, H_new, α
 end
 
 # # Constant used in the base case of `build_tree`

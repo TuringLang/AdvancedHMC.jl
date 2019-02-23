@@ -1,17 +1,16 @@
-using Test
-using LinearAlgebra: dot
+using Test, HMC
 using Statistics: mean
-using Distributions, ForwardDiff, HMC
+include("common.jl")
 
-const d = 5
-_logπ(θ::AbstractVector{T}) where {T<:Real} = logpdf(MvNormal(zeros(d), ones(d)), θ)
+@testset "HMC" begin
+    h = Hamiltonian(UnitMetric(), _logπ, _dlogπdθ)
+    ϵ = 0.01
+    n_steps = 10
+    p = TakeLastProposal(StaticTrajectory(Leapfrog(ϵ), n_steps))
 
-_dlogπdθ = θ -> ForwardDiff.gradient(_logπ, θ)
+    θ_init = randn(D)
+    n_samples = 10_000
+    samples = HMC.sample(h, p, θ_init, n_samples)
 
-h = Hamiltonian(UnitMetric(), _logπ, _dlogπdθ)
-ϵ = 0.01
-p = TakeLastProposal(StaticTrajectory(Leapfrog(ϵ), 10))
-θ = randn(d)
-samples = HMC.sample(h, p, θ, 10_000)
-
-println(mean(samples))
+    @test mean(samples) ≈ zeros(D) atol=RNDATOL
+end

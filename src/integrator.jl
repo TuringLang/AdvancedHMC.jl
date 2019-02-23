@@ -1,4 +1,3 @@
-# NOTE: we may not want this type
 abstract type AbstractIntegrator end
 
 struct Leapfrog{T<:Real} <: AbstractIntegrator
@@ -22,27 +21,27 @@ function _lf_position(ϵ::T, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractV
     return θ + ϵ .* _dHdr(h, r)
 end
 
-function step(l::Leapfrog{T}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
-    r_new, is_valid = _lf_momentum(l.ϵ / 2, h, θ, r)
+function step(lf::Leapfrog{T}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
+    r_new, is_valid = _lf_momentum(lf.ϵ / 2, h, θ, r)
     !is_valid && return θ, r, false
-    θ_new = _lf_position(l.ϵ, h, θ, r_new)
-    r_new, is_valid = _lf_momentum(l.ϵ / 2, h, θ_new, r_new)
+    θ_new = _lf_position(lf.ϵ, h, θ, r_new)
+    r_new, is_valid = _lf_momentum(lf.ϵ / 2, h, θ_new, r_new)
     !is_valid && return θ, r, false
     return θ_new, r_new, true
 end
 
-function steps(l::Leapfrog{T}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, n_steps::Integer) where {T<:Real}
+function steps(lf::Leapfrog{T}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, n_steps::Integer) where {T<:Real}
     n_valid = 0
-    r_new, is_valid = _lf_momentum(l.ϵ / 2, h, θ, r)
+    r_new, is_valid = _lf_momentum(lf.ϵ / 2, h, θ, r)
     !is_valid && return θ, r, n_valid
     r = r_new
     for i = 1:n_steps
-        θ_new = _lf_position(l.ϵ, h, θ, r)
-        r_new, is_valid = _lf_momentum(i == n_steps ? l.ϵ / 2 : l.ϵ, h, θ, r)
+        θ_new = _lf_position(lf.ϵ, h, θ, r)
+        r_new, is_valid = _lf_momentum(i == n_steps ? lf.ϵ / 2 : lf.ϵ, h, θ, r)
         if !is_valid
             # The reverse function below is guarantee to be numerical safe.
             # This is because we know the previous step was valid.
-            r, _ = _lf_momentum(-l.ϵ / 2, h, θ, r)
+            r, _ = _lf_momentum(-lf.ϵ / 2, h, θ, r)
             return θ, r, n_valid
         end
         θ, r = θ_new, r_new
