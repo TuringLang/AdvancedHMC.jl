@@ -18,8 +18,9 @@ export Hamiltonian
 include("integrator.jl")
 export Leapfrog
 include("trajectory.jl")
-export LastFromTraj
 export StaticTrajectory
+include("proposal.jl")
+export TakeLastProposal
 include("diagnosis.jl")
 include("sampler.jl")
 

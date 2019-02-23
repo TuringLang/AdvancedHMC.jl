@@ -1,19 +1,16 @@
-abstract type AbstractTrajectorySampler end
-struct LastFromTraj <: AbstractTrajectorySampler end
-struct UniformFromTraj <: AbstractTrajectorySampler end
-struct MultinomialFromTraj <: AbstractTrajectorySampler end
-
 abstract type AbstractTrajectory end
 
-struct StaticTrajectory{S<:AbstractTrajectorySampler} <: AbstractTrajectory
-    sampler     ::  S
+struct StaticTrajectory <: AbstractTrajectory
     integrator  ::  AbstractIntegrator
     n_points    ::  Integer
 end
 
-function build_and_sample(st::StaticTrajectory{LastFromTraj}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
+function points(st::StaticTrajectory)
+
+end
+
+function lastpoint(st::StaticTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
     θ, r = step(st.integrator, h, θ, r, st.n_points)
-    return θ, r
 end
 
 struct NoUTurnTrajectory

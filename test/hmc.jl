@@ -10,8 +10,8 @@ _dlogπdθ = θ -> ForwardDiff.gradient(_logπ, θ)
 
 h = Hamiltonian(UnitMetric(), _logπ, _dlogπdθ)
 ϵ = 0.01
-t = StaticTrajectory(LastFromTraj(), Leapfrog(ϵ), 10)
+p = TakeLastProposal(StaticTrajectory(Leapfrog(ϵ), 10))
 θ = randn(d)
-samples = HMC.sample(h, t, θ, 10_000)
+samples = HMC.sample(h, p, θ, 10_000)
 
 println(mean(samples))

@@ -6,12 +6,12 @@ function is_accept(logα::Real)
     return log(rand()) < logα
 end
 
-function sample(h::Hamiltonian, t::AbstractTrajectory, θ::AbstractVector{T}, n_samples::Integer) where {T<:Real}
+function sample(h::Hamiltonian, p::AbstractProposal, θ::AbstractVector{T}, n_samples::Integer) where {T<:Real}
     samples = Vector{Vector{T}}(undef, n_samples)
     Es = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
     for n = 1:n_samples
-        θ, H , α = step(h, t, θ)
+        θ, H , α = step(h, p, θ)
         samples[n] = θ
         Es[n] = H
         αs[n] = α
@@ -21,10 +21,10 @@ function sample(h::Hamiltonian, t::AbstractTrajectory, θ::AbstractVector{T}, n_
 end
 
 # HMC
-function step(h::Hamiltonian, st::StaticTrajectory, θ::AbstractVector{T}) where {T<:Real}
+function step(h::Hamiltonian, p::AbstractProposal, θ::AbstractVector{T}) where {T<:Real}
     r = rand_momentum(h, θ)
     H = _H(h, θ, r)
-    θ_new, r_new = build_and_sample(st, h, θ, r)
+    θ_new, r_new = propose(p, h, θ, r)
     H_new = _H(h, θ_new, r_new)
     logα = _logα(H, H_new)
     if is_accept(logα)
