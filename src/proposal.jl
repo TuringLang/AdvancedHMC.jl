@@ -1,7 +1,6 @@
-# TODO: argument below with trajectory type
-abstract type AbstractProposal end
+abstract type AbstractProposal{T<:AbstractTrajectory} end
 
-struct TakeLastProposal{T<:AbstractTrajectory} <: AbstractProposal
+struct TakeLastProposal{T<:AbstractTrajectory} <: AbstractProposal{T}
     traj    ::  T
 end
 
@@ -10,10 +9,10 @@ function propose(tlp::TakeLastProposal, h::Hamiltonian, θ::AbstractVector{T}, r
     return θ, r
 end
 
-struct UniformProposal <: AbstractProposal
-    fields
+struct UniformProposal{T<:AbstractTrajectory} <: AbstractProposal{T}
+    traj    ::  T
 end
 
-struct MultinomialProposal <: AbstractProposal
-    fields
+struct MultinomialProposal{T<:AbstractTrajectory} <: AbstractProposal{T}
+    traj    ::  T
 end

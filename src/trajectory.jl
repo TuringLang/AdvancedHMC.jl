@@ -5,6 +5,7 @@ struct StaticTrajectory <: AbstractTrajectory
     n_points    ::  Integer
 end
 
+# TODO: implement a version which returns all points in the trajectory
 function points(st::StaticTrajectory)
 
 end
