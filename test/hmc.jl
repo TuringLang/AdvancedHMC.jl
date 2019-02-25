@@ -3,7 +3,7 @@ using Statistics: mean
 include("common.jl")
 
 @testset "HMC" begin
-    h = Hamiltonian(UnitMetric(), _logπ, _dlogπdθ)
+    h = Hamiltonian(UnitEuclideanMetric(), _logπ, _dlogπdθ)
     ϵ = 0.02
     n_steps = 20
     p = TakeLastProposal(StaticTrajectory(Leapfrog(ϵ), n_steps))

@@ -13,7 +13,7 @@ using LazyArrays: BroadcastArray
 # H - Hamiltonian energy
 
 include("metric.jl")
-export UnitMetric, DiagMetric, DenseMetric
+export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
 include("hamiltonian.jl")
 export Hamiltonian
 include("integrator.jl")

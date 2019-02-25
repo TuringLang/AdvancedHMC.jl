@@ -1,7 +1,7 @@
 using Test, HMC
 include("common.jl")
 
-h = Hamiltonian(UnitMetric(), _logπ, _dlogπdθ)
+h = Hamiltonian(UnitEuclideanMetric(), _logπ, _dlogπdθ)
 ϵ = 0.01
 lf = Leapfrog(ϵ)
 
