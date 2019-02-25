@@ -16,11 +16,11 @@ function _dHdr(h::Hamiltonian{UnitMetric,F1,F2}, r::AbstractVector{T}) where {T<
     return r
 end
 
-function _dHdr(h::Hamiltonian{DiagMetric{T},F1,F2}, r::AbstractVector{T}) where {T<:Real,F1,F2}
+function _dHdr(h::Hamiltonian{DiagMetric{M},F1,F2}, r::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2}
     return h.metric.M⁻¹ .* r
 end
 
-function _dHdr(h::Hamiltonian{DenseMetric{T},F1,F2}, r::AbstractVector{T}) where {T<:Real,F1,F2}
+function _dHdr(h::Hamiltonian{DenseMetric{M},F1,F2}, r::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2}
     return h.metric.M⁻¹ * r
 end
 
@@ -38,13 +38,13 @@ function _K(h::Hamiltonian{UnitMetric,F1,F2}, r::AbstractVector{T}, ::AbstractVe
     return sum(abs2, r) / 2
 end
 
-function _K(h::Hamiltonian{DiagMetric{T},F1,F2}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,F1,F2}
+function _K(h::Hamiltonian{DiagMetric{M},F1,F2}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2}
     t1 = BroadcastArray(abs2, r)
     t2 = BroadcastArray(*, t1, h.metric.M⁻¹)
     return sum(t2) / 2
 end
 
-function _K(h::Hamiltonian{DenseMetric{T},F1,F2}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,F1,F2}
+function _K(h::Hamiltonian{DenseMetric{M},F1,F2}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2}
     return p' * h.metric.M⁻¹ * p / 2
 end
 
@@ -53,11 +53,11 @@ function rand_momentum(h::Hamiltonian{UnitMetric,F1,F2}, θ::AbstractVector{T}) 
     return randn(length(θ))
 end
 
-function rand_momentum(h::Hamiltonian{DiagMetric{T},F1,F2}, θ::AbstractVector{T}) where {T<:Real,F1,F2}
+function rand_momentum(h::Hamiltonian{DiagMetric{M},F1,F2}, θ::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2}
     return randn(length(θ)) ./ sqrt.(h.metric.M⁻¹)
 end
 
-function rand_momentum(h::Hamiltonian{DenseMetric{T},F1,F2}, θ::AbstractVector{T}) where {T<:Real,F1,F2}
+function rand_momentum(h::Hamiltonian{DenseMetric{M},F1,F2}, θ::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2}
     C = cholesky(Symmetric(h.metric.M⁻¹))
     return C.U \ randn(length(θ))
 end
