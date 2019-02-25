@@ -1,3 +1,3 @@
 function EBFMI(Es)
-    return sum((Es[2:end] - Es[1:end-1]).^2) / var(Es)
+    return sum(i -> (Es[i+1] - Es[i])^2, 1:length(Es)-1) / var(Es)
 end

@@ -1,9 +1,9 @@
 # TODO: add a type for kinetic energy
 
-struct Hamiltonian{M<:AbstractMetric}
+struct Hamiltonian{M<:AbstractMetric,F1,F2}
     metric      ::  M
-    _logπ       ::  Function
-    _dlogπdθ    ::  Function
+    _logπ       ::  F1
+    _dlogπdθ    ::  F2
 end
 
 # TODO: implement a helper function for those only _logπ is provided and use AD to provide _dlogπdθ
@@ -12,15 +12,15 @@ function _dHdθ(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
     return -h._dlogπdθ(θ)
 end
 
-function _dHdr(h::Hamiltonian{UnitMetric}, r::AbstractVector{T}) where {T<:Real}
+function _dHdr(h::Hamiltonian{UnitMetric,F1,F2}, r::AbstractVector{T}) where {T<:Real,F1,F2}
     return r
 end
 
-function _dHdr(h::Hamiltonian{DiagMetric{T}}, r::AbstractVector{T}) where {T<:Real}
+function _dHdr(h::Hamiltonian{DiagMetric{T},F1,F2}, r::AbstractVector{T}) where {T<:Real,F1,F2}
     return h.metric.M⁻¹ .* r
 end
 
-function _dHdr(h::Hamiltonian{DenseMetric{T}}, r::AbstractVector{T}) where {T<:Real}
+function _dHdr(h::Hamiltonian{DenseMetric{T},F1,F2}, r::AbstractVector{T}) where {T<:Real,F1,F2}
     return h.metric.M⁻¹ * r
 end
 
@@ -34,28 +34,30 @@ end
 
 # Kinetic energy
 # NOTE: the general form of K depends on both θ and r
-function _K(h::Hamiltonian{UnitMetric}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real}
+function _K(h::Hamiltonian{UnitMetric,F1,F2}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,F1,F2}
     return sum(abs2, r) / 2
 end
 
-function _K(h::Hamiltonian{DiagMetric{T}}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real}
-    return sum(abs2, r .* sqrt.(h.metric.M⁻¹)) / 2
+function _K(h::Hamiltonian{DiagMetric{T},F1,F2}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,F1,F2}
+    t1 = BroadcastArray(abs2, r)
+    t2 = BroadcastArray(*, t1, h.metric.M⁻¹)
+    return sum(t2) / 2
 end
 
-function _K(h::Hamiltonian{DenseMetric{T}}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real}
+function _K(h::Hamiltonian{DenseMetric{T},F1,F2}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,F1,F2}
     return p' * h.metric.M⁻¹ * p / 2
 end
 
 # Momentum sampler
-function rand_momentum(h::Hamiltonian{UnitMetric}, θ::AbstractVector{T}) where {T<:Real}
+function rand_momentum(h::Hamiltonian{UnitMetric,F1,F2}, θ::AbstractVector{T}) where {T<:Real,F1,F2}
     return randn(length(θ))
 end
 
-function rand_momentum(h::Hamiltonian{DiagMetric{T}}, θ::AbstractVector{T}) where {T<:Real}
+function rand_momentum(h::Hamiltonian{DiagMetric{T},F1,F2}, θ::AbstractVector{T}) where {T<:Real,F1,F2}
     return randn(length(θ)) ./ sqrt.(h.metric.M⁻¹)
 end
 
-function rand_momentum(h::Hamiltonian{DenseMetric{T}}, θ::AbstractVector{T}) where {T<:Real}
+function rand_momentum(h::Hamiltonian{DenseMetric{T},F1,F2}, θ::AbstractVector{T}) where {T<:Real,F1,F2}
     C = cholesky(Symmetric(h.metric.M⁻¹))
     return C.U \ randn(length(θ))
 end

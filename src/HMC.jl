@@ -2,6 +2,7 @@ module HMC
 
 using LinearAlgebra: cholesky
 using Statistics: mean, var
+using LazyArrays: BroadcastArray
 
 # Notations
 # d - dimension of sampling sapce
