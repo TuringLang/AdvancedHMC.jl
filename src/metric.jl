@@ -1,13 +1,25 @@
-abstract type AbstractMetric end
+abstract type AbstractMetric{T} end
 
-struct UnitEuclideanMetric <: AbstractMetric end
+struct UnitEuclideanMetric{T<:Real} <: AbstractMetric{T} end
 
-struct DiagEuclideanMetric{A<:AbstractVector{<:Real}} <: AbstractMetric
+struct DiagEuclideanMetric{T<:Real,A<:AbstractVector{T}} <: AbstractMetric{T}
     # Diagnal of the inverse of the mass matrix
-    M⁻¹ ::  A
+    M⁻¹     ::  A
+    # Sqare root of the inverse of the mass matrix
+    sqrtM⁻¹ ::  A
 end
 
-struct DenseEuclideanMetric{A<:AbstractMatrix{<:Real}} <: AbstractMetric
+function DiagEuclideanMetric(M⁻¹::A) where {T<:Real,A<:AbstractVector{T}}
+    return DiagEuclideanMetric{T,A}(M⁻¹, sqrt.(M⁻¹))
+end
+
+struct DenseEuclideanMetric{T<:Real,A<:AbstractMatrix{T}} <: AbstractMetric{T}
     # Inverse of the mass matrix
-    M⁻¹ ::  A
+    M⁻¹     ::  A
+    # U of the Cholesky decomposition of the mass matrix
+    cholM⁻¹ ::  UpperTriangular{T,A}
+end
+
+function DenseEuclideanMetric(M⁻¹::A) where {T<:Real,A<:AbstractMatrix{T}}
+    return DenseEuclideanMetric{T,A}(M⁻¹, cholesky(Symmetric(M⁻¹)).U)
 end

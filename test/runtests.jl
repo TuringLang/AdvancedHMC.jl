@@ -4,5 +4,6 @@ using Test
     include("integrator.jl")
 end
 
-# Sampler
-include("hmc.jl")
+@testset "Integrated tests" begin
+    include("hmc.jl")
+end
