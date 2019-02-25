@@ -11,7 +11,7 @@ function sample(h::Hamiltonian, p::AbstractProposal, θ::AbstractVector{T}, n_sa
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
     time = @elapsed for i = 1:n_samples
-        θs[i], Hs[i], αs[i] = step(h, p, θ)
+        θs[i], Hs[i], αs[i] = step(h, p, i == 1 ? θ : θs[i-1])
     end
     @info "Finished sampling with $time (s)" typeof(h) typeof(p) EBFMI(Hs) mean(αs)
     return θs
