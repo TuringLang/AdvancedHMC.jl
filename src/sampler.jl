@@ -18,7 +18,7 @@ function sample(h::Hamiltonian, p::AbstractProposal, θ::AbstractVector{T}, n_sa
 end
 
 # HMC is just one speical example with static trajectory
-function step(h::Hamiltonian, p::AbstractProposal{StaticTrajectory}, θ::AbstractVector{T}) where {T<:Real}
+function step(h::Hamiltonian, p::AbstractProposal{StaticTrajectory{I}}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
     r = rand_momentum(h, θ)
     H = _H(h, θ, r)
     θ_new, r_new = propose(p, h, θ, r)

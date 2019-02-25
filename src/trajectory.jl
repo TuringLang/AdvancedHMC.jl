@@ -1,8 +1,8 @@
 abstract type AbstractTrajectory end
 
-struct StaticTrajectory <: AbstractTrajectory
-    integrator  ::  AbstractIntegrator
-    n_steps    ::  Integer
+struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory
+    integrator  ::  I
+    n_steps     ::  Integer
 end
 
 function points(st::StaticTrajectory, h::Hamiltonian, θ::T, r::T) where {T<:AbstractVector{<:Real}}
@@ -18,6 +18,6 @@ function lastpoint(st::StaticTrajectory, h::Hamiltonian, θ::AbstractVector{T}, 
     return steps(st.integrator, h, θ, r, st.n_steps)
 end
 
-struct NoUTurnTrajectory
-    fields
+struct NoUTurnTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory
+    integrator  ::  I
 end
