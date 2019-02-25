@@ -5,7 +5,7 @@ include("common.jl")
 lf = Leapfrog(ϵ)
 
 θ_init = randn(D)
-h = Hamiltonian(UnitEuclideanMetric{eltype(θ_init)}(), _logπ, _dlogπdθ)
+h = Hamiltonian(UnitEuclideanMetric(θ_init), _logπ, _dlogπdθ)
 r_init = HMC.rand_momentum(h, θ_init)
 
 n_steps = 10

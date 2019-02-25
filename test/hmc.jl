@@ -11,9 +11,9 @@ include("common.jl")
     p = TakeLastProposal(StaticTrajectory(Leapfrog(ϵ), n_steps))
 
     temp = randn(D,100)
-    for metric in [UnitEuclideanMetric{eltype(θ_init)}(), DiagEuclideanMetric(vec(var(temp; dims=2))), DenseEuclideanMetric(cov(temp'))]
+    for metric in [UnitEuclideanMetric(θ_init), DiagEuclideanMetric(θ_init, vec(var(temp; dims=2))), DenseEuclideanMetric(θ_init, cov(temp'))]
         h = Hamiltonian(metric, _logπ, _dlogπdθ)
-    
+
         @time samples = HMC.sample(h, p, θ_init, n_samples)
 
         @test mean(samples) ≈ zeros(D) atol=RNDATOL

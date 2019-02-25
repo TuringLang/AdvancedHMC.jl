@@ -1,29 +1,36 @@
 # TODO: add a type for kinetic energy
 
-struct Hamiltonian{M<:AbstractMetric,F1,F2}
+struct Hamiltonian{T<:Real,M<:AbstractMetric{T},F1,F2,A<:AbstractVector{T}}
     metric      ::  M
     _logπ       ::  F1
     _dlogπdθ    ::  F2
+    # Below are for efficient memory allocation
+    _dHdθ       ::  A
+    _dHdr       ::  A
 end
 
-function Hamiltonian(metric::M, _logπ::F1, _dlogπdθ::F2) where {M<:AbstractMetric,F1,F2}
-    return Hamiltonian{M,F1,F2}(metric, _logπ, _dlogπdθ)
+function Hamiltonian(metric::M, _logπ::F1, _dlogπdθ::F2) where {T<:Real,M<:AbstractMetric{T},F1,F2}
+    return Hamiltonian(metric, _logπ, _dlogπdθ, zeros(T, metric.dim), zeros(T, metric.dim))
 end
 
 function _dHdθ(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
-    return -h._dlogπdθ(θ)
+    h._dHdθ .= -h._dlogπdθ(θ)
+    return h._dHdθ
 end
 
-function _dHdr(h::Hamiltonian{UnitEuclideanMetric{T},F1,F2}, r::AbstractVector{T}) where {T<:Real,F1,F2}
-    return r
+function _dHdr(h::Hamiltonian{T,UnitEuclideanMetric{T},F1,F2,A}, r::AbstractVector{T}) where {T<:Real,F1,F2,A<:AbstractVector{T}}
+    h._dHdr .= r
+    return h._dHdr
 end
 
-function _dHdr(h::Hamiltonian{DiagEuclideanMetric{T,M},F1,F2}, r::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2}
-    return h.metric.M⁻¹ .* r
+function _dHdr(h::Hamiltonian{T,DiagEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2,A<:AbstractVector{T}}
+    h._dHdr .= h.metric.M⁻¹ .* r
+    return h._dHdr
 end
 
-function _dHdr(h::Hamiltonian{DenseEuclideanMetric{T,M},F1,F2}, r::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2}
-    return h.metric.M⁻¹ * r
+function _dHdr(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2,A<:AbstractVector{T}}
+    mul!(h._dHdr, h.metric.M⁻¹, r)
+    return h._dHdr
 end
 
 function _H(h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
@@ -36,29 +43,29 @@ end
 
 # Kinetic energy
 # NOTE: the general form of K depends on both θ and r
-function _K(h::Hamiltonian{UnitEuclideanMetric{T},F1,F2}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,F1,F2}
+function _K(h::Hamiltonian{T,UnitEuclideanMetric{T},F1,F2,A}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,F1,F2,A<:AbstractVector{T}}
     return sum(abs2, r) / 2
 end
 
-function _K(h::Hamiltonian{DiagEuclideanMetric{T,M},F1,F2}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2}
+function _K(h::Hamiltonian{T,DiagEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2,A<:AbstractVector{T}}
     t1 = BroadcastArray(abs2, r)
     t2 = BroadcastArray(*, t1, h.metric.M⁻¹)
     return sum(t2) / 2
 end
 
-function _K(h::Hamiltonian{DenseEuclideanMetric{T,M},F1,F2}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2}
+function _K(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2,A<:AbstractVector{T}}
     return r' * h.metric.M⁻¹ * r / 2
 end
 
 # Momentum sampler
-function rand_momentum(h::Hamiltonian{UnitEuclideanMetric{T},F1,F2}, θ::AbstractVector{T}) where {T<:Real,F1,F2}
-    return randn(length(θ))
+function rand_momentum(h::Hamiltonian{T,UnitEuclideanMetric{T},F1,F2,A}, θ::AbstractVector{T}) where {T<:Real,F1,F2,A<:AbstractVector{T}}
+    return randn(h.metric.dim)
 end
 
-function rand_momentum(h::Hamiltonian{DiagEuclideanMetric{T,M},F1,F2}, θ::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2}
-    return randn(length(θ)) ./ h.metric.sqrtM⁻¹
+function rand_momentum(h::Hamiltonian{T,DiagEuclideanMetric{T,M},F1,F2,A}, θ::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2,A<:AbstractVector{T}}
+    return randn(h.metric.dim) ./ h.metric.sqrtM⁻¹
 end
 
-function rand_momentum(h::Hamiltonian{DenseEuclideanMetric{T,M},F1,F2}, θ::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2}
-    return h.metric.cholM⁻¹ \ randn(length(θ))
+function rand_momentum(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}, θ::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2,A<:AbstractVector{T}}
+    return h.metric.cholM⁻¹ \ randn(h.metric.dim)
 end
