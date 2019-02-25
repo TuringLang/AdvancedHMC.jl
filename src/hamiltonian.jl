@@ -7,10 +7,11 @@ struct Hamiltonian{T<:Real,M<:AbstractMetric{T},F1,F2,A<:AbstractVector{T}}
     # Below are for efficient memory allocation
     _dHdθ       ::  A
     _dHdr       ::  A
+    _r          ::  A
 end
 
 function Hamiltonian(metric::M, _logπ::F1, _dlogπdθ::F2) where {T<:Real,M<:AbstractMetric{T},F1,F2}
-    return Hamiltonian(metric, _logπ, _dlogπdθ, zeros(T, metric.dim), zeros(T, metric.dim))
+    return Hamiltonian(metric, _logπ, _dlogπdθ, zeros(T, metric.dim), zeros(T, metric.dim), zeros(T, metric.dim))
 end
 
 function _dHdθ(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
@@ -59,13 +60,18 @@ end
 
 # Momentum sampler
 function rand_momentum(h::Hamiltonian{T,UnitEuclideanMetric{T},F1,F2,A}, θ::AbstractVector{T}) where {T<:Real,F1,F2,A<:AbstractVector{T}}
-    return randn(h.metric.dim)
+    h._r .= randn.()
+    return h._r
 end
 
 function rand_momentum(h::Hamiltonian{T,DiagEuclideanMetric{T,M},F1,F2,A}, θ::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2,A<:AbstractVector{T}}
-    return randn(h.metric.dim) ./ h.metric.sqrtM⁻¹
+    h._r .= randn.()
+    h._r .= h._r ./ h.metric.sqrtM⁻¹
+    return h._r
 end
 
 function rand_momentum(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}, θ::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2,A<:AbstractVector{T}}
-    return h.metric.cholM⁻¹ \ randn(h.metric.dim)
+    h._r .= randn.()
+    h._r .= h.metric.cholM⁻¹ \ h._r
+    return h._r
 end
