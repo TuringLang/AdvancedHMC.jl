@@ -12,7 +12,7 @@ include("common.jl")
 
     temp = randn(D,100)
     for metric in [UnitEuclideanMetric(θ_init), DiagEuclideanMetric(θ_init, vec(var(temp; dims=2))), DenseEuclideanMetric(θ_init, cov(temp'))]
-        h = Hamiltonian(metric, _logπ, _dlogπdθ)
+        h = Hamiltonian(metric, logπ, dlogπdθ)
 
         @time samples = HMC.sample(h, p, θ_init, n_samples)
 
