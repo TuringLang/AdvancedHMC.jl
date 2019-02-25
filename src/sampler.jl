@@ -1,4 +1,4 @@
-function _logα(H::Real, H_new::Real)
+function logα(H::Real, H_new::Real)
     return min(0, H - H_new)
 end
 
@@ -20,15 +20,15 @@ end
 # HMC is just one speical example with static trajectory
 function step(h::Hamiltonian, p::AbstractProposal{StaticTrajectory{I}}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
     r = rand_momentum(h, θ)
-    H = _H(h, θ, r)
+    _H = H(h, θ, r)
     θ_new, r_new = propose(p, h, θ, r)
-    H_new = _H(h, θ_new, r_new)
-    logα = _logα(H, H_new)
-    α = exp(logα)
-    if !is_accept(logα)
-        return θ, H, α
+    _H_new = H(h, θ_new, r_new)
+    _logα = logα(_H, _H_new)
+    α = exp(_logα)
+    if !is_accept(_logα)
+        return θ, _H, α
     end
-    return θ_new, H_new, α
+    return θ_new, _H_new, α
 end
 
 # # Constant used in the base case of `build_tree`
