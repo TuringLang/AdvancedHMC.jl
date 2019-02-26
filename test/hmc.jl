@@ -19,3 +19,19 @@ include("common.jl")
         @test mean(samples) ≈ zeros(D) atol=RNDATOL
     end
 end
+
+@testset "NUTS" begin
+    θ_init = randn(D)
+    ϵ = 0.02
+    n_steps = 20
+    n_samples = 50_000
+
+    p = TakeLastProposal(NoUTurnTrajectory(Leapfrog(ϵ)))
+
+    metric = UnitEuclideanMetric(θ_init)
+    h = Hamiltonian(metric, logπ, dlogπdθ)
+
+    @time samples = HMC.sample(h, p, θ_init, n_samples)
+
+    @test mean(samples) ≈ zeros(D) atol=RNDATOL
+end

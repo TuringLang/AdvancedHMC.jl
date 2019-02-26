@@ -6,7 +6,7 @@ lf = Leapfrog(ϵ)
 
 θ_init = randn(D)
 h = Hamiltonian(UnitEuclideanMetric(θ_init), logπ, dlogπdθ)
-r_init = HMC.rand_momentum(h, θ_init)
+r_init = HMC.rand_momentum(h)
 
 n_steps = 10
 

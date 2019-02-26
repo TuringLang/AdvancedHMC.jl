@@ -2,7 +2,7 @@ module HMC
 
 using LinearAlgebra: cholesky
 using Statistics: mean, var
-using LinearAlgebra: Symmetric, UpperTriangular, mul!
+using LinearAlgebra: Symmetric, UpperTriangular, mul!, dot
 using LazyArrays: BroadcastArray
 
 # Notations
@@ -20,7 +20,7 @@ export Hamiltonian
 include("integrator.jl")
 export Leapfrog
 include("trajectory.jl")
-export StaticTrajectory
+export StaticTrajectory, NoUTurnTrajectory
 include("proposal.jl")
 export TakeLastProposal
 include("diagnosis.jl")

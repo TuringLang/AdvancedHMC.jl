@@ -19,7 +19,7 @@ end
 
 # HMC is just one speical example with static trajectory
 function step(h::Hamiltonian, p::AbstractProposal{StaticTrajectory{I}}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
-    r = rand_momentum(h, θ)
+    r = rand_momentum(h)
     _H = H(h, θ, r)
     θ_new, r_new = propose(p, h, θ, r)
     _H_new = H(h, θ_new, r_new)
@@ -31,6 +31,12 @@ function step(h::Hamiltonian, p::AbstractProposal{StaticTrajectory{I}}, θ::Abst
     return θ_new, _H_new, α
 end
 
-# # Constant used in the base case of `build_tree`
-# # 1000 is the recommended value from Hoffman et al. (2011)
-# const Δ_max = 1000
+# NUTS is just one speical example with NoUTurn trajectory
+function step(h::Hamiltonian, p::AbstractProposal{NoUTurnTrajectory{I}}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
+    r = rand_momentum(h)
+    _H = H(h, θ, r)
+    θ_new, r_new = propose(p, h, θ, r)
+    _H_new = H(h, θ_new, r_new)
+    # We always accept in NUTS
+    return θ_new, _H_new, one(T)
+end
