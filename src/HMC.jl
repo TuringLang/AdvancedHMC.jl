@@ -20,7 +20,7 @@ export Hamiltonian
 include("integrator.jl")
 export Leapfrog
 include("trajectory.jl")
-export StaticTrajectory, NoUTurnTrajectory
+export StaticTrajectory, NoUTurnTrajectory, find_good_eps
 include("proposal.jl")
 export TakeLastProposal
 include("diagnosis.jl")
