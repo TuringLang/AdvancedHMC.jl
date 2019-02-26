@@ -49,9 +49,7 @@ function K(h::Hamiltonian{T,UnitEuclideanMetric{T},F1,F2,A}, r::AbstractVector{T
 end
 
 function K(h::Hamiltonian{T,DiagEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2,A<:AbstractVector{T}}
-    t1 = BroadcastArray(abs2, r)
-    t2 = BroadcastArray(*, t1, h.metric.M⁻¹)
-    return sum(t2) / 2
+    return sum(abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r)) / 2
 end
 
 function K(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2,A<:AbstractVector{T}}
