@@ -57,17 +57,21 @@ function K(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}, r::AbstractVecto
     return dot(r, h._dHdr) / 2
 end
 
+# TODO: make sure the re-use of allocation doesn't caues problem
 # Momentum sampler
 function rand_momentum(h::Hamiltonian{T,UnitEuclideanMetric{T},F1,F2,A}) where {T<:Real,F1,F2,A<:AbstractVector{T}}
-    return randn(h.metric.dim)
+    h._r .= randn.()
+    return h._r
 end
 
 function rand_momentum(h::Hamiltonian{T,DiagEuclideanMetric{T,M},F1,F2,A}) where {T<:Real,M<:AbstractVector{T},F1,F2,A<:AbstractVector{T}}
     h._r .= randn.()
-    return h._r ./ h.metric.sqrtM⁻¹
+    h._r .= h._r ./ h.metric.sqrtM⁻¹
+    return h._r
 end
 
 function rand_momentum(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}) where {T<:Real,M<:AbstractMatrix{T},F1,F2,A<:AbstractVector{T}}
     h._r .= randn.()
-    return h.metric.cholM⁻¹ \ h._r
+    h._r .= h.metric.cholM⁻¹ \ h._r
+    return h._r
 end
