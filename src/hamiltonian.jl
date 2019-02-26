@@ -53,7 +53,8 @@ function K(h::Hamiltonian{T,DiagEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector
 end
 
 function K(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2,A<:AbstractVector{T}}
-    return r' * h.metric.M⁻¹ * r / 2
+    mul!(h._dHdr, h.metric.M⁻¹, r)
+    return dot(r, h._dHdr) / 2
 end
 
 # Momentum sampler
