@@ -3,19 +3,19 @@
 struct Hamiltonian{T<:Real,M<:AbstractMetric{T},F1,F2,A<:AbstractVector{T}}
     metric      ::  M
     logπ        ::  F1
-    dlogπdθ     ::  F2
+    ∂logπ∂θ     ::  F2
     # Below are for efficient memory allocation
     _dHdθ       ::  A
     _dHdr       ::  A
     _r          ::  A
 end
 
-function Hamiltonian(metric::M, logπ::F1, dlogπdθ::F2) where {T<:Real,M<:AbstractMetric{T},F1,F2}
-    return Hamiltonian(metric, logπ, dlogπdθ, zeros(T, metric.dim), zeros(T, metric.dim), zeros(T, metric.dim))
+function Hamiltonian(metric::M, logπ::F1, ∂logπ∂θ::F2) where {T<:Real,M<:AbstractMetric{T},F1,F2}
+    return Hamiltonian(metric, logπ, ∂logπ∂θ, zeros(T, metric.dim), zeros(T, metric.dim), zeros(T, metric.dim))
 end
 
 function dHdθ(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
-    h._dHdθ .= -h.dlogπdθ(θ)
+    h._dHdθ .= -h.∂logπ∂θ(θ)
     return h._dHdθ
 end
 

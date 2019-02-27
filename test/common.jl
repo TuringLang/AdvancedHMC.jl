@@ -10,4 +10,4 @@ using Distributions
 using ForwardDiff: gradient
 
 logπ(θ::AbstractVector{T}) where {T<:Real} = logpdf(MvNormal(zeros(D), ones(D)), θ)
-dlogπdθ = θ -> gradient(logπ, θ)
+∂logπ∂θ = θ -> gradient(logπ, θ)
