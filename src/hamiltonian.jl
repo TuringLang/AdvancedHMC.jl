@@ -72,6 +72,6 @@ end
 
 function rand_momentum(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}) where {T<:Real,M<:AbstractMatrix{T},F1,F2,A<:AbstractVector{T}}
     h._r .= randn.()
-    h._r .= h.metric.cholM⁻¹ \ h._r
+    ldiv!(h.metric.cholM⁻¹, h._r)
     return h._r
 end
