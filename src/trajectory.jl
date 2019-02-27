@@ -2,7 +2,7 @@ abstract type AbstractTrajectory end
 
 struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory
     integrator  ::  I
-    n_steps     ::  Integer
+    n_steps     ::  Int
 end
 
 function points(st::StaticTrajectory, h::Hamiltonian, θ::T, r::T) where {T<:AbstractVector{<:Real}}
@@ -27,7 +27,7 @@ function NoUTurnTrajectory(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real
     return NoUTurnTrajectory(Leapfrog(find_good_eps(h, θ)))
 end
 
-function find_good_eps(h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Integer=10) where {T<:Real}
+function find_good_eps(h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=10) where {T<:Real}
     ϵ = 0.1
     r = rand_momentum(h)
 
@@ -74,7 +74,7 @@ end
 
 
 # TODO: implement a more efficient way to build the balance tree
-function build_tree(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, logu::AbstractFloat, v::Integer, j::Integer;
+function build_tree(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, logu::AbstractFloat, v::Int, j::Int;
                     Δ_max::AbstractFloat=1000.0) where {T<:Real}
     if j == 0
         _H = H(h, θ, r)
@@ -111,7 +111,7 @@ function build_tree(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}
     end
 end
 
-function lastpoint(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}; j_max::Integer=10) where {T<:Real}
+function lastpoint(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}; j_max::Int=10) where {T<:Real}
     _H = H(h, θ, r)
     logu = log(rand()) - _H
 

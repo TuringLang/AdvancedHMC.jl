@@ -30,7 +30,7 @@ function step(lf::Leapfrog{T}, h::Hamiltonian, θ::AbstractVector{T}, r::Abstrac
     return θ_new, r_new, true
 end
 
-function steps(lf::Leapfrog{T}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, n_steps::Integer) where {T<:Real}
+function steps(lf::Leapfrog{T}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, n_steps::Int) where {T<:Real}
     n_valid = 0
     r_new, _is_valid = lf_momentum(lf.ϵ / 2, h, θ, r)
     !_is_valid && return θ, r, n_valid

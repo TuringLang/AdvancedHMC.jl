@@ -1,7 +1,7 @@
 abstract type AbstractMetric{T} end
 
 struct UnitEuclideanMetric{T<:Real} <: AbstractMetric{T}
-    dim :: Integer
+    dim :: Int
 end
 
 function UnitEuclideanMetric(θ::A) where {T<:Real,A<:AbstractVector{T}}
@@ -9,7 +9,7 @@ function UnitEuclideanMetric(θ::A) where {T<:Real,A<:AbstractVector{T}}
 end
 
 struct DiagEuclideanMetric{T<:Real,A<:AbstractVector{T}} <: AbstractMetric{T}
-    dim     :: Integer
+    dim     :: Int
     # Diagnal of the inverse of the mass matrix
     M⁻¹     ::  A
     # Sqare root of the inverse of the mass matrix
@@ -22,7 +22,7 @@ function DiagEuclideanMetric(θ::A, M⁻¹::A) where {T<:Real,A<:AbstractVector{
 end
 
 struct DenseEuclideanMetric{T<:Real,A<:AbstractMatrix{T}} <: AbstractMetric{T}
-    dim     :: Integer
+    dim     :: Int
     # Inverse of the mass matrix
     M⁻¹     ::  A
     # U of the Cholesky decomposition of the mass matrix

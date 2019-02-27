@@ -6,7 +6,7 @@ function is_accept(logα::Real)
     return log(rand()) < logα
 end
 
-function sample(h::Hamiltonian, p::AbstractProposal, θ::AbstractVector{T}, n_samples::Integer) where {T<:Real}
+function sample(h::Hamiltonian, p::AbstractProposal, θ::AbstractVector{T}, n_samples::Int) where {T<:Real}
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)

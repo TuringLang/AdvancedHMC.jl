@@ -2,7 +2,7 @@ module HMC
 
 using LinearAlgebra: cholesky
 using Statistics: mean, var
-using LinearAlgebra: Symmetric, UpperTriangular, mul!, dot
+using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot
 using LazyArrays: BroadcastArray
 
 # Notations
