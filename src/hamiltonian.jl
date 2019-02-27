@@ -5,8 +5,8 @@ struct Hamiltonian{T<:Real,M<:AbstractMetric{T},F1,F2,A<:AbstractVector{T}}
     logπ        ::  F1
     ∂logπ∂θ     ::  F2
     # Below are for efficient memory allocation
-    _dHdθ       ::  A
-    _dHdr       ::  A
+    _∂H∂θ       ::  A
+    _∂H∂r       ::  A
     _r          ::  A
 end
 
@@ -14,24 +14,24 @@ function Hamiltonian(metric::M, logπ::F1, ∂logπ∂θ::F2) where {T<:Real,M<:
     return Hamiltonian(metric, logπ, ∂logπ∂θ, zeros(T, metric.dim), zeros(T, metric.dim), zeros(T, metric.dim))
 end
 
-function dHdθ(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
-    h._dHdθ .= -h.∂logπ∂θ(θ)
-    return h._dHdθ
+function ∂H∂θ(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
+    h._∂H∂θ .= -h.∂logπ∂θ(θ)
+    return h._∂H∂θ
 end
 
-function dHdr(h::Hamiltonian{T,UnitEuclideanMetric{T},F1,F2,A}, r::AbstractVector{T}) where {T<:Real,F1,F2,A<:AbstractVector{T}}
-    h._dHdr .= r
-    return h._dHdr
+function ∂H∂r(h::Hamiltonian{T,UnitEuclideanMetric{T},F1,F2,A}, r::AbstractVector{T}) where {T<:Real,F1,F2,A<:AbstractVector{T}}
+    h._∂H∂r .= r
+    return h._∂H∂r
 end
 
-function dHdr(h::Hamiltonian{T,DiagEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2,A<:AbstractVector{T}}
-    h._dHdr .= h.metric.M⁻¹ .* r
-    return h._dHdr
+function ∂H∂r(h::Hamiltonian{T,DiagEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2,A<:AbstractVector{T}}
+    h._∂H∂r .= h.metric.M⁻¹ .* r
+    return h._∂H∂r
 end
 
-function dHdr(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2,A<:AbstractVector{T}}
-    mul!(h._dHdr, h.metric.M⁻¹, r)
-    return h._dHdr
+function ∂H∂r(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2,A<:AbstractVector{T}}
+    mul!(h._∂H∂r, h.metric.M⁻¹, r)
+    return h._∂H∂r
 end
 
 function H(h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
@@ -53,8 +53,8 @@ function K(h::Hamiltonian{T,DiagEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector
 end
 
 function K(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2,A<:AbstractVector{T}}
-    mul!(h._dHdr, h.metric.M⁻¹, r)
-    return dot(r, h._dHdr) / 2
+    mul!(h._∂H∂r, h.metric.M⁻¹, r)
+    return dot(r, h._∂H∂r) / 2
 end
 
 # TODO: make sure the re-use of allocation doesn't caues problem

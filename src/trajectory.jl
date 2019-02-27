@@ -103,7 +103,7 @@ function build_tree(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}
             end
             α′ = α′ + α′′
             n′α = n′α + n′′α
-            s′ = s′′ * (dot(θp - θm, dHdr(h, rm)) >= 0 ? 1 : 0) * (dot(θp - θm, dHdr(h, rp)) >= 0 ? 1 : 0)
+            s′ = s′′ * (dot(θp - θm, ∂H∂r(h, rm)) >= 0 ? 1 : 0) * (dot(θp - θm, ∂H∂r(h, rp)) >= 0 ? 1 : 0)
             n′ = n′ + n′′
         end
 
@@ -136,7 +136,7 @@ function lastpoint(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T},
         end
 
         n = n + n′
-        s = s′ * (dot(θp - θm, dHdr(h, rm)) >= 0 ? 1 : 0) * (dot(θp - θm, dHdr(h, rp)) >= 0 ? 1 : 0)
+        s = s′ * (dot(θp - θm, ∂H∂r(h, rm)) >= 0 ? 1 : 0) * (dot(θp - θm, ∂H∂r(h, rp)) >= 0 ? 1 : 0)
         j = j + 1
 
         # da_stats = α / nα
