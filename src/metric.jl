@@ -14,22 +14,28 @@ struct DiagEuclideanMetric{T<:Real,A<:AbstractVector{T}} <: AbstractMetric{T}
     M⁻¹     ::  A
     # Sqare root of the inverse of the mass matrix
     sqrtM⁻¹ ::  A
+    # Pre-allocation for momentum in unit metric
+    _r      ::  A
 end
 
 function DiagEuclideanMetric(θ::A, M⁻¹::A) where {T<:Real,A<:AbstractVector{T}}
     @assert length(θ) == length(M⁻¹)
-    return DiagEuclideanMetric(length(θ), M⁻¹, sqrt.(M⁻¹))
+    dim = length(θ)
+    return DiagEuclideanMetric(dim, M⁻¹, sqrt.(M⁻¹), zeros(T, dim))
 end
 
-struct DenseEuclideanMetric{T<:Real,A<:AbstractMatrix{T}} <: AbstractMetric{T}
+struct DenseEuclideanMetric{T<:Real,AV<:AbstractVector{T},AM<:AbstractMatrix{T}} <: AbstractMetric{T}
     dim     :: Int
     # Inverse of the mass matrix
-    M⁻¹     ::  A
+    M⁻¹     ::  AM
     # U of the Cholesky decomposition of the mass matrix
-    cholM⁻¹ ::  UpperTriangular{T,A}
+    cholM⁻¹ ::  UpperTriangular{T,AM}
+    # Pre-allocation for momentum in unit metric
+    _r      ::  AV
 end
 
-function DenseEuclideanMetric(θ::A1, M⁻¹::A2) where {T<:Real,A1<:AbstractVector{T},A2<:AbstractMatrix{T}}
+function DenseEuclideanMetric(θ::AV, M⁻¹::AM) where {T<:Real,AV<:AbstractVector{T},AM<:AbstractMatrix{T}}
     @assert length(θ) == size(M⁻¹, 1)
-    return DenseEuclideanMetric(length(θ), M⁻¹, cholesky(Symmetric(M⁻¹)).U)
+    dim = length(θ)
+    return DenseEuclideanMetric(dim, M⁻¹, cholesky(Symmetric(M⁻¹)).U, zeros(T, dim))
 end
