@@ -14,8 +14,8 @@ struct DiagEuclideanMetric{T<:Real,A<:AbstractVector{T}} <: AbstractMetric{T}
     M⁻¹     ::  A
     # Sqare root of the inverse of the mass matrix
     sqrtM⁻¹ ::  A
-    # Pre-allocation for momentum in unit metric
-    _r      ::  A
+    # Pre-allocation for intermediate variables
+    _temp   ::  A
 end
 
 function DiagEuclideanMetric(θ::A, M⁻¹::A) where {T<:Real,A<:AbstractVector{T}}
@@ -30,8 +30,8 @@ struct DenseEuclideanMetric{T<:Real,AV<:AbstractVector{T},AM<:AbstractMatrix{T}}
     M⁻¹     ::  AM
     # U of the Cholesky decomposition of the mass matrix
     cholM⁻¹ ::  UpperTriangular{T,AM}
-    # Pre-allocation for momentum in unit metric
-    _r      ::  AV
+    # Pre-allocation for intermediate variables
+    _temp   ::  AV
 end
 
 function DenseEuclideanMetric(θ::AV, M⁻¹::AM) where {T<:Real,AV<:AbstractVector{T},AM<:AbstractMatrix{T}}
