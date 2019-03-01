@@ -31,10 +31,10 @@ function find_good_eps(h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=1
     ϵ = 0.1
     r = rand_momentum(h)
 
-    _H = H(h, θ, r)
+    _H = hamiltonian_energy(h, θ, r)
 
     θ′, r′, _is_valid = step(Leapfrog(ϵ), h, θ, r)
-    _H_new = _is_valid ? H(h, θ′, r′) : Inf
+    _H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
 
     ΔH = _H - _H_new
     direction = ΔH > log(0.8) ? 1 : -1
@@ -45,10 +45,10 @@ function find_good_eps(h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=1
         θ = θ′
 
         r = rand_momentum(h)
-        _H = H(h, θ, r)
+        _H = hamiltonian_energy(h, θ, r)
 
         θ′, r′, _is_valid = step(Leapfrog(ϵ), h, θ, r)
-        _H_new = _is_valid ? H(h, θ′, r′) : Inf
+        _H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
 
         ΔH = _H - _H_new
 
@@ -66,7 +66,7 @@ function find_good_eps(h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=1
     while _H_new == Inf     # revert if the last change is too big
         ϵ = ϵ / 2           # safe is more important than large
         θ′, r′, _is_valid = step(Leapfrog(ϵ), h, θ, r)
-        _H_new = _is_valid ? H(h, θ′, r′) : Inf
+        _H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
     end
 
     return ϵ
@@ -77,11 +77,11 @@ end
 function build_tree(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, logu::AbstractFloat, v::Int, j::Int;
                     Δ_max::AbstractFloat=1000.0) where {T<:Real}
     if j == 0
-        _H = H(h, θ, r)
+        _H = hamiltonian_energy(h, θ, r)
         # Base case - take one leapfrog step in the direction v.
         θ′, r′, _is_valid = step(nt.integrator, h, θ, r)
         # TODO: pass old H to save computation
-        _H′ = _is_valid ? H(h, θ′, r′) : Inf
+        _H′ = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
         n′ = (logu <= -_H′) ? 1 : 0
         s′ = (logu < Δ_max + -_H′) ? 1 : 0
         α′ = exp(min(0, _H′ -_H))
@@ -112,7 +112,7 @@ function build_tree(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}
 end
 
 function lastpoint(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}; j_max::Int=10) where {T<:Real}
-    _H = H(h, θ, r)
+    _H = hamiltonian_energy(h, θ, r)
     logu = log(rand()) - _H
 
     θm = θ; θp = θ; rm = r; rp = r; j = 0; θ_new = θ; r_new = r; n = 1; s = 1

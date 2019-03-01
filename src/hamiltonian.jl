@@ -34,25 +34,25 @@ function ∂H∂r(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}, r::Abstra
     return h._∂H∂r
 end
 
-function H(h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
-    return K(h, r, θ) + V(h, θ)
+function hamiltonian_energy(h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
+    return kinetic_energy(h, r, θ) + potential_energy(h, θ)
 end
 
-function V(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
+function potential_energy(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
     return -h.logπ(θ)
 end
 
 # Kinetic energy
 # NOTE: the general form of K depends on both θ and r
-function K(h::Hamiltonian{T,UnitEuclideanMetric{T},F1,F2,A}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,F1,F2,A<:AbstractVector{T}}
+function kinetic_energy(h::Hamiltonian{T,UnitEuclideanMetric{T},F1,F2,A}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,F1,F2,A<:AbstractVector{T}}
     return sum(abs2, r) / 2
 end
 
-function K(h::Hamiltonian{T,DiagEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2,A<:AbstractVector{T}}
+function kinetic_energy(h::Hamiltonian{T,DiagEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,M<:AbstractVector{T},F1,F2,A<:AbstractVector{T}}
     return sum(abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r)) / 2
 end
 
-function K(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2,A<:AbstractVector{T}}
+function kinetic_energy(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}, r::AbstractVector{T}, ::AbstractVector{T}) where {T<:Real,M<:AbstractMatrix{T},F1,F2,A<:AbstractVector{T}}
     mul!(h._∂H∂r, h.metric.M⁻¹, r)
     return dot(r, h._∂H∂r) / 2
 end

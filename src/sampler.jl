@@ -20,9 +20,9 @@ end
 # HMC is just one speical example with static trajectory
 function step(h::Hamiltonian, p::AbstractProposal{StaticTrajectory{I}}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
     r = rand_momentum(h)
-    _H = H(h, θ, r)
+    _H = hamiltonian_energy(h, θ, r)
     θ_new, r_new = propose(p, h, θ, r)
-    _H_new = H(h, θ_new, r_new)
+    _H_new = hamiltonian_energy(h, θ_new, r_new)
     _logα = logα(_H, _H_new)
     α = exp(_logα)
     if !is_accept(_logα)
@@ -34,9 +34,9 @@ end
 # NUTS is just one speical example with NoUTurn trajectory
 function step(h::Hamiltonian, p::AbstractProposal{NoUTurnTrajectory{I}}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
     r = rand_momentum(h)
-    _H = H(h, θ, r)
+    _H = hamiltonian_energy(h, θ, r)
     θ_new, r_new = propose(p, h, θ, r)
-    _H_new = H(h, θ_new, r_new)
+    _H_new = hamiltonian_energy(h, θ_new, r_new)
     # We always accept in NUTS
     return θ_new, _H_new, one(T)
 end
