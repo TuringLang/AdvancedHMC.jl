@@ -14,6 +14,7 @@ function Hamiltonian(metric::M, logπ::F1, ∂logπ∂θ::F2) where {T<:Real,M<:
     return Hamiltonian(metric, logπ, ∂logπ∂θ, zeros(T, metric.dim), zeros(T, metric.dim), zeros(T, metric.dim))
 end
 
+# TODO: make sure the re-use of allocation doesn't cause any problem
 function ∂H∂θ(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
     h._∂H∂θ .= -h.∂logπ∂θ(θ)
     return h._∂H∂θ
@@ -57,7 +58,7 @@ function kinetic_energy(h::Hamiltonian{T,DenseEuclideanMetric{T,M},F1,F2,A}, r::
     return dot(r, h._∂H∂r) / 2
 end
 
-# TODO: make sure the re-use of allocation doesn't caues problem
+# TODO: make sure the re-use of allocation doesn't cause any problem
 # Momentum sampler
 function rand_momentum(h::Hamiltonian{T,UnitEuclideanMetric{T},F1,F2,A}) where {T<:Real,F1,F2,A<:AbstractVector{T}}
     h._r .= randn.()

@@ -1,5 +1,9 @@
 using Test
 
+@testset "hamiltonian.jl" begin
+    include("hamiltonian.jl")
+end
+
 @testset "integrator.jl" begin
     include("integrator.jl")
 end
