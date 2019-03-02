@@ -27,9 +27,9 @@ function NoUTurnTrajectory(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real
     return NoUTurnTrajectory(Leapfrog(find_good_eps(h, θ)))
 end
 
-function find_good_eps(h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=10) where {T<:Real}
+function find_good_eps(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=10) where {T<:Real}
     ϵ = 0.1
-    r = rand_momentum(h)
+    r = rand_momentum(rng, h)
 
     _H = hamiltonian_energy(h, θ, r)
 
@@ -44,7 +44,7 @@ function find_good_eps(h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=1
     while (i <= max_n_iters)
         θ = θ′
 
-        r = rand_momentum(h)
+        r = rand_momentum(rng, h)
         _H = hamiltonian_energy(h, θ, r)
 
         θ′, r′, _is_valid = step(Leapfrog(ϵ), h, θ, r)
@@ -72,9 +72,10 @@ function find_good_eps(h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=1
     return ϵ
 end
 
+find_good_eps(h::Hamiltonian, θ::AbstractVector; max_n_iters::Int=10) = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
 
 # TODO: implement a more efficient way to build the balance tree
-function build_tree(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, logu::AbstractFloat, v::Int, j::Int;
+function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, logu::AbstractFloat, v::Int, j::Int;
                     Δ_max::AbstractFloat=1000.0) where {T<:Real}
     if j == 0
         _H = hamiltonian_energy(h, θ, r)
@@ -89,15 +90,15 @@ function build_tree(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}
         return θ′, r′, θ′, r′, θ′, r′, n′, s′, α′, 1
     else
         # Recursion - build the left and right subtrees.
-        θm, rm, θp, rp, θ′, r′, n′, s′, α′, n′α = build_tree(nt, h, θ, r, logu, v, j - 1)
+        θm, rm, θp, rp, θ′, r′, n′, s′, α′, n′α = build_tree(rng, nt, h, θ, r, logu, v, j - 1)
 
         if s′ == 1
             if v == -1
-                θm, rm, _, _, θ′′, r′′, n′′, s′′, α′′, n′′α = build_tree(nt, h, θm, rm, logu, v, j - 1)
+                θm, rm, _, _, θ′′, r′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, θm, rm, logu, v, j - 1)
             else
-                _, _, θp, rp, θ′′, r′′, n′′, s′′, α′′, n′′α = build_tree(nt, h, θp, rp, logu, v, j - 1)
+                _, _, θp, rp, θ′′, r′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, θp, rp, logu, v, j - 1)
             end
-            if rand() < n′′ / (n′ + n′′)
+            if rand(rng) < n′′ / (n′ + n′′)
                 θ′ = θ′′
                 r′ = r′′
             end
@@ -111,9 +112,12 @@ function build_tree(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}
     end
 end
 
-function lastpoint(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}; j_max::Int=10) where {T<:Real}
+build_tree(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, logu::AbstractFloat, v::Int, j::Int;
+           Δ_max::AbstractFloat=1000.0) where {T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j; Δ_max=Δ_max)
+
+function lastpoint(rng::AbstractRNG, nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}; j_max::Int=10) where {T<:Real}
     _H = hamiltonian_energy(h, θ, r)
-    logu = log(rand()) - _H
+    logu = log(rand(rng)) - _H
 
     θm = θ; θp = θ; rm = r; rp = r; j = 0; θ_new = θ; r_new = r; n = 1; s = 1
 
@@ -121,15 +125,15 @@ function lastpoint(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T},
 
     while s == 1 && j <= j_max
 
-        v = rand([-1, 1])
+        v = rand(rng, [-1, 1])
         if v == -1
-            θm, rm, _, _, θ′, r′,n′, s′, α, nα = build_tree(nt, h, θm, rm, logu, v, j)
+            θm, rm, _, _, θ′, r′,n′, s′, α, nα = build_tree(rng, nt, h, θm, rm, logu, v, j)
         else
-            _, _, θp, rp, θ′, r′,n′, s′, α, nα = build_tree(nt, h, θp, rp, logu, v, j)
+            _, _, θp, rp, θ′, r′,n′, s′, α, nα = build_tree(rng, nt, h, θp, rp, logu, v, j)
         end
 
         if s′ == 1
-            if rand() < min(1, n′ / n)
+            if rand(rng) < min(1, n′ / n)
                 θ_new = θ′
                 r_new = r′
             end
@@ -145,3 +149,6 @@ function lastpoint(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T},
 
     return θ_new, r_new, 2^j
 end
+
+lastpoint(nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T};
+          j_max::Int=10) where {T<:Real} = lastpoint(GLOBAL_RNG, nt, h, θ, r; j_max=j_max)

@@ -4,6 +4,7 @@ using LinearAlgebra: cholesky
 using Statistics: mean, var
 using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot
 using LazyArrays: BroadcastArray
+using Random: GLOBAL_RNG, AbstractRNG
 
 # Notations
 # d - dimension of sampling sapce

@@ -6,7 +6,7 @@ include("common.jl")
     θ_init = randn(D)
     ϵ = 0.02
     n_steps = 20
-    n_samples = 50_000
+    n_samples = 100_000
 
     temp = randn(D,100)
     for metric in [UnitEuclideanMetric(θ_init), DiagEuclideanMetric(θ_init, vec(var(temp; dims=2))), DenseEuclideanMetric(θ_init, cov(temp'))]

@@ -8,6 +8,10 @@ end
     include("integrator.jl")
 end
 
+@testset "proposal.jl" begin
+    include("proposal.jl")
+end
+
 @testset "Integrated tests" begin
     include("hmc.jl")
 end

@@ -46,16 +46,18 @@ function kinetic_energy(h::Hamiltonian{T,DenseEuclideanMetric{T,AV,AM},F1,F2}, r
 end
 
 # Momentum sampler
-function rand_momentum(h::Hamiltonian{T,UnitEuclideanMetric{T},F1,F2}) where {T<:Real,F1,F2,A<:AbstractVector{T}}
-    return randn(h.metric.dim)
+function rand_momentum(rng::AbstractRNG, h::Hamiltonian{T,UnitEuclideanMetric{T},F1,F2}) where {T<:Real,F1,F2,A<:AbstractVector{T}}
+    return randn(rng, h.metric.dim)
 end
 
-function rand_momentum(h::Hamiltonian{T,DiagEuclideanMetric{T,A},F1,F2}) where {T<:Real,A<:AbstractVector{T},F1,F2}
-    h.metric._temp .= randn.()
+function rand_momentum(rng::AbstractRNG, h::Hamiltonian{T,DiagEuclideanMetric{T,A},F1,F2}) where {T<:Real,A<:AbstractVector{T},F1,F2}
+    h.metric._temp .= randn.(Ref(rng))
     return h.metric._temp ./ h.metric.sqrtM⁻¹
 end
 
-function rand_momentum(h::Hamiltonian{T,DenseEuclideanMetric{T,AV,AM},F1,F2}) where {T<:Real,AM<:AbstractMatrix{T},F1,F2,AV<:AbstractVector{T}}
-    h.metric._temp .= randn.()
+function rand_momentum(rng::AbstractRNG, h::Hamiltonian{T,DenseEuclideanMetric{T,AV,AM},F1,F2}) where {T<:Real,AM<:AbstractMatrix{T},F1,F2,AV<:AbstractVector{T}}
+    h.metric._temp .= randn.(Ref(rng))
     return h.metric.cholM⁻¹ \ h.metric._temp
 end
+
+rand_momentum(h::Hamiltonian) = rand_momentum(GLOBAL_RNG, h)
