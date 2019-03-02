@@ -41,4 +41,4 @@ function step(rng::AbstractRNG, h::Hamiltonian, p::AbstractProposal{NoUTurnTraje
     return θ_new, _H_new, one(T)
 end
 
-step(h::Hamiltonian, p::AbstractProposal, θ::AbstractVector) = step(GLOBAL_RNG, h, p, θ)
+step(h::Hamiltonian, p::AbstractProposal, θ::AbstractVector{T}) where {T<:Real} = step(GLOBAL_RNG, h, p, θ)

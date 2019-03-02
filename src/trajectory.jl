@@ -72,7 +72,7 @@ function find_good_eps(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; 
     return ϵ
 end
 
-find_good_eps(h::Hamiltonian, θ::AbstractVector; max_n_iters::Int=10) = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
+find_good_eps(h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=10) where {T<:Real} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
 
 # TODO: implement a more efficient way to build the balance tree
 function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, logu::AbstractFloat, v::Int, j::Int;
