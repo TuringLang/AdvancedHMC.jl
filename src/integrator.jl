@@ -30,6 +30,7 @@ function step(lf::Leapfrog{T}, h::Hamiltonian, θ::AbstractVector{T}, r::Abstrac
     return θ_new, r_new, true
 end
 
+# TODO: double check the function below to see if it is type stable or not
 function steps(lf::Leapfrog{T}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, n_steps::Int) where {T<:Real}
     n_valid = 0
     r_new, _is_valid = lf_momentum(lf.ϵ / 2, h, θ, r)
