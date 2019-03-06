@@ -17,12 +17,12 @@ function sample(h::Hamiltonian, p::AbstractProposal, θ::AbstractVector{T}, n_sa
     return θs
 end
 
-# HMC is just one speical example with static trajectory
-function step(rng::AbstractRNG, h::Hamiltonian, p::AbstractProposal{StaticTrajectory{I}}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
+function step(rng::AbstractRNG, h::Hamiltonian, prop::TakeLastProposal{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
     r = rand_momentum(rng, h)
     _H = hamiltonian_energy(h, θ, r)
-    θ_new, r_new = propose(p, h, θ, r)
+    θ_new, r_new = propose(prop, h, θ, r)
     _H_new = hamiltonian_energy(h, θ_new, r_new)
+    # Accept via MH criteria
     _logα = logα(_H, _H_new)
     α = exp(_logα)
     if !is_accept(_logα)
@@ -31,11 +31,10 @@ function step(rng::AbstractRNG, h::Hamiltonian, p::AbstractProposal{StaticTrajec
     return θ_new, _H_new, α
 end
 
-# NUTS is just one speical example with NoUTurn trajectory
-function step(rng::AbstractRNG, h::Hamiltonian, p::AbstractProposal{NoUTurnTrajectory{I}}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
+function step(rng::AbstractRNG, h::Hamiltonian, prop::SliceNUTS{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
     r = rand_momentum(rng, h)
     _H = hamiltonian_energy(h, θ, r)
-    θ_new, r_new = propose(rng, p, h, θ, r)
+    θ_new, r_new = propose(rng, prop, h, θ, r)
     _H_new = hamiltonian_energy(h, θ_new, r_new)
     # We always accept in NUTS
     return θ_new, _H_new, one(T)

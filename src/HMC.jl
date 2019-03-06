@@ -20,10 +20,10 @@ include("hamiltonian.jl")
 export Hamiltonian
 include("integrator.jl")
 export Leapfrog
-include("trajectory.jl")
-export StaticTrajectory, NoUTurnTrajectory, find_good_eps
+include("adapt.jl")
+export find_good_eps
 include("proposal.jl")
-export TakeLastProposal
+export TakeLastProposal,SliceNUTS
 include("diagnosis.jl")
 include("sampler.jl")
 
