@@ -1,4 +1,4 @@
-module HMC
+module AdvancedHMC
 
 using LinearAlgebra: cholesky
 using Statistics: mean, var
@@ -20,7 +20,7 @@ include("hamiltonian.jl")
 export Hamiltonian
 include("integrator.jl")
 export Leapfrog
-include("adapt.jl")
+include("stepsize.jl")
 export find_good_eps
 include("proposal.jl")
 export TakeLastProposal,SliceNUTS
