@@ -1,11 +1,6 @@
-# Efficient Hamiltonian Monte Carlo implementation in Julia
+# Efficient HMC implementations in Julia
 
-**The code from this repository is used to implement NUTS in [Turing.jl](https://github.com/yebai/Turing.jl). Try it out when it's available!**
-
-
-## Usage
-
-See `example.jl` for an example of sampling from a mixture of Gaussians.
+**The code from this repository is used to implement HMC in [Turing.jl](https://github.com/yebai/Turing.jl). Try it out when it's available!**
 
 ## API
 
