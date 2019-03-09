@@ -1,4 +1,4 @@
-using Test, HMC
+using Test, AdvancedHMC
 
 include("common.jl")
 
@@ -6,4 +6,4 @@ include("common.jl")
 h = Hamiltonian(UnitEuclideanMetric(θ_init), logπ, ∂logπ∂θ)
 r_init = ones(D)
 
-@test HMC.kinetic_energy(h, r_init, θ_init) == D / 2
+@test AdvancedHMC.kinetic_energy(h, r_init, θ_init) == D / 2
