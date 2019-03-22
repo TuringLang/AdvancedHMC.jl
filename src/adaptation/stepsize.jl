@@ -90,8 +90,6 @@ end
 ### Adapters ###
 ################
 
-abstract type AbstractAdapter end
-
 abstract type StepSizeAdapter <: AbstractAdapter end
 
 struct FixedStepSize{T<:Real} <: StepSizeAdapter

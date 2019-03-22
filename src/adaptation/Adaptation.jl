@@ -1,7 +1,11 @@
 module Adaptation
 
 using Statistics: middle
-using ..AdvancedHMC: DEBUG, GLOBAL_RNG, AbstractRNG, Hamiltonian, rand_momentum, hamiltonian_energy, Leapfrog, step, AbstractProposal
+using ..AdvancedHMC: DEBUG, GLOBAL_RNG, AbstractRNG,
+                     Hamiltonian, rand_momentum, hamiltonian_energy,
+                     Leapfrog, step, AbstractProposal
+
+abstract type AbstractAdapter end
 
 include("stepsize.jl")
 

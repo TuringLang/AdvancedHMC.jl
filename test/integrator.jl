@@ -13,11 +13,13 @@ n_steps = 10
 @testset "step() against steps()" begin
     θ_step, r_step = copy(θ_init), copy(r_init)
 
-    @time for i = 1:n_steps
+    t_step = @elapsed for i = 1:n_steps
         θ_step, r_step, _ = AdvancedHMC.step(lf, h, θ_step, r_step)
     end
 
-    @time θ_steps, r_steps, _ = AdvancedHMC.steps(lf, h, θ_init, r_init, n_steps)
+    t_steps = @elapsed θ_steps, r_steps, _ = AdvancedHMC.steps(lf, h, θ_init, r_init, n_steps)
+
+    @info "Performance of step() v.s. steps()" n_steps t_step t_steps t_step / t_steps
 
     @test θ_step ≈ θ_steps atol=DETATOL
     @test r_step ≈ r_steps atol=DETATOL
@@ -27,7 +29,7 @@ using Turing: Inference
 @testset "steps() against Turing.Inference._leapfrog()" begin
     t_Turing = @elapsed θ_Turing, r_Turing, _ = Inference._leapfrog(θ_init, r_init, n_steps, ϵ, x -> (nothing, ∂logπ∂θ(x)))
     t_AHMC = @elapsed θ_AHMC, r_AHMC, _ = AdvancedHMC.steps(lf, h, θ_init, r_init, n_steps)
-    @info "Performance of leapfrog step" n_steps t_Turing t_AHMC t_Turing / t_AHMC
+    @info "Performance of leapfrog of AdvancedHMC v.s. Turing" n_steps t_Turing t_AHMC t_Turing / t_AHMC
 
     @test θ_Turing ≈ θ_AHMC atol=DETATOL
     @test r_Turing ≈ r_AHMC atol=DETATOL
