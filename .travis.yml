@@ -17,13 +17,6 @@ matrix:
 notifications:
   email: false
 
-# script:
-#  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-#  - julia -e 'using Pkg;
-#              Pkg.clone(pwd(), "AdvancedHMC");
-#              Pkg.build("AdvancedHMC");
-#              Pkg.test("AdvancedHMC"; coverage=true)'
-
 after_success:
   - julia -e 'import AdvancedHMC;
               cd(joinpath(dirname(pathof(AdvancedHMC)), "..", paths...));
