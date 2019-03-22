@@ -1,10 +1,8 @@
-function logα(H::Real, H_new::Real)
-    return min(0, H - H_new)
+function mh_accept(rng::AbstractRNG, H::AbstractFloat, H_new::AbstractFloat)
+    logα = min(0, H - H_new)
+    return log(rand(rng)) < logα, exp(logα)
 end
-
-function is_accept(logα::Real)
-    return log(rand()) < logα
-end
+mh_accept(H::AbstractFloat, H_new::AbstractFloat) = mh_accept(GLOBAL_RNG, logα)
 
 function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int) where {T<:Real}
     θs = Vector{Vector{T}}(undef, n_samples)
@@ -30,22 +28,21 @@ function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n
             i == n_adapts && @info "Finished $n_adapts adapation steps" typeof(adapter) ϵ
         end
     end
-    @info "Finished $n_samples sampling steps with $time (s)" typeof(h) typeof(prop) EBFMI(Hs) mean(αs)
+    @info "Finished $n_samples sampling steps in $time (s)" typeof(h) typeof(prop) EBFMI(Hs) mean(αs)
     return θs
 end
 
 function step(rng::AbstractRNG, h::Hamiltonian, prop::TakeLastProposal{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
     r = rand_momentum(rng, h)
-    _H = hamiltonian_energy(h, θ, r)
+    H = hamiltonian_energy(h, θ, r)
     θ_new, r_new = propose(prop, h, θ, r)
-    _H_new = hamiltonian_energy(h, θ_new, r_new)
+    H_new = hamiltonian_energy(h, θ_new, r_new)
     # Accept via MH criteria
-    _logα = logα(_H, _H_new)
-    α = exp(_logα)
-    if !is_accept(_logα)
-        return θ, _H, α
+    is_accept, α = mh_accept(rng, H, H_new)
+    if !is_accept
+        return θ, H, α
     end
-    return θ_new, _H_new, α
+    return θ_new, H_new, α
 end
 
 function step(rng::AbstractRNG, h::Hamiltonian, prop::SliceNUTS{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}

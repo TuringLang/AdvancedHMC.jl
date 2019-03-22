@@ -35,27 +35,26 @@ function SliceNUTS(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
 end
 
 # TODO: implement a more efficient way to build the balance tree
-function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, logu::AbstractFloat, v::Int, j::Int, H0::AbstractFloat;
+function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat;
                     Δ_max::AbstractFloat=1000.0) where {I<:AbstractIntegrator,T<:Real}
     if j == 0
-        H = hamiltonian_energy(h, θ, r)
         # Base case - take one leapfrog step in the direction v.
         θ′, r′, _is_valid = step(nt.integrator, h, θ, r)
         H′ = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
         n′ = (logu <= -H′) ? 1 : 0
         s′ = (logu < Δ_max + -H′) ? 1 : 0
-        α′ = exp(min(0, H0 - H′))
+        α′ = exp(min(0, H - H′))
 
         return θ′, r′, θ′, r′, θ′, r′, n′, s′, α′, 1
     else
         # Recursion - build the left and right subtrees.
-        θm, rm, θp, rp, θ′, r′, n′, s′, α′, n′α = build_tree(rng, nt, h, θ, r, logu, v, j - 1, H0)
+        θm, rm, θp, rp, θ′, r′, n′, s′, α′, n′α = build_tree(rng, nt, h, θ, r, logu, v, j - 1, H)
 
         if s′ == 1
             if v == -1
-                θm, rm, _, _, θ′′, r′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, θm, rm, logu, v, j - 1, H0)
+                θm, rm, _, _, θ′′, r′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, θm, rm, logu, v, j - 1, H)
             else
-                _, _, θp, rp, θ′′, r′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, θp, rp, logu, v, j - 1, H0)
+                _, _, θp, rp, θ′′, r′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, θp, rp, logu, v, j - 1, H)
             end
             if rand(rng) < n′′ / (n′ + n′′)
                 θ′ = θ′′
@@ -71,13 +70,13 @@ function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, 
     end
 end
 
-build_tree(nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, logu::AbstractFloat, v::Int, j::Int;
-           Δ_max::AbstractFloat=1000.0) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j; Δ_max=Δ_max)
+build_tree(nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat;
+           Δ_max::AbstractFloat=1000.0) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j, H; Δ_max=Δ_max)
 
 function propose(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T};
                  j_max::Int=10) where {I<:AbstractIntegrator,T<:Real}
-    H0 = hamiltonian_energy(h, θ, r)
-    logu = log(rand(rng)) - H0
+    H = hamiltonian_energy(h, θ, r)
+    logu = log(rand(rng)) - H
 
     θm = θ; θp = θ; rm = r; rp = r; j = 0; θ_new = θ; r_new = r; n = 1; s = 1
 
@@ -86,9 +85,9 @@ function propose(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ:
     while s == 1 && j <= j_max
         v = rand(rng, [-1, 1])
         if v == -1
-            θm, rm, _, _, θ′, r′,n′, s′, α, nα = build_tree(rng, nt, h, θm, rm, logu, v, j, H0)
+            θm, rm, _, _, θ′, r′,n′, s′, α, nα = build_tree(rng, nt, h, θm, rm, logu, v, j, H)
         else
-            _, _, θp, rp, θ′, r′,n′, s′, α, nα = build_tree(rng, nt, h, θp, rp, logu, v, j, H0)
+            _, _, θp, rp, θ′, r′,n′, s′, α, nα = build_tree(rng, nt, h, θp, rp, logu, v, j, H)
         end
 
         if s′ == 1
