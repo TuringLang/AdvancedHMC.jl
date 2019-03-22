@@ -4,19 +4,19 @@ function mh_accept(rng::AbstractRNG, H::AbstractFloat, H_new::AbstractFloat)
 end
 mh_accept(H::AbstractFloat, H_new::AbstractFloat) = mh_accept(GLOBAL_RNG, logα)
 
-function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int) where {T<:Real}
+function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int; verbose::Bool=true) where {T<:Real}
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
     time = @elapsed for i = 1:n_samples
         θs[i], Hs[i], αs[i] = step(h, prop, i == 1 ? θ : θs[i-1])
     end
-    @info "Finished sampling with $time (s)" typeof(h) typeof(prop) EBFMI(Hs) mean(αs)
+    verbose && @info "Finished sampling with $time (s)" typeof(h) typeof(prop) EBFMI(Hs) mean(αs)
     return θs
 end
 
 function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int, adapter::AbstractAdapter,
-                n_adapts::Int=min(div(n_samples, 10), 1_000)) where {T<:Real}
+                n_adapts::Int=min(div(n_samples, 10), 1_000); verbose::Bool=true) where {T<:Real}
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
@@ -25,10 +25,10 @@ function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n
         if i <= n_adapts
             adapt!(adapter, θs[i], αs[i])
             h, prop = update(h, prop, adapter)
-            i == n_adapts && @info "Finished $n_adapts adapation steps" typeof(adapter) prop.integrator.ϵ
+            verbose && i == n_adapts && @info "Finished $n_adapts adapation steps" typeof(adapter) prop.integrator.ϵ
         end
     end
-    @info "Finished $n_samples sampling steps in $time (s)" typeof(h) typeof(prop) EBFMI(Hs) mean(αs)
+    verbose && @info "Finished $n_samples sampling steps in $time (s)" typeof(h) typeof(prop) EBFMI(Hs) mean(αs)
     return θs
 end
 
