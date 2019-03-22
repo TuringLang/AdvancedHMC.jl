@@ -25,8 +25,8 @@ notifications:
 #              Pkg.test("AdvancedHMC"; coverage=true)'
 
 after_success:
-  - julia -e 'using Pkg;
-              cd(Pkg.dir("AdvancedHMC"));
+  - julia -e 'import AdvancedHMC;
+              cd(joinpath(dirname(pathof(AdvancedHMC)), "..", paths...));
               Pkg.add("Coverage");
               using Coverage;
               Coveralls.submit(process_folder())'
