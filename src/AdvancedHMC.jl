@@ -12,9 +12,6 @@ using Random: GLOBAL_RNG, AbstractRNG
 # d - dimension of sampling sapce
 # π(θ) - target distribution
 # r - momentum variable
-# V - potential energy
-# K - kinetic energy
-# H - Hamiltonian energy
 
 include("metric.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
