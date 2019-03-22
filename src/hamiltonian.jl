@@ -6,6 +6,10 @@ struct Hamiltonian{T<:Real,M<:AbstractMetric{T},F1,F2}
     ∂logπ∂θ     ::  F2
 end
 
+function (h::Hamiltonian)(M⁻¹)
+    return Hamiltonian(h.metric(M⁻¹), h.logπ, h.∂logπ∂θ)
+end
+
 function ∂H∂θ(h::Hamiltonian, θ::AV)::AV where {T<:Real,AV<:AbstractVector{T}}
     return -h.∂logπ∂θ(θ)
 end

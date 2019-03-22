@@ -18,9 +18,17 @@ struct DiagEuclideanMetric{T<:Real,A<:AbstractVector{T}} <: AbstractMetric{T}
     _temp   ::  A
 end
 
+function (::DiagEuclideanMetric)(M⁻¹::A) where {T<:Real,A<:AbstractVector{T}}
+    return DiagEuclideanMetric(M⁻¹)
+end
+
 function DiagEuclideanMetric(θ::A, M⁻¹::A) where {T<:Real,A<:AbstractVector{T}}
     @assert length(θ) == length(M⁻¹)
-    dim = length(θ)
+    return DiagEuclideanMetric(M⁻¹)
+end
+
+function DiagEuclideanMetric(M⁻¹::V) where {T<:Real,V<:AbstractVector{T}}
+    dim = length(M⁻¹)
     return DiagEuclideanMetric(dim, M⁻¹, sqrt.(M⁻¹), zeros(T, dim))
 end
 
@@ -34,8 +42,16 @@ struct DenseEuclideanMetric{T<:Real,AV<:AbstractVector{T},AM<:AbstractMatrix{T}}
     _temp   ::  AV
 end
 
+function (::DenseEuclideanMetric)(M⁻¹::A) where {T<:Real,A<:AbstractMatrix{T}}
+    return DenseEuclideanMetric(M⁻¹)
+end
+
 function DenseEuclideanMetric(θ::AV, M⁻¹::AM) where {T<:Real,AV<:AbstractVector{T},AM<:AbstractMatrix{T}}
     @assert length(θ) == size(M⁻¹, 1)
-    dim = length(θ)
+    return DenseEuclideanMetric(M⁻¹)
+end
+
+function DenseEuclideanMetric(M⁻¹::M) where {T<:Real,M<:AbstractMatrix{T}}
+    dim = size(M⁻¹, 1)
     return DenseEuclideanMetric(dim, M⁻¹, cholesky(Symmetric(M⁻¹)).U, zeros(T, dim))
 end

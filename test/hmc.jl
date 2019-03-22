@@ -15,7 +15,7 @@ n_adapts = 1_000
         for prop in [TakeLastProposal(Leapfrog(ϵ), n_steps), SliceNUTS(Leapfrog(find_good_eps(h, θ_init)))]
             samples = AdvancedHMC.sample(h, prop, θ_init, n_samples; verbose=false)
             @test mean(samples) ≈ zeros(D) atol=RNDATOL
-            for adapter in [DualAveraging(0.8, prop.integrator.ϵ)]
+            for adapter in [DualAveraging(0.8, prop.integrator.ϵ), PreConditioner(metric)]
                 samples = AdvancedHMC.sample(h, prop, θ_init, n_samples, adapter, n_adapts; verbose=false)
                 @test mean(samples) ≈ zeros(D) atol=RNDATOL
             end

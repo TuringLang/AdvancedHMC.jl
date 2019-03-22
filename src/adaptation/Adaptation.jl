@@ -1,11 +1,15 @@
 module Adaptation
 
+import LinearAlgebra, Statistics
 using ..AdvancedHMC: DEBUG
 
 abstract type AbstractAdapter end
 
 include("stepsize.jl")
+include("precond.jl")
 
-export DualAveraging, getss, adapt!
+export adapt!,
+       DualAveraging, getss,
+       UnitPreConditioner, DiagPreConditioner, DensePreConditioner, getM⁻¹
 
 end # module

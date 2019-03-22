@@ -2,31 +2,31 @@
 ### Mutable states ###
 ######################
 
-mutable struct DAState{TI<:Integer,TF<:Real}
-    m     :: TI
-    ϵ     :: TF
-    μ     :: TF
-    x_bar :: TF
-    H_bar :: TF
+mutable struct DAState{T<:AbstractFloat}
+    m     :: Int
+    ϵ     :: T
+    μ     :: T
+    x_bar :: T
+    H_bar :: T
 end
 
-function DAState(ϵ::Real)
+function DAState(ϵ::AbstractFloat)
     μ = computeμ(ϵ)
     return DAState(0, ϵ, μ, 0.0, 0.0)
 end
 
-function computeμ(ϵ::Real)
+function computeμ(ϵ::AbstractFloat)
     return log(10 * ϵ) # see NUTS paper sec 3.2.1
 end
 
-function reset!(dastate::DAState{TI,TF}) where {TI<:Integer,TF<:Real}
+function reset!(dastate::DAState{T}) where {T<:AbstractFloat}
     dastate.μ = computeμ(da.state.ϵ)
-    dastate.m = zero(TI)
-    dastate.x_bar = zero(TF)
-    dastate.H_bar = zero(TF)
+    dastate.m = 0
+    dastate.x_bar = zero(T)
+    dastate.H_bar = zero(T)
 end
 
-mutable struct MSSState{T<:Real}
+mutable struct MSSState{T<:AbstractFloat}
     ϵ :: T
 end
 
@@ -36,7 +36,7 @@ end
 
 abstract type StepSizeAdapter <: AbstractAdapter end
 
-struct FixedStepSize{T<:Real} <: StepSizeAdapter
+struct FixedStepSize{T<:AbstractFloat} <: StepSizeAdapter
     ϵ :: T
 end
 
@@ -44,12 +44,12 @@ function getss(fss::FixedStepSize)
     return fss.ϵ
 end
 
-struct DualAveraging{TI<:Integer,TF<:Real} <: StepSizeAdapter
-  γ     :: TF
-  t_0   :: TF
-  κ     :: TF
-  δ     :: TF
-  state :: DAState{TI,TF}
+struct DualAveraging{T<:AbstractFloat} <: StepSizeAdapter
+  γ     :: T
+  t_0   :: T
+  κ     :: T
+  δ     :: T
+  state :: DAState{T}
 end
 
 function DualAveraging(γ::AbstractFloat, t_0::AbstractFloat, κ::AbstractFloat, δ::AbstractFloat, ϵ::AbstractFloat)
@@ -64,7 +64,7 @@ function getss(da::DualAveraging)
     return da.state.ϵ
 end
 
-struct ManualSSAdapter{T<:Real} <:StepSizeAdapter
+struct ManualSSAdapter{T<:AbstractFloat} <:StepSizeAdapter
     state :: MSSState{T}
 end
 
@@ -106,6 +106,6 @@ function adapt_stepsize!(da::DualAveraging, α::AbstractFloat)
     da.state.H_bar = H_bar
 end
 
-function adapt!(da::DualAveraging, θ::AbstractVector{<:Real}, α::AbstractFloat)
+function adapt!(da::DualAveraging, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat)
     adapt_stepsize!(da, α)
 end
