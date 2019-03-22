@@ -50,11 +50,10 @@ end
 
 function step(rng::AbstractRNG, h::Hamiltonian, prop::SliceNUTS{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
     r = rand_momentum(rng, h)
-    _H = hamiltonian_energy(h, θ, r)
     θ_new, r_new, α = propose(rng, prop, h, θ, r)
-    _H_new = hamiltonian_energy(h, θ_new, r_new)
+    H_new = hamiltonian_energy(h, θ_new, r_new)
     # We always accept in NUTS
-    return θ_new, _H_new, α
+    return θ_new, H_new, α
 end
 
 step(h::Hamiltonian, p::AbstractProposal, θ::AbstractVector{T}) where {T<:Real} = step(GLOBAL_RNG, h, p, θ)
