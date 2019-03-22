@@ -7,6 +7,10 @@ struct TakeLastProposal{I<:AbstractIntegrator} <: StaticTrajectory{I}
     n_steps     ::  Int
 end
 
+function (tlp::TakeLastProposal)(ϵ::AbstractFloat)
+    return TakeLastProposal(tlp.integrator(ϵ), tlp.n_steps)
+end
+
 function propose(prop::TakeLastProposal, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
     θ, r, _ = steps(prop.integrator, h, θ, r, prop.n_steps)
     return θ, -r
@@ -16,6 +20,10 @@ abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractHamiltonianTra
 abstract type NoUTurnTrajectory{I<:AbstractIntegrator} <: DynamicTrajectory{I} end
 struct SliceNUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
     integrator  ::  I
+end
+
+function (snuts::SliceNUTS)(ϵ::AbstractFloat)
+    return SliceNUTS(snuts.integrator(ϵ))
 end
 
 struct MultinomialNUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
@@ -67,16 +75,16 @@ end
 build_tree(nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, logu::AbstractFloat, v::Int, j::Int;
            Δ_max::AbstractFloat=1000.0) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j; Δ_max=Δ_max)
 
-function propose(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}; j_max::Int=10) where {I<:AbstractIntegrator,T<:Real}
+function propose(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T};
+                 j_max::Int=10) where {I<:AbstractIntegrator,T<:Real}
     _H = hamiltonian_energy(h, θ, r)
     logu = log(rand(rng)) - _H
 
     θm = θ; θp = θ; rm = r; rp = r; j = 0; θ_new = θ; r_new = r; n = 1; s = 1
 
-    # local da_stats
+    local da_stats
 
     while s == 1 && j <= j_max
-
         v = rand(rng, [-1, 1])
         if v == -1
             θm, rm, _, _, θ′, r′,n′, s′, α, nα = build_tree(rng, nt, h, θm, rm, logu, v, j)
@@ -95,11 +103,10 @@ function propose(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ:
         s = s′ * (dot(θp - θm, ∂H∂r(h, rm)) >= 0 ? 1 : 0) * (dot(θp - θm, ∂H∂r(h, rp)) >= 0 ? 1 : 0)
         j = j + 1
 
-        # da_stats = α / nα
-
+        da_stats = α / nα
     end
 
-    return θ_new, r_new, 2^j
+    return θ_new, r_new, da_stats
 end
 
 propose(nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T};

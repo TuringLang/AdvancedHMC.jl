@@ -66,7 +66,8 @@ using Statistics: mean
 
     # Check if all points located at a cirle centered at the origin
     rs = sqrt.(qs.^2 + ps.^2)
-    @test all(x-> abs(x - mean(rs)) < 1e-3, rs)
+    @test all(x-> abs(x - mean(rs)) < 2e-3, rs)
+
     # Check if the Hamiltonian energy is stable
-    @test all(x-> abs(x - mean(Hs)) < 1e-3, Hs)
+    @test all(x-> abs(x - mean(Hs)) < 2e-3, Hs)
 end

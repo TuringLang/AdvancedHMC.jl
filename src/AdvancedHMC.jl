@@ -1,5 +1,7 @@
 module AdvancedHMC
 
+const DEBUG = Bool(parse(Int, get(ENV, "DEBUG_AHMC", "0")))
+
 using LinearAlgebra: cholesky
 using Statistics: mean, var
 using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot
@@ -21,7 +23,7 @@ export Hamiltonian
 include("integrator.jl")
 export Leapfrog
 include("stepsize.jl")
-export find_good_eps
+export find_good_eps, DualAveraging
 include("proposal.jl")
 export TakeLastProposal,SliceNUTS
 include("diagnosis.jl")
