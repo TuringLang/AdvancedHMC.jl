@@ -3,7 +3,7 @@ module AdvancedHMC
 const DEBUG = Bool(parse(Int, get(ENV, "DEBUG_AHMC", "0")))
 
 using LinearAlgebra: cholesky
-using Statistics: mean, var
+using Statistics: mean, var, middle
 using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot
 using LazyArrays: BroadcastArray
 using Random: GLOBAL_RNG, AbstractRNG
@@ -20,11 +20,10 @@ export Hamiltonian
 include("integrator.jl")
 export Leapfrog
 include("proposal.jl")
-export TakeLastProposal, SliceNUTS
+export TakeLastProposal, find_good_eps, SliceNUTS
 
-include("adaptation/Adaptation.jl")
-using .Adaptation
-export find_good_eps, DualAveraging
+include("adaptation.jl")
+export DualAveraging
 include("diagnosis.jl")
 include("sampler.jl")
 
