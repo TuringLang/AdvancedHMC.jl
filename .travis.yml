@@ -17,12 +17,16 @@ matrix:
 notifications:
   email: false
 
-script:
- - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
- - julia -e "using Pkg;
-             Pkg.clone(pwd(), \"https://github.com/TuringLang/AdvancedHMC.jl\");
-             Pkg.build(\"AdvancedHMC\");
-             Pkg.test(\"AdvancedHMC\"; coverage=true)"
+# script:
+#  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+#  - julia -e 'using Pkg;
+#              Pkg.clone(pwd(), "AdvancedHMC");
+#              Pkg.build("AdvancedHMC");
+#              Pkg.test("AdvancedHMC"; coverage=true)'
 
 after_success:
-  - julia -e 'using Pkg; cd(Pkg.dir("AdvancedHMC")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'
+  - julia -e 'using Pkg;
+              cd(Pkg.dir("AdvancedHMC"));
+              Pkg.add("Coverage");
+              using Coverage;
+              Coveralls.submit(process_folder())'
