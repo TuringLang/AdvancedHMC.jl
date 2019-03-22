@@ -76,6 +76,7 @@ function computeμ(ϵ::Real)
 end
 
 function reset!(dastate::DAState{TI,TF}) where {TI<:Integer,TF<:Real}
+    dastate.μ = computeμ(da.state.ϵ)
     dastate.m = zero(TI)
     dastate.x_bar = zero(TF)
     dastate.H_bar = zero(TF)
@@ -163,10 +164,10 @@ function adapt_stepsize!(da::DualAveraging, α::AbstractFloat)
     da.state.H_bar = H_bar
 end
 
-function adapt!(da::DualAveraging, α::AbstractFloat, is_updateμ::Bool=false)
+function adapt!(da::DualAveraging, θ::AbstractVector{<:Real}, α::AbstractFloat)
     adapt_stepsize!(da, α)
-    if is_updateμ
-        da.state.μ = computeμ(da.state.ϵ)
-        reset!(da.state)
-    end
+end
+
+function update(h::Hamiltonian, prop::AbstractProposal, da::DualAveraging)
+    return h, prop(getss(da))
 end

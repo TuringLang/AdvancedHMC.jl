@@ -19,10 +19,10 @@ include("hamiltonian.jl")
 export Hamiltonian
 include("integrator.jl")
 export Leapfrog
+include("proposal.jl")
+export TakeLastProposal, SliceNUTS
 include("stepsize.jl")
 export find_good_eps, DualAveraging
-include("proposal.jl")
-export TakeLastProposal,SliceNUTS
 include("diagnosis.jl")
 include("sampler.jl")
 
