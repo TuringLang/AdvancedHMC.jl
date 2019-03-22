@@ -1,5 +1,3 @@
-using Statistics: middle
-
 function find_good_eps(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=100) where {T<:Real}
     ϵ′ = ϵ = 0.1
     a_min, a_cross, a_max = 0.25, 0.5, 0.75 # minimal, crossing, maximal accept ratio
@@ -19,11 +17,9 @@ function find_good_eps(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; 
         ϵ′ = direction == 1 ? d * ϵ : 1 / d * ϵ
         θ′, r′, _is_valid = step(Leapfrog(ϵ′), h, θ′, r′)
         H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
-        AdvancedHMC.DEBUG && @debug "direction = $direction, H = $H_new"
 
         ΔH = H - H_new
-
-        AdvancedHMC.DEBUG && @debug "ϵ = $ϵ′, accept ratio a = $(min(1,(exp(ΔH))))"
+        AdvancedHMC.DEBUG && @debug "Crossing step" direction H_new ϵ "α = $(min(1, exp(ΔH)))"
         if (direction == 1) && !(ΔH > log(a_cross))
             break
         elseif (direction == -1) && !(ΔH < log(a_cross))
@@ -42,8 +38,7 @@ function find_good_eps(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; 
         H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
 
         ΔH = H - H_new
-
-        AdvancedHMC.DEBUG && @debug "ϵ = $ϵ′, accept ratio a = $(min(1,(exp(ΔH))))"
+        AdvancedHMC.DEBUG && @debug "Bisection step" H_new ϵ_mid "α = $(min(1, exp(ΔH)))"
         if (exp(ΔH) > a_max)
             ϵ = ϵ_mid
         elseif (exp(ΔH) < a_min)
@@ -136,8 +131,7 @@ end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
 function adapt_stepsize!(da::DualAveraging, α::AbstractFloat)
-    AdvancedHMC.DEBUG && @debug "adapting step size ϵ..."
-    AdvancedHMC.DEBUG && @debug "current α = $(α)"
+    AdvancedHMC.DEBUG && @debug "Adapting step size..." α
     da.state.m += 1
     m = da.state.m
 
@@ -155,7 +149,7 @@ function adapt_stepsize!(da::DualAveraging, α::AbstractFloat)
     x_bar = (1.0 - η_x) * x_bar + η_x * x
 
     ϵ = exp(x)
-    AdvancedHMC.DEBUG && @debug "new ϵ = $(ϵ), old ϵ = $(da.state.ϵ)"
+    AdvancedHMC.DEBUG && @debug "Adapting step size..." "new ϵ = $ϵ" "old ϵ = $(da.state.ϵ)"
 
     if isnan(ϵ) || isinf(ϵ)
         @warn "Incorrect ϵ = $ϵ; ϵ_previous = $(da.state.ϵ) is used instead."

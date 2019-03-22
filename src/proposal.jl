@@ -79,9 +79,8 @@ function propose(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ:
     logu = log(rand(rng)) - H
 
     θm = θ; θp = θ; rm = r; rp = r; j = 0; θ_new = θ; r_new = r; n = 1; s = 1
-
+    
     local α, nα
-
     while s == 1 && j <= j_max
         v = rand(rng, [-1, 1])
         if v == -1
