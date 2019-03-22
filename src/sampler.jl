@@ -15,7 +15,7 @@ function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n
     return θs
 end
 
-function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int, adapter::AbstractAdapter,
+function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int, adapter::Adaptation.AbstractAdapter,
                 n_adapts::Int=min(div(n_samples, 10), 1_000); verbose::Bool=true) where {T<:Real}
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
