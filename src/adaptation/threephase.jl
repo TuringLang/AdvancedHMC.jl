@@ -62,10 +62,10 @@ function adapt!(tp::ThreePhaseAdapter, θ::AbstractVector{<:Real}, α::AbstractF
     adapt!(tp.ssa, θ, α)
 
     # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/adapt_diag_e_nuts.hpp
-    # TODO: consider adding a filed in pc called `update_every`
     if is_in_window(tp)
         adapt!(tp.pc, θ, α, false)
     elseif is_window_end(tp)
+        # TODO: consider make the boolean variable as part of reset! (similar to what happens to μ)
         adapt!(tp.pc, θ, α, true)
     end
 
