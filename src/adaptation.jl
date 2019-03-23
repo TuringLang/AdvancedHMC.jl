@@ -18,14 +18,10 @@ function PreConditioner(m::DenseEuclideanMetric)
     return DensePreConditioner(m.dim)
 end
 
-function update(h::Hamiltonian, prop::AbstractProposal, ::UnitPreConditioner)
-    return h, prop
-end
-
-function update(h::Hamiltonian, prop::AbstractProposal, dpc::DiagPreConditioner)
+function update(h::Hamiltonian, prop::AbstractProposal, dpc::Adaptation.AbstractPreConditioner)
     return h(getM⁻¹(dpc)), prop
 end
 
-function update(h::Hamiltonian, prop::AbstractProposal, dpc::DensePreConditioner)
-    return h(getM⁻¹(dpc)), prop
+function update(h::Hamiltonian, prop::AbstractProposal, ca::Adaptation.AbstractCompositeAdapter)
+    return h(getM⁻¹(ca.pc)), prop(getss(ca.ssa))
 end

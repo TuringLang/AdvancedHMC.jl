@@ -87,12 +87,10 @@ end
 abstract type AbstractPreConditioner <: AbstractAdapter end
 struct UnitPreConditioner <: AbstractPreConditioner end
 
-function Base.string(::UnitPreConditioner)
-    return string([1.0])
-end
-
-adapt!(::UnitPreConditioner, ::AbstractVector{<:Real}, ::AbstractFloat) = nothing
+string(::UnitPreConditioner) = "I"
+adapt!(::UnitPreConditioner, ::AbstractVector{<:Real}, ::AbstractFloat, is_update::Bool=true) = nothing
 reset!(::UnitPreConditioner) = nothing
+getM⁻¹(dpc::UnitPreConditioner) = nothing
 
 mutable struct DiagPreConditioner{T<:Real,AT<:AbstractVector{T}} <: AbstractPreConditioner
     n_min   :: Int
@@ -105,7 +103,7 @@ function DiagPreConditioner(d::Int, n_min::Int=10)
     return DiagPreConditioner(n_min, ve, Vector(ones(d)))
 end
 
-function Base.string(dpc::DiagPreConditioner)
+function string(dpc::DiagPreConditioner)
     return string(dpc.var)
 end
 
@@ -135,7 +133,7 @@ function DensePreConditioner(d::Integer, n_min::Int=10)
     return DensePreConditioner(n_min, ce, LinearAlgebra.diagm(0 => ones(d)))
 end
 
-function Base.string(dpc::DensePreConditioner)
+function string(dpc::DensePreConditioner)
     return string(LinearAlgebra.diag(dpc.covar))
 end
 

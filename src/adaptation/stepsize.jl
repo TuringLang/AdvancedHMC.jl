@@ -20,7 +20,7 @@ function computeμ(ϵ::AbstractFloat)
 end
 
 function reset!(dastate::DAState{T}) where {T<:AbstractFloat}
-    dastate.μ = computeμ(da.state.ϵ)
+    dastate.μ = computeμ(dastate.ϵ)
     dastate.m = 0
     dastate.x_bar = zero(T)
     dastate.H_bar = zero(T)
@@ -108,6 +108,10 @@ function adapt_stepsize!(da::DualAveraging, α::AbstractFloat)
     da.state.H_bar = H_bar
 end
 
-function adapt!(da::DualAveraging, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat)
-    adapt_stepsize!(da, α)
+function adapt!(da::DualAveraging, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat, is_final::Bool=false)
+    if is_final
+        da.state.ϵ = exp(da.state.x_bar)
+    else
+        adapt_stepsize!(da, α)
+    end
 end

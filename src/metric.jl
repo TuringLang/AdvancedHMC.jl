@@ -8,6 +8,10 @@ function UnitEuclideanMetric(θ::A) where {T<:Real,A<:AbstractVector{T}}
     return UnitEuclideanMetric{T}(length(θ))
 end
 
+function (ue::UnitEuclideanMetric{T})(::Nothing) where {T<:Real}
+    return UnitEuclideanMetric{T}(ue.dim)
+end
+
 struct DiagEuclideanMetric{T<:Real,A<:AbstractVector{T}} <: AbstractMetric{T}
     dim     :: Int
     # Diagnal of the inverse of the mass matrix

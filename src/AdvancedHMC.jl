@@ -23,7 +23,7 @@ include("proposal.jl")
 export TakeLastProposal, find_good_eps, SliceNUTS
 
 include("adaptation.jl")
-export DualAveraging, PreConditioner
+export DualAveraging, PreConditioner, NaiveCompAdapter, ThreePhaseAdapter
 include("diagnosis.jl")
 include("sampler.jl")
 

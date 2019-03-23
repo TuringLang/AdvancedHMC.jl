@@ -12,13 +12,14 @@ end
 ### Adapterers ###
 ################
 
+# TODO: currently only ThreePhaseAdapter has the filed `n_adapts`. maybe we could unify all
 # Acknowledgement: this adaption settings is mimicing Stan's 3-phase adaptation.
-struct ThreePhaseAdapter <: CompositeAdapter
-    n_adapts    :: T
+struct ThreePhaseAdapter <: AbstractCompositeAdapter
+    n_adapts    :: Int
     pc          :: AbstractPreConditioner
     ssa         :: StepSizeAdapter
-    init_buffer :: T
-    term_buffer :: T
+    init_buffer :: Int
+    term_buffer :: Int
     state       :: ThreePhaseState
 end
 
@@ -56,25 +57,23 @@ end
 function adapt!(tp::ThreePhaseAdapter, θ::AbstractVector{<:Real}, α::AbstractFloat)
     if tp.state.n < tp.n_adapts
         tp.state.n += 1
-        if tp.state.n == tp.n_adapts
-            tp.ssa.state.ϵ = exp(tp.ssa.state.x_bar)
-            @info " Adapted ϵ = $(getss(tp)), std = $(string(tp.pc)); $(tp.state.n) iterations is used for adaption."
-        else
-            adapt!(tp.ssa, θ, α)
 
-            # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/adapt_diag_e_nuts.hpp
-            if in_adaptation(tp)
-                is_update = is_windowend(tp)
-                adapt!(tp.pc, θ, α, is_update)
-            end
+        is_final = tp.state.n == tp.n_adapts
+        adapt!(tp.ssa, θ, α, is_final)
 
-            if is_windowend(tp)
-                reset!(tp.ssa)
-                reset!(tp.pc)
-            end
-
-            # If window ends, compute next window
-            is_windowend(tp) && compute_next_window!(tp)
+        # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/adapt_diag_e_nuts.hpp
+        # TODO: consider adding a filed in pc called `update_every`
+        if in_adaptation(tp)
+            is_update = is_windowend(tp)
+            adapt!(tp.pc, θ, α, is_update)
         end
+
+        if is_windowend(tp)
+            reset!(tp.ssa)
+            reset!(tp.pc)
+        end
+
+        # If window ends, compute next window
+        is_windowend(tp) && compute_next_window!(tp)
     end
 end
