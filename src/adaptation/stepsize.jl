@@ -52,6 +52,8 @@ struct DualAveraging{T<:AbstractFloat} <: StepSizeAdapter
   state :: DAState{T}
 end
 
+reset!(da::DualAveraging) = reset!(da.state)
+
 function DualAveraging(γ::AbstractFloat, t_0::AbstractFloat, κ::AbstractFloat, δ::AbstractFloat, ϵ::AbstractFloat)
     return DualAveraging(γ, t_0, κ, δ, DAState(ϵ))
 end

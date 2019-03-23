@@ -92,61 +92,62 @@ function Base.string(::UnitPreConditioner)
 end
 
 adapt!(::UnitPreConditioner, ::AbstractVector{<:Real}, ::AbstractFloat) = nothing
+reset!(::UnitPreConditioner) = nothing
 
 mutable struct DiagPreConditioner{T<:Real,AT<:AbstractVector{T}} <: AbstractPreConditioner
+    n_min   :: Int
     ve  :: VarEstimator{T}
     var :: AT
-    is_updated :: Bool
 end
 
-function DiagPreConditioner(d::Int)
+function DiagPreConditioner(d::Int, n_min::Int=10)
     ve = WelfordVar(0, zeros(d), zeros(d))
-    return DiagPreConditioner(ve, Vector(ones(d)), false)
+    return DiagPreConditioner(n_min, ve, Vector(ones(d)))
 end
 
 function Base.string(dpc::DiagPreConditioner)
     return string(dpc.var)
 end
 
-function adapt!(dpc::DiagPreConditioner, θ::AbstractVector{<:Real}, α::AbstractFloat)
+function adapt!(dpc::DiagPreConditioner, θ::AbstractVector{<:Real}, α::AbstractFloat, is_update::Bool=true)
     add_sample!(dpc.ve, θ)
-    dpc.is_updated = false
+    if dpc.ve.n >= dpc.n_min && is_update
+        dpc.var .= get_var(dpc.ve)
+    end
 end
 
+reset!(dpc::DiagPreConditioner) = reset!(dpc.ve)
+
 function getM⁻¹(dpc::DiagPreConditioner)
-    if !dpc.is_updated
-        dpc.var .= get_var(dpc.ve)
-        dpc.is_updated = true
-    end
     return dpc.var
 end
 
 mutable struct DensePreConditioner{TI<:Integer,TF<:Real} <: AbstractPreConditioner
+    n_min :: Int
     ce    :: CovarEstimator{TI,TF}
     covar :: Matrix{TF}
-    is_updated :: Bool
 end
 
-function DensePreConditioner(d::Integer)
+function DensePreConditioner(d::Integer, n_min::Int=10)
     ce = WelfordCovar(0, zeros(d), zeros(d,d))
     # TODO: take use of the line below when we have an interface to set which pre-conditioner to use
     # ce = NaiveCovar(0, Vector{Vector{Float64}}())
-    return DensePreConditioner(ce, LinearAlgebra.diagm(0 => ones(d)), false)
+    return DensePreConditioner(n_min, ce, LinearAlgebra.diagm(0 => ones(d)))
 end
 
 function Base.string(dpc::DensePreConditioner)
     return string(LinearAlgebra.diag(dpc.covar))
 end
 
-function adapt!(dpc::DensePreConditioner, θ::AbstractVector{<:Real}, α::AbstractFloat, )
+function adapt!(dpc::DensePreConditioner, θ::AbstractVector{<:Real}, α::AbstractFloat, is_update::Bool=true)
     add_sample!(dpc.ce, θ)
-    dpc.is_updated = false
+    if dpc.ce.n >= dpc.n_min && is_update
+        dpc.covar .= get_covar(dpc.ce)
+    end
 end
 
+reset!(dpc::DensePreConditioner) = reset!(dpc.ce)
+
 function getM⁻¹(dpc::DensePreConditioner)
-    if !dpc.is_updated
-        dpc.covar .= get_covar(dpc.ce)
-        dpc.is_updated = true
-    end
     return dpc.covar
 end

@@ -23,9 +23,9 @@ function update(h::Hamiltonian, prop::AbstractProposal, ::UnitPreConditioner)
 end
 
 function update(h::Hamiltonian, prop::AbstractProposal, dpc::DiagPreConditioner)
-    return dpc.ve.n > 20 ? h(getM⁻¹(dpc)) : h, prop
+    return h(getM⁻¹(dpc)), prop
 end
 
 function update(h::Hamiltonian, prop::AbstractProposal, dpc::DensePreConditioner)
-    return dpc.ce.n > 20 ? h(getM⁻¹(dpc)) : h, prop
+    return h(getM⁻¹(dpc)), prop
 end
