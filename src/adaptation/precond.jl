@@ -6,13 +6,13 @@
 abstract type VarEstimator{T} end
 
 # Ref： https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_var_estimator.hpp
-mutable struct WelfordVar{T<:Real,AT<:AbstractVector{T}} <: VarEstimator{T}
+mutable struct WelfordVar{T<:AbstractFloat,AT<:AbstractVector{T}} <: VarEstimator{T}
     n :: Int
     μ :: AT
     M :: AT
 end
 
-function reset!(wv::WelfordVar{T,AT}) where {T<:Real,AT<:AbstractVector{T}}
+function reset!(wv::WelfordVar{T,AT}) where {T<:AbstractFloat,AT<:AbstractVector{T}}
     wv.n = 0
     wv.μ .= zero(T)
     wv.M .= zero(T)
@@ -26,18 +26,18 @@ function add_sample!(wv::WelfordVar, s::AbstractVector)
 end
 
 # https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
-function get_var(wv::VarEstimator{T})::Vector{T} where {T<:Real,AT<:AbstractVector{T}}
+function get_var(wv::WelfordVar{T,AT})::AT where {T<:AbstractFloat,AT<:AbstractVector{T}}
     n, M = wv.n, wv.M
     @assert n >= 2 "Cannot get variance with only one sample"
     return (n / ((n + 5) * (n - 1))) .* M .+ 1e-3 * (5 / (n + 5))
 end
 
-abstract type CovarEstimator{TI<:Integer,TF<:Real} end
+abstract type CovarEstimator{T} end
 
 # NOTE: this naive covariance estimator is used only in testing
-mutable struct NaiveCovar{TI,TF} <: CovarEstimator{TI,TF}
-    n :: TI
-    S :: Vector{Vector{TF}}
+mutable struct NaiveCovar{T} <: CovarEstimator{T}
+    n :: Int
+    S :: Vector{Vector{T}}
 end
 
 function add_sample!(nc::NaiveCovar, s::AbstractVector)
@@ -45,27 +45,27 @@ function add_sample!(nc::NaiveCovar, s::AbstractVector)
     push!(nc.S, s)
 end
 
-function reset!(nc::NaiveCovar{TI,TF}) where {TI<:Integer,TF<:Real}
-    nc.n = zero(TI)
-    nc.S = Vector{Vector{TF}}()
+function reset!(nc::NaiveCovar{T}) where {T<:AbstractFloat}
+    nc.n = 0
+    nc.S = Vector{Vector{T}}()
 end
 
-function get_covar(nc::NaiveCovar{TI,TF})::Matrix{TF} where {TI<:Integer,TF<:Real}
+function get_covar(nc::NaiveCovar{T})::Matrix{T} where {T<:AbstractFloat}
     @assert nc.n >= 2 "Cannot get variance with only one sample"
     return Statistics.cov(nc.S)
 end
 
 # Ref: https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_covar_estimator.hpp
-mutable struct WelfordCovar{TI<:Integer,TF<:Real} <: CovarEstimator{TI,TF}
-    n :: TI
-    μ :: Vector{TF}
-    M :: Matrix{TF}
+mutable struct WelfordCovar{T<:AbstractFloat} <: CovarEstimator{T}
+    n :: Int
+    μ :: Vector{T}
+    M :: Matrix{T}
 end
 
-function reset!(wc::WelfordCovar{TI,TF}) where {TI<:Integer,TF<:Real}
-    wc.n = zero(TI)
-    wc.μ .= zero(TF)
-    wc.M .= zero(TF)
+function reset!(wc::WelfordCovar{T}) where {T<:AbstractFloat}
+    wc.n = 0
+    wc.μ .= zero(T)
+    wc.M .= zero(T)
 end
 
 function add_sample!(wc::WelfordCovar, s::AbstractVector)
@@ -75,7 +75,7 @@ function add_sample!(wc::WelfordCovar, s::AbstractVector)
     wc.M .+= (s .- wc.μ) * δ'
 end
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/covar_adaptation.hpp
-function get_covar(wc::WelfordCovar{TI,TF})::Matrix{TF} where {TI<:Integer,TF<:Real}
+function get_covar(wc::WelfordCovar{T})::Matrix{T} where {T<:AbstractFloat}
     n, M = wc.n, wc.M
     @assert n >= 2 "Cannot get variance with only one sample"
     return (n / ((n + 5) * (n - 1))) .* M + 1e-3 * (5 / (n + 5)) * LinearAlgebra.I
@@ -121,10 +121,10 @@ function getM⁻¹(dpc::DiagPreConditioner)
     return dpc.var
 end
 
-mutable struct DensePreConditioner{TI<:Integer,TF<:Real} <: AbstractPreConditioner
+mutable struct DensePreConditioner{T<:AbstractFloat} <: AbstractPreConditioner
     n_min :: Int
-    ce    :: CovarEstimator{TI,TF}
-    covar :: Matrix{TF}
+    ce    :: CovarEstimator{T}
+    covar :: Matrix{T}
 end
 
 function DensePreConditioner(d::Integer, n_min::Int=10)
@@ -138,7 +138,7 @@ function string(dpc::DensePreConditioner)
     return string(LinearAlgebra.diag(dpc.covar))
 end
 
-function adapt!(dpc::DensePreConditioner, θ::AbstractVector{<:Real}, α::AbstractFloat, is_update::Bool=true)
+function adapt!(dpc::DensePreConditioner, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat, is_update::Bool=true)
     add_sample!(dpc.ce, θ)
     if dpc.ce.n >= dpc.n_min && is_update
         dpc.covar .= get_covar(dpc.ce)
