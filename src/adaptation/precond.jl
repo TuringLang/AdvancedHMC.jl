@@ -84,6 +84,7 @@ end
 ################
 ### Adapters ###
 ################
+# TODO: integrate metric into preconditioner
 abstract type AbstractPreConditioner <: AbstractAdapter end
 struct UnitPreConditioner <: AbstractPreConditioner end
 

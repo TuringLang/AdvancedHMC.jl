@@ -3,7 +3,7 @@
 ######################
 
 mutable struct ThreePhaseState
-    n           :: Int
+    i           :: Int
     window_size :: Int
     next_window :: Int
 end
@@ -30,21 +30,23 @@ function ThreePhaseAdapter(n_adapts::Int, pc::AbstractPreConditioner, ssa::StepS
 end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/windowed_adaptation.hpp
-function in_adaptation(tp::ThreePhaseAdapter)
-    return (tp.state.n >= tp.init_buffer) &&
-           (tp.state.n < tp.n_adapts - tp.term_buffer) &&
-           (tp.state.n != tp.n_adapts)
+function is_in_window(tp::ThreePhaseAdapter)
+    return (tp.state.i >= tp.init_buffer) &&
+           (tp.state.i < tp.n_adapts - tp.term_buffer) &&
+           (tp.state.i != tp.n_adapts)
 end
 
-function is_windowend(tp::ThreePhaseAdapter)
-    return (tp.state.n == tp.state.next_window) &&
-           (tp.state.n != tp.n_adapts)
+function is_window_end(tp::ThreePhaseAdapter)
+    return (tp.state.i == tp.state.next_window) &&
+           (tp.state.i != tp.n_adapts)
 end
+
+is_final(tp::ThreePhaseAdapter) = tp.state.i == tp.n_adapts
 
 function compute_next_window!(tp::ThreePhaseAdapter)
     if ~(tp.state.next_window == tp.n_adapts - tp.term_buffer - 1)
         tp.state.window_size *= 2
-        tp.state.next_window = tp.state.n + tp.state.window_size
+        tp.state.next_window = tp.state.i + tp.state.window_size
         if ~(tp.state.next_window == tp.n_adapts - tp.term_buffer - 1)
             next_window_boundary = tp.state.next_window + 2 * tp.state.window_size
             if (next_window_boundary >= tp.n_adapts - tp.term_buffer)
@@ -55,25 +57,27 @@ function compute_next_window!(tp::ThreePhaseAdapter)
 end
 
 function adapt!(tp::ThreePhaseAdapter, θ::AbstractVector{<:Real}, α::AbstractFloat)
-    if tp.state.n < tp.n_adapts
-        tp.state.n += 1
+    tp.state.i += 1
 
-        is_final = tp.state.n == tp.n_adapts
-        adapt!(tp.ssa, θ, α, is_final)
+    adapt!(tp.ssa, θ, α)
 
-        # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/adapt_diag_e_nuts.hpp
-        # TODO: consider adding a filed in pc called `update_every`
-        if in_adaptation(tp)
-            is_update = is_windowend(tp)
-            adapt!(tp.pc, θ, α, is_update)
-        end
-
-        if is_windowend(tp)
-            reset!(tp.ssa)
-            reset!(tp.pc)
-        end
-
-        # If window ends, compute next window
-        is_windowend(tp) && compute_next_window!(tp)
+    # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/adapt_diag_e_nuts.hpp
+    # TODO: consider adding a filed in pc called `update_every`
+    if is_in_window(tp)
+        adapt!(tp.pc, θ, α, false)
+    elseif is_window_end(tp)
+        adapt!(tp.pc, θ, α, true)
     end
+
+    if is_window_end(tp)
+        reset!(tp.ssa)
+        reset!(tp.pc)
+    end
+
+    if is_final(tp)
+        finalize!(tp.ssa)
+    end
+
+    # If window ends, compute next window
+    is_window_end(tp) && compute_next_window!(tp)
 end

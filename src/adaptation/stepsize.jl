@@ -108,10 +108,10 @@ function adapt_stepsize!(da::DualAveraging, α::AbstractFloat)
     da.state.H_bar = H_bar
 end
 
-function adapt!(da::DualAveraging, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat, is_final::Bool=false)
-    if is_final
-        da.state.ϵ = exp(da.state.x_bar)
-    else
-        adapt_stepsize!(da, α)
-    end
+function adapt!(da::DualAveraging, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat)
+    adapt_stepsize!(da, α)
+end
+
+function finalize!(da::DualAveraging)
+    da.state.ϵ = exp(da.state.x_bar)
 end
