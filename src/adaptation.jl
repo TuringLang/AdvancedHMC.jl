@@ -2,7 +2,7 @@ include("adaptation/Adaptation.jl")
 
 using .Adaptation
 
-function update(h::Hamiltonian, prop::AbstractProposal, da::DualAveraging)
+function update(h::Hamiltonian, prop::AbstractProposal, da::NesterovDualAveraging)
     return h, prop(getϵ(da))
 end
 

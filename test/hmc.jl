@@ -18,9 +18,9 @@ n_adapts = 1_000
                                       NUTS(Leapfrog(find_good_eps(h, θ_init)))]
             samples = AdvancedHMC.sample(h, prop, θ_init, n_samples; verbose=false)
             @test mean(samples) ≈ zeros(D) atol=RNDATOL
-            @testset "$typeof(adapter)" for adapter in [PreConditioner(metric), DualAveraging(0.8, prop.integrator.ϵ),
-                                                NaiveCompAdapter(PreConditioner(metric), DualAveraging(0.8, prop.integrator.ϵ)),
-                                                ThreePhaseAdapter(n_adapts, PreConditioner(metric), DualAveraging(0.8, prop.integrator.ϵ))]
+            @testset "$typeof(adapter)" for adapter in [PreConditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ),
+                                                NaiveCompAdapter(PreConditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ)),
+                                                ThreePhaseAdapter(n_adapts, PreConditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))]
                 samples = AdvancedHMC.sample(h, prop, θ_init, n_samples, adapter, n_adapts; verbose=false)
                 @test mean(samples) ≈ zeros(D) atol=RNDATOL
             end

@@ -44,7 +44,7 @@ function getϵ(fss::FixedStepSize)
     return fss.ϵ
 end
 
-struct DualAveraging{T<:AbstractFloat} <: StepSizeAdapter
+struct NesterovDualAveraging{T<:AbstractFloat} <: StepSizeAdapter
   γ     :: T
   t_0   :: T
   κ     :: T
@@ -52,17 +52,17 @@ struct DualAveraging{T<:AbstractFloat} <: StepSizeAdapter
   state :: DAState{T}
 end
 
-reset!(da::DualAveraging) = reset!(da.state)
+reset!(da::NesterovDualAveraging) = reset!(da.state)
 
-function DualAveraging(γ::AbstractFloat, t_0::AbstractFloat, κ::AbstractFloat, δ::AbstractFloat, ϵ::AbstractFloat)
-    return DualAveraging(γ, t_0, κ, δ, DAState(ϵ))
+function NesterovDualAveraging(γ::AbstractFloat, t_0::AbstractFloat, κ::AbstractFloat, δ::AbstractFloat, ϵ::AbstractFloat)
+    return NesterovDualAveraging(γ, t_0, κ, δ, DAState(ϵ))
 end
 
-function DualAveraging(δ::AbstractFloat, ϵ::AbstractFloat)
-    return DualAveraging(0.05, 10.0, 0.75, δ, ϵ)
+function NesterovDualAveraging(δ::AbstractFloat, ϵ::AbstractFloat)
+    return NesterovDualAveraging(0.05, 10.0, 0.75, δ, ϵ)
 end
 
-function getϵ(da::DualAveraging)
+function getϵ(da::NesterovDualAveraging)
     return da.state.ϵ
 end
 
@@ -76,7 +76,7 @@ end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
 # TODO: merge this function with adapt!
-function adapt_stepsize!(da::DualAveraging, α::AbstractFloat)
+function adapt_stepsize!(da::NesterovDualAveraging, α::AbstractFloat)
     DEBUG && @debug "Adapting step size..." α
     da.state.m += 1
     m = da.state.m
@@ -109,10 +109,10 @@ function adapt_stepsize!(da::DualAveraging, α::AbstractFloat)
     da.state.H_bar = H_bar
 end
 
-function adapt!(da::DualAveraging, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat)
+function adapt!(da::NesterovDualAveraging, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat)
     adapt_stepsize!(da, α)
 end
 
-function finalize!(da::DualAveraging)
+function finalize!(da::NesterovDualAveraging)
     da.state.ϵ = exp(da.state.x_bar)
 end
