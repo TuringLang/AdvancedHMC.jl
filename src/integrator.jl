@@ -4,6 +4,7 @@ struct Leapfrog{T<:AbstractFloat} <: AbstractIntegrator
     ϵ   ::  T
 end
 
+# Create a `Leapfrog` with a new `ϵ`
 function (::Leapfrog)(ϵ::AbstractFloat)
     return Leapfrog(ϵ)
 end

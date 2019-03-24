@@ -7,6 +7,7 @@ struct TakeLastProposal{I<:AbstractIntegrator} <: StaticTrajectory{I}
     n_steps     ::  Int
 end
 
+# Create a `TakeLastProposal` with a new `ϵ`
 function (tlp::TakeLastProposal)(ϵ::AbstractFloat)
     return TakeLastProposal(tlp.integrator(ϵ), tlp.n_steps)
 end
@@ -22,6 +23,7 @@ struct SliceNUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
     integrator  ::  I
 end
 
+# Create a `SliceNUTS` with a new `ϵ`
 function (snuts::SliceNUTS)(ϵ::AbstractFloat)
     return SliceNUTS(snuts.integrator(ϵ))
 end

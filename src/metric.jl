@@ -8,6 +8,7 @@ function UnitEuclideanMetric(θ::A) where {T<:Real,A<:AbstractVector{T}}
     return UnitEuclideanMetric{T}(length(θ))
 end
 
+# Create a `UnitEuclideanMetric`; required for an unified interface
 function (ue::UnitEuclideanMetric{T})(::Nothing) where {T<:Real}
     return UnitEuclideanMetric{T}(ue.dim)
 end
@@ -22,6 +23,7 @@ struct DiagEuclideanMetric{T<:Real,A<:AbstractVector{T}} <: AbstractMetric{T}
     _temp   ::  A
 end
 
+# Create a `DiagEuclideanMetric` with a new `M⁻¹`
 function (::DiagEuclideanMetric)(M⁻¹::A) where {T<:Real,A<:AbstractVector{T}}
     return DiagEuclideanMetric(M⁻¹)
 end
@@ -46,6 +48,7 @@ struct DenseEuclideanMetric{T<:Real,AV<:AbstractVector{T},AM<:AbstractMatrix{T}}
     _temp   ::  AV
 end
 
+# Create a `DenseEuclideanMetric` with a new `M⁻¹`
 function (::DenseEuclideanMetric)(M⁻¹::A) where {T<:Real,A<:AbstractMatrix{T}}
     return DenseEuclideanMetric(M⁻¹)
 end
