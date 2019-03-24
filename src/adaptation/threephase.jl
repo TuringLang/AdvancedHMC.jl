@@ -13,6 +13,7 @@ end
 ################
 
 # TODO: currently only ThreePhaseAdapter has the filed `n_adapts`. maybe we could unify all
+# TODO: rename this to `StanNUTSAdapter`
 # Acknowledgement: this adaption settings is mimicing Stan's 3-phase adaptation.
 struct ThreePhaseAdapter <: AbstractCompositeAdapter
     n_adapts    :: Int

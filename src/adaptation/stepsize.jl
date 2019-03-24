@@ -75,6 +75,7 @@ function getss(mssa::ManualSSAdapter)
 end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
+# TODO: merge this function with adapt!
 function adapt_stepsize!(da::DualAveraging, α::AbstractFloat)
     DEBUG && @debug "Adapting step size..." α
     da.state.m += 1
