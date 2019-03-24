@@ -32,9 +32,9 @@ end
 
 include("threephase.jl")
 
-export adapt!,
-       DualAveraging, getss,
-       UnitPreConditioner, DiagPreConditioner, DensePreConditioner, getM⁻¹,
+export adapt!, getss, getM⁻¹,
+       DualAveraging,
+       UnitPreConditioner, DiagPreConditioner, DensePreConditioner,
        NaiveCompAdapter, ThreePhaseAdapter
 
 end # module
