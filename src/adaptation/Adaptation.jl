@@ -35,6 +35,6 @@ include("threephase.jl")
 export adapt!, getϵ, getM⁻¹,
        NesterovDualAveraging,
        UnitPreConditioner, DiagPreConditioner, DensePreConditioner,
-       NaiveCompAdapter, ThreePhaseAdapter
+       NaiveCompAdapter, StanNUTSAdapter
 
 end # module

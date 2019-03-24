@@ -12,10 +12,9 @@ end
 ### Adapterers ###
 ################
 
-# TODO: currently only ThreePhaseAdapter has the filed `n_adapts`. maybe we could unify all
-# TODO: rename this to `StanNUTSAdapter`
+# TODO: currently only StanNUTSAdapter has the filed `n_adapts`. maybe we could unify all
 # Acknowledgement: this adaption settings is mimicing Stan's 3-phase adaptation.
-struct ThreePhaseAdapter <: AbstractCompositeAdapter
+struct StanNUTSAdapter <: AbstractCompositeAdapter
     n_adapts    :: Int
     pc          :: AbstractPreConditioner
     ssa         :: StepSizeAdapter
@@ -24,27 +23,27 @@ struct ThreePhaseAdapter <: AbstractCompositeAdapter
     state       :: ThreePhaseState
 end
 
-function ThreePhaseAdapter(n_adapts::Int, pc::AbstractPreConditioner, ssa::StepSizeAdapter,
-                           init_buffer::Int=75, term_buffer::Int=50, window_size::Int=25)
+function StanNUTSAdapter(n_adapts::Int, pc::AbstractPreConditioner, ssa::StepSizeAdapter,
+                         init_buffer::Int=75, term_buffer::Int=50, window_size::Int=25)
     next_window = init_buffer + window_size - 1
-    return ThreePhaseAdapter(n_adapts, pc, ssa, init_buffer, term_buffer, ThreePhaseState(0, window_size, next_window))
+    return StanNUTSAdapter(n_adapts, pc, ssa, init_buffer, term_buffer, ThreePhaseState(0, window_size, next_window))
 end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/windowed_adaptation.hpp
-function is_in_window(tp::ThreePhaseAdapter)
+function is_in_window(tp::StanNUTSAdapter)
     return (tp.state.i >= tp.init_buffer) &&
            (tp.state.i < tp.n_adapts - tp.term_buffer) &&
            (tp.state.i != tp.n_adapts)
 end
 
-function is_window_end(tp::ThreePhaseAdapter)
+function is_window_end(tp::StanNUTSAdapter)
     return (tp.state.i == tp.state.next_window) &&
            (tp.state.i != tp.n_adapts)
 end
 
-is_final(tp::ThreePhaseAdapter) = tp.state.i == tp.n_adapts
+is_final(tp::StanNUTSAdapter) = tp.state.i == tp.n_adapts
 
-function compute_next_window!(tp::ThreePhaseAdapter)
+function compute_next_window!(tp::StanNUTSAdapter)
     if ~(tp.state.next_window == tp.n_adapts - tp.term_buffer - 1)
         tp.state.window_size *= 2
         tp.state.next_window = tp.state.i + tp.state.window_size
@@ -57,7 +56,7 @@ function compute_next_window!(tp::ThreePhaseAdapter)
     end
 end
 
-function adapt!(tp::ThreePhaseAdapter, θ::AbstractVector{<:Real}, α::AbstractFloat)
+function adapt!(tp::StanNUTSAdapter, θ::AbstractVector{<:Real}, α::AbstractFloat)
     tp.state.i += 1
 
     adapt!(tp.ssa, θ, α)

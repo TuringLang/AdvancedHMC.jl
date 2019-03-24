@@ -10,7 +10,7 @@ r_init = AdvancedHMC.rand_momentum(h)
 
 n_steps = 10
 
-@testset "step() against steps()" begin
+@testset "step(::Leapfrog) against steps(::Leapfrog)" begin
     θ_step, r_step = copy(θ_init), copy(r_init)
 
     t_step = @elapsed for i = 1:n_steps
@@ -26,7 +26,7 @@ n_steps = 10
 end
 
 using Turing: Inference
-@testset "steps() against Turing.Inference._leapfrog()" begin
+@testset "steps(::Leapfrog) against Turing.Inference._leapfrog()" begin
     t_Turing = @elapsed θ_Turing, r_Turing, _ = Inference._leapfrog(θ_init, r_init, n_steps, ϵ, x -> (nothing, ∂logπ∂θ(x)))
     t_AHMC = @elapsed θ_AHMC, r_AHMC, _ = AdvancedHMC.steps(lf, h, θ_init, r_init, n_steps)
     @info "Performance of leapfrog of AdvancedHMC v.s. Turing" n_steps t_Turing t_AHMC t_Turing / t_AHMC

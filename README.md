@@ -17,6 +17,7 @@ logπ(θ::AbstractVector{T}) where {T<:Real} = logpdf(MvNormal(zeros(D), ones(D)
 ϵ = 0.02
 n_steps = 20
 n_samples = 100_000
+n_adapts = 2_000
 
 # Initial points
 θ_init = randn(D)
@@ -25,9 +26,10 @@ n_samples = 100_000
 metric = UnitEuclideanMetric(θ_init)
 h = Hamiltonian(metric, logπ, ∂logπ∂θ)
 prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
+adapter = StanNUTSAdapter(n_adapts, PreConditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))
 
 # Sampling
-samples = AdvancedHMC.sample(h, prop, θ_init, n_samples)
+samples = AdvancedHMC.sample(h, prop, θ_init, n_samples, adapter, n_adapts)
 ```
 
 ## Reference
