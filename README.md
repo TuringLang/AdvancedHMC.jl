@@ -24,7 +24,7 @@ n_samples = 100_000
 # Define metric space, Hamiltonian and sampling method
 metric = UnitEuclideanMetric(θ_init)
 h = Hamiltonian(metric, logπ, ∂logπ∂θ)
-prop = SliceNUTS(Leapfrog(find_good_eps(h, θ_init)))
+prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
 
 # Sampling
 samples = AdvancedHMC.sample(h, prop, θ_init, n_samples)

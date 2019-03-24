@@ -20,7 +20,7 @@ export Hamiltonian
 include("integrator.jl")
 export Leapfrog
 include("proposal.jl")
-export TakeLastProposal, find_good_eps, SliceNUTS
+export TakeLastProposal, find_good_eps, NUTS
 
 include("adaptation.jl")
 export DualAveraging, PreConditioner, NaiveCompAdapter, ThreePhaseAdapter

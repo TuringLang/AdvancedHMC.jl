@@ -15,7 +15,7 @@ n_adapts = 1_000
                                       DenseEuclideanMetric(θ_init, cov(temp'))]
         h = Hamiltonian(metric, logπ, ∂logπ∂θ)
         @testset "$typeof(prop)" for prop in [TakeLastProposal(Leapfrog(ϵ), n_steps),
-                                      SliceNUTS(Leapfrog(find_good_eps(h, θ_init)))]
+                                      NUTS(Leapfrog(find_good_eps(h, θ_init)))]
             samples = AdvancedHMC.sample(h, prop, θ_init, n_samples; verbose=false)
             @test mean(samples) ≈ zeros(D) atol=RNDATOL
             @testset "$typeof(adapter)" for adapter in [PreConditioner(metric), DualAveraging(0.8, prop.integrator.ϵ),

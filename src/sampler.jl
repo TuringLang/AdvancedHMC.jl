@@ -45,7 +45,7 @@ function step(rng::AbstractRNG, h::Hamiltonian, prop::TakeLastProposal{I}, θ::A
     return θ_new, H_new, α
 end
 
-function step(rng::AbstractRNG, h::Hamiltonian, prop::SliceNUTS{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
+function step(rng::AbstractRNG, h::Hamiltonian, prop::NUTS{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
     r = rand_momentum(rng, h)
     θ_new, r_new, α = propose(rng, prop, h, θ, r)
     H_new = hamiltonian_energy(h, θ_new, r_new)

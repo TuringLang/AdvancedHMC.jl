@@ -19,21 +19,21 @@ end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractHamiltonianTrajectory{I} end
 abstract type NoUTurnTrajectory{I<:AbstractIntegrator} <: DynamicTrajectory{I} end
-struct SliceNUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
+struct NUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
     integrator  ::  I
 end
 
-# Create a `SliceNUTS` with a new `ϵ`
-function (snuts::SliceNUTS)(ϵ::AbstractFloat)
-    return SliceNUTS(snuts.integrator(ϵ))
+# Create a `NUTS` with a new `ϵ`
+function (snuts::NUTS)(ϵ::AbstractFloat)
+    return NUTS(snuts.integrator(ϵ))
 end
 
 struct MultinomialNUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
     integrator  ::  I
 end
 
-function SliceNUTS(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
-    return SliceNUTS(Leapfrog(find_good_eps(h, θ)))
+function NUTS(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
+    return NUTS(Leapfrog(find_good_eps(h, θ)))
 end
 
 function find_good_eps(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=100) where {T<:Real}
