@@ -57,55 +57,55 @@ function get_var(wv::WelfordVar{T,AT})::AT where {T<:AbstractFloat,AT<:AbstractV
     return (n / ((n + 5) * (n - 1))) .* M .+ 1e-3 * (5 / (n + 5))
 end
 
-abstract type CovarEstimator{T} end
+abstract type CovEstimator{T} end
 
 # NOTE: this naive covariance estimator is used only in testing
-mutable struct NaiveCovar{T} <: CovarEstimator{T}
+mutable struct NaiveCov{T} <: CovEstimator{T}
     n :: Int
     S :: Vector{Vector{T}}
 end
 
-NaiveCovar() = NaiveCovar(0, Vector{Vector{Float64}}())
-NaiveCovar(::Int) = NaiveCovar()
+NaiveCov() = NaiveCov(0, Vector{Vector{Float64}}())
+NaiveCov(::Int) = NaiveCov()
 
-function add_sample!(nc::NaiveCovar, s::AbstractVector)
+function add_sample!(nc::NaiveCov, s::AbstractVector)
     nc.n += 1
     push!(nc.S, s)
 end
 
-function reset!(nc::NaiveCovar{T}) where {T<:AbstractFloat}
+function reset!(nc::NaiveCov{T}) where {T<:AbstractFloat}
     nc.n = 0
     nc.S = Vector{Vector{T}}()
 end
 
-function get_covar(nc::NaiveCovar{T})::Matrix{T} where {T<:AbstractFloat}
+function get_cov(nc::NaiveCov{T})::Matrix{T} where {T<:AbstractFloat}
     @assert nc.n >= 2 "Cannot get covariance with only one sample"
     return Statistics.cov(nc.S)
 end
 
 # Ref: https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_covar_estimator.hpp
-mutable struct WelfordCovar{T<:AbstractFloat} <: CovarEstimator{T}
+mutable struct WelfordCov{T<:AbstractFloat} <: CovEstimator{T}
     n :: Int
     μ :: Vector{T}
     M :: Matrix{T}
 end
 
-WelfordCovar(d::Int) = WelfordCovar(0, zeros(d), zeros(d,d))
+WelfordCov(d::Int) = WelfordCov(0, zeros(d), zeros(d,d))
 
-function reset!(wc::WelfordCovar{T}) where {T<:AbstractFloat}
+function reset!(wc::WelfordCov{T}) where {T<:AbstractFloat}
     wc.n = 0
     wc.μ .= zero(T)
     wc.M .= zero(T)
 end
 
-function add_sample!(wc::WelfordCovar, s::AbstractVector)
+function add_sample!(wc::WelfordCov, s::AbstractVector)
     wc.n += 1
     δ = s .- wc.μ
     wc.μ .+= δ ./ wc.n
     wc.M .+= (s .- wc.μ) * δ'
 end
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/covar_adaptation.hpp
-function get_covar(wc::WelfordCovar{T})::Matrix{T} where {T<:AbstractFloat}
+function get_cov(wc::WelfordCov{T})::Matrix{T} where {T<:AbstractFloat}
     n, M = wc.n, wc.M
     @assert n >= 2 "Cannot get variance with only one sample"
     return (n / ((n + 5) * (n - 1))) .* M + 1e-3 * (5 / (n + 5)) * LinearAlgebra.I
@@ -153,14 +153,14 @@ end
 
 mutable struct DensePreConditioner{T<:AbstractFloat} <: AbstractPreConditioner
     n_min :: Int
-    ce    :: CovarEstimator{T}
+    ce    :: CovEstimator{T}
     covar :: Matrix{T}
 end
 
 function DensePreConditioner(d::Integer, n_min::Int=10)
-    ce = WelfordCovar(d)
+    ce = WelfordCov(d)
     # TODO: take use of the line below when we have an interface to set which pre-conditioner to use
-    # ce = NaiveCovar()
+    # ce = NaiveCov()
     return DensePreConditioner(n_min, ce, LinearAlgebra.diagm(0 => ones(d)))
 end
 
@@ -171,7 +171,7 @@ end
 function adapt!(dpc::DensePreConditioner, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat, is_update::Bool=true)
     add_sample!(dpc.ce, θ)
     if dpc.ce.n >= dpc.n_min && is_update
-        dpc.covar .= get_covar(dpc.ce)
+        dpc.covar .= get_cov(dpc.ce)
     end
 end
 
