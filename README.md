@@ -26,10 +26,10 @@ n_adapts = 2_000
 metric = UnitEuclideanMetric(θ_init)
 h = Hamiltonian(metric, logπ, ∂logπ∂θ)
 prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
-adapter = StanNUTSAdapter(n_adapts, PreConditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))
+adaptor = StanNUTSAdaptor(n_adapts, PreConditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))
 
 # Sampling
-samples = AdvancedHMC.sample(h, prop, θ_init, n_samples, adapter, n_adapts)
+samples = AdvancedHMC.sample(h, prop, θ_init, n_samples, adaptor, n_adapts)
 ```
 
 ## Reference

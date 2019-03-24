@@ -22,6 +22,6 @@ function update(h::Hamiltonian, prop::AbstractProposal, dpc::Adaptation.Abstract
     return h(getM⁻¹(dpc)), prop
 end
 
-function update(h::Hamiltonian, prop::AbstractProposal, ca::Adaptation.AbstractCompositeAdapter)
+function update(h::Hamiltonian, prop::AbstractProposal, ca::Adaptation.AbstractCompositeAdaptor)
     return h(getM⁻¹(ca.pc)), prop(getϵ(ca.ssa))
 end

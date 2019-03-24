@@ -31,12 +31,12 @@ mutable struct MSSState{T<:AbstractFloat}
 end
 
 ################
-### Adapters ###
+### Adaptors ###
 ################
 
-abstract type StepSizeAdapter <: AbstractAdapter end
+abstract type StepSizeAdaptor <: AbstractAdaptor end
 
-struct FixedStepSize{T<:AbstractFloat} <: StepSizeAdapter
+struct FixedStepSize{T<:AbstractFloat} <: StepSizeAdaptor
     ϵ :: T
 end
 
@@ -52,7 +52,7 @@ References
 Hoffman, M. D., & Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623.
 Nesterov, Y. (2009). Primal-dual subgradient methods for convex problems. Mathematical programming, 120(1), 221-259.
 """
-struct NesterovDualAveraging{T<:AbstractFloat} <: StepSizeAdapter
+struct NesterovDualAveraging{T<:AbstractFloat} <: StepSizeAdaptor
   γ     :: T
   t_0   :: T
   κ     :: T
@@ -74,11 +74,11 @@ function getϵ(da::NesterovDualAveraging)
     return da.state.ϵ
 end
 
-struct ManualSSAdapter{T<:AbstractFloat} <:StepSizeAdapter
+struct ManualSSAdaptor{T<:AbstractFloat} <:StepSizeAdaptor
     state :: MSSState{T}
 end
 
-function getϵ(mssa::ManualSSAdapter)
+function getϵ(mssa::ManualSSAdaptor)
     return mssa.state.ϵ
 end
 

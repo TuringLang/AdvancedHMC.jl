@@ -112,10 +112,10 @@ function get_cov(wc::WelfordCov{T})::Matrix{T} where {T<:AbstractFloat}
 end
 
 ################
-### Adapters ###
+### Adaptors ###
 ################
 # TODO: integrate metric into preconditioner
-abstract type AbstractPreConditioner <: AbstractAdapter end
+abstract type AbstractPreConditioner <: AbstractAdaptor end
 struct UnitPreConditioner <: AbstractPreConditioner end
 
 string(::UnitPreConditioner) = "I"

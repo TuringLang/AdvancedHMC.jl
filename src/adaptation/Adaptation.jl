@@ -4,29 +4,29 @@ import Base: string
 import LinearAlgebra, Statistics
 using ..AdvancedHMC: DEBUG
 
-abstract type AbstractAdapter end
+abstract type AbstractAdaptor end
 
 include("stepsize.jl")
 include("precond.jl")
 
-abstract type AbstractCompositeAdapter <: AbstractAdapter end
+abstract type AbstractCompositeAdaptor <: AbstractAdaptor end
 
-# TODO: generalise this to a list of adapters
-struct NaiveCompAdapter <: AbstractCompositeAdapter
+# TODO: generalise this to a list of adaptors
+struct NaiveCompAdaptor <: AbstractCompositeAdaptor
     pc  :: AbstractPreConditioner
-    ssa :: StepSizeAdapter
+    ssa :: StepSizeAdaptor
 end
 
-function adapt!(tp::NaiveCompAdapter, θ::AbstractVector{<:Real}, α::AbstractFloat)
+function adapt!(tp::NaiveCompAdaptor, θ::AbstractVector{<:Real}, α::AbstractFloat)
     adapt!(tp.ssa, θ, α)
     adapt!(tp.pc, θ, α)
 end
 
-function getM⁻¹(ca::AbstractCompositeAdapter)
+function getM⁻¹(ca::AbstractCompositeAdaptor)
     return getM⁻¹(ca.pc)
 end
 
-function getϵ(ca::AbstractCompositeAdapter)
+function getϵ(ca::AbstractCompositeAdaptor)
     return getϵ(ca.ssa)
 end
 
@@ -35,6 +35,6 @@ include("threephase.jl")
 export adapt!, getϵ, getM⁻¹,
        NesterovDualAveraging,
        UnitPreConditioner, DiagPreConditioner, DensePreConditioner,
-       NaiveCompAdapter, StanNUTSAdapter
+       NaiveCompAdaptor, StanNUTSAdaptor
 
 end # module

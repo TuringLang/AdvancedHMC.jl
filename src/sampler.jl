@@ -15,7 +15,7 @@ function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n
     return θs
 end
 
-function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int, adapter::Adaptation.AbstractAdapter,
+function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int, adaptor::Adaptation.AbstractAdaptor,
                 n_adapts::Int=min(div(n_samples, 10), 1_000); verbose::Bool=true) where {T<:Real}
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
@@ -23,9 +23,9 @@ function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n
     time = @elapsed for i = 1:n_samples
         θs[i], Hs[i], αs[i] = step(h, prop, i == 1 ? θ : θs[i-1])
         if i <= n_adapts
-            adapt!(adapter, θs[i], αs[i])
-            h, prop = update(h, prop, adapter)
-            verbose && i == n_adapts && @info "Finished $n_adapts adapation steps" typeof(adapter) prop.integrator.ϵ h.metric.sqrtM⁻¹
+            adapt!(adaptor, θs[i], αs[i])
+            h, prop = update(h, prop, adaptor)
+            verbose && i == n_adapts && @info "Finished $n_adapts adapation steps" typeof(adaptor) prop.integrator.ϵ h.metric.sqrtM⁻¹
         end
     end
     verbose && @info "Finished $n_samples sampling steps in $time (s)" typeof(h) typeof(prop) EBFMI(Hs) mean(αs)
