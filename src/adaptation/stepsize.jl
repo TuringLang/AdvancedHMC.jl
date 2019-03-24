@@ -44,6 +44,14 @@ function getϵ(fss::FixedStepSize)
     return fss.ϵ
 end
 
+"""
+An implementation of the Nesterov dual averaging algorithm to tune step size.
+
+References
+
+Hoffman, M. D., & Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623.
+Nesterov, Y. (2009). Primal-dual subgradient methods for convex problems. Mathematical programming, 120(1), 221-259.
+"""
 struct NesterovDualAveraging{T<:AbstractFloat} <: StepSizeAdapter
   γ     :: T
   t_0   :: T
