@@ -3,7 +3,7 @@ include("adaptation/Adaptation.jl")
 using .Adaptation
 
 function update(h::Hamiltonian, prop::AbstractProposal, da::DualAveraging)
-    return h, prop(getss(da))
+    return h, prop(getϵ(da))
 end
 
 function PreConditioner(::UnitEuclideanMetric)
@@ -23,5 +23,5 @@ function update(h::Hamiltonian, prop::AbstractProposal, dpc::Adaptation.Abstract
 end
 
 function update(h::Hamiltonian, prop::AbstractProposal, ca::Adaptation.AbstractCompositeAdapter)
-    return h(getM⁻¹(ca.pc)), prop(getss(ca.ssa))
+    return h(getM⁻¹(ca.pc)), prop(getϵ(ca.ssa))
 end

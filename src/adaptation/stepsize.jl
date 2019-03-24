@@ -40,7 +40,7 @@ struct FixedStepSize{T<:AbstractFloat} <: StepSizeAdapter
     ϵ :: T
 end
 
-function getss(fss::FixedStepSize)
+function getϵ(fss::FixedStepSize)
     return fss.ϵ
 end
 
@@ -62,7 +62,7 @@ function DualAveraging(δ::AbstractFloat, ϵ::AbstractFloat)
     return DualAveraging(0.05, 10.0, 0.75, δ, ϵ)
 end
 
-function getss(da::DualAveraging)
+function getϵ(da::DualAveraging)
     return da.state.ϵ
 end
 
@@ -70,7 +70,7 @@ struct ManualSSAdapter{T<:AbstractFloat} <:StepSizeAdapter
     state :: MSSState{T}
 end
 
-function getss(mssa::ManualSSAdapter)
+function getϵ(mssa::ManualSSAdapter)
     return mssa.state.ϵ
 end
 

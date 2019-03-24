@@ -26,13 +26,13 @@ function getM⁻¹(ca::AbstractCompositeAdapter)
     return getM⁻¹(ca.pc)
 end
 
-function getss(ca::AbstractCompositeAdapter)
-    return getss(ca.ssa)
+function getϵ(ca::AbstractCompositeAdapter)
+    return getϵ(ca.ssa)
 end
 
 include("threephase.jl")
 
-export adapt!, getss, getM⁻¹,
+export adapt!, getϵ, getM⁻¹,
        DualAveraging,
        UnitPreConditioner, DiagPreConditioner, DensePreConditioner,
        NaiveCompAdapter, ThreePhaseAdapter
