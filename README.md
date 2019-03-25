@@ -2,27 +2,34 @@
 
 **The code from this repository is used to implement HMC in [Turing.jl](https://github.com/yebai/Turing.jl). Try it out when it's available!**
 
-## API
+## Minimal examples - sampling from a multivariate Gaussian using NUTS
 
-### Naive NUTS - Algorithm 2 in ([Hoffman & Gelman, 2011][1])
+```julia
+using Distributions, AdvancedHMC
+using ForwardDiff: gradient
 
-```
-# eff_NUTS(initial_θ, step_size, log_pdf, sample_num)
-naive_NUTS(θ0, 0.75, x -> log(f(x)), 2000)
-```
+# Define the target distribution and its gradient
+D = 10
+logπ(θ::AbstractVector{T}) where {T<:Real} = logpdf(MvNormal(zeros(D), ones(D)), θ)
+∂logπ∂θ = θ -> gradient(logπ, θ)
 
-### Effective NUTS - Algorithm 3 in ([Hoffman & Gelman, 2011][1])
+# Sampling parameter settings
+ϵ = 0.02
+n_steps = 20
+n_samples = 100_000
+n_adapts = 2_000
 
-```
-# eff_NUTS(initial_θ, step_size, log_pdf, sample_num)
-eff_NUTS(θ0, 0.75, x -> log(f(x)), 2000)
-```
+# Initial points
+θ_init = randn(D)
 
-### NUTS with Dual Averaging - Algorithm 6 in ([Hoffman & Gelman, 2011][1])
+# Define metric space, Hamiltonian and sampling method
+metric = UnitEuclideanMetric(θ_init)
+h = Hamiltonian(metric, logπ, ∂logπ∂θ)
+prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
+adaptor = StanNUTSAdaptor(n_adapts, PreConditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))
 
-```
-# NUTS(initial_θ, target_accept_rate, log_pdf, sample_num, adapt_num)
-NUTS(θ0, 0.65, x -> log(f(x)), 2000, 200)
+# Sampling
+samples = AdvancedHMC.sample(h, prop, θ_init, n_samples, adaptor, n_adapts)
 ```
 
 ## Reference

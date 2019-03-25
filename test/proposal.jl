@@ -7,7 +7,7 @@ lf = Leapfrog(ϵ)
 
 θ_init = randn(D)
 h = Hamiltonian(UnitEuclideanMetric(θ_init), logπ, ∂logπ∂θ)
-prop = SliceNUTS(Leapfrog(find_good_eps(h, θ_init)))
+prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
 r_init = AdvancedHMC.rand_momentum(h)
 
 @testset "Passing random number generator" begin

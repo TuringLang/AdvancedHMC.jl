@@ -1,17 +1,18 @@
-using Test
+using Distributed, Test
 
-@testset "hamiltonian.jl" begin
-    include("hamiltonian.jl")
-end
+@testset "AdvancedHMC" begin
+    tests = [
+        "adaptation/precond",
+        "hamiltonian",
+        "integrator",
+        "proposal",
+        "hmc",
+    ]
 
-@testset "integrator.jl" begin
-    include("integrator.jl")
-end
-
-@testset "proposal.jl" begin
-    include("proposal.jl")
-end
-
-@testset "Integrated tests" begin
-    include("hmc.jl")
+    res = map(tests) do t
+        @eval module $(Symbol("Test_", t))
+            include($t * ".jl")
+        end
+        return
+    end
 end

@@ -1,7 +1,12 @@
 abstract type AbstractIntegrator end
 
-struct Leapfrog{T<:Real} <: AbstractIntegrator
+struct Leapfrog{T<:AbstractFloat} <: AbstractIntegrator
     ϵ   ::  T
+end
+
+# Create a `Leapfrog` with a new `ϵ`
+function (::Leapfrog)(ϵ::AbstractFloat)
+    return Leapfrog(ϵ)
 end
 
 function is_valid(v::AbstractVector{<:Real})
@@ -21,7 +26,7 @@ function lf_position(ϵ::T, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVe
     return θ + ϵ * ∂H∂r(h, r)
 end
 
-function step(lf::Leapfrog{T}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
+function step(lf::Leapfrog{F}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {F<:AbstractFloat,T<:Real}
     r_new, _is_valid = lf_momentum(lf.ϵ / 2, h, θ, r)
     !_is_valid && return θ, r, false
     θ_new = lf_position(lf.ϵ, h, θ, r_new)
@@ -31,7 +36,7 @@ function step(lf::Leapfrog{T}, h::Hamiltonian, θ::AbstractVector{T}, r::Abstrac
 end
 
 # TODO: double check the function below to see if it is type stable or not
-function steps(lf::Leapfrog{T}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, n_steps::Int) where {T<:Real}
+function steps(lf::Leapfrog{F}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, n_steps::Int) where {F<:AbstractFloat,T<:Real}
     n_valid = 0
     r_new, _is_valid = lf_momentum(lf.ϵ / 2, h, θ, r)
     !_is_valid && return θ, r, n_valid
