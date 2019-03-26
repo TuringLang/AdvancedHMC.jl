@@ -30,7 +30,7 @@ function getϵ(ca::AbstractCompositeAdaptor)
     return getϵ(ca.ssa)
 end
 
-include("threephase.jl")
+include("stannuts.jl")
 
 export adapt!, getϵ, getM⁻¹,
        NesterovDualAveraging,
