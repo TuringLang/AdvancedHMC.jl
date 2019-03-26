@@ -1,5 +1,7 @@
 # Efficient HMC implementations in Julia
 
+[![Build Status](https://travis-ci.org/TuringLang/AdvancedHMC.jl.svg?branch=master)](https://travis-ci.org/TuringLang/AdvancedHMC.jl) [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
+
 **The code from this repository is used to implement HMC in [Turing.jl](https://github.com/yebai/Turing.jl). Try it out when it's available!**
 
 ## Minimal examples - sampling from a multivariate Gaussian using NUTS
