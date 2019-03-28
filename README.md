@@ -7,8 +7,9 @@
 ## Minimal examples - sampling from a multivariate Gaussian using NUTS
 
 ```julia
-using Distributions, AdvancedHMC
+using Distributions: MvNormal, logpdf
 using ForwardDiff: gradient
+using AdvancedHMC
 
 # Define the target distribution and its gradient
 D = 10
@@ -31,7 +32,7 @@ prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
 adaptor = StanNUTSAdaptor(n_adapts, PreConditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))
 
 # Sampling
-samples = AdvancedHMC.sample(h, prop, θ_init, n_samples, adaptor, n_adapts)
+samples = sample(h, prop, θ_init, n_samples, adaptor, n_adapts)
 ```
 
 ## Reference

@@ -15,13 +15,13 @@ n_adapts = 2_000
         h = Hamiltonian(metric, logπ, ∂logπ∂θ)
         @testset "$(typeof(prop))" for prop in [TakeLastProposal(Leapfrog(ϵ), n_steps),
                                                 NUTS(Leapfrog(find_good_eps(h, θ_init)))]
-            samples = AdvancedHMC.sample(h, prop, θ_init, n_samples; verbose=false)
+            samples = sample(h, prop, θ_init, n_samples; verbose=false)
             @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
             @testset "$(typeof(adaptor))" for adaptor in [PreConditioner(metric),
                                                           NesterovDualAveraging(0.8, prop.integrator.ϵ),
                                                           NaiveCompAdaptor(PreConditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ)),
                                                           StanNUTSAdaptor(n_adapts, PreConditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))]
-                samples = AdvancedHMC.sample(h, prop, θ_init, n_samples, adaptor, n_adapts; verbose=false)
+                samples = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; verbose=false)
                 @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
             end
         end

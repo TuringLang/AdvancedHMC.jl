@@ -25,5 +25,6 @@ include("adaptation.jl")
 export NesterovDualAveraging, PreConditioner, NaiveCompAdaptor, StanNUTSAdaptor
 include("diagnosis.jl")
 include("sampler.jl")
+export sample
 
 end # module
