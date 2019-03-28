@@ -4,6 +4,8 @@ struct UnitEuclideanMetric{T<:Real} <: AbstractMetric{T}
     dim :: Int
 end
 
+Base.show(io::IO, uem::UnitEuclideanMetric{T}, n_chars::Int=32) where {T<:Real} = print(io, string(ones(T, uem.dim))[1:n_chars-4] * " ...")
+
 function UnitEuclideanMetric(θ::A) where {T<:Real,A<:AbstractVector{T}}
     return UnitEuclideanMetric{T}(length(θ))
 end
@@ -22,6 +24,8 @@ struct DiagEuclideanMetric{T<:Real,A<:AbstractVector{T}} <: AbstractMetric{T}
     # Pre-allocation for intermediate variables
     _temp   ::  A
 end
+
+Base.show(io::IO, dem::DiagEuclideanMetric, n_chars::Int=32) = print(io, string(dem.M⁻¹)[1:n_chars-4] * " ...")
 
 # Create a `DiagEuclideanMetric` with a new `M⁻¹`
 function (dem::DiagEuclideanMetric)(M⁻¹::A) where {T<:Real,A<:AbstractVector{T}}
@@ -51,6 +55,8 @@ struct DenseEuclideanMetric{T<:Real,AV<:AbstractVector{T},AM<:AbstractMatrix{T}}
     # Pre-allocation for intermediate variables
     _temp   ::  AV
 end
+
+Base.show(io::IO, dem::DenseEuclideanMetric, n_chars::Int=32) = print(io, string(diag(dem.M⁻¹))[1:n_chars-4] * " ...")
 
 # Create a `DenseEuclideanMetric` with a new `M⁻¹`
 function (dem::DenseEuclideanMetric)(M⁻¹::A) where {T<:Real,A<:AbstractMatrix{T}}
