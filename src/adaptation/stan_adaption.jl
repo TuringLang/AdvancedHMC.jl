@@ -63,11 +63,9 @@ function adapt!(tp::StanNUTSAdaptor, θ::AbstractVector{<:Real}, α::AbstractFlo
 
     # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/adapt_diag_e_nuts.hpp
     if is_in_window(tp)
-        if is_window_end(tp)
-            adapt!(tp.pc, θ, α, true)
-        else
-            adapt!(tp.pc, θ, α, false)
-        end
+        # We accumlate stats from θ online and only trigger the update of M⁻¹ in the end of window.
+        is_update_M⁻¹ = is_window_end(tp)
+        adapt!(tp.pc, θ, α, is_update_M⁻¹)
     end
 
     if is_window_end(tp)
