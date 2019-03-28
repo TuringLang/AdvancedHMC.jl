@@ -12,7 +12,7 @@ julia:
 matrix:
   allow_failures:
     - julia: nightly
-    - osx
+    - os: osx
   fast_finish: true
 
 notifications:
