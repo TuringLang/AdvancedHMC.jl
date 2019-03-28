@@ -1,5 +1,7 @@
 language: julia
 
+coveralls: true
+
 os:
   - linux
   - osx
@@ -15,12 +17,8 @@ matrix:
     - os: osx
   fast_finish: true
 
+after_success:
+  - julia -e 'Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+
 notifications:
   email: false
-
-after_success:
-  - julia -e 'import AdvancedHMC;
-              cd(joinpath(dirname(pathof(AdvancedHMC)), "..", paths...));
-              Pkg.add("Coverage");
-              using Coverage;
-              Coveralls.submit(process_folder())'

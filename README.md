@@ -1,12 +1,15 @@
 # Efficient HMC implementations in Julia
 
+[![Build Status](https://travis-ci.org/TuringLang/AdvancedHMC.jl.svg?branch=master)](https://travis-ci.org/TuringLang/AdvancedHMC.jl) [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
+
 **The code from this repository is used to implement HMC in [Turing.jl](https://github.com/yebai/Turing.jl). Try it out when it's available!**
 
 ## Minimal examples - sampling from a multivariate Gaussian using NUTS
 
 ```julia
-using Distributions, AdvancedHMC
+using Distributions: MvNormal, logpdf
 using ForwardDiff: gradient
+using AdvancedHMC
 
 # Define the target distribution and its gradient
 D = 10
@@ -23,13 +26,13 @@ n_adapts = 2_000
 θ_init = randn(D)
 
 # Define metric space, Hamiltonian and sampling method
-metric = UnitEuclideanMetric(θ_init)
+metric = DenseEuclideanMetric(θ_init)
 h = Hamiltonian(metric, logπ, ∂logπ∂θ)
 prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
 adaptor = StanNUTSAdaptor(n_adapts, PreConditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))
 
 # Sampling
-samples = AdvancedHMC.sample(h, prop, θ_init, n_samples, adaptor, n_adapts)
+samples = sample(h, prop, θ_init, n_samples, adaptor, n_adapts)
 ```
 
 ## Reference
