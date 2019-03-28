@@ -28,6 +28,11 @@ function (dem::DiagEuclideanMetric)(M⁻¹::A) where {T<:Real,A<:AbstractVector{
     return DiagEuclideanMetric(dem.dim, M⁻¹)
 end
 
+function DiagEuclideanMetric(θ::A) where {T<:Real,A<:AbstractVector{T}}
+    dim = length(θ)
+    return DiagEuclideanMetric(dim, ones(T, dim))
+end
+
 function DiagEuclideanMetric(θ::A, M⁻¹::A) where {T<:Real,A<:AbstractVector{T}}
     return DiagEuclideanMetric(length(θ), M⁻¹)
 end
@@ -50,6 +55,11 @@ end
 # Create a `DenseEuclideanMetric` with a new `M⁻¹`
 function (dem::DenseEuclideanMetric)(M⁻¹::A) where {T<:Real,A<:AbstractMatrix{T}}
     return DenseEuclideanMetric(dem.dim, M⁻¹)
+end
+
+function DenseEuclideanMetric(θ::A) where {T<:Real,A<:AbstractVector{T}}
+    dim = length(θ)
+    return DenseEuclideanMetric(dim, Matrix{T}(I, dim, dim))
 end
 
 function DenseEuclideanMetric(θ::AV, M⁻¹::AM) where {T<:Real,AV<:AbstractVector{T},AM<:AbstractMatrix{T}}

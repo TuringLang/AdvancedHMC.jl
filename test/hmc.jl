@@ -9,10 +9,9 @@ n_samples = 100_000
 n_adapts = 2_000
 
 @testset "HMC and NUTS" begin
-    temp = randn(D,100)
     @testset "$(typeof(metric))" for metric in [UnitEuclideanMetric(θ_init),
-                                                DiagEuclideanMetric(θ_init, vec(var(temp; dims=2))),
-                                                DenseEuclideanMetric(θ_init, cov(temp'))]
+                                                DiagEuclideanMetric(θ_init),
+                                                DenseEuclideanMetric(θ_init)]
         h = Hamiltonian(metric, logπ, ∂logπ∂θ)
         @testset "$(typeof(prop))" for prop in [TakeLastProposal(Leapfrog(ϵ), n_steps),
                                                 NUTS(Leapfrog(find_good_eps(h, θ_init)))]

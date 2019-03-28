@@ -4,7 +4,7 @@ const DEBUG = Bool(parse(Int, get(ENV, "DEBUG_AHMC", "0")))
 
 using LinearAlgebra: cholesky
 using Statistics: mean, var, middle
-using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot
+using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I
 using LazyArrays: BroadcastArray
 using Random: GLOBAL_RNG, AbstractRNG
 
