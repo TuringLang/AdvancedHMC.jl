@@ -17,8 +17,6 @@ logπ(θ::AbstractVector{T}) where {T<:Real} = logpdf(MvNormal(zeros(D), ones(D)
 ∂logπ∂θ = θ -> gradient(logπ, θ)
 
 # Sampling parameter settings
-ϵ = 0.02
-n_steps = 20
 n_samples = 100_000
 n_adapts = 2_000
 
