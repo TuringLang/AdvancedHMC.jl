@@ -1,5 +1,5 @@
 name = "AdvancedHMC"
-uuid = "3ad36a84-41dd-11e9-263b-1f976df73434"
+uuid = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
 authors = ["Kai Xu <xukai921110@gmail.com>", "Hong Ge", "Mohamed Tarek"]
 version = "0.1.0"
 
