@@ -9,7 +9,7 @@ n_samples = 100_000
 n_adapts = 2_000
 
 @testset "HMC and NUTS" begin
-    @testset "$(typeof(metric))" for metric in [UnitEuclideanMetric{Float64}(D),
+    @testset "$(typeof(metric))" for metric in [UnitEuclideanMetric(D),
                                                 DiagEuclideanMetric(ones(D)),
                                                 DenseEuclideanMetric(Matrix{Float64}(I, D ,D))]
         h = Hamiltonian(metric, logπ, ∂logπ∂θ)

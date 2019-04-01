@@ -5,7 +5,7 @@ include("common.jl")
 lf = Leapfrog(ϵ)
 
 θ_init = randn(D)
-h = Hamiltonian(UnitEuclideanMetric{Float64}(D), logπ, ∂logπ∂θ)
+h = Hamiltonian(UnitEuclideanMetric(D), logπ, ∂logπ∂θ)
 r_init = AdvancedHMC.rand_momentum(h)
 
 n_steps = 10
@@ -46,7 +46,7 @@ using Statistics: mean
     lf = Leapfrog(ϵ)
 
     q_init = randn(D)
-    h = Hamiltonian(UnitEuclideanMetric{Float64}(D), negU, ∂negU∂q)
+    h = Hamiltonian(UnitEuclideanMetric(D), negU, ∂negU∂q)
     p_init = AdvancedHMC.rand_momentum(h)
 
     q, p = copy(q_init), copy(p_init)
