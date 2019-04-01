@@ -12,9 +12,10 @@ using ForwardDiff: gradient
 using AdvancedHMC
 
 # Define the target distribution and its gradient
-D = 10
-logπ(θ::AbstractVector{T}) where {T<:Real} = logpdf(MvNormal(zeros(D), ones(D)), θ)
-∂logπ∂θ = θ -> gradient(logπ, θ)
+const D = 10
+const target = MvNormal(zeros(D), ones(D))
+logπ(θ::AbstractVector{<:Real}) = logpdf(target, θ)
+∂logπ∂θ(θ::AbstractVector{<:Real}) = gradient(logπ, θ)
 
 # Sampling parameter settings
 n_samples = 100_000
@@ -30,7 +31,7 @@ prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
 adaptor = StanNUTSAdaptor(n_adapts, PreConditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))
 
 # Sampling
-samples = sample(h, prop, θ_init, n_samples, adaptor, n_adapts)
+samples = AdvancedHMC.sample(h, prop, θ_init, n_samples, adaptor, n_adapts)
 ```
 
 ## Reference
