@@ -4,7 +4,14 @@ struct UnitEuclideanMetric{T<:Real} <: AbstractMetric{T}
     dim :: Int
 end
 
-Base.show(io::IO, uem::UnitEuclideanMetric{T}, n_chars::Int=32) where {T<:Real} = print(io, string(ones(T, uem.dim))[1:n_chars-4] * " ...")
+function _string_diag(d, n_chars::Int=32) :: String
+    s_diag = string(d)
+    l = length(s_diag)
+    s_dots = " ..."
+    n_diag_chars = n_chars - length(s_dots)
+    return s_diag[1:min(n_diag_chars,end)] * (l > n_diag_chars ? s_dots : "")
+end
+Base.show(io::IO, uem::UnitEuclideanMetric{T}) where {T<:Real} = print(io, _string_diag(ones(T, uem.dim)))
 
 function UnitEuclideanMetric(θ::A) where {T<:Real,A<:AbstractVector{T}}
     return UnitEuclideanMetric{T}(length(θ))
@@ -25,7 +32,7 @@ struct DiagEuclideanMetric{T<:Real,A<:AbstractVector{T}} <: AbstractMetric{T}
     _temp   ::  A
 end
 
-Base.show(io::IO, dem::DiagEuclideanMetric, n_chars::Int=32) = print(io, string(dem.M⁻¹)[1:n_chars-4] * " ...")
+Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, _string_diag(dem.M⁻¹))
 
 # Create a `DiagEuclideanMetric` with a new `M⁻¹`
 function (dem::DiagEuclideanMetric)(M⁻¹::A) where {T<:Real,A<:AbstractVector{T}}
@@ -56,7 +63,7 @@ struct DenseEuclideanMetric{T<:Real,AV<:AbstractVector{T},AM<:AbstractMatrix{T}}
     _temp   ::  AV
 end
 
-Base.show(io::IO, dem::DenseEuclideanMetric, n_chars::Int=32) = print(io, string(diag(dem.M⁻¹))[1:n_chars-4] * " ...")
+Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, _string_diag(diag(dem.M⁻¹)))
 
 # Create a `DenseEuclideanMetric` with a new `M⁻¹`
 function (dem::DenseEuclideanMetric)(M⁻¹::A) where {T<:Real,A<:AbstractMatrix{T}}
