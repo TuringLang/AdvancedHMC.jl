@@ -31,7 +31,7 @@ prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
 adaptor = StanNUTSAdaptor(n_adapts, PreConditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))
 
 # Sampling
-samples = AdvancedHMC.sample(h, prop, θ_init, n_samples, adaptor, n_adapts)
+samples = sample(h, prop, θ_init, n_samples, adaptor, n_adapts)
 ```
 
 ## Reference
