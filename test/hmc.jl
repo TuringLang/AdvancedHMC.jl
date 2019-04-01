@@ -1,4 +1,4 @@
-using Test, AdvancedHMC
+using Test, AdvancedHMC, LinearAlgebra
 using Statistics: mean, var, cov
 include("common.jl")
 
@@ -9,9 +9,9 @@ n_samples = 100_000
 n_adapts = 2_000
 
 @testset "HMC and NUTS" begin
-    @testset "$(typeof(metric))" for metric in [UnitEuclideanMetric(θ_init),
-                                                DiagEuclideanMetric(θ_init),
-                                                DenseEuclideanMetric(θ_init)]
+    @testset "$(typeof(metric))" for metric in [UnitEuclideanMetric{Float64}(D),
+                                                DiagEuclideanMetric(ones(D)),
+                                                DenseEuclideanMetric(Matrix{Float64}(I, D ,D))]
         h = Hamiltonian(metric, logπ, ∂logπ∂θ)
         @testset "$(typeof(prop))" for prop in [TakeLastProposal(Leapfrog(ϵ), n_steps),
                                                 NUTS(Leapfrog(find_good_eps(h, θ_init)))]
