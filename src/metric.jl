@@ -15,9 +15,7 @@ function _string_diag(d, n_chars::Int=32) :: String
     return s_diag[1:min(n_diag_chars,end)] * (l > n_diag_chars ? s_dots : "")
 end
 
-function Base.show(io::IO, uem::UnitEuclideanMetric)
-    return print(io, _string_diag(ones(uem.dim)))
-end
+Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, _string_diag(ones(uem.dim)))
 
 struct DiagEuclideanMetric{A<:AbstractVector} <: AbstractMetric
     # Diagnal of the inverse of the mass matrix
