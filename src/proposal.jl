@@ -104,8 +104,7 @@ function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, 
         H′ = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
         n′ = (logu <= -H′) ? 1 : 0
         s′ = (logu < nt.Δ_max + -H′) ? 1 : 0
-        # α′ = exp(min(0, H - H′))
-        α′ = H′ == Inf ? 0 : exp(min(0, H - H′))
+        α′ = exp(min(0, H - H′))
 
         return θ′, r′, θ′, r′, θ′, r′, n′, s′, α′, 1
     else
