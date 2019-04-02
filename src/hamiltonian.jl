@@ -37,12 +37,14 @@ function rand_momentum(rng::AbstractRNG, h::Hamiltonian{<:UnitEuclideanMetric})
     return randn(rng, h.metric.dim)
 end
 function rand_momentum(rng::AbstractRNG, h::Hamiltonian{<:DiagEuclideanMetric})
-    h.metric._temp .= randn.(Ref(rng))
-    return h.metric._temp ./ h.metric.sqrtM⁻¹
+    r = randn(rng, h.metric.dim)
+    r ./= h.metric.sqrtM⁻¹
+    return r
 end
 function rand_momentum(rng::AbstractRNG, h::Hamiltonian{<:DenseEuclideanMetric})
-    h.metric._temp .= randn.(Ref(rng))
-    return h.metric.cholM⁻¹ \ h.metric._temp
+    r = randn(rng, h.metric.dim)
+    ldiv!(h.metric.cholM⁻¹, r)
+    return r
 end
 
 rand_momentum(h::Hamiltonian) = rand_momentum(GLOBAL_RNG, h)
