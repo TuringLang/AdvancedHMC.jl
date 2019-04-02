@@ -25,7 +25,13 @@ function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n
         if i <= n_adapts
             adapt!(adaptor, θs[i], αs[i])
             h, prop = update(h, prop, adaptor)
-            verbose && i == n_adapts && @info "Finished $n_adapts adapation steps" typeof(adaptor) prop.integrator.ϵ h.metric
+            if verbose
+                if i == n_adapts
+                    @info "Finished $n_adapts adapation steps" typeof(adaptor) prop.integrator.ϵ h.metric
+                elseif i % Int(n_adapts / 10) == 0
+                    @info "Adapting $i of $n_adapts steps" typeof(adaptor) prop.integrator.ϵ h.metric
+                end
+            end
         end
     end
     verbose && @info "Finished $n_samples sampling steps in $time (s)" typeof(h) typeof(prop) EBFMI(Hs) mean(αs)
