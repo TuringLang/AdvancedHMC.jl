@@ -31,6 +31,7 @@ end
 function DiagEuclideanMetric(M⁻¹::AbstractVector{T}) where {T<:Real}
     return DiagEuclideanMetric(M⁻¹, sqrt.(M⁻¹), Vector{T}(undef, size(M⁻¹, 1)))
 end
+DiagEuclideanMetric(D::Int) = DiagEuclideanMetric(ones(Float64, D))
 
 # Create a `DiagEuclideanMetric` with a new `M⁻¹`
 (dem::DiagEuclideanMetric)(M⁻¹::AbstractVector{<:Real}) = DiagEuclideanMetric(M⁻¹)
@@ -59,6 +60,7 @@ function DenseEuclideanMetric(M⁻¹::AbstractMatrix{T}) where {T<:Real}
     _temp = Vector{T}(undef, size(M⁻¹, 1))
     return DenseEuclideanMetric(M⁻¹, cholesky(Symmetric(M⁻¹)).U, _temp)
 end
+DenseEuclideanMetric(D::Int) = DenseEuclideanMetric(Matrix{Float64}(I, D, D))
 
 # Create a `DenseEuclideanMetric` with a new `M⁻¹`
 (dem::DenseEuclideanMetric)(M⁻¹::AbstractMatrix{<:Real}) = DenseEuclideanMetric(M⁻¹)
