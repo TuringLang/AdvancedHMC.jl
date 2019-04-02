@@ -11,7 +11,7 @@ function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n
     time = @elapsed for i = 1:n_samples
         θs[i], Hs[i], αs[i] = step(h, prop, i == 1 ? θ : θs[i-1])
     end
-    verbose && @info "Finished sampling with $time (s)" typeof(h) typeof(prop) EBFMI(Hs) mean(αs)
+    verbose && @info "Finished sampling with $time (s)" typeof(h.metric) typeof(prop) EBFMI(Hs) mean(αs)
     return θs
 end
 
@@ -34,7 +34,7 @@ function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n
             end
         end
     end
-    verbose && @info "Finished $n_samples sampling steps in $time (s)" typeof(h) typeof(prop) EBFMI(Hs) mean(αs)
+    verbose && @info "Finished $n_samples sampling steps in $time (s)" typeof(h.metric) typeof(prop) EBFMI(Hs) mean(αs)
     return θs
 end
 

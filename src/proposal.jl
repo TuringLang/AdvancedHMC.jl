@@ -21,19 +21,22 @@ abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractHamiltonianTra
 abstract type NoUTurnTrajectory{I<:AbstractIntegrator} <: DynamicTrajectory{I} end
 struct NUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
     integrator  ::  I
+    max_depth   ::  Int
+    Δ_max       ::  AbstractFloat
 end
 
 # Create a `NUTS` with a new `ϵ`
 function (snuts::NUTS)(ϵ::AbstractFloat)
-    return NUTS(snuts.integrator(ϵ))
+    return NUTS(snuts.integrator(ϵ), snuts.max_depth, snuts.Δ_max)
 end
 
 struct MultinomialNUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
     integrator  ::  I
 end
 
-function NUTS(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
-    return NUTS(Leapfrog(find_good_eps(h, θ)))
+# TODO: remove below if not used
+function NUTS(integrator::I, max_depth::Int=10, Δ_max::AbstractFloat=1000.0) where {I<:AbstractIntegrator}
+    return NUTS{I}(integrator, max_depth, Δ_max)
 end
 
 function find_good_eps(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=100) where {T<:Real}
@@ -93,15 +96,16 @@ end
 find_good_eps(h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=100) where {T<:Real} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
 
 # TODO: implement a more efficient way to build the balance tree
-function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat;
-                    Δ_max::AbstractFloat=1000.0) where {I<:AbstractIntegrator,T<:Real}
+function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T},
+                    logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat) where {I<:AbstractIntegrator,T<:Real}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
         θ′, r′, _is_valid = step(nt.integrator, h, θ, r)
         H′ = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
         n′ = (logu <= -H′) ? 1 : 0
-        s′ = (logu < Δ_max + -H′) ? 1 : 0
-        α′ = exp(min(0, H - H′))
+        s′ = (logu < nt.Δ_max + -H′) ? 1 : 0
+        # α′ = exp(min(0, H - H′))
+        α′ = H′ == Inf ? 0 : exp(min(0, H - H′))
 
         return θ′, r′, θ′, r′, θ′, r′, n′, s′, α′, 1
     else
@@ -128,18 +132,17 @@ function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, 
     end
 end
 
-build_tree(nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}, logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat;
-           Δ_max::AbstractFloat=1000.0) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j, H; Δ_max=Δ_max)
+build_tree(nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T},
+           logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j, H)
 
-function propose(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T};
-                 j_max::Int=10) where {I<:AbstractIntegrator,T<:Real}
+function propose(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {I<:AbstractIntegrator,T<:Real}
     H = hamiltonian_energy(h, θ, r)
     logu = log(rand(rng)) - H
 
     θm = θ; θp = θ; rm = r; rp = r; j = 0; θ_new = θ; r_new = r; n = 1; s = 1
 
     local α, nα
-    while s == 1 && j <= j_max
+    while s == 1 && j <= nt.max_depth
         v = rand(rng, [-1, 1])
         if v == -1
             θm, rm, _, _, θ′, r′,n′, s′, α, nα = build_tree(rng, nt, h, θm, rm, logu, v, j, H)
@@ -162,8 +165,7 @@ function propose(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ:
     return θ_new, r_new, α / nα
 end
 
-propose(nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T};
-        j_max::Int=10) where {I<:AbstractIntegrator,T<:Real} = propose(GLOBAL_RNG, nt, h, θ, r; j_max=j_max)
+propose(nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {I<:AbstractIntegrator,T<:Real} = propose(GLOBAL_RNG, nt, h, θ, r)
 
 function MultinomialNUTS(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
     return MultinomialNUTS(Leapfrog(find_good_eps(h, θ)))
