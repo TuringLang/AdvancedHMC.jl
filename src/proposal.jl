@@ -25,6 +25,9 @@ struct NUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
     Δ_max       ::  AbstractFloat
 end
 
+# Helper function to use default values
+NUTS(integrator::AbstractIntegrator) = NUTS(integrator, 10, 1000.0)
+
 # Create a `NUTS` with a new `ϵ`
 function (snuts::NUTS)(ϵ::AbstractFloat)
     return NUTS(snuts.integrator(ϵ), snuts.max_depth, snuts.Δ_max)
@@ -32,11 +35,6 @@ end
 
 struct MultinomialNUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
     integrator  ::  I
-end
-
-# TODO: remove below if not used
-function NUTS(integrator::I, max_depth::Int=10, Δ_max::AbstractFloat=1000.0) where {I<:AbstractIntegrator}
-    return NUTS{I}(integrator, max_depth, Δ_max)
 end
 
 function find_good_eps(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=100) where {T<:Real}
