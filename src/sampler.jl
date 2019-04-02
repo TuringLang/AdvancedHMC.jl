@@ -4,24 +4,31 @@ function mh_accept(rng::AbstractRNG, H::AbstractFloat, H_new::AbstractFloat)
 end
 mh_accept(H::AbstractFloat, H_new::AbstractFloat) = mh_accept(GLOBAL_RNG, logα)
 
-function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int; verbose::Bool=true) where {T<:Real}
+sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int; verbose::Bool=true) where {T<:Real} =
+    sample(GLOBAL_RNG, h, prop, θ, n_samples; verbose=verbose)
+
+function sample(rng::AbstractRNG, h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int; verbose::Bool=true) where {T<:Real}
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
     time = @elapsed for i = 1:n_samples
-        θs[i], Hs[i], αs[i] = step(h, prop, i == 1 ? θ : θs[i-1])
+        θs[i], Hs[i], αs[i] = step(rng, h, prop, i == 1 ? θ : θs[i-1])
     end
     verbose && @info "Finished sampling with $time (s)" typeof(h.metric) typeof(prop) EBFMI(Hs) mean(αs)
     return θs
 end
 
-function sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int, adaptor::Adaptation.AbstractAdaptor,
+sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int, adaptor::Adaptation.AbstractAdaptor,
+       n_adapts::Int=min(div(n_samples, 10), 1_000); verbose::Bool=true) where {T<:Real} =
+       sample(GLOBAL_RNG, h, prop, θ, n_samples, adaptor, n_adapts; verbose=verbose)
+
+function sample(rng::AbstractRNG, h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int, adaptor::Adaptation.AbstractAdaptor,
                 n_adapts::Int=min(div(n_samples, 10), 1_000); verbose::Bool=true) where {T<:Real}
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
     time = @elapsed for i = 1:n_samples
-        θs[i], Hs[i], αs[i] = step(h, prop, i == 1 ? θ : θs[i-1])
+        θs[i], Hs[i], αs[i] = step(rng, h, prop, i == 1 ? θ : θs[i-1])
         if i <= n_adapts
             adapt!(adaptor, θs[i], αs[i])
             h, prop = update(h, prop, adaptor)
