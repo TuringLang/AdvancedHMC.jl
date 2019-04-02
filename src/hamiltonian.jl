@@ -28,7 +28,8 @@ function ∂H∂r(h::Hamiltonian{T,DenseEuclideanMetric{T,AV,AM},F1,F2}, r::AV) 
 end
 
 function hamiltonian_energy(h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
-    return kinetic_energy(h, r, θ) + potential_energy(h, θ)
+    H = kinetic_energy(h, r, θ) + potential_energy(h, θ)
+    return isnan(H) ? Inf : H
 end
 
 function potential_energy(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
