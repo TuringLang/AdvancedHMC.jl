@@ -48,7 +48,7 @@ end
 function step(rng::AbstractRNG, h::Hamiltonian, prop::TakeLastProposal{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
     r = rand_momentum(rng, h)
     H = hamiltonian_energy(h, θ, r)
-    θ_new, r_new = propose(prop, h, θ, r)
+    θ_new, r_new = transition(prop, h, θ, r)
     H_new = hamiltonian_energy(h, θ_new, r_new)
     # Accept via MH criteria
     is_accept, α = mh_accept(rng, H, H_new)
@@ -60,7 +60,7 @@ end
 
 function step(rng::AbstractRNG, h::Hamiltonian, prop::NUTS{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
     r = rand_momentum(rng, h)
-    θ_new, r_new, α = propose(rng, prop, h, θ, r)
+    θ_new, r_new, α = transition(rng, prop, h, θ, r)
     H_new = hamiltonian_energy(h, θ_new, r_new)
     # We always accept in NUTS
     return θ_new, H_new, α

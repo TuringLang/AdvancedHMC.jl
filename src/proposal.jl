@@ -12,7 +12,7 @@ function (tlp::TakeLastProposal)(ϵ::AbstractFloat)
     return TakeLastProposal(tlp.integrator(ϵ), tlp.n_steps)
 end
 
-function propose(prop::TakeLastProposal, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
+function transition(prop::TakeLastProposal, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
     θ, r, _ = steps(prop.integrator, h, θ, r, prop.n_steps)
     return θ, -r
 end
@@ -132,7 +132,7 @@ end
 build_tree(nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T},
            logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j, H)
 
-function propose(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {I<:AbstractIntegrator,T<:Real}
+function transition(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {I<:AbstractIntegrator,T<:Real}
     H = hamiltonian_energy(h, θ, r)
     logu = log(rand(rng)) - H
 
@@ -162,7 +162,7 @@ function propose(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ:
     return θ_new, r_new, α / nα
 end
 
-propose(nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {I<:AbstractIntegrator,T<:Real} = propose(GLOBAL_RNG, nt, h, θ, r)
+transition(nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, nt, h, θ, r)
 
 function MultinomialNUTS(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
     return MultinomialNUTS(Leapfrog(find_good_eps(h, θ)))
