@@ -25,7 +25,7 @@ n_adapts = 2_000
 θ_init = randn(D)
 
 # Define metric space, Hamiltonian and sampling method
-metric = DenseEuclideanMetric(θ_init)
+metric = DenseEuclideanMetric(D)
 h = Hamiltonian(metric, logπ, ∂logπ∂θ)
 prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
 adaptor = StanNUTSAdaptor(n_adapts, PreConditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))
