@@ -42,13 +42,17 @@ function Base.getproperty(dem::DiagEuclideanMetric, d::Symbol)
 end
 
 
-struct DenseEuclideanMetric{AV<:AbstractVector, AM<:AbstractMatrix} <: AbstractMetric
+struct DenseEuclideanMetric{
+    AV<:AbstractVector,
+    AM<:AbstractMatrix,
+    TcholM⁻¹<:UpperTriangular,
+} <: AbstractMetric
     # Inverse of the mass matrix
-    M⁻¹     ::  AM
+    M⁻¹::AM
     # U of the Cholesky decomposition of the mass matrix
-    cholM⁻¹ ::  UpperTriangular
+    cholM⁻¹::TcholM⁻¹
     # Pre-allocation for intermediate variables
-    _temp   ::  AV
+    _temp::AV
 end
 
 function DenseEuclideanMetric(M⁻¹::AbstractMatrix{T}) where {T<:Real}

@@ -5,7 +5,7 @@ const DEBUG = Bool(parse(Int, get(ENV, "DEBUG_AHMC", "0")))
 using Statistics: mean, var, middle
 using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky
 using LazyArrays: BroadcastArray
-using Random: GLOBAL_RNG, AbstractRNG, randn!
+using Random: GLOBAL_RNG, AbstractRNG
 
 # Notations
 # d - dimension of sampling sapce
