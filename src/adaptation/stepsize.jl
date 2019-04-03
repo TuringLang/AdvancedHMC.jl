@@ -105,6 +105,7 @@ function adapt_stepsize!(da::NesterovDualAveraging, α::AbstractFloat)
     ϵ = exp(x)
     DEBUG && @debug "Adapting step size..." "new ϵ = $ϵ" "old ϵ = $(da.state.ϵ)"
 
+    # TODO: we might want to remove this when all other numerical issues are correctly handelled
     if isnan(ϵ) || isinf(ϵ)
         @warn "Incorrect ϵ = $ϵ; ϵ_previous = $(da.state.ϵ) is used instead."
         ϵ = da.state.ϵ

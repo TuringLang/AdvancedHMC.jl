@@ -16,7 +16,17 @@ end
 ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ * r
 
 function hamiltonian_energy(h::Hamiltonian, θ::AbstractVector, r::AbstractVector)
-    return kinetic_energy(h, r, θ) + potential_energy(h, θ)
+    K = kinetic_energy(h, r, θ)
+    if isnan(K)
+        K = Inf
+        @warn "Kinetic energy is `NaN` and is set to `Inf`."
+    end
+    V = potential_energy(h, θ)
+    if isnan(V)
+        V = Inf
+        @warn "Potential energy is `NaN` and is set to `Inf`."
+    end
+    return K + V
 end
 
 potential_energy(h::Hamiltonian, θ::AbstractVector) = -h.logπ(θ)
