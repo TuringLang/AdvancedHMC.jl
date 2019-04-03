@@ -19,9 +19,9 @@ function update(h::Hamiltonian, prop::AbstractProposal, dpc::Adaptation.Abstract
 end
 
 function update(h::Hamiltonian, prop::AbstractProposal, da::NesterovDualAveraging)
-    return h, prop(getϵ(da))
+    return h, prop(prop.integrator(getϵ(da)))
 end
 
 function update(h::Hamiltonian, prop::AbstractProposal, ca::Adaptation.AbstractCompositeAdaptor)
-    return h(getM⁻¹(ca.pc)), prop(getϵ(ca.ssa))
+    return h(getM⁻¹(ca.pc)), prop(prop.integrator(getϵ(ca.ssa)))
 end

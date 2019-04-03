@@ -7,9 +7,9 @@ struct TakeLastProposal{I<:AbstractIntegrator} <: StaticTrajectory{I}
     n_steps     ::  Int
 end
 
-# Create a `TakeLastProposal` with a new `ϵ`
-function (tlp::TakeLastProposal)(ϵ::AbstractFloat)
-    return TakeLastProposal(tlp.integrator(ϵ), tlp.n_steps)
+# Create a `TakeLastProposal` with a new integrator
+function (tlp::TakeLastProposal)(integrator::AbstractIntegrator)
+    return TakeLastProposal(integrator, tlp.n_steps)
 end
 
 function transition(prop::TakeLastProposal, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
@@ -28,9 +28,9 @@ end
 # Helper function to use default values
 NUTS(integrator::AbstractIntegrator) = NUTS(integrator, 10, 1000.0)
 
-# Create a `NUTS` with a new `ϵ`
-function (snuts::NUTS)(ϵ::AbstractFloat)
-    return NUTS(snuts.integrator(ϵ), snuts.max_depth, snuts.Δ_max)
+# Create a `NUTS` with a new integrator
+function (snuts::NUTS)(integrator::AbstractIntegrator)
+    return NUTS(integrator, snuts.max_depth, snuts.Δ_max)
 end
 
 struct MultinomialNUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
