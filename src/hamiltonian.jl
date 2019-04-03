@@ -15,16 +15,21 @@ end
 ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ .* r
 ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ * r
 
-hamiltonian_energy(h::Hamiltonian, θ::AbstractVector, r::AbstractVector) = kinetic_energy(h, r, θ) + potential_energy(h, θ)
-
-function potential_energy(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
-    V = -h.logπ(θ)
+function hamiltonian_energy(h::Hamiltonian, θ::AbstractVector, r::AbstractVector)
+    K = kinetic_energy(h, r, θ)
+    if isnan(K)
+        K = Inf
+        @warn "Kinetic energy is `NaN` and is set to `Inf`."
+    end
+    V = potential_energy(h, θ)
     if isnan(V)
         V = Inf
-        @warn "Potential energy `-logπ(θ)` is `NaN` and is set to `Inf` to reject `θ`."
+        @warn "Potential energy is `NaN` and is set to `Inf`."
     end
-    return V
+    return K + V
 end
+
+potential_energy(h::Hamiltonian, θ::AbstractVector) = -h.logπ(θ)
 
 # Kinetic energy
 # NOTE: the general form of K depends on both θ and r
