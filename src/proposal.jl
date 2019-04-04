@@ -1,17 +1,27 @@
 abstract type AbstractProposal end
 abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
+
+###
+### Standard HMC implementation with fixed trajectory length.
+###
 struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
     integrator  ::  I
     n_steps     ::  Int
 end
 
-# Create a `StaticTrajectory` with a new integrator
+"""
+Create a `StaticTrajectory` with a new integrator
+"""
 function (tlp::StaticTrajectory)(integrator::AbstractIntegrator)
     return StaticTrajectory(integrator, tlp.n_steps)
 end
 
-function transition(prop::StaticTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
+function transition(prop::StaticTrajectory,
+        h::Hamiltonian,
+        θ::AbstractVector{T},
+        r::AbstractVector{T}
+    ) where {T<:Real}
     θ, r, _ = steps(prop.integrator, h, θ, r, prop.n_steps)
     return θ, -r
 end
@@ -24,15 +34,23 @@ struct NUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
     Δ_max       ::  AbstractFloat
 end
 
-# Helper function to use default values
+"""
+Helper function to use default values
+"""
 NUTS(integrator::AbstractIntegrator) = NUTS(integrator, 10, 1000.0)
 
-# Create a `NUTS` with a new integrator
+"""
+Create a `NUTS` with a new integrator
+"""
 function (snuts::NUTS)(integrator::AbstractIntegrator)
     return NUTS(integrator, snuts.max_depth, snuts.Δ_max)
 end
 
-function find_good_eps(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=100) where {T<:Real}
+function find_good_eps(rng::AbstractRNG,
+        h::Hamiltonian,
+        θ::AbstractVector{T};
+        max_n_iters::Int=100
+    ) where {T<:Real}
     ϵ′ = ϵ = 0.1
     a_min, a_cross, a_max = 0.25, 0.5, 0.75 # minimal, crossing, maximal accept ratio
     d = 2.0
@@ -86,11 +104,16 @@ function find_good_eps(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; 
     return ϵ
 end
 
-find_good_eps(h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=100) where {T<:Real} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
+find_good_eps(h::Hamiltonian,
+        θ::AbstractVector{T};
+        max_n_iters::Int=100
+    ) where {T<:Real} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
 
 # TODO: implement a more efficient way to build the balance tree
-function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T},
-                    logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat) where {I<:AbstractIntegrator,T<:Real}
+function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory{I},
+            h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T},
+            logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat
+        ) where {I<:AbstractIntegrator,T<:Real}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
         θ′, r′, _is_valid = step(nt.integrator, h, θ, r)
@@ -124,10 +147,15 @@ function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, 
     end
 end
 
-build_tree(nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T},
-           logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j, H)
+build_tree(nt::NoUTurnTrajectory{I}, h::Hamiltonian,
+        θ::AbstractVector{T}, r::AbstractVector{T},
+        logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat
+        ) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j, H)
 
-function transition(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {I<:AbstractIntegrator,T<:Real}
+function transition(rng::AbstractRNG,
+        nt::NoUTurnTrajectory{I}, h::Hamiltonian,
+        θ::AbstractVector{T}, r::AbstractVector{T}
+    ) where {I<:AbstractIntegrator,T<:Real}
     H = hamiltonian_energy(h, θ, r)
     logu = log(rand(rng)) - H
 
@@ -157,4 +185,7 @@ function transition(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, 
     return θ_new, r_new, α / nα
 end
 
-transition(nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, nt, h, θ, r)
+transition(nt::NoUTurnTrajectory{I},
+        h::Hamiltonian, θ::AbstractVector{T},
+        r::AbstractVector{T}
+    ) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, nt, h, θ, r)
