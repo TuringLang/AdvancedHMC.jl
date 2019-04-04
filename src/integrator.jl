@@ -1,3 +1,8 @@
+####
+#### Numerical methods for simulating Hamiltonian trajectory.
+####
+
+
 abstract type AbstractIntegrator end
 
 struct Leapfrog{T<:AbstractFloat} <: AbstractIntegrator
