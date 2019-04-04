@@ -17,13 +17,19 @@ function (tlp::StaticTrajectory)(integrator::AbstractIntegrator)
     return StaticTrajectory(integrator, tlp.n_steps)
 end
 
-function transition(prop::StaticTrajectory,
-        h::Hamiltonian,
-        θ::AbstractVector{T},
-        r::AbstractVector{T}
+function transition(rng::AbstractRNG,
+        prop::StaticTrajectory, h::Hamiltonian,
+        θ::AbstractVector{T}, r::AbstractVector{T}
     ) where {T<:Real}
-    θ, r, _ = steps(prop.integrator, h, θ, r, prop.n_steps)
-    return θ, -r
+    H = hamiltonian_energy(h, θ, r)
+    θ_new, r_new, _ = steps(prop.integrator, h, θ, r, prop.n_steps)
+    H_new = hamiltonian_energy(h, θ_new, r_new)
+    # Accept via MH criteria
+    is_accept, α = mh_accept(rng, H, H_new)
+    if is_accept
+        θ, r = θ_new, r_new
+    end
+    return θ, r, α, H_new
 end
 
 
@@ -132,7 +138,8 @@ function transition(rng::AbstractRNG,
         j = j + 1
     end
 
-    return θ_new, r_new, α / nα
+    H_new = 0 # Warning: NUTS always return H_new = 0;
+    return θ_new, r_new, α / nα, 0
 end
 
 transition(nt::DynamicTrajectory{I},
@@ -207,3 +214,10 @@ find_good_eps(h::Hamiltonian,
         θ::AbstractVector{T};
         max_n_iters::Int=100
     ) where {T<:Real} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
+
+
+function mh_accept(rng::AbstractRNG, H::AbstractFloat, H_new::AbstractFloat)
+    logα = min(0, H - H_new)
+    return log(rand(rng)) < logα, exp(logα)
+end
+mh_accept(H::AbstractFloat, H_new::AbstractFloat) = mh_accept(GLOBAL_RNG, logα)
