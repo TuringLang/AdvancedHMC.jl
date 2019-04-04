@@ -1,18 +1,17 @@
 abstract type AbstractProposal end
 abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
-abstract type StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
-struct TakeLastProposal{I<:AbstractIntegrator} <: StaticTrajectory{I}
+struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
     integrator  ::  I
     n_steps     ::  Int
 end
 
-# Create a `TakeLastProposal` with a new integrator
-function (tlp::TakeLastProposal)(integrator::AbstractIntegrator)
-    return TakeLastProposal(integrator, tlp.n_steps)
+# Create a `StaticTrajectory` with a new integrator
+function (tlp::StaticTrajectory)(integrator::AbstractIntegrator)
+    return StaticTrajectory(integrator, tlp.n_steps)
 end
 
-function transition(prop::TakeLastProposal, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
+function transition(prop::StaticTrajectory, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {T<:Real}
     θ, r, _ = steps(prop.integrator, h, θ, r, prop.n_steps)
     return θ, -r
 end
