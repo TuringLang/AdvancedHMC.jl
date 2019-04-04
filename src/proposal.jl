@@ -46,68 +46,7 @@ function (snuts::NUTS)(integrator::AbstractIntegrator)
     return NUTS(integrator, snuts.max_depth, snuts.Δ_max)
 end
 
-function find_good_eps(rng::AbstractRNG,
-        h::Hamiltonian,
-        θ::AbstractVector{T};
-        max_n_iters::Int=100
-    ) where {T<:Real}
-    ϵ′ = ϵ = 0.1
-    a_min, a_cross, a_max = 0.25, 0.5, 0.75 # minimal, crossing, maximal accept ratio
-    d = 2.0
 
-    r = rand_momentum(rng, h)
-    H = hamiltonian_energy(h, θ, r)
-
-    θ′, r′, _is_valid = step(Leapfrog(ϵ), h, θ, r)
-    H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
-
-    ΔH = H - H_new
-    direction = ΔH > log(a_cross) ? 1 : -1
-
-    # Crossing step: increase/decrease ϵ until accept ratio cross a_cross.
-    for _ = 1:max_n_iters
-        ϵ′ = direction == 1 ? d * ϵ : 1 / d * ϵ
-        θ′, r′, _is_valid = step(Leapfrog(ϵ′), h, θ′, r′)
-        H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
-
-        ΔH = H - H_new
-        DEBUG && @debug "Crossing step" direction H_new ϵ "α = $(min(1, exp(ΔH)))"
-        if (direction == 1) && !(ΔH > log(a_cross))
-            break
-        elseif (direction == -1) && !(ΔH < log(a_cross))
-            break
-        else
-            ϵ = ϵ′
-        end
-    end
-
-    # Bisection step: ensure final accept ratio: a_min < a < a_max.
-    # See https://en.wikipedia.org/wiki/Bisection_method
-    ϵ, ϵ′ = ϵ < ϵ′ ? (ϵ, ϵ′) : (ϵ′, ϵ)  # ensure ϵ < ϵ′
-    for _ = 1:max_n_iters
-        ϵ_mid = middle(ϵ, ϵ′)
-        θ′, r′, _is_valid = step(Leapfrog(ϵ_mid), h, θ, r)
-        H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
-
-        ΔH = H - H_new
-        DEBUG && @debug "Bisection step" H_new ϵ_mid "α = $(min(1, exp(ΔH)))"
-        if (exp(ΔH) > a_max)
-            ϵ = ϵ_mid
-        elseif (exp(ΔH) < a_min)
-            ϵ′ = ϵ_mid
-        else
-            ϵ = ϵ_mid
-            break
-        end
-    end
-
-    return ϵ
-end
-
-find_good_eps(h::Hamiltonian,
-        θ::AbstractVector{T};
-        max_n_iters::Int=100
-    ) where {T<:Real} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
 
 # TODO: implement a more efficient way to build the balance tree
 function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory{I},
@@ -189,3 +128,71 @@ transition(nt::NoUTurnTrajectory{I},
         h::Hamiltonian, θ::AbstractVector{T},
         r::AbstractVector{T}
     ) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, nt, h, θ, r)
+
+
+###
+### Find for an initial leap-frog step-size via heuristic search.
+###
+
+function find_good_eps(rng::AbstractRNG,
+        h::Hamiltonian,
+        θ::AbstractVector{T};
+        max_n_iters::Int=100
+    ) where {T<:Real}
+    ϵ′ = ϵ = 0.1
+    a_min, a_cross, a_max = 0.25, 0.5, 0.75 # minimal, crossing, maximal accept ratio
+    d = 2.0
+
+    r = rand_momentum(rng, h)
+    H = hamiltonian_energy(h, θ, r)
+
+    θ′, r′, _is_valid = step(Leapfrog(ϵ), h, θ, r)
+    H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+
+    ΔH = H - H_new
+    direction = ΔH > log(a_cross) ? 1 : -1
+
+    # Crossing step: increase/decrease ϵ until accept ratio cross a_cross.
+    for _ = 1:max_n_iters
+        ϵ′ = direction == 1 ? d * ϵ : 1 / d * ϵ
+        θ′, r′, _is_valid = step(Leapfrog(ϵ′), h, θ′, r′)
+        H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+
+        ΔH = H - H_new
+        DEBUG && @debug "Crossing step" direction H_new ϵ "α = $(min(1, exp(ΔH)))"
+        if (direction == 1) && !(ΔH > log(a_cross))
+            break
+        elseif (direction == -1) && !(ΔH < log(a_cross))
+            break
+        else
+            ϵ = ϵ′
+        end
+    end
+
+    # Bisection step: ensure final accept ratio: a_min < a < a_max.
+    # See https://en.wikipedia.org/wiki/Bisection_method
+    ϵ, ϵ′ = ϵ < ϵ′ ? (ϵ, ϵ′) : (ϵ′, ϵ)  # ensure ϵ < ϵ′
+    for _ = 1:max_n_iters
+        ϵ_mid = middle(ϵ, ϵ′)
+        θ′, r′, _is_valid = step(Leapfrog(ϵ_mid), h, θ, r)
+        H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+
+        ΔH = H - H_new
+        DEBUG && @debug "Bisection step" H_new ϵ_mid "α = $(min(1, exp(ΔH)))"
+        if (exp(ΔH) > a_max)
+            ϵ = ϵ_mid
+        elseif (exp(ΔH) < a_min)
+            ϵ′ = ϵ_mid
+        else
+            ϵ = ϵ_mid
+            break
+        end
+    end
+
+    return ϵ
+end
+
+find_good_eps(h::Hamiltonian,
+        θ::AbstractVector{T};
+        max_n_iters::Int=100
+    ) where {T<:Real} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)

@@ -45,7 +45,7 @@ function sample(rng::AbstractRNG, h::Hamiltonian, prop::AbstractProposal, θ::Ab
     return θs
 end
 
-function step(rng::AbstractRNG, h::Hamiltonian, prop::TakeLastProposal{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
+function step(rng::AbstractRNG, h::Hamiltonian, prop::StaticTrajectory{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
     r = rand_momentum(rng, h)
     H = hamiltonian_energy(h, θ, r)
     θ_new, r_new = transition(prop, h, θ, r)

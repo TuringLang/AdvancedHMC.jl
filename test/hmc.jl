@@ -16,7 +16,7 @@ n_adapts = 2_000
     ]
         h = Hamiltonian(metric, logπ, ∂logπ∂θ)
         @testset "$(typeof(prop))" for prop in [
-            TakeLastProposal(Leapfrog(ϵ), n_steps),
+            StaticTrajectory(Leapfrog(ϵ), n_steps),
             NUTS(Leapfrog(find_good_eps(h, θ_init))),
         ]
             samples = sample(h, prop, θ_init, n_samples; verbose=false)

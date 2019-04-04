@@ -21,7 +21,7 @@ export Hamiltonian
 include("integrator.jl")
 export Leapfrog
 include("proposal.jl")
-export TakeLastProposal, find_good_eps, NUTS
+export StaticTrajectory, find_good_eps, NUTS
 
 include("adaptation.jl")
 export NesterovDualAveraging, PreConditioner, NaiveCompAdaptor, StanNUTSAdaptor
