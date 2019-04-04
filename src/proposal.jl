@@ -26,9 +26,17 @@ function transition(prop::StaticTrajectory,
     return θ, -r
 end
 
+
+###
+### Advanced HMC implementation with (adaptive) dynamic trajectory length.
+###
+
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
-abstract type NoUTurnTrajectory{I<:AbstractIntegrator} <: DynamicTrajectory{I} end
-struct NUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
+
+"""
+Dynamic trajectory HMC using the no-U-turn termination criteria algorithm.
+"""
+struct NUTS{I<:AbstractIntegrator} <: DynamicTrajectory{I}
     integrator  ::  I
     max_depth   ::  Int
     Δ_max       ::  AbstractFloat
@@ -47,9 +55,12 @@ function (snuts::NUTS)(integrator::AbstractIntegrator)
 end
 
 
+###
+### The doubling tree algorithm for expanding trajectory.
+###
 
 # TODO: implement a more efficient way to build the balance tree
-function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory{I},
+function build_tree(rng::AbstractRNG, nt::DynamicTrajectory{I},
             h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T},
             logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat
         ) where {I<:AbstractIntegrator,T<:Real}
@@ -86,13 +97,13 @@ function build_tree(rng::AbstractRNG, nt::NoUTurnTrajectory{I},
     end
 end
 
-build_tree(nt::NoUTurnTrajectory{I}, h::Hamiltonian,
+build_tree(nt::DynamicTrajectory{I}, h::Hamiltonian,
         θ::AbstractVector{T}, r::AbstractVector{T},
         logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat
         ) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j, H)
 
 function transition(rng::AbstractRNG,
-        nt::NoUTurnTrajectory{I}, h::Hamiltonian,
+        nt::DynamicTrajectory{I}, h::Hamiltonian,
         θ::AbstractVector{T}, r::AbstractVector{T}
     ) where {I<:AbstractIntegrator,T<:Real}
     H = hamiltonian_energy(h, θ, r)
@@ -124,7 +135,7 @@ function transition(rng::AbstractRNG,
     return θ_new, r_new, α / nα
 end
 
-transition(nt::NoUTurnTrajectory{I},
+transition(nt::DynamicTrajectory{I},
         h::Hamiltonian, θ::AbstractVector{T},
         r::AbstractVector{T}
     ) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, nt, h, θ, r)
