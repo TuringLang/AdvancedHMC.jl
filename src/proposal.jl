@@ -1,7 +1,7 @@
 abstract type AbstractProposal end
-abstract type AbstractHamiltonianTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
+abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
-abstract type StaticTrajectory{I<:AbstractIntegrator} <: AbstractHamiltonianTrajectory{I} end
+abstract type StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
 struct TakeLastProposal{I<:AbstractIntegrator} <: StaticTrajectory{I}
     integrator  ::  I
     n_steps     ::  Int
@@ -17,7 +17,7 @@ function transition(prop::TakeLastProposal, h::Hamiltonian, θ::AbstractVector{T
     return θ, -r
 end
 
-abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractHamiltonianTrajectory{I} end
+abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
 abstract type NoUTurnTrajectory{I<:AbstractIntegrator} <: DynamicTrajectory{I} end
 struct NUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
     integrator  ::  I
