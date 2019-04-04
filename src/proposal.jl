@@ -33,10 +33,6 @@ function (snuts::NUTS)(integrator::AbstractIntegrator)
     return NUTS(integrator, snuts.max_depth, snuts.Δ_max)
 end
 
-struct MultinomialNUTS{I<:AbstractIntegrator} <: NoUTurnTrajectory{I}
-    integrator  ::  I
-end
-
 function find_good_eps(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=100) where {T<:Real}
     ϵ′ = ϵ = 0.1
     a_min, a_cross, a_max = 0.25, 0.5, 0.75 # minimal, crossing, maximal accept ratio
@@ -163,7 +159,3 @@ function transition(rng::AbstractRNG, nt::NoUTurnTrajectory{I}, h::Hamiltonian, 
 end
 
 transition(nt::NoUTurnTrajectory{I}, h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T}) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, nt, h, θ, r)
-
-function MultinomialNUTS(h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
-    return MultinomialNUTS(Leapfrog(find_good_eps(h, θ)))
-end
