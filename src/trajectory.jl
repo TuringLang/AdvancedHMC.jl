@@ -66,7 +66,7 @@ function build_tree(rng::AbstractRNG, nt::DynamicTrajectory{I},
         ) where {I<:AbstractIntegrator,T<:Real}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
-        θ′, r′, _is_valid = step(nt.integrator, h, θ, r)
+        θ′, r′, _is_valid = step(nt.integrator, h, θ, r, v==1)
         H′ = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
         n′ = (logu <= -H′) ? 1 : 0
         s′ = (logu < nt.Δ_max + -H′) ? 1 : 0
