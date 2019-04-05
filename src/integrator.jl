@@ -39,7 +39,7 @@ function step(lf::Leapfrog{F},
     n_valid = 0
 
     r_new, _is_valid_1 = lf_momentum(ϵ/2, h, θ, r)
-    for i = 1:n_steps
+    for i = 1:abs(n_steps)
         θ_new = lf_position(ϵ, h, θ, r_new)
         r_new, _is_valid_2 = lf_momentum(i == n_steps ? ϵ / 2 : ϵ, h, θ_new, r_new)
         if (_is_valid_1 && _is_valid_2)
