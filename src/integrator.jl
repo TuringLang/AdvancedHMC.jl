@@ -14,13 +14,6 @@ function (::Leapfrog)(ϵ::AbstractFloat)
     return Leapfrog(ϵ)
 end
 
-function is_valid(v::AbstractVector{<:Real})
-    if any(isnan, v) || any(isinf, v)
-        return false
-    end
-    return true
-end
-
 function lf_momentum(ϵ::T,
         h::Hamiltonian, θ::AbstractVector{T},
         r::AbstractVector{T}
@@ -36,38 +29,37 @@ function lf_position(ϵ::T, h::Hamiltonian,
     return θ + ϵ * ∂H∂r(h, r)
 end
 
+# TODO: double check the function below to see if it is type stable or not
 function step(lf::Leapfrog{F},
         h::Hamiltonian, θ::AbstractVector{T},
-        r::AbstractVector{T}
+        r::AbstractVector{T}, n_steps::Int=1
     ) where {F<:AbstractFloat,T<:Real}
-    r_new, _is_valid = lf_momentum(lf.ϵ / 2, h, θ, r)
-    !_is_valid && return θ, r, false
-    θ_new = lf_position(lf.ϵ, h, θ, r_new)
-    r_new, _is_valid = lf_momentum(lf.ϵ / 2, h, θ_new, r_new)
-    !_is_valid && return θ, r, false
-    return θ_new, r_new, true
+    fwd = n_steps > 0 # simulate hamiltonian backward when n_steps < 0
+    ϵ = fwd ? lf.ϵ : - lf.ϵ
+    n_valid = 0
+
+    r_new, _is_valid_1 = lf_momentum(ϵ/2, h, θ, r)
+    for i = 1:abs(n_steps)
+        θ_new = lf_position(ϵ, h, θ, r_new)
+        r_new, _is_valid_2 = lf_momentum(i == n_steps ? ϵ / 2 : ϵ, h, θ_new, r_new)
+        if (_is_valid_1 && _is_valid_2)
+            θ, r = θ_new, r_new
+            n_valid = n_valid + 1
+        else
+            break
+        end
+    end
+    return θ, r, n_valid > 0
 end
 
-# TODO: double check the function below to see if it is type stable or not
-function steps(lf::Leapfrog{F},
-        h::Hamiltonian, θ::AbstractVector{T},
-        r::AbstractVector{T}, n_steps::Int
-    ) where {F<:AbstractFloat,T<:Real}
-    n_valid = 0
-    r_new, _is_valid = lf_momentum(lf.ϵ / 2, h, θ, r)
-    !_is_valid && return θ, r, n_valid
-    r = r_new
-    for i = 1:n_steps
-        θ_new = lf_position(lf.ϵ, h, θ, r)
-        r_new, _is_valid = lf_momentum(i == n_steps ? lf.ϵ / 2 : lf.ϵ, h, θ, r)
-        if !_is_valid
-            # The reverse function below is guarantee to be numerical safe.
-            # This is because we know the previous step was valid.
-            r, _ = lf_momentum(-lf.ϵ / 2, h, θ, r)
-            return θ, r, n_valid
-        end
-        θ, r = θ_new, r_new
-        n_valid = n_valid + 1
+###
+### Utility function.
+###
+
+function is_valid(v::AbstractVector{<:Real})
+    if any(isnan, v) || any(isinf, v)
+        return false
+    else
+        return true
     end
-    return θ, r, n_valid
 end

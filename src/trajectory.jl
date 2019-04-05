@@ -22,12 +22,12 @@ function transition(rng::AbstractRNG,
         θ::AbstractVector{T}, r::AbstractVector{T}
     ) where {T<:Real}
     H = hamiltonian_energy(h, θ, r)
-    θ_new, r_new, _ = steps(prop.integrator, h, θ, r, prop.n_steps)
+    θ_new, r_new, _ = step(prop.integrator, h, θ, r, prop.n_steps)
     H_new = hamiltonian_energy(h, θ_new, r_new)
     # Accept via MH criteria
     is_accept, α = mh_accept(rng, H, H_new)
     if is_accept
-        θ, r = θ_new, r_new
+        θ, r = θ_new, -r_new
     end
     return θ, r, α, H_new
 end
@@ -72,7 +72,7 @@ function build_tree(rng::AbstractRNG, nt::DynamicTrajectory{I},
         ) where {I<:AbstractIntegrator,T<:Real}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
-        θ′, r′, _is_valid = step(nt.integrator, h, θ, r)
+        θ′, r′, _is_valid = step(nt.integrator, h, θ, r, v)
         H′ = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
         n′ = (logu <= -H′) ? 1 : 0
         s′ = (logu < nt.Δ_max + -H′) ? 1 : 0
@@ -139,7 +139,7 @@ function transition(rng::AbstractRNG,
     end
 
     H_new = 0 # Warning: NUTS always return H_new = 0;
-    return θ_new, r_new, α / nα, 0
+    return θ_new, r_new, α / nα, H_new
 end
 
 transition(nt::DynamicTrajectory{I},
