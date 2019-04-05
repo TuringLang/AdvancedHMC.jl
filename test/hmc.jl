@@ -19,6 +19,7 @@ n_adapts = 2_000
             StaticTrajectory(Leapfrog(ϵ), n_steps),
             NUTS(Leapfrog(find_good_eps(h, θ_init))),
         ]
+            @info "HMC and NUTS numerical test" typeof(prop) n_samples
             samples = sample(h, prop, θ_init, n_samples; verbose=false)
             @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
             @testset "$(typeof(adaptor))" for adaptor in [
@@ -34,6 +35,7 @@ n_adapts = 2_000
                     NesterovDualAveraging(0.8, prop.integrator.ϵ),
                 ),
             ]
+                @info "HMC and NUTS numerical test" typeof(prop) n_samples typeof(adaptor) typeof(metric) n_adapts
                 samples = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; verbose=false)
                 @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
             end
