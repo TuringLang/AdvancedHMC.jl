@@ -46,6 +46,11 @@ function step(lf::Leapfrog{F},
             θ, r = θ_new, r_new
             n_valid = n_valid + 1
         else
+            # Reverse half leapfrog step for r when breaking
+            #  the loop immaturely.
+            if i > 1 && i < _n_steps
+                r, _ = lf_momentum(-lf.ϵ / 2, h, θ, r)
+            end
             break
         end
     end
