@@ -1,3 +1,7 @@
+####
+#### Hamiltonian dynamics numerical simulation trajectories
+####
+
 abstract type AbstractProposal end
 abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
@@ -17,10 +21,13 @@ function (tlp::StaticTrajectory)(integrator::AbstractIntegrator)
     return StaticTrajectory(integrator, tlp.n_steps)
 end
 
-function transition(rng::AbstractRNG,
-        prop::StaticTrajectory, h::Hamiltonian,
-        θ::AbstractVector{T}, r::AbstractVector{T}
-    ) where {T<:Real}
+function transition(
+    rng::AbstractRNG,
+    prop::StaticTrajectory,
+    h::Hamiltonian,
+    θ::AbstractVector{T},
+    r::AbstractVector{T}
+) where {T<:Real}
     H = hamiltonian_energy(h, θ, r)
     θ_new, r_new, _ = step(prop.integrator, h, θ, r, prop.n_steps)
     H_new = hamiltonian_energy(h, θ_new, r_new)
@@ -66,10 +73,17 @@ end
 ###
 
 # TODO: implement a more efficient way to build the balance tree
-function build_tree(rng::AbstractRNG, nt::DynamicTrajectory{I},
-            h::Hamiltonian, θ::AbstractVector{T}, r::AbstractVector{T},
-            logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat
-        ) where {I<:AbstractIntegrator,T<:Real}
+function build_tree(
+    rng::AbstractRNG,
+    nt::DynamicTrajectory{I},
+    h::Hamiltonian,
+    θ::AbstractVector{T},
+    r::AbstractVector{T},
+    logu::AbstractFloat,
+    v::Int,
+    j::Int,
+    H::AbstractFloat
+) where {I<:AbstractIntegrator,T<:Real}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
         θ′, r′, _is_valid = step(nt.integrator, h, θ, r, v)
@@ -103,15 +117,24 @@ function build_tree(rng::AbstractRNG, nt::DynamicTrajectory{I},
     end
 end
 
-build_tree(nt::DynamicTrajectory{I}, h::Hamiltonian,
-        θ::AbstractVector{T}, r::AbstractVector{T},
-        logu::AbstractFloat, v::Int, j::Int, H::AbstractFloat
-        ) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j, H)
+build_tree(
+    nt::DynamicTrajectory{I},
+    h::Hamiltonian,
+    θ::AbstractVector{T},
+    r::AbstractVector{T},
+    logu::AbstractFloat,
+    v::Int,
+    j::Int,
+    H::AbstractFloat
+) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j, H)
 
-function transition(rng::AbstractRNG,
-        nt::DynamicTrajectory{I}, h::Hamiltonian,
-        θ::AbstractVector{T}, r::AbstractVector{T}
-    ) where {I<:AbstractIntegrator,T<:Real}
+function transition(
+    rng::AbstractRNG,
+    nt::DynamicTrajectory{I},
+    h::Hamiltonian,
+    θ::AbstractVector{T},
+    r::AbstractVector{T}
+) where {I<:AbstractIntegrator,T<:Real}
     H = hamiltonian_energy(h, θ, r)
     logu = log(rand(rng)) - H
 
@@ -143,20 +166,22 @@ function transition(rng::AbstractRNG,
 end
 
 transition(nt::DynamicTrajectory{I},
-        h::Hamiltonian, θ::AbstractVector{T},
-        r::AbstractVector{T}
-    ) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, nt, h, θ, r)
+    h::Hamiltonian,
+    θ::AbstractVector{T},
+    r::AbstractVector{T}
+) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, nt, h, θ, r)
 
 
 ###
 ### Find for an initial leap-frog step-size via heuristic search.
 ###
 
-function find_good_eps(rng::AbstractRNG,
-        h::Hamiltonian,
-        θ::AbstractVector{T};
-        max_n_iters::Int=100
-    ) where {T<:Real}
+function find_good_eps(
+    rng::AbstractRNG,
+    h::Hamiltonian,
+    θ::AbstractVector{T};
+    max_n_iters::Int=100
+) where {T<:Real}
     ϵ′ = ϵ = 0.1
     a_min, a_cross, a_max = 0.25, 0.5, 0.75 # minimal, crossing, maximal accept ratio
     d = 2.0
@@ -210,10 +235,11 @@ function find_good_eps(rng::AbstractRNG,
     return ϵ
 end
 
-find_good_eps(h::Hamiltonian,
-        θ::AbstractVector{T};
-        max_n_iters::Int=100
-    ) where {T<:Real} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
+find_good_eps(
+    h::Hamiltonian,
+    θ::AbstractVector{T};
+    max_n_iters::Int=100
+) where {T<:Real} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
 
 
 function mh_accept(rng::AbstractRNG, H::AbstractFloat, H_new::AbstractFloat)

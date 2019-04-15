@@ -14,26 +14,33 @@ function (::Leapfrog)(ϵ::AbstractFloat)
     return Leapfrog(ϵ)
 end
 
-function lf_momentum(ϵ::T,
-        h::Hamiltonian, θ::AbstractVector{T},
-        r::AbstractVector{T}
-    ) where {T<:Real}
+function lf_momentum(
+    ϵ::T,
+    h::Hamiltonian,
+    θ::AbstractVector{T},
+    r::AbstractVector{T}
+) where {T<:Real}
     _∂H∂θ = ∂H∂θ(h, θ)
     !is_valid(_∂H∂θ) && return r, false
     return r - ϵ * _∂H∂θ, true
 end
 
-function lf_position(ϵ::T, h::Hamiltonian,
-        θ::AbstractVector{T}, r::AbstractVector{T}
-    ) where {T<:Real}
+function lf_position(
+    ϵ::T, h::Hamiltonian,
+    θ::AbstractVector{T},
+    r::AbstractVector{T}
+) where {T<:Real}
     return θ + ϵ * ∂H∂r(h, r)
 end
 
 # TODO: double check the function below to see if it is type stable or not
-function step(lf::Leapfrog{F},
-        h::Hamiltonian, θ::AbstractVector{T},
-        r::AbstractVector{T}, n_steps::Int=1
-    ) where {F<:AbstractFloat,T<:Real}
+function step(
+    lf::Leapfrog{F},
+    h::Hamiltonian,
+    θ::AbstractVector{T},
+    r::AbstractVector{T},
+    n_steps::Int=1
+) where {F<:AbstractFloat,T<:Real}
     fwd = n_steps > 0 # simulate hamiltonian backward when n_steps < 0
     ϵ = fwd ? lf.ϵ : - lf.ϵ
     n_valid = 0
