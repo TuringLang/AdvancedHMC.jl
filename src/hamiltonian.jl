@@ -1,8 +1,29 @@
 # TODO: add a type for kinetic energy
 
+# The constructor of `LogDensityValue` will check numerical errors in
+#   `value` and `gradient`.  That is `is_valid` will be performed automatically.
+struct LogDensityValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}}
+    value::Tv    # Cached value, e.g. logπ(θ).
+    gradient::Tg # Cached gradient, e.g. ∇logπ(θ).
+end
+
+struct LogDensityFunction{Tf<:Function}
+    f::Tf
+    ∇f::Tf
+end
+
+# The constructor of `PhasePoint` will check numerical errors in
+#   `θ`, `r` and `h`. That is `is_valid` will be performed automatically.
+struct PhasePoint{T<:AbstractVector, Th<:LogDensityValue}
+    θ::T # position variables / parameters
+    r::T # momentum variables
+    h::Th # cached Hamiltonian energy for the current (θ, r)
+end
+
 struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
     metric::M
     logπ::Tlogπ
+    # The following will be merged into logπ::LogDensityFunction
     ∂logπ∂θ::T∂logπ∂θ
 end
 
@@ -15,7 +36,7 @@ end
 ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ .* r
 ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ * r
 
-function hamiltonian_energy(h::Hamiltonian, θ::AbstractVector, r::AbstractVector)
+function function hamiltonian_energy(h::Hamiltonian, θ::AbstractVector, r::AbstractVector)
     K = kinetic_energy(h, r, θ)
     if isnan(K)
         K = Inf
@@ -32,7 +53,7 @@ end
 potential_energy(h::Hamiltonian, θ::AbstractVector) = -h.logπ(θ)
 
 # Kinetic energy
-# NOTE: the general form of K depends on both θ and r
+# NOTE: the general form (i.e. non-Euclidean) of K depends on both θ and r
 kinetic_energy(h::Hamiltonian{<:UnitEuclideanMetric}, r, θ) = sum(abs2, r) / 2
 function kinetic_energy(h::Hamiltonian{<:DiagEuclideanMetric}, r, θ)
     return sum(abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r)) / 2
@@ -57,4 +78,6 @@ function rand_momentum(rng::AbstractRNG, h::Hamiltonian{<:DenseEuclideanMetric})
     return r
 end
 
+# TODO: re-write this function such that it uses a package level global
+#  RNG (e.g. Advanced.RNG) instead of julia run-time level RNG
 rand_momentum(h::Hamiltonian) = rand_momentum(GLOBAL_RNG, h)

@@ -1,3 +1,4 @@
+# TODO: rename Metric to KinectEnergy 
 abstract type AbstractMetric end
 
 struct UnitEuclideanMetric <: AbstractMetric
