@@ -1,9 +1,3 @@
-function mh_accept(rng::AbstractRNG, H::AbstractFloat, H_new::AbstractFloat)
-    logα = min(0, H - H_new)
-    return log(rand(rng)) < logα, exp(logα)
-end
-mh_accept(H::AbstractFloat, H_new::AbstractFloat) = mh_accept(GLOBAL_RNG, logα)
-
 sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int; verbose::Bool=true) where {T<:Real} =
     sample(GLOBAL_RNG, h, prop, θ, n_samples; verbose=verbose)
 
@@ -45,25 +39,10 @@ function sample(rng::AbstractRNG, h::Hamiltonian, prop::AbstractProposal, θ::Ab
     return θs
 end
 
-function step(rng::AbstractRNG, h::Hamiltonian, prop::TakeLastProposal{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
+function step(rng::AbstractRNG, h::Hamiltonian, prop::AbstractTrajectory{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
     r = rand_momentum(rng, h)
-    H = hamiltonian_energy(h, θ, r)
-    θ_new, r_new = transition(prop, h, θ, r)
-    H_new = hamiltonian_energy(h, θ_new, r_new)
-    # Accept via MH criteria
-    is_accept, α = mh_accept(rng, H, H_new)
-    if !is_accept
-        return θ, H, α
-    end
+    θ_new, r_new, α, H_new = transition(rng, prop, h, θ, r)
     return θ_new, H_new, α
 end
 
-function step(rng::AbstractRNG, h::Hamiltonian, prop::NUTS{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
-    r = rand_momentum(rng, h)
-    θ_new, r_new, α = transition(rng, prop, h, θ, r)
-    H_new = hamiltonian_energy(h, θ_new, r_new)
-    # We always accept in NUTS
-    return θ_new, H_new, α
-end
-
-step(h::Hamiltonian, p::AbstractProposal, θ::AbstractVector{T}) where {T<:Real} = step(GLOBAL_RNG, h, p, θ)
+step(h::Hamiltonian, p::AbstractTrajectory, θ::AbstractVector{T}) where {T<:Real} = step(GLOBAL_RNG, h, p, θ)
