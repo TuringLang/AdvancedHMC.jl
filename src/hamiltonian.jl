@@ -1,29 +1,29 @@
 # TODO: add a type for kinetic energy
 
-# The constructor of `LogDensityValue` will check numerical errors in
+# The constructor of `DualValue` will check numerical errors in
 #   `value` and `gradient`.  That is `is_valid` will be performed automatically.
-struct LogDensityValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}}
+struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}}
     value::Tv    # Cached value, e.g. logπ(θ).
     gradient::Tg # Cached gradient, e.g. ∇logπ(θ).
 end
 
-struct LogDensityFunction{Tf<:Function}
+struct DualFunction{Tf<:Function}
     f::Tf
     ∇f::Tf
 end
 
 # The constructor of `PhasePoint` will check numerical errors in
 #   `θ`, `r` and `h`. That is `is_valid` will be performed automatically.
-struct PhasePoint{T<:AbstractVector, Th<:LogDensityValue}
+struct PhasePoint{T<:AbstractVector, Th<:DualValue}
     θ::T # position variables / parameters
     r::T # momentum variables
-    h::Th # cached Hamiltonian energy for the current (θ, r)
+    logπ::Th # cached potential energy for the current θ
 end
 
 struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
     metric::M
     logπ::Tlogπ
-    # The following will be merged into logπ::LogDensityFunction
+    # The following will be merged into logπ::DualFunction
     ∂logπ∂θ::T∂logπ∂θ
 end
 
