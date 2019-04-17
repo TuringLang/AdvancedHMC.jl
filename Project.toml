@@ -1,7 +1,7 @@
 name = "AdvancedHMC"
 uuid = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
-authors = ["Kai Xu <xukai921110@gmail.com>", "Hong Ge", "Mohamed Tarek"]
-version = "0.1.0"
+authors = ["The Turing Team"]
+version = "0.1.2"
 
 [deps]
 InplaceOps = "505f98c9-085e-5b2c-8e89-488be7bf1f34"
