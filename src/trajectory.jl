@@ -5,7 +5,6 @@
 abstract type AbstractProposal end
 abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
-
 ###
 ### Standard HMC implementation with fixed trajectory length.
 ###
@@ -176,6 +175,20 @@ transition(nt::DynamicTrajectory{I},
     r::AbstractVector{T}
 ) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, nt, h, θ, r)
 
+
+##
+## API: required by Turing.Gibbs
+##
+
+# TODO: rename all `Turing.step` to `transition`?
+
+# function step(rng::AbstractRNG, h::Hamiltonian, prop::AbstractTrajectory{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
+#     r = rand_momentum(rng, h)
+#     θ_new, r_new, α, H_new = transition(rng, prop, h, θ, r)
+#     return θ_new, H_new, α
+# end
+#
+# step(h::Hamiltonian, p::AbstractTrajectory, θ::AbstractVector{T}) where {T<:Real} = step(GLOBAL_RNG, h, p, θ)
 
 ###
 ### Find for an initial leap-frog step-size via heuristic search.
