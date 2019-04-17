@@ -36,6 +36,7 @@ function transition(
     if is_accept
         θ, r = θ_new, -r_new
     end
+    # z::PhasePoint, where α and H_new is contained in `z`
     return θ, r, α, H_new
 end
 
@@ -113,6 +114,10 @@ function build_tree(
             n′ = n′ + n′′
         end
 
+        # s: termination stats
+        # α: MH stats, i.e. sum of MH accept prob for all leapfrog steps
+        # nα: total # of leap frog steps, i.e. phase points in a trajectory
+        # n: # of acceptable candicates, i.e. prob is larger than slice variable u
         return θm, rm, θp, rp, θ′, r′, n′, s′, α′, n′α
     end
 end
