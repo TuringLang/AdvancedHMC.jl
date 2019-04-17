@@ -37,7 +37,7 @@ end
 ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ .* r
 ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ * r
 
-function function hamiltonian_energy(h::Hamiltonian, θ::AbstractVector, r::AbstractVector)
+function hamiltonian_energy(h::Hamiltonian, θ::AbstractVector, r::AbstractVector)
     K = kinetic_energy(h, r, θ)
     if isnan(K)
         K = Inf
