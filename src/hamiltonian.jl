@@ -18,6 +18,7 @@ struct PhasePoint{T<:AbstractVector, Th<:DualValue}
     θ::T # position variables / parameters
     r::T # momentum variables
     logπ::Th # cached potential energy for the current θ
+    logκ::Th # cached kinect energy for the current r
 end
 
 struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
