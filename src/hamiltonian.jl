@@ -82,3 +82,15 @@ end
 # TODO: re-write this function such that it uses a package level global
 #  RNG (e.g. Advanced.RNG) instead of julia run-time level RNG
 rand_momentum(h::Hamiltonian) = rand_momentum(GLOBAL_RNG, h)
+
+##
+## API: required by Turing.Gibbs
+##
+
+# function step(rng::AbstractRNG, h::Hamiltonian, prop::AbstractTrajectory{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
+#     r = rand_momentum(rng, h)
+#     θ_new, r_new, α, H_new = transition(rng, prop, h, θ, r)
+#     return θ_new, H_new, α
+# end
+#
+# step(h::Hamiltonian, p::AbstractTrajectory, θ::AbstractVector{T}) where {T<:Real} = step(GLOBAL_RNG, h, p, θ)
