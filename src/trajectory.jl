@@ -39,10 +39,11 @@ function transition(
     rng::AbstractRNG,
     prop::StaticTrajectory,
     h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T}
+    # θ::AbstractVector{T},
+    # r::AbstractVector{T}
+    z::PhasePoint
 ) where {T<:Real}
-    z = phasepoint(h, θ, r)
+    # z = phasepoint(h, θ, r)
     # H = hamiltonian_energy(h, θ, r)
     # θ_new, r_new, _ = step(prop.integrator, h, θ, r, prop.n_steps) # TODO
     # H_new = hamiltonian_energy(h, θ_new, r_new)
@@ -51,12 +52,13 @@ function transition(
     # Accept via MH criteria
     is_accept, α = mh_accept(rng, neg_energy(z), neg_energy(z′))
     if is_accept
-        #θ, r = θ_new, -r_new
-        θ, r = z′.θ, -z′.r
+        # θ, r = θ_new, -r_new
+        z = PhasePoint(z′.θ, -z′.r, z′.logπ, z′.logκ)
     end
     # z::PhasePoint, where α and H_new is contained in `z`
-    H_new = neg_energy(z′)
-    return θ, r, α, H_new
+    # H_new = neg_energy(z′)
+    # return θ, r, α, H_new
+    return z, α
 end
 
 
@@ -75,9 +77,8 @@ struct NUTS{I<:AbstractIntegrator} <: DynamicTrajectory{I}
     Δ_max       ::  AbstractFloat
 end
 
-"""
-Helper function to use default values
-"""
+
+# Helper function to use default values
 NUTS(integrator::AbstractIntegrator) = NUTS(integrator, 10, 1000.0)
 
 """
@@ -161,10 +162,12 @@ function transition(
     rng::AbstractRNG,
     nt::DynamicTrajectory{I},
     h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T}
+    # θ::AbstractVector{T},
+    # r::AbstractVector{T}
+    z::PhasePoint
 ) where {I<:AbstractIntegrator,T<:Real}
-    z = phasepoint(h, θ, r)
+    # z = phasepoint(h, θ, r)
+    θ, r = z.θ, z.r
     H = neg_energy(z)
     # H = hamiltonian_energy(h, θ, r)
     logu = log(rand(rng)) - H
@@ -192,8 +195,8 @@ function transition(
         j = j + 1
     end
 
-    H_new = 0 # Warning: NUTS always return H_new = 0;
-    return θ_new, r_new, α / nα, H_new
+    # return θ_new, r_new, α / nα, H_new
+    return phasepoint(h, θ_new, r_new), α / nα
 end
 
 transition(nt::DynamicTrajectory{I},

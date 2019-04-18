@@ -52,6 +52,12 @@ function phasepoint(h::Hamiltonian, θ::AbstractVector, r::AbstractVector)
 end
 
 neg_energy(z::PhasePoint) = - z.logπ.value - z.logκ.value
+rand_momentum(
+    rng::AbstractRNG,
+    z::PhasePoint,
+    h::Hamiltonian
+) = phasepoint(h, z.θ, rand_momentum(rng, h))
+rand_momentum(z::PhasePoint, h::Hamiltonian) = phasepoint(h, z.θ, rand_momentum(h))
 
 function hamiltonian_energy(h::Hamiltonian, θ::AbstractVector, r::AbstractVector)
     K = kinetic_energy(h, r, θ)

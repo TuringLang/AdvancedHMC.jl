@@ -13,12 +13,16 @@ r_init = AdvancedHMC.rand_momentum(h)
 @testset "Passing random number generator" begin
     for seed in [1234, 5678, 90]
         rng = MersenneTwister(seed)
-        θ1, r1 = AdvancedHMC.transition(rng, prop, h, θ_init, r_init)
+        # θ1, r1 = AdvancedHMC.transition(rng, prop, h, θ_init, r_init)
+        z = AdvancedHMC.phasepoint(h, θ_init, r_init)
+        z1′, _ = AdvancedHMC.transition(rng, prop, h, z)
 
         rng = MersenneTwister(seed)
-        θ2, r2 = AdvancedHMC.transition(rng, prop, h, θ_init, r_init)
+        # θ2, r2 = AdvancedHMC.transition(rng, prop, h, θ_init, r_init)
+        z = AdvancedHMC.phasepoint(h, θ_init, r_init)
+        z2′, _ = AdvancedHMC.transition(rng, prop, h, z)
 
-        @test θ1 == θ2
-        @test r1 == r2
+        @test z1′.θ == z2′.θ
+        @test z1′.r == z2′.r
     end
 end
