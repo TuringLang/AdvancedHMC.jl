@@ -2,7 +2,7 @@
 
 # The constructor of `DualValue` will check numerical errors in
 #   `value` and `gradient`.  That is `is_valid` will be performed automatically.
-struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}}
+struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}} <: AbstractFloat
     value::Tv    # Cached value, e.g. logπ(θ).
     gradient::Tg # Cached gradient, e.g. ∇logπ(θ).
 end
@@ -14,7 +14,7 @@ end
 
 # The constructor of `PhasePoint` will check numerical errors in
 #   `θ`, `r` and `h`. That is `is_valid` will be performed automatically.
-struct PhasePoint{T<:AbstractVector, Th<:DualValue}
+struct PhasePoint{T<:AbstractVector, Th<:AbstractFloat}
     θ::T # position variables / parameters
     r::T # momentum variables
     logπ::Th # cached potential energy for the current θ
