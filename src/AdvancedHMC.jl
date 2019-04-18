@@ -7,6 +7,7 @@ using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, chol
 using LazyArrays: BroadcastArray
 using Random: GLOBAL_RNG, AbstractRNG
 using Parameters: @unpack
+using ArgCheck: @argcheck
 
 import StatsBase: sample
 
