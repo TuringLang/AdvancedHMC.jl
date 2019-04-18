@@ -12,13 +12,18 @@ struct DualFunction{Tf<:Function}
     ∇f::Tf
 end
 
+# TODO: replace logπ and logκ with π, κ
 # The constructor of `PhasePoint` will check numerical errors in
 #   `θ`, `r` and `h`. That is `is_valid` will be performed automatically.
-struct PhasePoint{T<:AbstractVector, Th<:AbstractFloat}
+struct PhasePoint{T<:AbstractVector, V<:AbstractFloat}
     θ::T # position variables / parameters
     r::T # momentum variables
-    logπ::Th # cached potential energy for the current θ
-    logκ::Th # cached kinect energy for the current r
+    logπ::V # cached potential energy for the current θ
+    logκ::V # cached kinect energy for the current r
+    function PhasePoint(θ::T, r::T, logπ::V, logκ::V) where {T,V}
+        @argcheck length(θ) == length(r) == length(logπ.gradient) == length(logκ.gradient)
+        new{T,V}(θ, r, logπ, logκ)
+    end
 end
 
 struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
@@ -31,11 +36,22 @@ end
 # Create a `Hamiltonian` with a new `M⁻¹`
 (h::Hamiltonian)(M⁻¹) = Hamiltonian(h.metric(M⁻¹), h.logπ, h.∂logπ∂θ)
 
+# TODO: rename to ∇π and ∇κ
 ∂H∂θ(h::Hamiltonian, θ::AbstractVector) = -h.∂logπ∂θ(θ)
 
 ∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric}, r::AbstractVector) = copy(r)
 ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ .* r
 ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ * r
+
+
+# TODO: add cache for gradients
+function phasepoint(h::Hamiltonian, θ::AbstractVector, r::AbstractVector)
+    π = DualValue(-kinetic_energy(h, r, θ), ∂H∂θ(h, θ))
+    κ = DualValue(-potential_energy(h, θ), ∂H∂r(h, r))
+    return PhasePoint(θ, r, π, κ)
+end
+
+neg_energy(z::PhasePoint) = - z.logπ.value - z.logκ.value
 
 function hamiltonian_energy(h::Hamiltonian, θ::AbstractVector, r::AbstractVector)
     K = kinetic_energy(h, r, θ)

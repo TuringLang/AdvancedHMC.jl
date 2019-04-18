@@ -42,15 +42,20 @@ function transition(
     θ::AbstractVector{T},
     r::AbstractVector{T}
 ) where {T<:Real}
-    H = hamiltonian_energy(h, θ, r)
-    θ_new, r_new, _ = step(prop.integrator, h, θ, r, prop.n_steps)
-    H_new = hamiltonian_energy(h, θ_new, r_new)
+    z = phasepoint(h, θ, r)
+    # H = hamiltonian_energy(h, θ, r)
+    # θ_new, r_new, _ = step(prop.integrator, h, θ, r, prop.n_steps) # TODO
+    # H_new = hamiltonian_energy(h, θ_new, r_new)
+    # z′ = phasepoint(h, θ_new, r_new)
+    z′ = step(prop.integrator, h, z, prop.n_steps)
     # Accept via MH criteria
-    is_accept, α = mh_accept(rng, H, H_new)
+    is_accept, α = mh_accept(rng, neg_energy(z), neg_energy(z′))
     if is_accept
-        θ, r = θ_new, -r_new
+        #θ, r = θ_new, -r_new
+        θ, r = z′.θ, -z′.r
     end
     # z::PhasePoint, where α and H_new is contained in `z`
+    H_new = neg_energy(z′)
     return θ, r, α, H_new
 end
 
@@ -101,12 +106,17 @@ function build_tree(
 ) where {I<:AbstractIntegrator,T<:Real}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
-        θ′, r′, _is_valid = step(nt.integrator, h, θ, r, v)
-        H′ = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+        # θ′, r′, _is_valid = step(nt.integrator, h, θ, r, v)
+        # H′ = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+        # z′ = phasepoint(h, θ′, r′)
+        z = phasepoint(h, θ, r)
+        z′ = step(nt.integrator, h, z, v)
+        H′ = neg_energy(z′)
         n′ = (logu <= -H′) ? 1 : 0
         s′ = (logu < nt.Δ_max + -H′) ? 1 : 0
         α′ = exp(min(0, H - H′))
 
+        θ′, r′ = z′.θ, z′.r
         return θ′, r′, θ′, r′, θ′, r′, n′, s′, α′, 1
     else
         # Recursion - build the left and right subtrees.
@@ -154,7 +164,9 @@ function transition(
     θ::AbstractVector{T},
     r::AbstractVector{T}
 ) where {I<:AbstractIntegrator,T<:Real}
-    H = hamiltonian_energy(h, θ, r)
+    z = phasepoint(h, θ, r)
+    H = neg_energy(z)
+    # H = hamiltonian_energy(h, θ, r)
     logu = log(rand(rng)) - H
 
     θm = θ; θp = θ; rm = r; rp = r; j = 0; θ_new = θ; r_new = r; n = 1; s = 1
@@ -220,10 +232,14 @@ function find_good_eps(
     d = 2.0
 
     r = rand_momentum(rng, h)
-    H = hamiltonian_energy(h, θ, r)
+    z = phasepoint(h, θ, r)
+    H = neg_energy(z)
+    # H = hamiltonian_energy(h, θ, r)
 
-    θ′, r′, _is_valid = step(Leapfrog(ϵ), h, θ, r)
-    H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+    # θ′, r′, _is_valid = step(Leapfrog(ϵ), h, θ, r)
+    # H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+    z′ = step(Leapfrog(ϵ), h, z)
+    H_new = neg_energy(z′)
 
     ΔH = H - H_new
     direction = ΔH > log(a_cross) ? 1 : -1
@@ -231,8 +247,11 @@ function find_good_eps(
     # Crossing step: increase/decrease ϵ until accept ratio cross a_cross.
     for _ = 1:max_n_iters
         ϵ′ = direction == 1 ? d * ϵ : 1 / d * ϵ
-        θ′, r′, _is_valid = step(Leapfrog(ϵ′), h, θ′, r′)
-        H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+        # θ′, r′, _is_valid = step(Leapfrog(ϵ′), h, θ′, r′) # NOTE: should be θ, r
+        # H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+        # z′ = phasepoint(h, θ′, r′)
+        z′ = step(Leapfrog(ϵ′), h, z)
+        H_new = neg_energy(z′)
 
         ΔH = H - H_new
         DEBUG && @debug "Crossing step" direction H_new ϵ "α = $(min(1, exp(ΔH)))"
@@ -250,8 +269,11 @@ function find_good_eps(
     ϵ, ϵ′ = ϵ < ϵ′ ? (ϵ, ϵ′) : (ϵ′, ϵ)  # ensure ϵ < ϵ′
     for _ = 1:max_n_iters
         ϵ_mid = middle(ϵ, ϵ′)
-        θ′, r′, _is_valid = step(Leapfrog(ϵ_mid), h, θ, r)
-        H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+        # θ′, r′, _is_valid = step(Leapfrog(ϵ_mid), h, θ, r)
+        # H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+        # z′ = phasepoint(h, θ′, r′)
+        z′ = step(Leapfrog(ϵ_mid), h, z)
+        H_new = neg_energy(z′)
 
         ΔH = H - H_new
         DEBUG && @debug "Bisection step" H_new ϵ_mid "α = $(min(1, exp(ΔH)))"

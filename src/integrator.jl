@@ -33,14 +33,17 @@ function lf_position(
     return θ + ϵ * ∂H∂r(h, r)
 end
 
+# TODO: return z::PhasePoint instead of θ, r
 # TODO: double check the function below to see if it is type stable or not
 function step(
     lf::Leapfrog{F},
     h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T},
+    #θ::AbstractVector{T},
+    #r::AbstractVector{T},
+    z::PhasePoint,
     n_steps::Int=1
 ) where {F<:AbstractFloat,T<:Real}
+    @unpack θ, r = z
     fwd = n_steps > 0 # simulate hamiltonian backward when n_steps < 0
     ϵ = fwd ? lf.ϵ : - lf.ϵ
     n_valid = 0
@@ -61,7 +64,9 @@ function step(
             break
         end
     end
-    return θ, r, n_valid > 0
+    # return θ, r, n_valid > 0
+    z′ = phasepoint(h, θ, r)
+    return z′
 end
 
 ###
