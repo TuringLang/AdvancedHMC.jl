@@ -41,9 +41,9 @@ function transition(
     is_accept, α = mh_accept(rng, H, H_new)
     # !!! this is a bug
     if is_accept
-        θ, r = θ_new, -r_new
+        θ, r, H = θ_new, -r_new, H_new
     end
-    return θ, r, α, H_new
+    return θ, r, α, H
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
