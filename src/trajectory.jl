@@ -39,7 +39,6 @@ function transition(
     H_new = hamiltonian_energy(h, θ_new, r_new)
     # Accept via MH criteria
     is_accept, α = mh_accept(rng, H, H_new)
-    # !!! this is a bug
     if is_accept
         θ, r, H = θ_new, -r_new, H_new
     end
