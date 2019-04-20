@@ -304,4 +304,4 @@ function mh_accept(rng::AbstractRNG, H::AbstractFloat, H_new::AbstractFloat)
     logα = min(0, H - H_new)
     return log(rand(rng)) < logα, exp(logα)
 end
-mh_accept(H::AbstractFloat, H_new::AbstractFloat) = mh_accept(GLOBAL_RNG, logα)
+mh_accept(H::AbstractFloat, H_new::AbstractFloat) = mh_accept(GLOBAL_RNG, H, H_new)
