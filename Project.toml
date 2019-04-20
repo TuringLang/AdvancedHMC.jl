@@ -4,7 +4,6 @@ authors = ["The Turing Team"]
 version = "0.1.3"
 
 [deps]
-ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
 InplaceOps = "505f98c9-085e-5b2c-8e89-488be7bf1f34"
 LazyArrays = "5078a376-72f3-5289-bfd5-ec5146d43c02"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
