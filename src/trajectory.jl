@@ -5,9 +5,15 @@
 abstract type AbstractProposal end
 abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
+# Create a callback function for all `AbstractTrajectory` without passing random number generator
+transition(at::AbstractTrajectory{I},
+    h::Hamiltonian,
+    θ::AbstractVector{T},
+    r::AbstractVector{T}
+) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, at, h, θ, r)
 
 ###
-### Standard HMC implementation with fixed trajectory length.
+### Standard HMC implementation with fixed leapfrog step numbers.
 ###
 struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
     integrator  ::  I
@@ -33,18 +39,47 @@ function transition(
     H_new = hamiltonian_energy(h, θ_new, r_new)
     # Accept via MH criteria
     is_accept, α = mh_accept(rng, H, H_new)
+    # !!! this is a bug
     if is_accept
         θ, r = θ_new, -r_new
     end
     return θ, r, α, H_new
 end
 
+abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
+
+###
+### Standard HMC implementation with fixed total trajectory length.
+###
+struct HMCDA{I<:AbstractIntegrator} <: DynamicTrajectory{I}
+    integrator  ::  I
+    λ           ::  AbstractFloat
+end
+
+"""
+Create a `HMCDA` with a new integrator
+"""
+function (tlp::HMCDA)(integrator::AbstractIntegrator)
+    return HMCDA(integrator, tlp.λ)
+end
+
+function transition(
+    rng::AbstractRNG,
+    prop::HMCDA,
+    h::Hamiltonian,
+    θ::AbstractVector{T},
+    r::AbstractVector{T}
+) where {T<:Real}
+    # Create the corresponding static prop
+    n_steps = max(1, round(Int, prop.λ / prop.integrator.ϵ))
+    static_prop = StaticTrajectory(prop.integrator, n_steps)
+    return transition(rng, static_prop, h, θ, r)
+end
+
 
 ###
 ### Advanced HMC implementation with (adaptive) dynamic trajectory length.
 ###
-
-abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
 
 """
 Dynamic trajectory HMC using the no-U-turn termination criteria algorithm.
@@ -164,13 +199,6 @@ function transition(
     H_new = 0 # Warning: NUTS always return H_new = 0;
     return θ_new, r_new, α / nα, H_new
 end
-
-transition(nt::DynamicTrajectory{I},
-    h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T}
-) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, nt, h, θ, r)
-
 
 ###
 ### Find for an initial leap-frog step-size via heuristic search.
