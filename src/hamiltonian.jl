@@ -20,11 +20,18 @@ struct PhasePoint{T<:AbstractVector, V<:AbstractFloat}
     r::T # momentum variables
     logπ::V # cached potential energy for the current θ
     logκ::V # cached kinect energy for the current r
-    function PhasePoint(θ::T, r::T, logπ::V, logκ::V) where {T,V}
-        @argcheck length(θ) == length(r) == length(logπ.gradient) == length(logκ.gradient)
-        new{T,V}(θ, r, logπ, logκ)
+    function PhasePoint(θ::T, r::T, ℓπ::V, ℓκ::V) where {T,V}
+        @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
+        if !(all(isfinite, θ) && all(isfinite, r) && all(isfinite, ℓπ) && all(isfinite, ℓκ))
+            @warn "Numerical error has been detected. Rejecting current proposal..."
+            ℓκ = DualValue(-Inf, ℓκ.gradient)
+            ℓπ = DualValue(-Inf, ℓπ.gradient)
+        end
+        new{T,V}(θ, r, ℓπ, ℓκ)
     end
 end
+
+Base.isfinite(v::DualValue) = all(isfinite(v.value)) && all(isfinite(v.gradient))
 
 struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
     metric::M
