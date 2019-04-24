@@ -31,7 +31,7 @@ struct PhasePoint{T<:AbstractVector, V<:AbstractFloat}
     end
 end
 
-Base.isfinite(v::DualValue) = all(isfinite(v.value)) && all(isfinite(v.gradient))
+Base.isfinite(v::DualValue) = all(isfinite, v.value) && all(isfinite, v.gradient)
 
 struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
     metric::M
