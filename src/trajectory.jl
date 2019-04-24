@@ -5,8 +5,15 @@
 abstract type AbstractProposal end
 abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
+# Create a callback function for all `AbstractTrajectory` without passing random number generator
+transition(at::AbstractTrajectory{I},
+    h::Hamiltonian,
+    θ::AbstractVector{T},
+    r::AbstractVector{T}
+) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, at, h, θ, r)
+
 ###
-### Standard HMC implementation with fixed trajectory length.
+### Standard HMC implementation with fixed leapfrog step numbers.
 ###
 struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
     integrator  ::  I
@@ -52,21 +59,49 @@ function transition(
     # Accept via MH criteria
     is_accept, α = mh_accept(rng, neg_energy(z), neg_energy(z′))
     if is_accept
-        # θ, r = θ_new, -r_new
+        # θ, r, H = θ_new, -r_new, H_new
         z = PhasePoint(z′.θ, -z′.r, z′.logπ, z′.logκ)
     end
     # z::PhasePoint, where α and H_new is contained in `z`
     # H_new = neg_energy(z′)
-    # return θ, r, α, H_new
+    # return θ, r, α, H
     return z, α
+end
+
+abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
+
+###
+### Standard HMC implementation with fixed total trajectory length.
+###
+struct HMCDA{I<:AbstractIntegrator} <: DynamicTrajectory{I}
+    integrator  ::  I
+    λ           ::  AbstractFloat
+end
+
+"""
+Create a `HMCDA` with a new integrator
+"""
+function (tlp::HMCDA)(integrator::AbstractIntegrator)
+    return HMCDA(integrator, tlp.λ)
+end
+
+function transition(
+    rng::AbstractRNG,
+    prop::HMCDA,
+    h::Hamiltonian,
+    θ::AbstractVector{T},
+    r::AbstractVector{T}
+) where {T<:Real}
+    # Create the corresponding static prop
+    n_steps = max(1, round(Int, prop.λ / prop.integrator.ϵ))
+    static_prop = StaticTrajectory(prop.integrator, n_steps)
+    return transition(rng, static_prop, h, θ, r)
 end
 
 
 ###
 ### Advanced HMC implementation with (adaptive) dynamic trajectory length.
 ###
-
-abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
 
 """
 Dynamic trajectory HMC using the no-U-turn termination criteria algorithm.
