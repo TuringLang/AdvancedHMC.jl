@@ -1,6 +1,12 @@
-##########################
-### Variance estimator ###
-##########################
+###
+### Preconditioning matrix adaptors.
+###
+
+abstract type AbstractPreconditioner <: AbstractAdaptor end
+
+####
+#### Robust online (co-)variance estimators.
+####
 
 abstract type VarEstimator{T} end
 
@@ -111,11 +117,10 @@ function get_cov(wc::WelfordCov{T})::Matrix{T} where {T<:AbstractFloat}
     return (n / ((n + 5) * (n - 1))) .* M + 1e-3 * (5 / (n + 5)) * LinearAlgebra.I
 end
 
-################
-### Adaptors ###
-################
-# TODO: integrate metric into Preconditioner
-abstract type AbstractPreconditioner <: AbstractAdaptor end
+####
+#### Preconditioning matrix adaption implementation.
+####
+
 struct UnitPreconditioner <: AbstractPreconditioner end
 
 string(::UnitPreconditioner) = "I"
