@@ -114,70 +114,70 @@ end
 ################
 ### Adaptors ###
 ################
-# TODO: integrate metric into preconditioner
-abstract type AbstractPreConditioner <: AbstractAdaptor end
-struct UnitPreConditioner <: AbstractPreConditioner end
+# TODO: integrate metric into Preconditioner
+abstract type AbstractPreconditioner <: AbstractAdaptor end
+struct UnitPreconditioner <: AbstractPreconditioner end
 
-string(::UnitPreConditioner) = "I"
-adapt!(::UnitPreConditioner, ::AbstractVector{<:Real}, ::AbstractFloat, is_update::Bool=true) = nothing
-reset!(::UnitPreConditioner) = nothing
-getM⁻¹(dpc::UnitPreConditioner) = nothing
+string(::UnitPreconditioner) = "I"
+adapt!(::UnitPreconditioner, ::AbstractVector{<:Real}, ::AbstractFloat, is_update::Bool=true) = nothing
+reset!(::UnitPreconditioner) = nothing
+getM⁻¹(dpc::UnitPreconditioner) = nothing
 
-mutable struct DiagPreConditioner{T<:Real,AT<:AbstractVector{T}} <: AbstractPreConditioner
+mutable struct DiagPreconditioner{T<:Real,AT<:AbstractVector{T}} <: AbstractPreconditioner
     n_min   :: Int
     ve  :: VarEstimator{T}
     var :: AT
 end
 
-function DiagPreConditioner(d::Int, n_min::Int=10)
+function DiagPreconditioner(d::Int, n_min::Int=10)
     ve = WelfordVar(0, zeros(d), zeros(d))
-    return DiagPreConditioner(n_min, ve, Vector(ones(d)))
+    return DiagPreconditioner(n_min, ve, Vector(ones(d)))
 end
 
-function string(dpc::DiagPreConditioner)
+function string(dpc::DiagPreconditioner)
     return string(dpc.var)
 end
 
-function adapt!(dpc::DiagPreConditioner, θ::AbstractVector{<:Real}, α::AbstractFloat, is_update::Bool=true)
+function adapt!(dpc::DiagPreconditioner, θ::AbstractVector{<:Real}, α::AbstractFloat, is_update::Bool=true)
     add_sample!(dpc.ve, θ)
     if dpc.ve.n >= dpc.n_min && is_update
         dpc.var .= get_var(dpc.ve)
     end
 end
 
-reset!(dpc::DiagPreConditioner) = reset!(dpc.ve)
+reset!(dpc::DiagPreconditioner) = reset!(dpc.ve)
 
-function getM⁻¹(dpc::DiagPreConditioner)
+function getM⁻¹(dpc::DiagPreconditioner)
     return dpc.var
 end
 
-mutable struct DensePreConditioner{T<:AbstractFloat} <: AbstractPreConditioner
+mutable struct DensePreconditioner{T<:AbstractFloat} <: AbstractPreconditioner
     n_min :: Int
     ce    :: CovEstimator{T}
     covar :: Matrix{T}
 end
 
-function DensePreConditioner(d::Integer, n_min::Int=10)
+function DensePreconditioner(d::Integer, n_min::Int=10)
     ce = WelfordCov(d)
     # TODO: take use of the line below when we have an interface to set which pre-conditioner to use
     # ce = NaiveCov()
-    return DensePreConditioner(n_min, ce, LinearAlgebra.diagm(0 => ones(d)))
+    return DensePreconditioner(n_min, ce, LinearAlgebra.diagm(0 => ones(d)))
 end
 
-function string(dpc::DensePreConditioner)
+function string(dpc::DensePreconditioner)
     return string(LinearAlgebra.diag(dpc.covar))
 end
 
-function adapt!(dpc::DensePreConditioner, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat, is_update::Bool=true)
+function adapt!(dpc::DensePreconditioner, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat, is_update::Bool=true)
     add_sample!(dpc.ce, θ)
     if dpc.ce.n >= dpc.n_min && is_update
         dpc.covar .= get_cov(dpc.ce)
     end
 end
 
-reset!(dpc::DensePreConditioner) = reset!(dpc.ce)
+reset!(dpc::DensePreconditioner) = reset!(dpc.ce)
 
-function getM⁻¹(dpc::DensePreConditioner)
+function getM⁻¹(dpc::DensePreconditioner)
     return dpc.covar
 end
 
@@ -260,14 +260,14 @@ end
 #### Preconditioner constructors
 ####
 
-function PreConditioner(::UnitEuclideanMetric)
-    return UnitPreConditioner()
+function Preconditioner(::UnitEuclideanMetric)
+    return UnitPreconditioner()
 end
 
-function PreConditioner(m::DiagEuclideanMetric)
-    return DiagPreConditioner(m.dim)
+function Preconditioner(m::DiagEuclideanMetric)
+    return DiagPreconditioner(m.dim)
 end
 
-function PreConditioner(m::DenseEuclideanMetric)
-    return DensePreConditioner(m.dim)
+function Preconditioner(m::DenseEuclideanMetric)
+    return DensePreconditioner(m.dim)
 end

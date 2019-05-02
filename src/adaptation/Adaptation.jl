@@ -14,7 +14,7 @@ abstract type AbstractCompositeAdaptor <: AbstractAdaptor end
 
 # TODO: generalise this to a list of adaptors
 struct NaiveCompAdaptor <: AbstractCompositeAdaptor
-    pc  :: AbstractPreConditioner
+    pc  :: AbstractPreconditioner
     ssa :: StepSizeAdaptor
 end
 
@@ -35,8 +35,8 @@ include("stan_adaption.jl")
 
 export adapt!, getϵ, getM⁻¹,
        NesterovDualAveraging,
-       UnitPreConditioner, DiagPreConditioner, DensePreConditioner,
+       UnitPreconditioner, DiagPreconditioner, DensePreconditioner,
        AbstractMetric, UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric,
-       PreConditioner, NaiveCompAdaptor, StanNUTSAdaptor
+       Preconditioner, NaiveCompAdaptor, StanNUTSAdaptor
 
 end # module

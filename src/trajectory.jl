@@ -279,7 +279,7 @@ mh_accept(H::AbstractFloat, H_new::AbstractFloat) = mh_accept(GLOBAL_RNG, H, H_n
 #### Adaption
 ####
 
-function update(h::Hamiltonian, prop::AbstractProposal, dpc::Adaptation.AbstractPreConditioner)
+function update(h::Hamiltonian, prop::AbstractProposal, dpc::Adaptation.AbstractPreconditioner)
     return h(getM⁻¹(dpc)), prop
 end
 
