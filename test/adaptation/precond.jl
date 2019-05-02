@@ -1,3 +1,4 @@
+using AdvancedHMC
 using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, add_sample!, get_var, get_cov, reset!
 using Test, LinearAlgebra, Distributions
 
