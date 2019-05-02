@@ -126,7 +126,7 @@ struct UnitPreconditioner <: AbstractPreconditioner end
 string(::UnitPreconditioner) = "I"
 adapt!(::UnitPreconditioner, ::AbstractVector{<:Real}, ::AbstractFloat, is_update::Bool=true) = nothing
 reset!(::UnitPreconditioner) = nothing
-getM⁻¹(dpc::UnitPreconditioner) = nothing
+getM⁻¹(dpc::UnitPreconditioner) = 1.0
 
 mutable struct DiagPreconditioner{T<:Real,AT<:AbstractVector{T}} <: AbstractPreconditioner
     n_min   :: Int
@@ -209,6 +209,11 @@ end
 # Create a `UnitEuclideanMetric`; required for an unified interface
 (ue::UnitEuclideanMetric)(::Nothing) = UnitEuclideanMetric(ue.dim)
 
+Base.length(e::UnitEuclideanMetric) = e.dim
+(e::UnitEuclideanMetric)(dim::Int) = UnitEuclideanMetric(dim)
+(e::UnitEuclideanMetric)(::AbstractFloat) = UnitEuclideanMetric(e.dim)
+
+
 function _string_diag(d, n_chars::Int=32) :: String
     s_diag = string(d)
     l = length(s_diag)
@@ -235,6 +240,9 @@ DiagEuclideanMetric(D::Int) = DiagEuclideanMetric(ones(Float64, D))
 
 # Create a `DiagEuclideanMetric` with a new `M⁻¹`
 (dem::DiagEuclideanMetric)(M⁻¹::AbstractVector{<:Real}) = DiagEuclideanMetric(M⁻¹)
+
+Base.length(e::DiagEuclideanMetric) = size(e.M⁻¹, 1)
+(e::DiagEuclideanMetric)(dim::Int) = DiagEuclideanMetric(dim)
 
 Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, _string_diag(dem.M⁻¹))
 
@@ -264,6 +272,9 @@ DenseEuclideanMetric(D::Int) = DenseEuclideanMetric(Matrix{Float64}(I, D, D))
 
 # Create a `DenseEuclideanMetric` with a new `M⁻¹`
 (dem::DenseEuclideanMetric)(M⁻¹::AbstractMatrix{<:Real}) = DenseEuclideanMetric(M⁻¹)
+
+Base.length(e::DenseEuclideanMetric) = size(e.M⁻¹, 1)
+(e::DenseEuclideanMetric)(dim::Int) = DenseEuclideanMetric(Matrix{Float64}(I, dim, dim))
 
 Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, _string_diag(diag(dem.M⁻¹)))
 

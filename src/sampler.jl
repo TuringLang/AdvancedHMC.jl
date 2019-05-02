@@ -56,6 +56,7 @@ function step(rng::AbstractRNG,
     prop::AbstractTrajectory{I},
     θ::AbstractVector{T}
 ) where {T<:Real,I<:AbstractIntegrator}
+    h = update(h, θ) # Ensure h.metric has the same dim as θ.
     r = rand_momentum(rng, h)
     θ_new, r_new, α, H_new = transition(rng, prop, h, θ, r)
     return θ_new, H_new, α
