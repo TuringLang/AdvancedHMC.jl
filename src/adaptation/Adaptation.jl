@@ -1,6 +1,7 @@
 module Adaptation
 
 import Base: string
+using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky
 import LinearAlgebra, Statistics
 using ..AdvancedHMC: DEBUG
 
@@ -35,6 +36,7 @@ include("stan_adaption.jl")
 export adapt!, getϵ, getM⁻¹,
        NesterovDualAveraging,
        UnitPreConditioner, DiagPreConditioner, DensePreConditioner,
-       NaiveCompAdaptor, StanNUTSAdaptor
+       AbstractMetric, UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric,
+       PreConditioner, NaiveCompAdaptor, StanNUTSAdaptor
 
 end # module
