@@ -182,7 +182,7 @@ function adapt!(dpc::DensePreconditioner, θ::AbstractVector{<:AbstractFloat}, �
     if length(θ) > size(dpc.covar,1)
         @assert dpc.ce.n == 0 "Cannot resize a var estimator when it contains samples."
         dpc.ce = WelfordCov(length(θ))
-        dpc.covar = zeros(length(θ),length(θ))
+        dpc.covar = LinearAlgebra.diagm(0 => ones(length(θ)))
     end
     add_sample!(dpc.ce, θ)
     if dpc.ce.n >= dpc.n_min && is_update

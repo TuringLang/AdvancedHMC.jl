@@ -50,5 +50,5 @@ end
     AdvancedHMC.adapt!(pc2, θ, 1.)
     AdvancedHMC.adapt!(pc3, θ, 1.)
     @test AdvancedHMC.Adaptation.getM⁻¹(pc2) == zeros(length(θ))
-    @test AdvancedHMC.Adaptation.getM⁻¹(pc3) == zeros(length(θ), length(θ))
+    @test AdvancedHMC.Adaptation.getM⁻¹(pc3) == LinearAlgebra.diagm(0 => ones(length(θ)))
 end
