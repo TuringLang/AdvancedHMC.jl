@@ -287,15 +287,15 @@ function Preconditioner(m::DenseEuclideanMetric)
     return DensePreconditioner(m.dim)
 end
 
-function Preconditioner(m::Symbol, dim::Integer=2)
-    if m == :UnitEuclideanMetric
+function Preconditioner(m::Type, dim::Integer=2)
+    if m == UnitEuclideanMetric
         pc = UnitPreconditioner()
-    elseif m == :DiagEuclideanMetric
+    elseif m == DiagEuclideanMetric
         pc = DiagPreconditioner(dim)
-    elseif m == :DenseEuclideanMetric
+    elseif m == DenseEuclideanMetric
         pc = DensePreconditioner(dim)
     else
-        @error "m needs to be one of [:UnitEuclideanMetric, :DiagEuclideanMetric, :DenseEuclideanMetric]"
+        @error "m needs to be one of [UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric]"
     end
     return pc
 end
