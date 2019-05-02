@@ -293,7 +293,7 @@ end
 
 function update(h::Hamiltonian, θ::AbstractVector{<:Real})
     metric = h.metric
-    if length(metric) < length(θ)
+    if length(metric) != length(θ)
         metric = metric(length(θ))
         h = h(getM⁻¹(Preconditioner(metric)))
     end
