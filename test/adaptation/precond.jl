@@ -37,3 +37,17 @@ using Test, LinearAlgebra, Distributions
         end
     end
 end
+
+@testset "Preconditioner constructors" begin
+    θ = [0.0, 0.0, 0.0, 0.0]
+    pc1 = Preconditioner(:UnitEuclideanMetric) # default dim = 2
+    pc2 = Preconditioner(:DiagEuclideanMetric)
+    pc3 = Preconditioner(:DenseEuclideanMetric)
+
+    # Var adaptor dimention should be increased to length(θ) from 2
+    AdvancedHMC.adapt!(pc1, θ, 1.)
+    AdvancedHMC.adapt!(pc2, θ, 1.)
+    AdvancedHMC.adapt!(pc3, θ, 1.)
+    AdvancedHMC.Adaptation.getM⁻¹(pc2) == zeros(length(θ))
+    AdvancedHMC.Adaptation.getM⁻¹(pc3) == zeros(length(θ), length(θ))
+end

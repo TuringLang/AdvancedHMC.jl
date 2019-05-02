@@ -144,6 +144,11 @@ function string(dpc::DiagPreconditioner)
 end
 
 function adapt!(dpc::DiagPreconditioner, θ::AbstractVector{<:Real}, α::AbstractFloat, is_update::Bool=true)
+    if length(θ) > length(dpc.var)
+        @assert dpc.ve.n == 0 "Cannot resize a var estimator when it contains samples."
+        dpc.ve = WelfordVar(0, zeros(length(θ)), zeros(length(θ)))
+        dpc.var = zeros(length(θ))
+    end
     add_sample!(dpc.ve, θ)
     if dpc.ve.n >= dpc.n_min && is_update
         dpc.var .= get_var(dpc.ve)
@@ -174,6 +179,11 @@ function string(dpc::DensePreconditioner)
 end
 
 function adapt!(dpc::DensePreconditioner, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat, is_update::Bool=true)
+    if length(θ) > size(dpc.covar,1)
+        @assert dpc.ce.n == 0 "Cannot resize a var estimator when it contains samples."
+        dpc.ce = WelfordCov(length(θ))
+        dpc.covar = zeros(length(θ),length(θ))
+    end
     add_sample!(dpc.ce, θ)
     if dpc.ce.n >= dpc.n_min && is_update
         dpc.covar .= get_cov(dpc.ce)
@@ -275,4 +285,17 @@ end
 
 function Preconditioner(m::DenseEuclideanMetric)
     return DensePreconditioner(m.dim)
+end
+
+function Preconditioner(m::Symbol, dim::Integer=2)
+    if m == :UnitEuclideanMetric
+        pc = UnitPreconditioner()
+    elseif m == :DiagEuclideanMetric
+        pc = DiagPreconditioner(dim)
+    elseif m == :DenseEuclideanMetric
+        pc = DensePreconditioner(dim)
+    else
+        @error "m needs to be one of [:UnitEuclideanMetric, :DiagEuclideanMetric, :DenseEuclideanMetric]"
+    end
+    return pc
 end
