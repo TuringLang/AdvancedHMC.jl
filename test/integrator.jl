@@ -25,15 +25,15 @@ n_steps = 10
     @test r_step ≈ r_steps atol=DETATOL
 end
 
-using Turing: Inference
-@testset "steps(::Leapfrog) against Turing.Inference._leapfrog()" begin
-    t_Turing = @elapsed θ_Turing, r_Turing, _ = Inference._leapfrog(θ_init, r_init, n_steps, ϵ, x -> (nothing, ∂logπ∂θ(x)))
-    t_AHMC = @elapsed θ_AHMC, r_AHMC, _ = AdvancedHMC.step(lf, h, θ_init, r_init, n_steps)
-    @info "Performance of leapfrog of AdvancedHMC v.s. Turing" n_steps t_Turing t_AHMC t_Turing / t_AHMC
-
-    @test θ_Turing ≈ θ_AHMC atol=DETATOL
-    @test r_Turing ≈ r_AHMC atol=DETATOL
-end
+# using Turing: Inference
+# @testset "steps(::Leapfrog) against Turing.Inference._leapfrog()" begin
+#     t_Turing = @elapsed θ_Turing, r_Turing, _ = Inference._leapfrog(θ_init, r_init, n_steps, ϵ, x -> (nothing, ∂logπ∂θ(x)))
+#     t_AHMC = @elapsed θ_AHMC, r_AHMC, _ = AdvancedHMC.step(lf, h, θ_init, r_init, n_steps)
+#     @info "Performance of leapfrog of AdvancedHMC v.s. Turing" n_steps t_Turing t_AHMC t_Turing / t_AHMC
+#
+#     @test θ_Turing ≈ θ_AHMC atol=DETATOL
+#     @test r_Turing ≈ r_AHMC atol=DETATOL
+# end
 
 using LinearAlgebra: dot
 using Statistics: mean
