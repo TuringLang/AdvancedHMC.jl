@@ -144,7 +144,7 @@ function string(dpc::DiagPreconditioner)
 end
 
 function adapt!(dpc::DiagPreconditioner, θ::AbstractVector{<:Real}, α::AbstractFloat, is_update::Bool=true)
-    if length(θ) > length(dpc.var)
+    if length(θ) != length(dpc.var)
         @assert dpc.ve.n == 0 "Cannot resize a var estimator when it contains samples."
         dpc.ve = WelfordVar(0, zeros(length(θ)), zeros(length(θ)))
         dpc.var = zeros(length(θ))
@@ -179,7 +179,7 @@ function string(dpc::DensePreconditioner)
 end
 
 function adapt!(dpc::DensePreconditioner, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat, is_update::Bool=true)
-    if length(θ) > size(dpc.covar,1)
+    if length(θ) != size(dpc.covar,1)
         @assert dpc.ce.n == 0 "Cannot resize a var estimator when it contains samples."
         dpc.ce = WelfordCov(length(θ))
         dpc.covar = LinearAlgebra.diagm(0 => ones(length(θ)))
