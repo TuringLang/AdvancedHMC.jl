@@ -14,9 +14,9 @@ end
 
 # TODO: currently only StanNUTSAdaptor has the filed `n_adapts`. maybe we could unify all
 # Acknowledgement: this adaption settings is mimicing Stan's 3-phase adaptation.
-struct StanNUTSAdaptor <: AbstractCompositeAdaptor
+struct StanNUTSAdaptor{M<:AbstractPreconditioner} <: AbstractCompositeAdaptor
     n_adapts    :: Int
-    pc          :: AbstractPreconditioner
+    pc          :: M
     ssa         :: StepSizeAdaptor
     init_buffer :: Int
     term_buffer :: Int
