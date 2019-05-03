@@ -14,8 +14,11 @@ import StatsBase: sample
 # π(θ) - target distribution
 # r - momentum variable
 
-include("metric.jl")
+include("adaptation/Adaptation.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
+export NesterovDualAveraging, Preconditioner, NaiveCompAdaptor, StanNUTSAdaptor
+using .Adaptation
+
 include("hamiltonian.jl")
 export Hamiltonian
 include("integrator.jl")
@@ -23,8 +26,6 @@ export Leapfrog
 include("trajectory.jl")
 export StaticTrajectory, find_good_eps, HMCDA, NUTS
 
-include("adaptation.jl")
-export NesterovDualAveraging, PreConditioner, NaiveCompAdaptor, StanNUTSAdaptor
 include("diagnosis.jl")
 include("sampler.jl")
 export sample

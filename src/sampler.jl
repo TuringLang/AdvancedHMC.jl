@@ -12,12 +12,24 @@ function sample(rng::AbstractRNG, h::Hamiltonian, prop::AbstractProposal, θ::Ab
     return θs
 end
 
-sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int, adaptor::Adaptation.AbstractAdaptor,
-       n_adapts::Int=min(div(n_samples, 10), 1_000); verbose::Bool=true) where {T<:Real} =
-       sample(GLOBAL_RNG, h, prop, θ, n_samples, adaptor, n_adapts; verbose=verbose)
+sample(h::Hamiltonian,
+    prop::AbstractProposal,
+    θ::AbstractVector{T},
+    n_samples::Int,
+    adaptor::Adaptation.AbstractAdaptor,
+    n_adapts::Int=min(div(n_samples, 10), 1_000);
+    verbose::Bool=true
+) where {T<:Real} = sample(GLOBAL_RNG, h, prop, θ, n_samples, adaptor, n_adapts; verbose=verbose)
 
-function sample(rng::AbstractRNG, h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int, adaptor::Adaptation.AbstractAdaptor,
-                n_adapts::Int=min(div(n_samples, 10), 1_000); verbose::Bool=true) where {T<:Real}
+function sample(rng::AbstractRNG,
+    h::Hamiltonian,
+    prop::AbstractProposal,
+    θ::AbstractVector{T},
+    n_samples::Int,
+    adaptor::Adaptation.AbstractAdaptor,
+    n_adapts::Int=min(div(n_samples, 10), 1_000);
+    verbose::Bool=true
+) where {T<:Real}
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
@@ -39,10 +51,18 @@ function sample(rng::AbstractRNG, h::Hamiltonian, prop::AbstractProposal, θ::Ab
     return θs
 end
 
-function step(rng::AbstractRNG, h::Hamiltonian, prop::AbstractTrajectory{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
+function step(rng::AbstractRNG,
+    h::Hamiltonian,
+    prop::AbstractTrajectory{I},
+    θ::AbstractVector{T}
+) where {T<:Real,I<:AbstractIntegrator}
+    h = update(h, θ) # Ensure h.metric has the same dim as θ.
     r = rand_momentum(rng, h)
     θ_new, r_new, α, H_new = transition(rng, prop, h, θ, r)
     return θ_new, H_new, α
 end
 
-step(h::Hamiltonian, p::AbstractTrajectory, θ::AbstractVector{T}) where {T<:Real} = step(GLOBAL_RNG, h, p, θ)
+step(h::Hamiltonian,
+    p::AbstractTrajectory,
+    θ::AbstractVector{T}
+) where {T<:Real} = step(GLOBAL_RNG, h, p, θ)

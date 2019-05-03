@@ -1,6 +1,7 @@
 module Adaptation
 
 import Base: string
+using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky
 import LinearAlgebra, Statistics
 using ..AdvancedHMC: DEBUG
 
@@ -13,7 +14,7 @@ abstract type AbstractCompositeAdaptor <: AbstractAdaptor end
 
 # TODO: generalise this to a list of adaptors
 struct NaiveCompAdaptor <: AbstractCompositeAdaptor
-    pc  :: AbstractPreConditioner
+    pc  :: AbstractPreconditioner
     ssa :: StepSizeAdaptor
 end
 
@@ -34,7 +35,8 @@ include("stan_adaption.jl")
 
 export adapt!, getϵ, getM⁻¹,
        NesterovDualAveraging,
-       UnitPreConditioner, DiagPreConditioner, DensePreConditioner,
-       NaiveCompAdaptor, StanNUTSAdaptor
+       UnitPreconditioner, DiagPreconditioner, DensePreconditioner,
+       AbstractMetric, UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric,
+       Preconditioner, NaiveCompAdaptor, StanNUTSAdaptor
 
 end # module

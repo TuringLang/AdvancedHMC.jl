@@ -274,3 +274,28 @@ function mh_accept(rng::AbstractRNG, H::AbstractFloat, H_new::AbstractFloat)
     return log(rand(rng)) < logα, exp(logα)
 end
 mh_accept(H::AbstractFloat, H_new::AbstractFloat) = mh_accept(GLOBAL_RNG, H, H_new)
+
+####
+#### Adaption
+####
+
+function update(h::Hamiltonian, prop::AbstractProposal, dpc::Adaptation.AbstractPreconditioner)
+    return h(getM⁻¹(dpc)), prop
+end
+
+function update(h::Hamiltonian, prop::AbstractProposal, da::NesterovDualAveraging)
+    return h, prop(prop.integrator(getϵ(da)))
+end
+
+function update(h::Hamiltonian, prop::AbstractProposal, ca::Adaptation.AbstractCompositeAdaptor)
+    return h(getM⁻¹(ca.pc)), prop(prop.integrator(getϵ(ca.ssa)))
+end
+
+function update(h::Hamiltonian, θ::AbstractVector{<:Real})
+    metric = h.metric
+    if length(metric) != length(θ)
+        metric = metric(length(θ))
+        h = h(getM⁻¹(Preconditioner(metric)))
+    end
+    return h
+end

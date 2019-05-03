@@ -1,3 +1,4 @@
+using AdvancedHMC
 using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, add_sample!, get_var, get_cov, reset!
 using Test, LinearAlgebra, Distributions
 
@@ -36,4 +37,18 @@ using Test, LinearAlgebra, Distributions
             reset!(estimator)
         end
     end
+end
+
+@testset "Preconditioner constructors" begin
+    θ = [0.0, 0.0, 0.0, 0.0]
+    pc1 = Preconditioner(UnitEuclideanMetric) # default dim = 2
+    pc2 = Preconditioner(DiagEuclideanMetric)
+    pc3 = Preconditioner(DenseEuclideanMetric)
+
+    # Var adaptor dimention should be increased to length(θ) from 2
+    AdvancedHMC.adapt!(pc1, θ, 1.)
+    AdvancedHMC.adapt!(pc2, θ, 1.)
+    AdvancedHMC.adapt!(pc3, θ, 1.)
+    @test AdvancedHMC.Adaptation.getM⁻¹(pc2) == zeros(length(θ))
+    @test AdvancedHMC.Adaptation.getM⁻¹(pc3) == LinearAlgebra.diagm(0 => ones(length(θ)))
 end

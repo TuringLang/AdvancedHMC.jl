@@ -14,16 +14,16 @@ end
 
 # TODO: currently only StanNUTSAdaptor has the filed `n_adapts`. maybe we could unify all
 # Acknowledgement: this adaption settings is mimicing Stan's 3-phase adaptation.
-struct StanNUTSAdaptor <: AbstractCompositeAdaptor
+struct StanNUTSAdaptor{M<:AbstractPreconditioner} <: AbstractCompositeAdaptor
     n_adapts    :: Int
-    pc          :: AbstractPreConditioner
+    pc          :: M
     ssa         :: StepSizeAdaptor
     init_buffer :: Int
     term_buffer :: Int
     state       :: ThreePhaseState
 end
 
-function StanNUTSAdaptor(n_adapts::Int, pc::AbstractPreConditioner, ssa::StepSizeAdaptor,
+function StanNUTSAdaptor(n_adapts::Int, pc::AbstractPreconditioner, ssa::StepSizeAdaptor,
                          init_buffer::Int=75, term_buffer::Int=50, window_size::Int=25)
     next_window = init_buffer + window_size - 1
     return StanNUTSAdaptor(n_adapts, pc, ssa, init_buffer, term_buffer, ThreePhaseState(0, window_size, next_window))
