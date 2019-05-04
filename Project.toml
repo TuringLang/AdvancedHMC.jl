@@ -20,3 +20,6 @@ Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [targets]
 test = ["Test", "Distributions", "ForwardDiff", "Turing", "Distributed"]
+
+[compat]
+julia = ">= 1.0"
