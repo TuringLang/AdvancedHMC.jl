@@ -225,7 +225,7 @@ function find_good_eps(
     # Crossing step: increase/decrease ϵ until accept ratio cross a_cross.
     for _ = 1:max_n_iters
         ϵ′ = direction == 1 ? d * ϵ : 1 / d * ϵ
-        θ′, r′, _is_valid = step(Leapfrog(ϵ′), h, θ′, r′)
+        θ′, r′, _is_valid = step(Leapfrog(ϵ′), h, θ, r)
         H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
 
         ΔH = H - H_new
