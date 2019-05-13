@@ -7,11 +7,6 @@ struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}} <: AbstractFloat
     gradient::Tg # Cached gradient, e.g. ∇logπ(θ).
 end
 
-struct DualFunction{Tf<:Function}
-    f::Tf
-    ∇f::Tf
-end
-
 # TODO: replace logπ and logκ with π, κ
 # The constructor of `PhasePoint` will check numerical errors in
 #   `θ`, `r` and `h`. That is `is_valid` will be performed automatically.
@@ -59,12 +54,6 @@ function phasepoint(h::Hamiltonian, θ::AbstractVector, r::AbstractVector)
 end
 
 neg_energy(z::PhasePoint) = - z.logπ.value - z.logκ.value
-rand_momentum(
-    rng::AbstractRNG,
-    z::PhasePoint,
-    h::Hamiltonian
-) = phasepoint(h, z.θ, rand_momentum(rng, h))
-rand_momentum(z::PhasePoint, h::Hamiltonian) = phasepoint(h, z.θ, rand_momentum(h))
 
 function hamiltonian_energy(h::Hamiltonian, θ::AbstractVector, r::AbstractVector)
     K = kinetic_energy(h, r, θ)
@@ -93,16 +82,41 @@ function kinetic_energy(h::Hamiltonian{<:DenseEuclideanMetric}, r, θ)
     return dot(r, h.metric._temp) / 2
 end
 
-# Momentum sampler
-function rand_momentum(rng::AbstractRNG, h::Hamiltonian{<:UnitEuclideanMetric})
+####
+#### Momentum sampler
+####
+
+rand_momentum(
+    rng::AbstractRNG,
+    z::PhasePoint,
+    h::Hamiltonian
+) = phasepoint(h, z.θ, rand_momentum(rng, h))
+
+rand_momentum(
+    z::PhasePoint,
+    h::Hamiltonian
+) = phasepoint(h, z.θ, rand_momentum(h))
+
+function rand_momentum(
+    rng::AbstractRNG,
+    h::Hamiltonian{<:UnitEuclideanMetric}
+)
     return randn(rng, h.metric.dim)
 end
-function rand_momentum(rng::AbstractRNG, h::Hamiltonian{<:DiagEuclideanMetric})
+
+function rand_momentum(
+    rng::AbstractRNG,
+    h::Hamiltonian{<:DiagEuclideanMetric}
+)
     r = randn(rng, h.metric.dim)
     r ./= h.metric.sqrtM⁻¹
     return r
 end
-function rand_momentum(rng::AbstractRNG, h::Hamiltonian{<:DenseEuclideanMetric})
+
+function rand_momentum(
+    rng::AbstractRNG,
+    h::Hamiltonian{<:DenseEuclideanMetric}
+)
     r = randn(rng, h.metric.dim)
     ldiv!(h.metric.cholM⁻¹, r)
     return r
