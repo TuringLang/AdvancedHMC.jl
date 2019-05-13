@@ -17,12 +17,24 @@ function sample(rng::AbstractRNG, h::Hamiltonian, prop::AbstractProposal, θ::Ab
     return θs
 end
 
-sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int, adaptor::Adaptation.AbstractAdaptor,
-       n_adapts::Int=min(div(n_samples, 10), 1_000); verbose::Bool=true) where {T<:Real} =
-       sample(GLOBAL_RNG, h, prop, θ, n_samples, adaptor, n_adapts; verbose=verbose)
+sample(h::Hamiltonian,
+    prop::AbstractProposal,
+    θ::AbstractVector{T},
+    n_samples::Int,
+    adaptor::Adaptation.AbstractAdaptor,
+    n_adapts::Int=min(div(n_samples, 10), 1_000);
+    verbose::Bool=true
+) where {T<:Real} = sample(GLOBAL_RNG, h, prop, θ, n_samples, adaptor, n_adapts; verbose=verbose)
 
-function sample(rng::AbstractRNG, h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int, adaptor::Adaptation.AbstractAdaptor,
-                n_adapts::Int=min(div(n_samples, 10), 1_000); verbose::Bool=true) where {T<:Real}
+function sample(rng::AbstractRNG,
+    h::Hamiltonian,
+    prop::AbstractProposal,
+    θ::AbstractVector{T},
+    n_samples::Int,
+    adaptor::Adaptation.AbstractAdaptor,
+    n_adapts::Int=min(div(n_samples, 10), 1_000);
+    verbose::Bool=true
+) where {T<:Real}
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)

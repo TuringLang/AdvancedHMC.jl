@@ -1,6 +1,6 @@
 name = "AdvancedHMC"
 uuid = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
-version = "0.1.4"
+version = "0.1.5"
 
 [deps]
 InplaceOps = "505f98c9-085e-5b2c-8e89-488be7bf1f34"
@@ -21,3 +21,6 @@ Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [targets]
 test = ["Test", "Distributions", "ForwardDiff", "Turing", "Distributed"]
+
+[compat]
+julia = ">= 1.0"
