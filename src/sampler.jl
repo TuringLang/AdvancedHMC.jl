@@ -1,7 +1,23 @@
-sample(h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int; verbose::Bool=true) where {T<:Real} =
-    sample(GLOBAL_RNG, h, prop, θ, n_samples; verbose=verbose)
+##
+## Sampling functions
+##
 
-function sample(rng::AbstractRNG, h::Hamiltonian, prop::AbstractProposal, θ::AbstractVector{T}, n_samples::Int; verbose::Bool=true) where {T<:Real}
+sample(
+    h::Hamiltonian,
+    prop::AbstractProposal,
+    θ::AbstractVector{T},
+    n_samples::Int;
+    verbose::Bool=true
+) where {T<:Real} = sample(GLOBAL_RNG, h, prop, θ, n_samples; verbose=verbose)
+
+function sample(
+    rng::AbstractRNG,
+    h::Hamiltonian,
+    prop::AbstractProposal,
+    θ::AbstractVector{T},
+    n_samples::Int;
+    verbose::Bool=true
+) where {T<:Real}
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
@@ -17,7 +33,8 @@ function sample(rng::AbstractRNG, h::Hamiltonian, prop::AbstractProposal, θ::Ab
     return θs
 end
 
-sample(h::Hamiltonian,
+sample(
+    h::Hamiltonian,
     prop::AbstractProposal,
     θ::AbstractVector{T},
     n_samples::Int,
@@ -26,7 +43,8 @@ sample(h::Hamiltonian,
     verbose::Bool=true
 ) where {T<:Real} = sample(GLOBAL_RNG, h, prop, θ, n_samples, adaptor, n_adapts; verbose=verbose)
 
-function sample(rng::AbstractRNG,
+function sample(
+    rng::AbstractRNG,
     h::Hamiltonian,
     prop::AbstractProposal,
     θ::AbstractVector{T},
