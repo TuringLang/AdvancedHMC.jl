@@ -45,7 +45,6 @@ function step(
 ) where {F<:AbstractFloat,T<:Real}
     @unpack θ, r = z
     ϵ = fwd ? lf.ϵ : - lf.ϵ
-    n_valid = 0
 
     r_new, _is_valid_1 = lf_momentum(ϵ/2, h, θ, r)
     for i = 1:abs(n_steps)
@@ -53,7 +52,6 @@ function step(
         r_new, _is_valid_2 = lf_momentum(i == n_steps ? ϵ / 2 : ϵ, h, θ_new, r_new)
         if (_is_valid_1 && _is_valid_2)
             θ, r = θ_new, r_new
-            n_valid = n_valid + 1
         else
             # Reverse half leapfrog step for r when breaking
             #  the loop immaturely.
@@ -63,7 +61,7 @@ function step(
             break
         end
     end
-    # return θ, r, n_valid > 0
+    # return θ, r
     z′ = phasepoint(h, θ, r)
     return z′
 end
