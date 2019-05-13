@@ -21,16 +21,6 @@ struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
 end
 
 """
-Metropolis-Hastings and divergence statistics.
-"""
-struct MHStats  end
-
-"""
-Metropolis-Hastings Proposal.
-"""
-struct MHProposal end
-
-"""
 Termination (i.e. no-U-turn).
 """
 struct Termination end
