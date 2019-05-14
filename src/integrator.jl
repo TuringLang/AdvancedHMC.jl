@@ -42,7 +42,7 @@ function step(
     n_steps::Int=1
 ) where {F<:AbstractFloat,T<:Real}
     fwd = n_steps > 0 # simulate hamiltonian backward when n_steps < 0
-    ϵ = fwd ? lf.ϵ : - lf.ϵ
+    ϵ = fwd ? lf.ϵ : -lf.ϵ
     n_valid = 0
 
     r_new, _is_valid_1 = lf_momentum(ϵ/2, h, θ, r)
@@ -55,7 +55,7 @@ function step(
         else
             # Reverse half leapfrog step for r when breaking
             #  the loop immaturely.
-            if i > 1 && i < _n_steps
+            if i > 1 && i < abs(n_steps)
                 r, _ = lf_momentum(-lf.ϵ / 2, h, θ, r)
             end
             break
