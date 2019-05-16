@@ -5,7 +5,7 @@ struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
     metric::M
     logπ::Tlogπ
     # TODO: we need both logπ(θ) and ∂logπ∂θ
-    ∂logπ∂θ::T∂logπ∂θ 
+    ∂logπ∂θ::T∂logπ∂θ
 end
 
 # Create a `Hamiltonian` with a new `M⁻¹`
@@ -62,23 +62,8 @@ Base.isfinite(z::PhasePoint) = isfinite(z.logπ) && isfinite(z.logκ)
 
 neg_energy(z::PhasePoint) = - z.logπ.value - z.logκ.value
 
-# function hamiltonian_energy(h::Hamiltonian, θ::AbstractVector, r::AbstractVector)
-#     K = kinetic_energy(h, r, θ)
-#     if isnan(K)
-#         K = Inf
-#         @warn "Kinetic energy is `NaN` and is set to `Inf`."
-#     end
-#     V = potential_energy(h, θ)
-#     if isnan(V)
-#         V = Inf
-#         @warn "Potential energy is `NaN` and is set to `Inf`."
-#     end
-#     return K + V
-# end
-
 potential_energy(h::Hamiltonian, θ::AbstractVector) = -h.logπ(θ)
 
-# Kinetic energy
 # NOTE: the general form (i.e. non-Euclidean) of K depends on both θ and r
 kinetic_energy(h::Hamiltonian{<:UnitEuclideanMetric}, r, θ) = sum(abs2, r) / 2
 function kinetic_energy(h::Hamiltonian{<:DiagEuclideanMetric}, r, θ)
@@ -103,8 +88,3 @@ rand_momentum(
     z::PhasePoint,
     h::Hamiltonian
 ) = phasepoint(h, z.θ, rand(GLOBAL_RNG, h.metric))
-
-# rand_momentum(
-#     rng::AbstractRNG,
-#     h::Hamiltonian{<:UnitEuclideanMetric}
-# ) = rand(rng, h.metric)
