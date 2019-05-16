@@ -14,25 +14,6 @@ function (::Leapfrog)(ϵ::AbstractFloat)
     return Leapfrog(ϵ)
 end
 
-function lf_momentum(
-    ϵ::T,
-    h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T}
-) where {T<:Real}
-    _∂H∂θ = ∂H∂θ(h, θ)
-    !is_valid(_∂H∂θ) && return r, false
-    return r - ϵ * _∂H∂θ, true
-end
-
-function lf_position(
-    ϵ::T, h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T}
-) where {T<:Real}
-    return θ + ϵ * ∂H∂r(h, r)
-end
-
 # TODO: double check the function below to see if it is type stable or not
 function step(
     lf::Leapfrog{F},
@@ -70,16 +51,4 @@ function step(
     end
     # return θ, r
     return z
-end
-
-###
-### Utility function.
-###
-
-function is_valid(v::AbstractVector{<:Real})
-    if any(isnan, v) || any(isinf, v)
-        return false
-    else
-        return true
-    end
 end
