@@ -47,7 +47,9 @@ function step(
         #     end
         #     break
         # end
-        z = phasepoint(h, θ, r)
+        z′ = phasepoint(h, θ, r)
+        !isfinite(z) && break
+        z = z′
     end
     # return θ, r
     return z

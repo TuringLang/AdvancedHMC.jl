@@ -8,7 +8,7 @@ lf = Leapfrog(ϵ)
 θ_init = randn(D)
 h = Hamiltonian(UnitEuclideanMetric(D), logπ, ∂logπ∂θ)
 prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
-r_init = AdvancedHMC.rand_momentum(h)
+r_init = AdvancedHMC.rand(h.metric)
 
 @testset "Passing random number generator" begin
     for seed in [1234, 5678, 90]

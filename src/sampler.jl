@@ -21,7 +21,7 @@ function sample(
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
-    r = rand_momentum(rng, h)
+    r = rand(rng, h.metric)
     z = phasepoint(h, θ, r)
     time = @elapsed for i = 1:n_samples
         # θs[i], _, αs[i], Hs[i] = transition(rng, prop, h, i == 1 ? θ : θs[i-1], r)
@@ -56,7 +56,7 @@ function sample(
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
-    r = rand_momentum(rng, h)
+    r = rand(rng, h.metric)
     z = phasepoint(h, θ, r)
     time = @elapsed for i = 1:n_samples
         # θs[i], Hs[i], αs[i] = step(rng, h, prop, i == 1 ? θ : θs[i-1])

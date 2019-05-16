@@ -238,7 +238,7 @@ transition(nt::DynamicTrajectory{I},
 # TODO: rename all `Turing.step` to `transition`?
 
 # function step(rng::AbstractRNG, h::Hamiltonian, prop::AbstractTrajectory{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
-#     r = rand_momentum(rng, h)
+#     r = rand(rng, h.metric)
 #     θ_new, r_new, α, H_new = transition(rng, prop, h, θ, r)
 #     return θ_new, H_new, α
 # end
@@ -259,7 +259,7 @@ function find_good_eps(
     a_min, a_cross, a_max = 0.25, 0.5, 0.75 # minimal, crossing, maximal accept ratio
     d = 2.0
 
-    r = rand_momentum(rng, h)
+    r = rand(rng, h.metric)
     z = phasepoint(h, θ, r)
     H = neg_energy(z)
     # H = hamiltonian_energy(h, θ, r)
