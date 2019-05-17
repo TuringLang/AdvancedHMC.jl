@@ -24,7 +24,6 @@ function sample(
     r = rand(rng, h.metric)
     z = phasepoint(h, θ, r)
     time = @elapsed for i = 1:n_samples
-        # θs[i], _, αs[i], Hs[i] = transition(rng, τ, h, i == 1 ? θ : θs[i-1], r)
         z, αs[i] = transition(rng, τ, h, z)
         θs[i], Hs[i] = z.θ, neg_energy(z)
         z = rand_momentum(rng, z, h)
@@ -59,8 +58,6 @@ function sample(
     r = rand(rng, h.metric)
     z = phasepoint(h, θ, r)
     time = @elapsed for i = 1:n_samples
-        # θs[i], Hs[i], αs[i] = step(rng, h, τ, i == 1 ? θ : θs[i-1])
-        # θs[i], _, αs[i], Hs[i] = transition(rng, τ, h, i == 1 ? θ : θs[i-1], r)
         z, αs[i] = transition(rng, τ, h, z)
         θs[i], Hs[i] = z.θ, neg_energy(z)
         if i <= n_adapts
