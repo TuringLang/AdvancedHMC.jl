@@ -1,6 +1,6 @@
-####
-#### Hamiltonian dynamics numerical simulation trajectories
-####
+##
+## Hamiltonian dynamics numerical simulation trajectories
+##
 
 abstract type AbstractProposal end
 abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
@@ -123,8 +123,9 @@ function build_tree(
     rng::AbstractRNG,
     nt::DynamicTrajectory{I},
     h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T},
+    #θ::AbstractVector{T},
+    #r::AbstractVector{T},
+    z::PhasePoint,
     logu::AbstractFloat,
     v::Int,
     j::Int,
@@ -135,32 +136,38 @@ function build_tree(
         # θ′, r′, _is_valid = step(nt.integrator, h, θ, r, v)
         # H′ = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
         # z′ = phasepoint(h, θ′, r′)
-        z = phasepoint(h, θ, r)
+        # z = phasepoint(h, θ, r)
         z′ = step(nt.integrator, h, z, v)
         H′ = neg_energy(z′)
         n′ = (logu <= -H′) ? 1 : 0
         s′ = (logu < nt.Δ_max + -H′) ? 1 : 0
         α′ = exp(min(0, H - H′))
 
-        θ′, r′ = z′.θ, z′.r
-        return θ′, r′, θ′, r′, θ′, r′, n′, s′, α′, 1
+        # θ′, r′ = z′.θ, z′.r
+        # return θ′, r′, θ′, r′, θ′, r′, n′, s′, α′, 1
+        return z′, z′, z′, n′, s′, α′, 1
     else
         # Recursion - build the left and right subtrees.
-        θm, rm, θp, rp, θ′, r′, n′, s′, α′, n′α = build_tree(rng, nt, h, θ, r, logu, v, j - 1, H)
+        # θm, rm, θp, rp, θ′, r′, n′, s′, α′, n′α = build_tree(rng, nt, h, θ, r, logu, v, j - 1, H)
+        zm, zp, z′, n′, s′, α′, n′α = build_tree(rng, nt, h, z, logu, v, j - 1, H)
 
         if s′ == 1
             if v == -1
-                θm, rm, _, _, θ′′, r′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, θm, rm, logu, v, j - 1, H)
+                # θm, rm, _, _, θ′′, r′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, θm, rm, logu, v, j - 1, H)
+                zm, _, z′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, zm, logu, v, j - 1, H)
             else
-                _, _, θp, rp, θ′′, r′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, θp, rp, logu, v, j - 1, H)
+                # _, _, θp, rp, θ′′, r′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, θp, rp, logu, v, j - 1, H)
+                _, zp, z′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, zp, logu, v, j - 1, H)
             end
             if rand(rng) < n′′ / (n′ + n′′)
-                θ′ = θ′′
-                r′ = r′′
+                # θ′ = θ′′
+                # r′ = r′′
+                z′ = z′′
             end
             α′ = α′ + α′′
             n′α = n′α + n′′α
-            s′ = s′′ * (dot(θp - θm, ∂H∂r(h, rm)) >= 0 ? 1 : 0) * (dot(θp - θm, ∂H∂r(h, rp)) >= 0 ? 1 : 0)
+            #  s′ = s′′ * (dot(θp - θm, ∂H∂r(h, rm)) >= 0 ? 1 : 0) * (dot(θp - θm, ∂H∂r(h, rp)) >= 0 ? 1 : 0)
+            s′ = s′′ * (dot(zp.θ - zm.θ, ∂H∂r(h, zm.r)) >= 0 ? 1 : 0) * (dot(zp.θ - zm.θ, ∂H∂r(h, zp.r)) >= 0 ? 1 : 0)
             n′ = n′ + n′′
         end
 
@@ -168,20 +175,23 @@ function build_tree(
         # α: MH stats, i.e. sum of MH accept prob for all leapfrog steps
         # nα: total # of leap frog steps, i.e. phase points in a trajectory
         # n: # of acceptable candicates, i.e. prob is larger than slice variable u
-        return θm, rm, θp, rp, θ′, r′, n′, s′, α′, n′α
+        # return θm, rm, θp, rp, θ′, r′, n′, s′, α′, n′α
+        return zm, zp, z′, n′, s′, α′, n′α
     end
 end
 
 build_tree(
     nt::DynamicTrajectory{I},
     h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T},
+    #θ::AbstractVector{T},
+    #r::AbstractVector{T},
+    z::PhasePoint,
     logu::AbstractFloat,
     v::Int,
     j::Int,
     H::AbstractFloat
-) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j, H)
+# ) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j, H)
+) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, z, logu, v, j, H)
 
 function transition(
     rng::AbstractRNG,
@@ -197,31 +207,37 @@ function transition(
     # H = hamiltonian_energy(h, θ, r)
     logu = log(rand(rng)) - H
 
-    θm = θ; θp = θ; rm = r; rp = r; j = 0; θ_new = θ; r_new = r; n = 1; s = 1
+    # θm = θ; θp = θ; rm = r; rp = r; j = 0; θ_new = θ; r_new = r; n = 1; s = 1
+    zm = z; zp = z; z_new = z; j = 0; n = 1; s = 1
 
     local α, nα
     while s == 1 && j <= nt.max_depth
         v = rand(rng, [-1, 1])
         if v == -1
-            θm, rm, _, _, θ′, r′,n′, s′, α, nα = build_tree(rng, nt, h, θm, rm, logu, v, j, H)
+            # θm, rm, _, _, θ′, r′,n′, s′, α, nα = build_tree(rng, nt, h, θm, rm, logu, v, j, H)
+            zm, _, z′, n′, s′, α, nα = build_tree(rng, nt, h, zm, logu, v, j, H)
         else
-            _, _, θp, rp, θ′, r′,n′, s′, α, nα = build_tree(rng, nt, h, θp, rp, logu, v, j, H)
+            # _, _, θp, rp, θ′, r′,n′, s′, α, nα = build_tree(rng, nt, h, θp, rp, logu, v, j, H)
+            zm, _, z′, n′, s′, α, nα = build_tree(rng, nt, h, zm, logu, v, j, H)
         end
 
         if s′ == 1
             if rand(rng) < min(1, n′ / n)
-                θ_new = θ′
-                r_new = r′
+                # θ_new = θ′
+                # r_new = r′
+                z_new = z′
             end
         end
 
         n = n + n′
-        s = s′ * (dot(θp - θm, ∂H∂r(h, rm)) >= 0 ? 1 : 0) * (dot(θp - θm, ∂H∂r(h, rp)) >= 0 ? 1 : 0)
+        # s = s′ * (dot(θp - θm, ∂H∂r(h, rm)) >= 0 ? 1 : 0) * (dot(θp - θm, ∂H∂r(h, rp)) >= 0 ? 1 : 0)
+        s = s′ * (dot(zp.θ - zm.θ, ∂H∂r(h, zm.r)) >= 0 ? 1 : 0) * (dot(zp.θ - zm.θ, ∂H∂r(h, zp.r)) >= 0 ? 1 : 0)
         j = j + 1
     end
 
     # return θ_new, r_new, α / nα, H_new
-    return phasepoint(h, θ_new, r_new), α / nα
+    # return phasepoint(h, θ_new, r_new), α / nα
+    return z_new, α / nα
 end
 
 transition(nt::DynamicTrajectory{I},
