@@ -7,11 +7,12 @@ abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
 # Create a callback function for all `AbstractTrajectory`
 # without passing random number generator
-transition(at::AbstractTrajectory{I},
+transition(
+    τ::AbstractTrajectory{I},
     h::Hamiltonian,
     θ::AbstractVector{T},
     r::AbstractVector{T}
-) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, at, h, θ, r)
+) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, τ, h, θ, r)
 
 ###
 ### Standard HMC implementation with fixed leapfrog step numbers.
@@ -29,17 +30,17 @@ struct Termination end
 """
 Create a `StaticTrajectory` with a new integrator
 """
-function (tlp::StaticTrajectory)(integrator::AbstractIntegrator)
-    return StaticTrajectory(integrator, tlp.n_steps)
+function (τ::StaticTrajectory)(integrator::AbstractIntegrator)
+    return StaticTrajectory(integrator, τ.n_steps)
 end
 
 function transition(
     rng::AbstractRNG,
-    prop::StaticTrajectory,
+    τ::StaticTrajectory,
     h::Hamiltonian,
     z::PhasePoint
 ) where {T<:Real}
-    z′ = step(prop.integrator, h, z, prop.n_steps)
+    z′ = step(τ.integrator, h, z, τ.n_steps)
     # Accept via MH criteria
     is_accept, α = mh_accept(rng, neg_energy(z), neg_energy(z′))
     if is_accept
@@ -61,21 +62,21 @@ end
 """
 Create a `HMCDA` with a new integrator
 """
-function (tlp::HMCDA)(integrator::AbstractIntegrator)
-    return HMCDA(integrator, tlp.λ)
+function (τ::HMCDA)(integrator::AbstractIntegrator)
+    return HMCDA(integrator, τ.λ)
 end
 
 function transition(
     rng::AbstractRNG,
-    prop::HMCDA,
+    τ::HMCDA,
     h::Hamiltonian,
     θ::AbstractVector{T},
     r::AbstractVector{T}
 ) where {T<:Real}
-    # Create the corresponding static prop
-    n_steps = max(1, round(Int, prop.λ / prop.integrator.ϵ))
-    static_prop = StaticTrajectory(prop.integrator, n_steps)
-    return transition(rng, static_prop, h, θ, r)
+    # Create the corresponding static τ
+    n_steps = max(1, round(Int, τ.λ / τ.integrator.ϵ))
+    static_τ = StaticTrajectory(τ.integrator, n_steps)
+    return transition(rng, static_τ, h, θ, r)
 end
 
 
@@ -213,9 +214,9 @@ transition(nt::DynamicTrajectory{I},
 
 # TODO: rename all `Turing.step` to `transition`?
 
-# function step(rng::AbstractRNG, h::Hamiltonian, prop::AbstractTrajectory{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
+# function step(rng::AbstractRNG, h::Hamiltonian, τ::AbstractTrajectory{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
 #     r = rand(rng, h.metric)
-#     θ_new, r_new, α, H_new = transition(rng, prop, h, θ, r)
+#     θ_new, r_new, α, H_new = transition(rng, τ, h, θ, r)
 #     return θ_new, H_new, α
 # end
 #
@@ -304,22 +305,22 @@ mh_accept(H::AbstractFloat, H_new::AbstractFloat) = mh_accept(GLOBAL_RNG, H, H_n
 
 update(
     h::Hamiltonian,
-    prop::AbstractProposal,
+    τ::AbstractProposal,
     dpc::Adaptation.AbstractPreconditioner
-) = h(getM⁻¹(dpc)), prop
+) = h(getM⁻¹(dpc)), τ
 
 update(
     h::Hamiltonian,
-    prop::AbstractProposal,
+    τ::AbstractProposal,
     da::NesterovDualAveraging
-) = h, prop(prop.integrator(getϵ(da)))
+) = h, τ(τ.integrator(getϵ(da)))
 
 
 update(
     h::Hamiltonian,
-    prop::AbstractProposal,
+    τ::AbstractProposal,
     ca::Adaptation.AbstractCompositeAdaptor
-) = h(getM⁻¹(ca.pc)), prop(prop.integrator(getϵ(ca.ssa)))
+) = h(getM⁻¹(ca.pc)), τ(τ.integrator(getϵ(ca.ssa)))
 
 function update(h::Hamiltonian, θ::AbstractVector{<:Real})
     metric = h.metric
