@@ -1,17 +1,15 @@
 # TODO: add a type for kinetic energy
-# TODO: add cache for gradients
+# TODO: add cache for gradients by letting ∂logπ∂θ return both log density and gradient
 
 struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
     metric::M
     logπ::Tlogπ
-    # TODO: we need both logπ(θ) and ∂logπ∂θ
     ∂logπ∂θ::T∂logπ∂θ
 end
 
 # Create a `Hamiltonian` with a new `M⁻¹`
 (h::Hamiltonian)(M⁻¹) = Hamiltonian(h.metric(M⁻¹), h.logπ, h.∂logπ∂θ)
 
-# TODO: rename to ∇π and ∇κ
 ∂H∂θ(h::Hamiltonian, θ::AbstractVector) = -h.∂logπ∂θ(θ)
 
 ∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric}, r::AbstractVector) = copy(r)
@@ -26,7 +24,7 @@ struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}} <: AbstractFloat
     gradient::Tg # Cached gradient, e.g. ∇logπ(θ).
 end
 
-# TODO: replace logπ and logκ with ℓπ, ℓκ
+# TODO: replace logπ and logκ with ℓπ, ℓκ??
 # The constructor of `PhasePoint` will check numerical errors in
 #   `θ`, `r` and `h`. That is `is_valid` will be performed automatically.
 struct PhasePoint{T<:AbstractVector, V<:AbstractFloat}
