@@ -351,17 +351,24 @@ mh_accept(H::AbstractFloat, H_new::AbstractFloat) = mh_accept(GLOBAL_RNG, H, H_n
 #### Adaption
 ####
 
-function update(h::Hamiltonian, prop::AbstractProposal, dpc::Adaptation.AbstractPreconditioner)
-    return h(getM⁻¹(dpc)), prop
-end
+update(
+    h::Hamiltonian,
+    prop::AbstractProposal,
+    dpc::Adaptation.AbstractPreconditioner
+) = h(getM⁻¹(dpc)), prop
 
-function update(h::Hamiltonian, prop::AbstractProposal, da::NesterovDualAveraging)
-    return h, prop(prop.integrator(getϵ(da)))
-end
+update(
+    h::Hamiltonian,
+    prop::AbstractProposal,
+    da::NesterovDualAveraging
+) = h, prop(prop.integrator(getϵ(da)))
 
-function update(h::Hamiltonian, prop::AbstractProposal, ca::Adaptation.AbstractCompositeAdaptor)
-    return h(getM⁻¹(ca.pc)), prop(prop.integrator(getϵ(ca.ssa)))
-end
+
+update(
+    h::Hamiltonian,
+    prop::AbstractProposal,
+    ca::Adaptation.AbstractCompositeAdaptor
+) = h(getM⁻¹(ca.pc)), prop(prop.integrator(getϵ(ca.ssa)))
 
 function update(h::Hamiltonian, θ::AbstractVector{<:Real})
     metric = h.metric
