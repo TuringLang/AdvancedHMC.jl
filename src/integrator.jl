@@ -33,7 +33,7 @@ function step(
         ∇θ = ∂H∂θ(h, θ)
         r = r - ϵ/2 * ∇θ # Take a half leapfrog step for momentum variable
         z′ = phasepoint(h, θ, r)
-        !isfinite(z) && break
+        !isfinite(z′) && break
         z = z′
     end
     return z
