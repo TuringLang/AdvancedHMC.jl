@@ -36,7 +36,7 @@ struct PhasePoint{T<:AbstractVector, V<:DualValue}
         @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
         # if !(all(isfinite, θ) && all(isfinite, r) && all(isfinite, ℓπ) && all(isfinite, ℓκ))
         if !(isfinite(θ) && isfinite(r) && isfinite(ℓπ) && isfinite(ℓκ))
-            @warn "A numerical error is detected. The current proposal will be rejected..."
+            @warn "The current proposal will be rejected (due to numerical error(s))..."
             ℓκ = DualValue(-Inf, ℓκ.gradient)
             ℓπ = DualValue(-Inf, ℓπ.gradient)
         end
@@ -76,8 +76,7 @@ kinetic_energy(
     h::Hamiltonian{<:DiagEuclideanMetric},
     r::T,
     θ::T
-) where {T<:AbstractVector}
-    = sum(abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r)) / 2
+) where {T<:AbstractVector} = sum(abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r)) / 2
 
 function kinetic_energy(
     h::Hamiltonian{<:DenseEuclideanMetric},
