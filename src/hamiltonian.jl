@@ -59,18 +59,31 @@ Base.isfinite(z::PhasePoint) = isfinite(z.logπ) && isfinite(z.logκ)
 
 ###
 ### Negative energy (or log probability) functions.
+### NOTE: the general form (i.e. non-Euclidean) of K depends on both θ and r.
 ###
 
 neg_energy(z::PhasePoint) = - z.logπ.value - z.logκ.value
 
 potential_energy(h::Hamiltonian, θ::AbstractVector) = -h.logπ(θ)
 
-# NOTE: the general form (i.e. non-Euclidean) of K depends on both θ and r
-kinetic_energy(h::Hamiltonian{<:UnitEuclideanMetric}, r, θ) = sum(abs2, r) / 2
-function kinetic_energy(h::Hamiltonian{<:DiagEuclideanMetric}, r, θ)
-    return sum(abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r)) / 2
-end
-function kinetic_energy(h::Hamiltonian{<:DenseEuclideanMetric}, r, θ)
+kinetic_energy(
+    h::Hamiltonian{<:UnitEuclideanMetric},
+    r::T,
+    θ::T
+) where {T<:AbstractVector} = sum(abs2, r) / 2
+
+kinetic_energy(
+    h::Hamiltonian{<:DiagEuclideanMetric},
+    r::T,
+    θ::T
+) where {T<:AbstractVector}
+    = sum(abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r)) / 2
+
+function kinetic_energy(
+    h::Hamiltonian{<:DenseEuclideanMetric},
+    r::T,
+    θ::T
+) where {T<:AbstractVector}
     mul!(h.metric._temp, h.metric.M⁻¹, r)
     return dot(r, h.metric._temp) / 2
 end
