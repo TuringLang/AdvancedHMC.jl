@@ -42,7 +42,7 @@ function transition(
 ) where {T<:Real}
     z′ = step(τ.integrator, h, z, τ.n_steps)
     # Accept via MH criteria
-    is_accept, α = mh_accept(rng, neg_energy(z), neg_energy(z′))
+    is_accept, α = mh_accept(rng, -neg_energy(z), -neg_energy(z′))
     if is_accept
         z = PhasePoint(z′.θ, -z′.r, z′.logπ, z′.logκ)
     end
@@ -123,7 +123,7 @@ function build_tree(
     if j == 0
         # Base case - take one leapfrog step in the direction v.
         z′ = step(nt.integrator, h, z, v)
-        H′ = neg_energy(z′)
+        H′ = -neg_energy(z′)
         n′ = (logu <= -H′) ? 1 : 0
         s′ = (logu < nt.Δ_max + -H′) ? 1 : 0
         α′ = exp(min(0, H - H′))
@@ -173,7 +173,7 @@ function transition(
     z::PhasePoint
 ) where {I<:AbstractIntegrator,T<:Real}
     θ, r = z.θ, z.r
-    H = neg_energy(z)
+    H = -neg_energy(z)
     logu = log(rand(rng)) - H
 
     zm = z; zp = z; z_new = z; j = 0; n = 1; s = 1
@@ -238,10 +238,10 @@ function find_good_eps(
 
     r = rand(rng, h.metric)
     z = phasepoint(h, θ, r)
-    H = neg_energy(z)
+    H = -neg_energy(z)
 
     z′ = step(Leapfrog(ϵ), h, z)
-    H_new = neg_energy(z′)
+    H_new = -neg_energy(z′)
 
     ΔH = H - H_new
     direction = ΔH > log(a_cross) ? 1 : -1
@@ -250,7 +250,7 @@ function find_good_eps(
     for _ = 1:max_n_iters
         ϵ′ = direction == 1 ? d * ϵ : 1 / d * ϵ
         z′ = step(Leapfrog(ϵ′), h, z)
-        H_new = neg_energy(z′)
+        H_new = -neg_energy(z′)
 
         ΔH = H - H_new
         DEBUG && @debug "Crossing step" direction H_new ϵ "α = $(min(1, exp(ΔH)))"
@@ -269,7 +269,7 @@ function find_good_eps(
     for _ = 1:max_n_iters
         ϵ_mid = middle(ϵ, ϵ′)
         z′ = step(Leapfrog(ϵ_mid), h, z)
-        H_new = neg_energy(z′)
+        H_new = -neg_energy(z′)
 
         ΔH = H - H_new
         DEBUG && @debug "Bisection step" H_new ϵ_mid "α = $(min(1, exp(ΔH)))"

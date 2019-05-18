@@ -62,7 +62,7 @@ using Statistics: mean
         z = AdvancedHMC.step(lf, h, z)
         qs[i] = z.θ[1]
         ps[i] = z.r[1]
-        Hs[i] = AdvancedHMC.neg_energy(z)
+        Hs[i] = -AdvancedHMC.neg_energy(z)
     end
 
     # Throw first 1_000 steps

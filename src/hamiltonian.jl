@@ -48,9 +48,9 @@ phasepoint(
     h::Hamiltonian,
     θ::T,
     r::T;
-    π = DualValue(neg_energy(h, r, θ), ∂H∂θ(h, θ)),
-    κ = DualValue(-potential_energy(h, θ), ∂H∂r(h, r))
-) where {T<:AbstractVector} = PhasePoint(θ, r, π, κ)
+    ℓπ = DualValue(neg_energy(h, r, θ), ∂H∂θ(h, θ)),
+    ℓκ = DualValue(neg_energy(h, θ), ∂H∂r(h, r))
+) where {T<:AbstractVector} = PhasePoint(θ, r, ℓπ, ℓκ)
 
 
 Base.isfinite(v::DualValue) = all(isfinite, v.value) && all(isfinite, v.gradient)
@@ -62,9 +62,9 @@ Base.isfinite(z::PhasePoint) = isfinite(z.logπ) && isfinite(z.logκ)
 ### NOTE: the general form (i.e. non-Euclidean) of K depends on both θ and r.
 ###
 
-neg_energy(z::PhasePoint) = - z.logπ.value - z.logκ.value
+neg_energy(z::PhasePoint) = z.logπ.value + z.logκ.value
 
-potential_energy(h::Hamiltonian, θ::AbstractVector) = -h.logπ(θ)
+neg_energy(h::Hamiltonian, θ::AbstractVector) = h.logπ(θ)
 
 neg_energy(
     h::Hamiltonian{<:UnitEuclideanMetric},
