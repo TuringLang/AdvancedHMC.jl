@@ -44,7 +44,7 @@ function transition(
     # Accept via MH criteria
     is_accept, α = mh_accept(rng, -neg_energy(z), -neg_energy(z′))
     if is_accept
-        z = PhasePoint(z′.θ, -z′.r, z′.logπ, z′.logκ)
+        z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
     end
     return z, α
 end

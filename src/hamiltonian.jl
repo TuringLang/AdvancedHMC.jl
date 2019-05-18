@@ -8,7 +8,7 @@ struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
 end
 
 # Create a `Hamiltonian` with a new `M⁻¹`
-(h::Hamiltonian)(M⁻¹) = Hamiltonian(h.metric(M⁻¹), h.logπ, h.∂logπ∂θ)
+(h::Hamiltonian)(M⁻¹) = Hamiltonian(h.metric(M⁻¹), h.ℓπ, h.∂logπ∂θ)
 
 ∂H∂θ(h::Hamiltonian, θ::AbstractVector) = -h.∂logπ∂θ(θ)
 
@@ -24,14 +24,13 @@ struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}}
     gradient::Tg # Cached gradient, e.g. ∇logπ(θ).
 end
 
-# TODO: replace logπ and logκ with ℓπ, ℓκ??
 # The constructor of `PhasePoint` will check numerical errors in
 #   `θ`, `r` and `h`. That is `is_valid` will be performed automatically.
 struct PhasePoint{T<:AbstractVector, V<:DualValue}
     θ::T # position variables / parameters
     r::T # momentum variables
-    logπ::V # cached potential energy for the current θ
-    logκ::V # cached kinect energy for the current r
+    ℓπ::V # cached potential energy for the current θ
+    ℓκ::V # cached kinect energy for the current r
     function PhasePoint(θ::T, r::T, ℓπ::V, ℓκ::V) where {T,V}
         @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
         # if !(all(isfinite, θ) && all(isfinite, r) && all(isfinite, ℓπ) && all(isfinite, ℓκ))
@@ -55,16 +54,16 @@ phasepoint(
 
 Base.isfinite(v::DualValue) = all(isfinite, v.value) && all(isfinite, v.gradient)
 Base.isfinite(v::AbstractVector) = all(isfinite, v)
-Base.isfinite(z::PhasePoint) = isfinite(z.logπ) && isfinite(z.logκ)
+Base.isfinite(z::PhasePoint) = isfinite(z.ℓπ) && isfinite(z.ℓκ)
 
 ###
 ### Negative energy (or log probability) functions.
 ### NOTE: the general form (i.e. non-Euclidean) of K depends on both θ and r.
 ###
 
-neg_energy(z::PhasePoint) = z.logπ.value + z.logκ.value
+neg_energy(z::PhasePoint) = z.ℓπ.value + z.ℓκ.value
 
-neg_energy(h::Hamiltonian, θ::AbstractVector) = h.logπ(θ)
+neg_energy(h::Hamiltonian, θ::AbstractVector) = h.ℓπ(θ)
 
 neg_energy(
     h::Hamiltonian{<:UnitEuclideanMetric},

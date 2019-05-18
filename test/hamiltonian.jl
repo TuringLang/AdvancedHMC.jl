@@ -12,5 +12,5 @@ r_init = ones(D)
 z1 = PhasePoint([NaN], [NaN], DualValue(0.,[0.]), DualValue(0.,[0.]))
 z2 = PhasePoint([Inf], [Inf], DualValue(0.,[0.]), DualValue(0.,[0.]))
 
-@test z1.logπ.value == z1.logπ.value
-@test z1.logκ.value == z1.logκ.value
+@test z1.ℓπ.value == z1.ℓπ.value
+@test z1.ℓκ.value == z1.ℓκ.value
