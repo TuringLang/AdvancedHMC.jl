@@ -72,11 +72,14 @@ neg_energy(
     θ::T
 ) where {T<:AbstractVector} = -sum(abs2, r) / 2
 
-neg_energy(
+function neg_energy(
     h::Hamiltonian{<:DiagEuclideanMetric},
     r::T,
     θ::T
-) where {T<:AbstractVector} = -sum(abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r)) / 2
+) where {T<:AbstractVector}
+    _r = [abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r)]
+    return -sum(_r) / 2
+end
 
 function neg_energy(
     h::Hamiltonian{<:DenseEuclideanMetric},
