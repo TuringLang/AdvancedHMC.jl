@@ -19,7 +19,7 @@ end
 
 # The constructor of `DualValue` will check numerical errors in
 #   `value` and `gradient`.  That is `is_valid` will be performed automatically.
-struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}} <: AbstractFloat
+struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}}
     value::Tv    # Cached value, e.g. logπ(θ).
     gradient::Tg # Cached gradient, e.g. ∇logπ(θ).
 end
@@ -27,7 +27,7 @@ end
 # TODO: replace logπ and logκ with ℓπ, ℓκ??
 # The constructor of `PhasePoint` will check numerical errors in
 #   `θ`, `r` and `h`. That is `is_valid` will be performed automatically.
-struct PhasePoint{T<:AbstractVector, V<:AbstractFloat}
+struct PhasePoint{T<:AbstractVector, V<:DualValue}
     θ::T # position variables / parameters
     r::T # momentum variables
     logπ::V # cached potential energy for the current θ
@@ -44,11 +44,14 @@ struct PhasePoint{T<:AbstractVector, V<:AbstractFloat}
     end
 end
 
-function phasepoint(h::Hamiltonian, θ::AbstractVector, r::AbstractVector)
-    π = DualValue(-kinetic_energy(h, r, θ), ∂H∂θ(h, θ))
+phasepoint(
+    h::Hamiltonian,
+    θ::T,
+    r::T;
+    π = DualValue(-kinetic_energy(h, r, θ), ∂H∂θ(h, θ)),
     κ = DualValue(-potential_energy(h, θ), ∂H∂r(h, r))
-    return PhasePoint(θ, r, π, κ)
-end
+) where {T<:AbstractVector} = PhasePoint(θ, r, π, κ)
+
 
 Base.isfinite(v::DualValue) = all(isfinite, v.value) && all(isfinite, v.gradient)
 Base.isfinite(v::AbstractVector) = all(isfinite, v)

@@ -1,5 +1,5 @@
 using Test, AdvancedHMC
-import AdvancedHMC:DualValue, PhasePoint
+import AdvancedHMC: DualValue, PhasePoint
 
 include("common.jl")
 
