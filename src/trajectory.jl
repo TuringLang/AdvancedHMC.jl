@@ -293,11 +293,20 @@ find_good_eps(
 ) where {T<:Real} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
 
 
-function mh_accept(rng::AbstractRNG, H::AbstractFloat, H_new::AbstractFloat)
-    logα = min(0, H - H_new)
-    return log(rand(rng)) < logα, exp(logα)
+function mh_accept(
+    rng::AbstractRNG,
+    H::T,
+    H_new::T
+) where {T<:AbstractFloat}
+    α = min(1.0, exp(H - H_new))
+    accept = rand(rng) < α
+    return accept, α
 end
-mh_accept(H::AbstractFloat, H_new::AbstractFloat) = mh_accept(GLOBAL_RNG, H, H_new)
+
+mh_accept(
+    H::T,
+    H_new::T
+) where {T<:AbstractFloat} = mh_accept(GLOBAL_RNG, H, H_new)
 
 ####
 #### Adaption
