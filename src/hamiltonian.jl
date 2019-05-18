@@ -48,7 +48,7 @@ phasepoint(
     h::Hamiltonian,
     θ::T,
     r::T;
-    π = DualValue(-kinetic_energy(h, r, θ), ∂H∂θ(h, θ)),
+    π = DualValue(neg_energy(h, r, θ), ∂H∂θ(h, θ)),
     κ = DualValue(-potential_energy(h, θ), ∂H∂r(h, r))
 ) where {T<:AbstractVector} = PhasePoint(θ, r, π, κ)
 
@@ -66,25 +66,25 @@ neg_energy(z::PhasePoint) = - z.logπ.value - z.logκ.value
 
 potential_energy(h::Hamiltonian, θ::AbstractVector) = -h.logπ(θ)
 
-kinetic_energy(
+neg_energy(
     h::Hamiltonian{<:UnitEuclideanMetric},
     r::T,
     θ::T
-) where {T<:AbstractVector} = sum(abs2, r) / 2
+) where {T<:AbstractVector} = -sum(abs2, r) / 2
 
-kinetic_energy(
+neg_energy(
     h::Hamiltonian{<:DiagEuclideanMetric},
     r::T,
     θ::T
-) where {T<:AbstractVector} = sum(abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r)) / 2
+) where {T<:AbstractVector} = -sum(abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r)) / 2
 
-function kinetic_energy(
+function neg_energy(
     h::Hamiltonian{<:DenseEuclideanMetric},
     r::T,
     θ::T
 ) where {T<:AbstractVector}
     mul!(h.metric._temp, h.metric.M⁻¹, r)
-    return dot(r, h.metric._temp) / 2
+    return -dot(r, h.metric._temp) / 2
 end
 
 ####
