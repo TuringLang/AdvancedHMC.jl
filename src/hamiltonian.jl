@@ -16,9 +16,6 @@ end
 ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ .* r
 ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ * r
 
-
-# The constructor of `DualValue` will check numerical errors in
-#   `value` and `gradient`.  That is `is_valid` will be performed automatically.
 struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}}
     value::Tv    # Cached value, e.g. logπ(θ).
     gradient::Tg # Cached gradient, e.g. ∇logπ(θ).
