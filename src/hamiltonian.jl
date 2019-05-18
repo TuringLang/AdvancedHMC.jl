@@ -3,7 +3,7 @@
 
 struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
     metric::M
-    logπ::Tlogπ
+    ℓπ::Tlogπ
     ∂logπ∂θ::T∂logπ∂θ
 end
 
@@ -24,13 +24,11 @@ struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}}
     gradient::Tg # Cached gradient, e.g. ∇logπ(θ).
 end
 
-# The constructor of `PhasePoint` will check numerical errors in
-#   `θ`, `r` and `h`. That is `is_valid` will be performed automatically.
 struct PhasePoint{T<:AbstractVector, V<:DualValue}
-    θ::T # position variables / parameters
-    r::T # momentum variables
-    ℓπ::V # cached potential energy for the current θ
-    ℓκ::V # cached kinect energy for the current r
+    θ::T  # Position variables / model parameters.
+    r::T  # Momentum variables
+    ℓπ::V # Cached neg potential energy for the current θ.
+    ℓκ::V # Cached neg kinect energy for the current r.
     function PhasePoint(θ::T, r::T, ℓπ::V, ℓκ::V) where {T,V}
         @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
         # if !(all(isfinite, θ) && all(isfinite, r) && all(isfinite, ℓπ) && all(isfinite, ℓκ))
