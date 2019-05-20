@@ -1,6 +1,7 @@
 module Adaptation
 
-import Base: string
+import Base: string, rand
+using Random: GLOBAL_RNG, AbstractRNG
 using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky
 import LinearAlgebra, Statistics
 using ..AdvancedHMC: DEBUG

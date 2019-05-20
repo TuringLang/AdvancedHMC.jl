@@ -15,28 +15,28 @@ n_adapts = 2_000
         DenseEuclideanMetric(D),
     ]
         h = Hamiltonian(metric, logπ, ∂logπ∂θ)
-        @testset "$(typeof(prop))" for prop in [
+        @testset "$(typeof(τ))" for τ in [
             StaticTrajectory(Leapfrog(ϵ), n_steps),
             NUTS(Leapfrog(find_good_eps(h, θ_init))),
         ]
-            @info "HMC and NUTS numerical test" typeof(prop) n_samples
-            samples = sample(h, prop, θ_init, n_samples; verbose=false)
+            @info "HMC and NUTS numerical test" typeof(τ) n_samples
+            samples = sample(h, τ, θ_init, n_samples; verbose=false)
             @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
             @testset "$(typeof(adaptor))" for adaptor in [
                 Preconditioner(metric),
-                NesterovDualAveraging(0.8, prop.integrator.ϵ),
+                NesterovDualAveraging(0.8, τ.integrator.ϵ),
                 NaiveCompAdaptor(
                     Preconditioner(metric),
-                    NesterovDualAveraging(0.8, prop.integrator.ϵ),
+                    NesterovDualAveraging(0.8, τ.integrator.ϵ),
                 ),
                 StanNUTSAdaptor(
                     n_adapts,
                     Preconditioner(metric),
-                    NesterovDualAveraging(0.8, prop.integrator.ϵ),
+                    NesterovDualAveraging(0.8, τ.integrator.ϵ),
                 ),
             ]
-                @info "HMC and NUTS numerical test" typeof(prop) n_samples typeof(adaptor) typeof(metric) n_adapts
-                samples = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; verbose=false)
+                @info "HMC and NUTS numerical test" typeof(τ) n_samples typeof(adaptor) typeof(metric) n_adapts
+                samples = sample(h, τ, θ_init, n_samples, adaptor, n_adapts; verbose=false)
                 @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
             end
         end

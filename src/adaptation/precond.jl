@@ -282,6 +282,35 @@ function Base.getproperty(dem::DenseEuclideanMetric, d::Symbol)
     return d === :dim ? size(getfield(dem, :M⁻¹), 1) : getfield(dem, d)
 end
 
+# `rand` functions for `metric` types.
+function Base.rand(
+    rng::AbstractRNG,
+    metric::UnitEuclideanMetric
+)
+    r = randn(rng, metric.dim)
+    return r
+end
+
+function Base.rand(
+    rng::AbstractRNG,
+    metric::DiagEuclideanMetric
+)
+    r = randn(rng, metric.dim)
+    r ./= metric.sqrtM⁻¹
+    return r
+end
+
+function Base.rand(
+    rng::AbstractRNG,
+    metric::DenseEuclideanMetric
+)
+    r = randn(rng, metric.dim)
+    ldiv!(metric.cholM⁻¹, r)
+    return r
+end
+
+Base.rand(metric::AbstractMetric) = rand(GLOBAL_RNG, metric)
+
 ####
 #### Preconditioner constructors
 ####
