@@ -23,14 +23,14 @@ function sample(
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
-    pm = progress ? nothing : Progress(n_samples, desc="Sampling", barlen=31)
+    pm = progress ? Progress(n_samples, desc="Sampling", barlen=31) : nothing
     time = @elapsed for i = 1:n_samples
         θs[i], Hs[i], αs[i] = step(rng, h, prop, i == 1 ? θ : θs[i-1])
-        progress && (showvalues = [(:iteration, i), (:hamiltonian_energy, Hs[i]), (:acceptance_rate, αs[i])])
+        progress && (showvalues = Tuple[(:iteration, i), (:hamiltonian_energy, Hs[i]), (:acceptance_rate, αs[i])])
         if !(adaptor === nothing) && i <= n_adapts
             adapt!(adaptor, θs[i], αs[i])
             h, prop = update(h, prop, adaptor)
-            progress && append!(showvalues, [(:step_size, prop.integrator.ϵ), (:precond, h.metric)])
+            progress && append!(showvalues, [(:step_size, prop.integrator.ϵ), (:precondition, h.metric)])
             verbose && i == n_adapts && @info "Finished $n_adapts adapation steps" typeof(adaptor) prop.integrator.ϵ h.metric
         end
         progress && ProgressMeter.next!(pm; showvalues=showvalues)
