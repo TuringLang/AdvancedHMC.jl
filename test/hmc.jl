@@ -17,6 +17,7 @@ n_adapts = 2_000
         h = Hamiltonian(metric, logπ, ∂logπ∂θ)
         @testset "$(typeof(τ))" for τ in [
             StaticTrajectory(Leapfrog(ϵ), n_steps),
+            HMCDA(Leapfrog(ϵ), ϵ * n_steps),
             NUTS(Leapfrog(find_good_eps(h, θ_init))),
         ]
             @info "HMC and NUTS numerical test" typeof(τ) n_samples
