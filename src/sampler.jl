@@ -6,38 +6,8 @@ sample(
     h::Hamiltonian,
     τ::AbstractProposal,
     θ::AbstractVector{T},
-    n_samples::Int;
-    verbose::Bool=true
-) where {T<:Real} = sample(GLOBAL_RNG, h, τ, θ, n_samples; verbose=verbose)
-
-function sample(
-    rng::AbstractRNG,
-    h::Hamiltonian,
-    τ::AbstractProposal,
-    θ::AbstractVector{T},
-    n_samples::Int;
-    verbose::Bool=true
-) where {T<:Real}
-    θs = Vector{Vector{T}}(undef, n_samples)
-    Hs = Vector{T}(undef, n_samples)
-    αs = Vector{T}(undef, n_samples)
-    r = rand(rng, h.metric)
-    z = phasepoint(h, θ, r)
-    time = @elapsed for i = 1:n_samples
-        z, αs[i] = transition(rng, τ, h, z)
-        θs[i], Hs[i] = z.θ, neg_energy(z)
-        z = rand_momentum(rng, z, h)
-    end
-    verbose && @info "Finished sampling with $time (s)" typeof(h.metric) typeof(τ) EBFMI(Hs) mean(αs)
-    return θs
-end
-
-sample(
-    h::Hamiltonian,
-    τ::AbstractProposal,
-    θ::AbstractVector{T},
     n_samples::Int,
-    adaptor::Union{Nothing,Adaptation.AbstractAdaptor}=nothing,
+    adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
     verbose::Bool=true,
     progress::Bool=false
@@ -49,7 +19,7 @@ function sample(
     τ::AbstractProposal,
     θ::AbstractVector{T},
     n_samples::Int,
-    adaptor::Union{Nothing,Adaptation.AbstractAdaptor}=nothing,
+    adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
     verbose::Bool=true,
     progress::Bool=false
@@ -66,7 +36,7 @@ function sample(
         z, αs[i] = transition(rng, τ, h, z)
         θs[i], Hs[i] = z.θ, neg_energy(z)
         progress && (showvalues = Tuple[(:iteration, i), (:hamiltonian_energy, Hs[i]), (:acceptance_rate, αs[i])])
-        if !(adaptor === nothing) && i <= n_adapts
+        if !(adaptor isa Adaptation.NoAdaptation) && i <= n_adapts
             adapt!(adaptor, θs[i], αs[i])
             h, τ = update(h, τ, adaptor)
             progress && append!(showvalues, [(:step_size, τ.integrator.ϵ), (:precondition, h.metric)])

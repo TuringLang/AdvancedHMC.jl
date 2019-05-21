@@ -7,6 +7,7 @@ import LinearAlgebra, Statistics
 using ..AdvancedHMC: DEBUG
 
 abstract type AbstractAdaptor end
+struct NoAdaptation <: AbstractAdaptor end
 
 include("stepsize.jl")
 include("precond.jl")
