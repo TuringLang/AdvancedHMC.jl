@@ -70,13 +70,12 @@ function transition(
     rng::AbstractRNG,
     τ::HMCDA,
     h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T}
+    z::PhasePoint
 ) where {T<:Real}
     # Create the corresponding static τ
     n_steps = max(1, round(Int, τ.λ / τ.integrator.ϵ))
     static_τ = StaticTrajectory(τ.integrator, n_steps)
-    return transition(rng, static_τ, h, θ, r)
+    return transition(rng, static_τ, h, z)
 end
 
 
