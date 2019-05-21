@@ -1,16 +1,18 @@
-####
-#### Hamiltonian dynamics numerical simulation trajectories
-####
+##
+## Hamiltonian dynamics numerical simulation trajectories
+##
 
 abstract type AbstractProposal end
 abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
-# Create a callback function for all `AbstractTrajectory` without passing random number generator
-transition(at::AbstractTrajectory{I},
+# Create a callback function for all `AbstractTrajectory`
+# without passing random number generator
+transition(
+    τ::AbstractTrajectory{I},
     h::Hamiltonian,
     θ::AbstractVector{T},
     r::AbstractVector{T}
-) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, at, h, θ, r)
+) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, τ, h, θ, r)
 
 ###
 ### Standard HMC implementation with fixed leapfrog step numbers.
@@ -21,28 +23,30 @@ struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
 end
 
 """
+Termination (i.e. no-U-turn).
+"""
+struct Termination end
+
+"""
 Create a `StaticTrajectory` with a new integrator
 """
-function (tlp::StaticTrajectory)(integrator::AbstractIntegrator)
-    return StaticTrajectory(integrator, tlp.n_steps)
+function (τ::StaticTrajectory)(integrator::AbstractIntegrator)
+    return StaticTrajectory(integrator, τ.n_steps)
 end
 
 function transition(
     rng::AbstractRNG,
-    prop::StaticTrajectory,
+    τ::StaticTrajectory,
     h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T}
+    z::PhasePoint
 ) where {T<:Real}
-    H = hamiltonian_energy(h, θ, r)
-    θ_new, r_new, _ = step(prop.integrator, h, θ, r, prop.n_steps)
-    H_new = hamiltonian_energy(h, θ_new, r_new)
+    z′ = step(τ.integrator, h, z, τ.n_steps)
     # Accept via MH criteria
-    is_accept, α = mh_accept(rng, H, H_new)
+    is_accept, α = mh_accept(rng, -neg_energy(z), -neg_energy(z′))
     if is_accept
-        θ, r, H = θ_new, -r_new, H_new
+        z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
     end
-    return θ, r, α, H
+    return z, α
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
@@ -58,21 +62,21 @@ end
 """
 Create a `HMCDA` with a new integrator
 """
-function (tlp::HMCDA)(integrator::AbstractIntegrator)
-    return HMCDA(integrator, tlp.λ)
+function (τ::HMCDA)(integrator::AbstractIntegrator)
+    return HMCDA(integrator, τ.λ)
 end
 
 function transition(
     rng::AbstractRNG,
-    prop::HMCDA,
+    τ::HMCDA,
     h::Hamiltonian,
     θ::AbstractVector{T},
     r::AbstractVector{T}
 ) where {T<:Real}
-    # Create the corresponding static prop
-    n_steps = max(1, round(Int, prop.λ / prop.integrator.ϵ))
-    static_prop = StaticTrajectory(prop.integrator, n_steps)
-    return transition(rng, static_prop, h, θ, r)
+    # Create the corresponding static τ
+    n_steps = max(1, round(Int, τ.λ / τ.integrator.ϵ))
+    static_τ = StaticTrajectory(τ.integrator, n_steps)
+    return transition(rng, static_τ, h, θ, r)
 end
 
 
@@ -89,9 +93,8 @@ struct NUTS{I<:AbstractIntegrator} <: DynamicTrajectory{I}
     Δ_max       ::  AbstractFloat
 end
 
-"""
-Helper function to use default values
-"""
+
+# Helper function to use default values
 NUTS(integrator::AbstractIntegrator) = NUTS(integrator, 10, 1000.0)
 
 """
@@ -111,8 +114,7 @@ function build_tree(
     rng::AbstractRNG,
     nt::DynamicTrajectory{I},
     h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T},
+    z::PhasePoint,
     logu::AbstractFloat,
     v::Int,
     j::Int,
@@ -120,84 +122,105 @@ function build_tree(
 ) where {I<:AbstractIntegrator,T<:Real}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
-        θ′, r′, _is_valid = step(nt.integrator, h, θ, r, v)
-        H′ = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+        z′ = step(nt.integrator, h, z, v)
+        H′ = -neg_energy(z′)
         n′ = (logu <= -H′) ? 1 : 0
         s′ = (logu < nt.Δ_max + -H′) ? 1 : 0
         α′ = exp(min(0, H - H′))
 
-        return θ′, r′, θ′, r′, θ′, r′, n′, s′, α′, 1
+        return z′, z′, z′, n′, s′, α′, 1
     else
         # Recursion - build the left and right subtrees.
-        θm, rm, θp, rp, θ′, r′, n′, s′, α′, n′α = build_tree(rng, nt, h, θ, r, logu, v, j - 1, H)
+        zm, zp, z′, n′, s′, α′, n′α = build_tree(rng, nt, h, z, logu, v, j - 1, H)
 
         if s′ == 1
             if v == -1
-                θm, rm, _, _, θ′′, r′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, θm, rm, logu, v, j - 1, H)
+                zm, _, z′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, zm, logu, v, j - 1, H)
             else
-                _, _, θp, rp, θ′′, r′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, θp, rp, logu, v, j - 1, H)
+                _, zp, z′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, zp, logu, v, j - 1, H)
             end
             if rand(rng) < n′′ / (n′ + n′′)
-                θ′ = θ′′
-                r′ = r′′
+                z′ = z′′
             end
             α′ = α′ + α′′
             n′α = n′α + n′′α
-            s′ = s′′ * (dot(θp - θm, ∂H∂r(h, rm)) >= 0 ? 1 : 0) * (dot(θp - θm, ∂H∂r(h, rp)) >= 0 ? 1 : 0)
+            s′ = s′′ * (dot(zp.θ - zm.θ, ∂H∂r(h, zm.r)) >= 0 ? 1 : 0) * (dot(zp.θ - zm.θ, ∂H∂r(h, zp.r)) >= 0 ? 1 : 0)
             n′ = n′ + n′′
         end
 
-        return θm, rm, θp, rp, θ′, r′, n′, s′, α′, n′α
+        # s: termination stats
+        # α: MH stats, i.e. sum of MH accept prob for all leapfrog steps
+        # nα: total # of leap frog steps, i.e. phase points in a trajectory
+        # n: # of acceptable candicates, i.e. prob is larger than slice variable u
+        return zm, zp, z′, n′, s′, α′, n′α
     end
 end
 
 build_tree(
     nt::DynamicTrajectory{I},
     h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T},
+    z::PhasePoint,
     logu::AbstractFloat,
     v::Int,
     j::Int,
     H::AbstractFloat
-) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, θ, r, logu, v, j, H)
+) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, z, logu, v, j, H)
 
 function transition(
     rng::AbstractRNG,
     nt::DynamicTrajectory{I},
     h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T}
+    z::PhasePoint
 ) where {I<:AbstractIntegrator,T<:Real}
-    H = hamiltonian_energy(h, θ, r)
+    θ, r = z.θ, z.r
+    H = -neg_energy(z)
     logu = log(rand(rng)) - H
 
-    θm = θ; θp = θ; rm = r; rp = r; j = 0; θ_new = θ; r_new = r; n = 1; s = 1
+    zm = z; zp = z; z_new = z; j = 0; n = 1; s = 1
 
     local α, nα
     while s == 1 && j <= nt.max_depth
         v = rand(rng, [-1, 1])
         if v == -1
-            θm, rm, _, _, θ′, r′,n′, s′, α, nα = build_tree(rng, nt, h, θm, rm, logu, v, j, H)
+            zm, _, z′, n′, s′, α, nα = build_tree(rng, nt, h, zm, logu, v, j, H)
         else
-            _, _, θp, rp, θ′, r′,n′, s′, α, nα = build_tree(rng, nt, h, θp, rp, logu, v, j, H)
+            zm, _, z′, n′, s′, α, nα = build_tree(rng, nt, h, zm, logu, v, j, H)
         end
 
         if s′ == 1
             if rand(rng) < min(1, n′ / n)
-                θ_new = θ′
-                r_new = r′
+                z_new = z′
             end
         end
 
         n = n + n′
-        s = s′ * (dot(θp - θm, ∂H∂r(h, rm)) >= 0 ? 1 : 0) * (dot(θp - θm, ∂H∂r(h, rp)) >= 0 ? 1 : 0)
+        s = s′ * (dot(zp.θ - zm.θ, ∂H∂r(h, zm.r)) >= 0 ? 1 : 0) * (dot(zp.θ - zm.θ, ∂H∂r(h, zp.r)) >= 0 ? 1 : 0)
         j = j + 1
     end
 
-    H_new = 0 # Warning: NUTS always return H_new = 0;
-    return θ_new, r_new, α / nα, H_new
+    return z_new, α / nα
 end
+
+transition(nt::DynamicTrajectory{I},
+    h::Hamiltonian,
+    θ::AbstractVector{T},
+    r::AbstractVector{T}
+) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, nt, h, θ, r)
+
+
+##
+## API: required by Turing.Gibbs
+##
+
+# TODO: rename all `Turing.step` to `transition`?
+
+# function step(rng::AbstractRNG, h::Hamiltonian, τ::AbstractTrajectory{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
+#     r = rand(rng, h.metric)
+#     θ_new, r_new, α, H_new = transition(rng, τ, h, θ, r)
+#     return θ_new, H_new, α
+# end
+#
+# step(h::Hamiltonian, p::AbstractTrajectory, θ::AbstractVector{T}) where {T<:Real} = step(GLOBAL_RNG, h, p, θ)
 
 ###
 ### Find for an initial leap-frog step-size via heuristic search.
@@ -213,11 +236,12 @@ function find_good_eps(
     a_min, a_cross, a_max = 0.25, 0.5, 0.75 # minimal, crossing, maximal accept ratio
     d = 2.0
 
-    r = rand_momentum(rng, h)
-    H = hamiltonian_energy(h, θ, r)
+    r = rand(rng, h.metric)
+    z = phasepoint(h, θ, r)
+    H = -neg_energy(z)
 
-    θ′, r′, _is_valid = step(Leapfrog(ϵ), h, θ, r)
-    H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+    z′ = step(Leapfrog(ϵ), h, z)
+    H_new = -neg_energy(z′)
 
     ΔH = H - H_new
     direction = ΔH > log(a_cross) ? 1 : -1
@@ -225,8 +249,8 @@ function find_good_eps(
     # Crossing step: increase/decrease ϵ until accept ratio cross a_cross.
     for _ = 1:max_n_iters
         ϵ′ = direction == 1 ? d * ϵ : 1 / d * ϵ
-        θ′, r′, _is_valid = step(Leapfrog(ϵ′), h, θ, r)
-        H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+        z′ = step(Leapfrog(ϵ′), h, z)
+        H_new = -neg_energy(z′)
 
         ΔH = H - H_new
         DEBUG && @debug "Crossing step" direction H_new ϵ "α = $(min(1, exp(ΔH)))"
@@ -244,8 +268,8 @@ function find_good_eps(
     ϵ, ϵ′ = ϵ < ϵ′ ? (ϵ, ϵ′) : (ϵ′, ϵ)  # ensure ϵ < ϵ′
     for _ = 1:max_n_iters
         ϵ_mid = middle(ϵ, ϵ′)
-        θ′, r′, _is_valid = step(Leapfrog(ϵ_mid), h, θ, r)
-        H_new = _is_valid ? hamiltonian_energy(h, θ′, r′) : Inf
+        z′ = step(Leapfrog(ϵ_mid), h, z)
+        H_new = -neg_energy(z′)
 
         ΔH = H - H_new
         DEBUG && @debug "Bisection step" H_new ϵ_mid "α = $(min(1, exp(ΔH)))"
@@ -269,27 +293,43 @@ find_good_eps(
 ) where {T<:Real} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
 
 
-function mh_accept(rng::AbstractRNG, H::AbstractFloat, H_new::AbstractFloat)
-    logα = min(0, H - H_new)
-    return log(rand(rng)) < logα, exp(logα)
+function mh_accept(
+    rng::AbstractRNG,
+    H::T,
+    H_new::T
+) where {T<:AbstractFloat}
+    α = min(1.0, exp(H - H_new))
+    accept = rand(rng) < α
+    return accept, α
 end
-mh_accept(H::AbstractFloat, H_new::AbstractFloat) = mh_accept(GLOBAL_RNG, H, H_new)
+
+mh_accept(
+    H::T,
+    H_new::T
+) where {T<:AbstractFloat} = mh_accept(GLOBAL_RNG, H, H_new)
 
 ####
 #### Adaption
 ####
 
-function update(h::Hamiltonian, prop::AbstractProposal, dpc::Adaptation.AbstractPreconditioner)
-    return h(getM⁻¹(dpc)), prop
-end
+update(
+    h::Hamiltonian,
+    τ::AbstractProposal,
+    dpc::Adaptation.AbstractPreconditioner
+) = h(getM⁻¹(dpc)), τ
 
-function update(h::Hamiltonian, prop::AbstractProposal, da::NesterovDualAveraging)
-    return h, prop(prop.integrator(getϵ(da)))
-end
+update(
+    h::Hamiltonian,
+    τ::AbstractProposal,
+    da::NesterovDualAveraging
+) = h, τ(τ.integrator(getϵ(da)))
 
-function update(h::Hamiltonian, prop::AbstractProposal, ca::Adaptation.AbstractCompositeAdaptor)
-    return h(getM⁻¹(ca.pc)), prop(prop.integrator(getϵ(ca.ssa)))
-end
+
+update(
+    h::Hamiltonian,
+    τ::AbstractProposal,
+    ca::Adaptation.AbstractCompositeAdaptor
+) = h(getM⁻¹(ca.pc)), τ(τ.integrator(getϵ(ca.ssa)))
 
 function update(h::Hamiltonian, θ::AbstractVector{<:Real})
     metric = h.metric
