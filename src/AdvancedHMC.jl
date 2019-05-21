@@ -6,6 +6,7 @@ using Statistics: mean, var, middle
 using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky
 using LazyArrays: BroadcastArray
 using Random: GLOBAL_RNG, AbstractRNG
+using ProgressMeter
 using Parameters: @unpack
 using ArgCheck: @argcheck
 
