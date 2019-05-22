@@ -1,3 +1,6 @@
+# Allow pass --progress when running this script individually to turn on progress meter
+const PROGRESS = length(ARGS) > 0 && ARGS[1] == "--progress" ? true : false
+
 using Test, AdvancedHMC, LinearAlgebra
 using Statistics: mean, var, cov
 include("common.jl")
@@ -20,9 +23,9 @@ n_adapts = 2_000
             HMCDA(Leapfrog(ϵ), ϵ * n_steps),
             NUTS(Leapfrog(find_good_eps(h, θ_init))),
         ]
-            @info "HMC and NUTS numerical test" typeof(τ) n_samples
-            samples = sample(h, τ, θ_init, n_samples; verbose=false)
+            samples = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
             @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
+
             @testset "$(typeof(adaptor))" for adaptor in [
                 Preconditioner(metric),
                 NesterovDualAveraging(0.8, τ.integrator.ϵ),
@@ -36,8 +39,7 @@ n_adapts = 2_000
                     NesterovDualAveraging(0.8, τ.integrator.ϵ),
                 ),
             ]
-                @info "HMC and NUTS numerical test" typeof(τ) n_samples typeof(adaptor) typeof(metric) n_adapts
-                samples = sample(h, τ, θ_init, n_samples, adaptor, n_adapts; verbose=false)
+                samples = sample(h, τ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
                 @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
             end
         end

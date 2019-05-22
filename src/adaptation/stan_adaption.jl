@@ -41,8 +41,6 @@ function is_window_end(tp::StanNUTSAdaptor)
            (tp.state.i != tp.n_adapts)
 end
 
-is_final(tp::StanNUTSAdaptor) = tp.state.i == tp.n_adapts
-
 function compute_next_window!(tp::StanNUTSAdaptor)
     if ~(tp.state.next_window == tp.n_adapts - tp.term_buffer - 1)
         tp.state.window_size *= 2
@@ -74,8 +72,8 @@ function adapt!(tp::StanNUTSAdaptor, θ::AbstractVector{<:Real}, α::AbstractFlo
         # If window ends, compute next window
         compute_next_window!(tp)
     end
+end
 
-    if is_final(tp)
-        finalize!(tp.ssa)
-    end
+function finalize!(adaptor::StanNUTSAdaptor)
+    finalize!(adaptor.ssa)
 end
