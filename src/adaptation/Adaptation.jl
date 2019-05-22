@@ -7,6 +7,7 @@ import LinearAlgebra, Statistics
 using ..AdvancedHMC: DEBUG
 
 abstract type AbstractAdaptor end
+finalize!(::AbstractAdaptor) = nothing
 struct NoAdaptation <: AbstractAdaptor end
 
 include("stepsize.jl")
@@ -20,22 +21,26 @@ struct NaiveCompAdaptor <: AbstractCompositeAdaptor
     ssa :: StepSizeAdaptor
 end
 
-function adapt!(tp::NaiveCompAdaptor, θ::AbstractVector{<:Real}, α::AbstractFloat)
-    adapt!(tp.ssa, θ, α)
-    adapt!(tp.pc, θ, α)
+function adapt!(nca::NaiveCompAdaptor, θ::AbstractVector{<:Real}, α::AbstractFloat)
+    adapt!(nca.ssa, θ, α)
+    adapt!(nca.pc, θ, α)
 end
 
-function getM⁻¹(ca::AbstractCompositeAdaptor)
-    return getM⁻¹(ca.pc)
+function getM⁻¹(aca::AbstractCompositeAdaptor)
+    return getM⁻¹(aca.pc)
 end
 
-function getϵ(ca::AbstractCompositeAdaptor)
-    return getϵ(ca.ssa)
+function getϵ(aca::AbstractCompositeAdaptor)
+    return getϵ(aca.ssa)
+end
+
+function finalize!(aca::AbstractCompositeAdaptor)
+    finalize!(aca.ssa)
 end
 
 include("stan_adaption.jl")
 
-export adapt!, getϵ, getM⁻¹,
+export adapt!, finalize!, getϵ, getM⁻¹, 
        NesterovDualAveraging,
        UnitPreconditioner, DiagPreconditioner, DensePreconditioner,
        AbstractMetric, UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric,

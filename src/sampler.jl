@@ -36,11 +36,18 @@ function sample(
         z, αs[i] = transition(rng, τ, h, z)
         θs[i], Hs[i] = z.θ, neg_energy(z)
         progress && (showvalues = Tuple[(:iteration, i), (:hamiltonian_energy, Hs[i]), (:acceptance_rate, αs[i])])
-        if !(adaptor isa Adaptation.NoAdaptation) && i <= n_adapts
-            adapt!(adaptor, θs[i], αs[i])
-            h, τ = update(h, τ, adaptor)
+        if !(adaptor isa Adaptation.NoAdaptation)
+            if i <= n_adapts
+                adapt!(adaptor, θs[i], αs[i])
+                h, τ = update(h, τ, adaptor)
+                # Finalize adapation
+                if i == n_adapts
+                    finalize!(adaptor)
+                    verbose && @info "Finished $n_adapts adapation steps" typeof(adaptor) τ.integrator.ϵ h.metric
+                end
+            end
+            # Progress info for adapation
             progress && append!(showvalues, [(:step_size, τ.integrator.ϵ), (:precondition, h.metric)])
-            verbose && i == n_adapts && @info "Finished $n_adapts adapation steps" typeof(adaptor) τ.integrator.ϵ h.metric
         end
         progress && ProgressMeter.next!(pm; showvalues=showvalues)
         # Refresh momentum for next iteration
