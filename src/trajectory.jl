@@ -2,6 +2,7 @@
 ## Hamiltonian dynamics numerical simulation trajectories
 ##
 
+
 abstract type AbstractProposal end
 abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
@@ -22,10 +23,63 @@ struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
     n_steps     ::  Int
 end
 
+
+###
+### Create a `Termination` type for each `Trajectory` type, e.g. HMC, NUTS etc.
+### Merge all `Trajectory` types, and make `transition` dispatch on `Termination`,
+### such that we can overload `transition` for different HMC samplers.
+### NOTE:  stopping creteria, max_depth::Int, Δ_max::AbstractFloat, n_steps, λ
+###
+
 """
 Termination (i.e. no-U-turn).
 """
-struct Termination end
+abstract type Termination end
+
+# Termination type for HMC and HMCDA
+struct StaticTermination{M<:Integer, D<:AbstractFloat} <: Termination
+    n_steps :: Integer
+    Δ_max :: AbstractFloat
+end
+
+# NUTS_Termination
+struct NUTS_Termination{M<:Integer, D<:AbstractFloat} <: Termination
+    max_depth :: M
+    Δ_max :: D
+    # TODO: add other necessary fields for No-U-Turn stopping creteria.
+end
+
+is_terminated(
+    x::StaticTermination,
+    τ::Trajectory
+) = τ.n_steps >= x.n_steps || τ.Δ >= x.Δ_max
+
+struct Trajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
+    integrator :: I
+    n_steps :: Integer # Counter for total leapfrog steps already applied.
+    Δ :: AbstractFloat # Current hamiltonian energy minus starting hamiltonian energy
+    # TODO: replace all ``*Trajectory` types with `Trajectory`.
+    # TODO: add turn statistic, divergent statistic, proposal statistic
+end
+
+# Combine trajectories, e.g. those created by the build_tree algorithm.
+#  NOTE: combine proposal (via slice/multinomial sampling), combine turn statistic,
+#       and combine divergent statistic.
+combine_trajectory(τ′::Trajectory, τ′′::Trajectory) = nothing # To-be-implemented.
+
+## TODO: move slice variable `logu` into `Trajectory`?
+combine_proposal(τ′::Trajectory, τ′′::Trajectory) = nothing # To-be-implemented.
+combine_turn(τ′::Trajectory, τ′′::Trajectory) = nothing # To-be-implemented.
+combine_divergence(τ′::Trajectory, τ′′::Trajectory) = nothing # To-be-implemented.
+
+
+transition(
+    τ::Trajectory{I},
+    h::Hamiltonian,
+    z::PhasePoint,
+    t::Termination
+) where {I<:AbstractIntegrator} = nothing
+
 
 """
 Create a `StaticTrajectory` with a new integrator
