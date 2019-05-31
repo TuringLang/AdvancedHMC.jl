@@ -10,9 +10,8 @@ abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 transition(
     τ::AbstractTrajectory{I},
     h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T}
-) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, τ, h, θ, r)
+    z::PhasePoint
+) where {I<:AbstractIntegrator} = transition(GLOBAL_RNG, τ, h, z)
 
 ###
 ### Standard HMC implementation with fixed leapfrog step numbers.
@@ -199,13 +198,6 @@ function transition(
 
     return z_new, α / nα
 end
-
-transition(nt::DynamicTrajectory{I},
-    h::Hamiltonian,
-    θ::AbstractVector{T},
-    r::AbstractVector{T}
-) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, nt, h, θ, r)
-
 
 ##
 ## API: required by Turing.Gibbs
