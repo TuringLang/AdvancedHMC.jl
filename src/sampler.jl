@@ -29,6 +29,7 @@ function sample(
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
     # Prepare phase point for sampling
+    h = update(h, θ) # Ensure h.metric has the same dim as θ.
     r = rand(rng, h.metric)
     z = phasepoint(h, θ, r)
     pm = progress ? Progress(n_samples, desc="Sampling", barlen=31) : nothing
@@ -50,6 +51,7 @@ function sample(
             progress && append!(showvalues, [(:step_size, τ.integrator.ϵ), (:precondition, h.metric)])
         end
         progress && ProgressMeter.next!(pm; showvalues=showvalues)
+        h = update(h, θ) # Ensure h.metric has the same dim as θ.
         # Refresh momentum for next iteration
         z = rand_momentum(rng, z, h)
     end
