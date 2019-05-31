@@ -11,7 +11,7 @@ transition(
     τ::AbstractTrajectory{I},
     h::Hamiltonian,
     z::PhasePoint
-) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, τ, h, z)
+) where {I<:AbstractIntegrator} = transition(GLOBAL_RNG, τ, h, z)
 
 ###
 ### Standard HMC implementation with fixed leapfrog step numbers.
@@ -198,25 +198,6 @@ function transition(
 
     return z_new, α / nα
 end
-
-transition(nt::DynamicTrajectory{I},
-    h::Hamiltonian,
-    z::PhasePoint
-) where {I<:AbstractIntegrator,T<:Real} = transition(GLOBAL_RNG, nt, h, z)
-
-##
-## API: required by Turing.Gibbs
-##
-
-# TODO: rename all `Turing.step` to `transition`?
-
-# function step(rng::AbstractRNG, h::Hamiltonian, τ::AbstractTrajectory{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
-#     r = rand(rng, h.metric)
-#     θ_new, r_new, α, H_new = transition(rng, τ, h, θ, r)
-#     return θ_new, H_new, α
-# end
-#
-# step(h::Hamiltonian, p::AbstractTrajectory, θ::AbstractVector{T}) where {T<:Real} = step(GLOBAL_RNG, h, p, θ)
 
 ###
 ### Find for an initial leap-frog step-size via heuristic search.
