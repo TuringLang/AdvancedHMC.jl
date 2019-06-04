@@ -29,11 +29,11 @@ n_adapts = 2_000
             @testset "$(typeof(adaptor))" for adaptor in [
                 Preconditioner(metric),
                 NesterovDualAveraging(0.8, τ.integrator.ϵ),
-                NaiveCompAdaptor(
+                NaiveHMCAdaptor(
                     Preconditioner(metric),
                     NesterovDualAveraging(0.8, τ.integrator.ϵ),
                 ),
-                StanNUTSAdaptor(
+                StanHMCAdaptor(
                     n_adapts,
                     Preconditioner(metric),
                     NesterovDualAveraging(0.8, τ.integrator.ϵ),

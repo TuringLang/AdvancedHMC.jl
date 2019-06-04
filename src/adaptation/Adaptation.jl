@@ -17,7 +17,7 @@ adapt!(
     ::AbstractVector{T},
     ::AbstractFloat,
     is_update::Bool=true
-) where {T<:<:Real}       = nothing
+) where {T<:Real}       = nothing
 getM⁻¹(::AbstractAdaptor) = nothing
 getϵ(::AbstractAdaptor)   = nothing
 reset!(::AbstractAdaptor) = nothing
@@ -28,37 +28,38 @@ struct NoAdaptation <: AbstractAdaptor end
 include("stepsize.jl")
 include("precond.jl")
 
-abstract type AbstractCompositeAdaptor <: AbstractAdaptor end
 
-# TODO: generalise this to a list of adaptors
-struct NaiveCompAdaptor <: AbstractCompositeAdaptor
+##
+## Compositional adaptor
+## TODO: generalise this to a list of adaptors
+##
+
+struct NaiveHMCAdaptor <: AbstractAdaptor
     pc  :: AbstractPreconditioner
     ssa :: StepSizeAdaptor
 end
 
-function adapt!(nca::NaiveCompAdaptor, θ::AbstractVector{<:Real}, α::AbstractFloat)
+getM⁻¹(aca::NaiveHMCAdaptor) = getM⁻¹(aca.pc)
+getϵ(aca::NaiveHMCAdaptor)   = getϵ(aca.ssa)
+finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)
+function adapt!(nca::NaiveHMCAdaptor, θ::AbstractVector{<:Real}, α::AbstractFloat)
     adapt!(nca.ssa, θ, α)
     adapt!(nca.pc, θ, α)
 end
-
-function getM⁻¹(aca::AbstractCompositeAdaptor)
-    return getM⁻¹(aca.pc)
+function reset!(aca::NaiveHMCAdaptor)
+    reset!(aca.ssa)
+    reset!(aca.pc)
 end
 
-function getϵ(aca::AbstractCompositeAdaptor)
-    return getϵ(aca.ssa)
-end
-
-function finalize!(aca::AbstractCompositeAdaptor)
-    finalize!(aca.ssa)
-end
-
+##
+## Stan's windowed adaptor.
+##
 include("stan_adaption.jl")
 
-export adapt!, finalize!, getϵ, getM⁻¹,
+export adapt!, finalize!, getϵ, getM⁻¹, reset!,
        NesterovDualAveraging,
        UnitPreconditioner, DiagPreconditioner, DensePreconditioner,
        AbstractMetric, UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric,
-       Preconditioner, NaiveCompAdaptor, StanNUTSAdaptor
+       Preconditioner, NaiveHMCAdaptor, StanHMCAdaptor
 
 end # module

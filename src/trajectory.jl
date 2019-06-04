@@ -305,7 +305,7 @@ update(
 update(
     h::Hamiltonian,
     τ::AbstractProposal,
-    ca::Adaptation.AbstractCompositeAdaptor
+    ca::Union{Adaptation.NaiveHMCAdaptor, Adaptation.StanHMCAdaptor}
 ) = h(getM⁻¹(ca.pc)), τ(τ.integrator(getϵ(ca.ssa)))
 
 function update(
