@@ -23,8 +23,14 @@ struct StanHMCAdaptor{M<:AbstractPreconditioner} <: AbstractAdaptor
     state       :: StanHMCAdaptorState
 end
 
-function StanHMCAdaptor(n_adapts::Int, pc::AbstractPreconditioner, ssa::StepSizeAdaptor,
-                         init_buffer::Int=75, term_buffer::Int=50, window_size::Int=25)
+function StanHMCAdaptor(
+    n_adapts::Int,
+    pc::M,
+    ssa::StepSizeAdaptor,
+    init_buffer::Int=75,
+    term_buffer::Int=50,
+    window_size::Int=25
+) where {M<:AbstractPreconditioner}
     next_window = init_buffer + window_size - 1
     return StanHMCAdaptor(n_adapts, pc, ssa, init_buffer, term_buffer, StanHMCAdaptorState(0, window_size, next_window))
 end
@@ -57,7 +63,7 @@ end
 getM⁻¹(adaptor::StanHMCAdaptor) = getM⁻¹(adaptor.pc)
 getϵ(adaptor::StanHMCAdaptor)   = getϵ(adaptor.ssa)
 finalize!(adaptor::StanHMCAdaptor) = finalize!(adaptor.ssa)
-# reset!(adaptor::StanHMCAdaptor) # Not used. 
+# reset!(adaptor::StanHMCAdaptor) # Not used.
 
 function adapt!(tp::StanHMCAdaptor, θ::AbstractVector{<:Real}, α::AbstractFloat)
     tp.state.i += 1

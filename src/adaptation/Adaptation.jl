@@ -34,8 +34,8 @@ include("precond.jl")
 ## TODO: generalise this to a list of adaptors
 ##
 
-struct NaiveHMCAdaptor <: AbstractAdaptor
-    pc  :: AbstractPreconditioner
+struct NaiveHMCAdaptor{M<:AbstractPreconditioner} <: AbstractAdaptor
+    pc  :: M
     ssa :: StepSizeAdaptor
 end
 
