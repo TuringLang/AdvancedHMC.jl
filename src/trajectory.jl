@@ -308,7 +308,10 @@ update(
     ca::Adaptation.AbstractCompositeAdaptor
 ) = h(getM⁻¹(ca.pc)), τ(τ.integrator(getϵ(ca.ssa)))
 
-function update(h::Hamiltonian, θ::AbstractVector{<:Real})
+function update(
+    h::Hamiltonian,
+    θ::AbstractVector{T}
+) where {T<:Real}
     metric = h.metric
     if length(metric) != length(θ)
         metric = metric(length(θ))
