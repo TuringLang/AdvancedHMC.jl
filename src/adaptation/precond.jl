@@ -121,12 +121,19 @@ end
 #### Preconditioning matrix adaption implementation.
 ####
 
+# Unit
 struct UnitPreconditioner <: AbstractPreconditioner end
 
 string(::UnitPreconditioner) = "I"
-adapt!(::UnitPreconditioner, ::AbstractVector{<:Real}, ::AbstractFloat, is_update::Bool=true) = nothing
 reset!(::UnitPreconditioner) = nothing
 getM⁻¹(dpc::UnitPreconditioner) = 1.0
+adapt!(
+    ::UnitPreconditioner,
+    ::AbstractVector{<:Real},
+    ::AbstractFloat;
+    is_update::Bool=true
+) = nothing
+
 
 mutable struct DiagPreconditioner{T<:Real,AT<:AbstractVector{T}} <: AbstractPreconditioner
     n_min   :: Int
@@ -134,16 +141,22 @@ mutable struct DiagPreconditioner{T<:Real,AT<:AbstractVector{T}} <: AbstractPrec
     var :: AT
 end
 
+# Diagonal
 function DiagPreconditioner(d::Int, n_min::Int=10)
     ve = WelfordVar(0, zeros(d), zeros(d))
     return DiagPreconditioner(n_min, ve, Vector(ones(d)))
 end
 
-function string(dpc::DiagPreconditioner)
-    return string(dpc.var)
-end
+string(dpc::DiagPreconditioner) = string(dpc.var)
+reset!(dpc::DiagPreconditioner) = reset!(dpc.ve)
+getM⁻¹(dpc::DiagPreconditioner) = dpc.var
 
-function adapt!(dpc::DiagPreconditioner, θ::AbstractVector{<:Real}, α::AbstractFloat, is_update::Bool=true)
+function adapt!(
+    dpc::DiagPreconditioner,
+    θ::AbstractVector{T},
+    α::AbstractFloat;
+    is_update::Bool=true
+) where {T<:Real}
     if length(θ) != length(dpc.var)
         @assert dpc.ve.n == 0 "Cannot resize a var estimator when it contains samples."
         dpc.ve = WelfordVar(0, zeros(length(θ)), zeros(length(θ)))
@@ -155,12 +168,7 @@ function adapt!(dpc::DiagPreconditioner, θ::AbstractVector{<:Real}, α::Abstrac
     end
 end
 
-reset!(dpc::DiagPreconditioner) = reset!(dpc.ve)
-
-function getM⁻¹(dpc::DiagPreconditioner)
-    return dpc.var
-end
-
+# Dense
 mutable struct DensePreconditioner{T<:AbstractFloat} <: AbstractPreconditioner
     n_min :: Int
     ce    :: CovEstimator{T}
@@ -174,11 +182,16 @@ function DensePreconditioner(d::Integer, n_min::Int=10)
     return DensePreconditioner(n_min, ce, LinearAlgebra.diagm(0 => ones(d)))
 end
 
-function string(dpc::DensePreconditioner)
-    return string(LinearAlgebra.diag(dpc.covar))
-end
+string(dpc::DensePreconditioner) = string(LinearAlgebra.diag(dpc.covar))
+reset!(dpc::DensePreconditioner) = reset!(dpc.ce)
+getM⁻¹(dpc::DensePreconditioner) = dpc.covar
 
-function adapt!(dpc::DensePreconditioner, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat, is_update::Bool=true)
+function adapt!(
+    dpc::DensePreconditioner,
+    θ::AbstractVector{T},
+    α::AbstractFloat;
+    is_update::Bool=true
+) where {T<:AbstractFloat}
     if length(θ) != size(dpc.covar,1)
         @assert dpc.ce.n == 0 "Cannot resize a var estimator when it contains samples."
         dpc.ce = WelfordCov(length(θ))
@@ -188,12 +201,6 @@ function adapt!(dpc::DensePreconditioner, θ::AbstractVector{<:AbstractFloat}, �
     if dpc.ce.n >= dpc.n_min && is_update
         dpc.covar .= get_cov(dpc.ce)
     end
-end
-
-reset!(dpc::DensePreconditioner) = reset!(dpc.ce)
-
-function getM⁻¹(dpc::DensePreconditioner)
-    return dpc.covar
 end
 
 ####
