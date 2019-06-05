@@ -52,3 +52,29 @@ end
     @test AdvancedHMC.Adaptation.getM⁻¹(pc2) == zeros(length(θ))
     @test AdvancedHMC.Adaptation.getM⁻¹(pc3) == LinearAlgebra.diagm(0 => ones(length(θ)))
 end
+
+@testset "Stan HMC adaptors" begin
+    θ = [0.0, 0.0, 0.0, 0.0]
+
+    adaptor1 = StanHMCAdaptor(
+        1000,
+        Preconditioner(UnitEuclideanMetric),
+        NesterovDualAveraging(0.8, 0.5)
+    )
+    adaptor2 = StanHMCAdaptor(
+        1000,
+        Preconditioner(DiagEuclideanMetric),
+        NesterovDualAveraging(0.8, 0.5)
+    )
+    adaptor3 = StanHMCAdaptor(
+        1000,
+        Preconditioner(DenseEuclideanMetric),
+        NesterovDualAveraging(0.8, 0.5)
+    )
+
+    AdvancedHMC.adapt!(adaptor1, θ, 1.)
+    AdvancedHMC.adapt!(adaptor2, θ, 1.)
+    AdvancedHMC.adapt!(adaptor3, θ, 1.)
+    @test AdvancedHMC.Adaptation.getM⁻¹(adaptor2) == zeros(length(θ))
+    @test AdvancedHMC.Adaptation.getM⁻¹(adaptor3) == LinearAlgebra.diagm(0 => ones(length(θ)))
+end

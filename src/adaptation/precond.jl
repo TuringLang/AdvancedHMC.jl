@@ -157,11 +157,7 @@ function adapt!(
     α::AbstractFloat;
     is_update::Bool=true
 ) where {T<:Real}
-    if length(θ) != length(dpc.var)
-        @assert dpc.ve.n == 0 "Cannot resize a var estimator when it contains samples."
-        dpc.ve = WelfordVar(0, zeros(length(θ)), zeros(length(θ)))
-        dpc.var = zeros(length(θ))
-    end
+    resize!(dpc, θ)
     add_sample!(dpc.ve, θ)
     if dpc.ve.n >= dpc.n_min && is_update
         dpc.var .= get_var(dpc.ve)
@@ -192,14 +188,36 @@ function adapt!(
     α::AbstractFloat;
     is_update::Bool=true
 ) where {T<:AbstractFloat}
+    resize!(dpc, θ)
+    add_sample!(dpc.ce, θ)
+    if dpc.ce.n >= dpc.n_min && is_update
+        dpc.covar .= get_cov(dpc.ce)
+    end
+end
+
+# Resize pre-conditioner if necessary.
+Base.resize!(
+    pc::UnitPreconditioner,
+    θ::AbstractVector{T}
+) where {T<:Real} = nothing
+function Base.resize!(
+    dpc::DiagPreconditioner,
+    θ::AbstractVector{T}
+) where {T<:Real}
+    if length(θ) != length(dpc.var)
+        @assert dpc.ve.n == 0 "Cannot resize a var estimator when it contains samples."
+        dpc.ve = WelfordVar(0, zeros(length(θ)), zeros(length(θ)))
+        dpc.var = zeros(length(θ))
+    end
+end
+function Base.resize!(
+    dpc::DensePreconditioner,
+    θ::AbstractVector{T}
+) where {T<:Real}
     if length(θ) != size(dpc.covar,1)
         @assert dpc.ce.n == 0 "Cannot resize a var estimator when it contains samples."
         dpc.ce = WelfordCov(length(θ))
         dpc.covar = LinearAlgebra.diagm(0 => ones(length(θ)))
-    end
-    add_sample!(dpc.ce, θ)
-    if dpc.ce.n >= dpc.n_min && is_update
-        dpc.covar .= get_cov(dpc.ce)
     end
 end
 

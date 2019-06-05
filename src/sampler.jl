@@ -51,7 +51,6 @@ function sample(
             progress && append!(showvalues, [(:step_size, τ.integrator.ϵ), (:precondition, h.metric)])
         end
         progress && ProgressMeter.next!(pm; showvalues=showvalues)
-        h = update(h, θ) # Ensure h.metric has the same dim as θ.
         # Refresh momentum for next iteration
         z = rand_momentum(rng, z, h)
     end
