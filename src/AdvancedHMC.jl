@@ -19,7 +19,7 @@ import StatsBase: sample
 
 include("adaptation/Adaptation.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
-export NesterovDualAveraging, Preconditioner, NaiveCompAdaptor, StanNUTSAdaptor
+export NesterovDualAveraging, Preconditioner, NaiveHMCAdaptor, StanHMCAdaptor
 using .Adaptation
 
 include("hamiltonian.jl")

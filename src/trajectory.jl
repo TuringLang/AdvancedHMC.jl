@@ -199,20 +199,6 @@ function transition(
     return z_new, α / nα
 end
 
-##
-## API: required by Turing.Gibbs
-##
-
-# TODO: rename all `Turing.step` to `transition`?
-
-# function step(rng::AbstractRNG, h::Hamiltonian, τ::AbstractTrajectory{I}, θ::AbstractVector{T}) where {T<:Real,I<:AbstractIntegrator}
-#     r = rand(rng, h.metric)
-#     θ_new, r_new, α, H_new = transition(rng, τ, h, θ, r)
-#     return θ_new, H_new, α
-# end
-#
-# step(h::Hamiltonian, p::AbstractTrajectory, θ::AbstractVector{T}) where {T<:Real} = step(GLOBAL_RNG, h, p, θ)
-
 ###
 ### Find for an initial leap-frog step-size via heuristic search.
 ###
@@ -319,10 +305,13 @@ update(
 update(
     h::Hamiltonian,
     τ::AbstractProposal,
-    ca::Adaptation.AbstractCompositeAdaptor
+    ca::Union{Adaptation.NaiveHMCAdaptor, Adaptation.StanHMCAdaptor}
 ) = h(getM⁻¹(ca.pc)), τ(τ.integrator(getϵ(ca.ssa)))
 
-function update(h::Hamiltonian, θ::AbstractVector{<:Real})
+function update(
+    h::Hamiltonian,
+    θ::AbstractVector{T}
+) where {T<:Real}
     metric = h.metric
     if length(metric) != length(θ)
         metric = metric(length(θ))
