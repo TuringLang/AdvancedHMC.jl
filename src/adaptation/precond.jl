@@ -53,9 +53,12 @@ end
 
 function add_sample!(wv::WelfordVar, s::AbstractVector)
     wv.n += 1
-    δ = s .- wv.μ
-    wv.μ .+= δ ./ wv.n
-    wv.M .+= δ .* (s .- wv.μ)
+    @unpack μ, M, n = wv
+    for i in eachindex(s)
+        δ = s[i] - μ[i]
+        μ[i] += δ / n
+        M[i] += δ * (s[i] - μ[i])
+    end
 end
 
 # https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
@@ -110,9 +113,10 @@ end
 
 function add_sample!(wc::WelfordCov, s::AbstractVector)
     wc.n += 1
-    δ = s .- wc.μ
-    wc.μ .+= δ ./ wc.n
-    wc.M .+= (s .- wc.μ) * δ'
+    @unpack δ, μ, n, M = wc
+    δ .= s .- μ
+    μ .+= δ ./ n
+    M .+= (s .- μ) .* δ'
 end
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/covar_adaptation.hpp
 function get_cov(wc::WelfordCov{T}) where {T<:AbstractFloat}
