@@ -84,23 +84,23 @@ end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
 # TODO: merge this function with adapt!
-function adapt_stepsize!(da::NesterovDualAveraging, α::AbstractFloat)
+function adapt_stepsize!(da::NesterovDualAveraging, α::T) where {T <: AbstractFloat}
     DEBUG && @debug "Adapting step size..." α
     
     # Clip average MH acceptance probability
-    α = α > 1 ? 1 : α
+    α = α > 1 ? one(T) : α
 
-    m = da.state.m; γ = da.γ; t_0 = da.t_0; κ = da.κ; δ = da.δ
-    μ = da.state.μ; x_bar = da.state.x_bar; H_bar = da.state.H_bar
+    @unpack state, γ, t_0, κ, δ = da
+    @unpack μ, m, x_bar, H_bar = state
 
     m = m + 1
 
-    η_H = 1.0 / (m + t_0)
-    H_bar = (1.0 - η_H) * H_bar + η_H * (δ - α)
+    η_H = one(T) / (m + t_0)
+    H_bar = (one(T) - η_H) * H_bar + η_H * (δ - α)
 
     x = μ - H_bar * sqrt(m) / γ     # x ≡ logϵ
     η_x = m^(-κ)
-    x_bar = (1.0 - η_x) * x_bar + η_x * x
+    x_bar = (one(T) - η_x) * x_bar + η_x * x
 
     ϵ = exp(x)
     DEBUG && @debug "Adapting step size..." "new ϵ = $ϵ" "old ϵ = $(da.state.ϵ)"
@@ -108,16 +108,11 @@ function adapt_stepsize!(da::NesterovDualAveraging, α::AbstractFloat)
     # TODO: we might want to remove this when all other numerical issues are correctly handelled
     if isnan(ϵ) || isinf(ϵ)
         @warn "Incorrect ϵ = $ϵ; ϵ_previous = $(da.state.ϵ) is used instead."
-        m = da.state.m
-        ϵ = da.state.ϵ
-        x_bar = da.state.x_bar
-        H_bar = da.state.H_bar
+        @unpack m, ϵ, x_bar, H_bar = state
+
     end
 
-    da.state.m = m
-    da.state.ϵ = ϵ
-    da.state.x_bar = x_bar
-    da.state.H_bar = H_bar
+    @pack! state = m, ϵ, x_bar, H_bar
 end
 
 function adapt!(da::NesterovDualAveraging, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat)
