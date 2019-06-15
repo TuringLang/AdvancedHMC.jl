@@ -14,10 +14,10 @@ end
 
 # TODO: currently only StanHMCAdaptor has the filed `n_adapts`. maybe we could unify all
 # Acknowledgement: this adaption settings is mimicing Stan's 3-phase adaptation.
-struct StanHMCAdaptor{M<:AbstractPreconditioner} <: AbstractAdaptor
+struct StanHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
     n_adapts    :: Int
     pc          :: M
-    ssa         :: StepSizeAdaptor
+    ssa         :: Tssa
     init_buffer :: Int
     term_buffer :: Int
     state       :: StanHMCAdaptorState

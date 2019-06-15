@@ -5,6 +5,7 @@ using Random: GLOBAL_RNG, AbstractRNG
 using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky
 import LinearAlgebra, Statistics
 using ..AdvancedHMC: DEBUG
+using Parameters: @unpack, @pack!
 
 abstract type AbstractAdaptor end
 
@@ -34,9 +35,9 @@ include("precond.jl")
 ## TODO: generalise this to a list of adaptors
 ##
 
-struct NaiveHMCAdaptor{M<:AbstractPreconditioner} <: AbstractAdaptor
+struct NaiveHMCAdaptor{M<:AbstractPreconditioner, Tssa <: StepSizeAdaptor} <: AbstractAdaptor
     pc  :: M
-    ssa :: StepSizeAdaptor
+    ssa :: Tssa
 end
 
 getM⁻¹(aca::NaiveHMCAdaptor) = getM⁻¹(aca.pc)
