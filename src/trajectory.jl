@@ -8,10 +8,11 @@ abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 # Create a callback function for all `AbstractTrajectory`
 # without passing random number generator
 transition(
+    z_temp::PhasePoint,
     τ::AbstractTrajectory{I},
     h::Hamiltonian,
     z::PhasePoint
-) where {I<:AbstractIntegrator} = transition(GLOBAL_RNG, τ, h, z)
+) where {I<:AbstractIntegrator} = transition(GLOBAL_RNG, z_temp, τ, h, z)
 
 ###
 ### Standard HMC implementation with fixed leapfrog step numbers.
@@ -35,15 +36,16 @@ end
 
 function transition(
     rng::AbstractRNG,
+    z_temp::PhasePoint,
     τ::StaticTrajectory,
     h::Hamiltonian,
     z::PhasePoint
 ) where {T<:Real}
-    z′ = step(τ.integrator, h, z, τ.n_steps)
+    z′ = step!(z_temp, τ.integrator, h, z, τ.n_steps)
     # Accept via MH criteria
     is_accept, α = mh_accept(rng, -neg_energy(z), -neg_energy(z′))
     if is_accept
-        z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
+        z = z′
     end
     return z, α
 end
@@ -53,9 +55,9 @@ abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} 
 ###
 ### Standard HMC implementation with fixed total trajectory length.
 ###
-struct HMCDA{I<:AbstractIntegrator} <: DynamicTrajectory{I}
+struct HMCDA{I<:AbstractIntegrator, T <: AbstractFloat} <: DynamicTrajectory{I}
     integrator  ::  I
-    λ           ::  AbstractFloat
+    λ           ::  T
 end
 
 """
@@ -67,6 +69,7 @@ end
 
 function transition(
     rng::AbstractRNG,
+    z_temp::PhasePoint,
     τ::HMCDA,
     h::Hamiltonian,
     z::PhasePoint
@@ -74,7 +77,7 @@ function transition(
     # Create the corresponding static τ
     n_steps = max(1, floor(Int, τ.λ / τ.integrator.ϵ))
     static_τ = StaticTrajectory(τ.integrator, n_steps)
-    return transition(rng, static_τ, h, z)
+    return transition(rng, z_temp, static_τ, h, z)
 end
 
 
@@ -85,10 +88,10 @@ end
 """
 Dynamic trajectory HMC using the no-U-turn termination criteria algorithm.
 """
-struct NUTS{I<:AbstractIntegrator} <: DynamicTrajectory{I}
+struct NUTS{I<:AbstractIntegrator, T<:AbstractFloat} <: DynamicTrajectory{I}
     integrator  ::  I
     max_depth   ::  Int
-    Δ_max       ::  AbstractFloat
+    Δ_max       ::  T
 end
 
 
@@ -107,11 +110,21 @@ end
 ### The doubling tree algorithm for expanding trajectory.
 ###
 
+function dot_diff(x1, x2, y)
+    @assert length(x1) == length(x2) == length(y)
+    d = zero(eltype(x1))
+    @simd for i in eachindex(x1, x2, y)
+        @inbounds d += (x1[i] - x2[i]) * y[i]
+    end
+    return d
+end
+
 # TODO: implement a more efficient way to build the balance tree
 function build_tree(
     rng::AbstractRNG,
     nt::DynamicTrajectory{I},
     h::Hamiltonian,
+    z_temp::PhasePoint,
     z::PhasePoint,
     logu::AbstractFloat,
     v::Int,
@@ -120,7 +133,7 @@ function build_tree(
 ) where {I<:AbstractIntegrator,T<:Real}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
-        z′ = step(nt.integrator, h, z, v)
+        z′ = step!(z_temp, nt.integrator, h, z, v)
         H′ = -neg_energy(z′)
         n′ = (logu <= -H′) ? 1 : 0
         s′ = (logu < nt.Δ_max + -H′) ? 1 : 0
@@ -129,20 +142,20 @@ function build_tree(
         return z′, z′, z′, n′, s′, α′, 1
     else
         # Recursion - build the left and right subtrees.
-        zm, zp, z′, n′, s′, α′, n′α = build_tree(rng, nt, h, z, logu, v, j - 1, H)
+        zm, zp, z′, n′, s′, α′, n′α = build_tree(rng, nt, h, z_temp, z, logu, v, j - 1, H)
 
         if s′ == 1
             if v == -1
-                zm, _, z′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, zm, logu, v, j - 1, H)
+                zm, _, z′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, z_temp, zm, logu, v, j - 1, H)
             else
-                _, zp, z′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, zp, logu, v, j - 1, H)
+                _, zp, z′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, z_temp, zp, logu, v, j - 1, H)
             end
             if rand(rng) < n′′ / (n′ + n′′)
                 z′ = z′′
             end
             α′ = α′ + α′′
             n′α = n′α + n′′α
-            s′ = s′′ * (dot(zp.θ - zm.θ, ∂H∂r(h, zm.r)) >= 0 ? 1 : 0) * (dot(zp.θ - zm.θ, ∂H∂r(h, zp.r)) >= 0 ? 1 : 0)
+            s′ = s′′ * (dot_diff(zp.θ, zm.θ, ∂H∂r!(h, zm.r)) >= 0 ? 1 : 0) * (dot_diff(zp.θ, zm.θ, ∂H∂r!(h, zp.r)) >= 0 ? 1 : 0)
             n′ = n′ + n′′
         end
 
@@ -157,15 +170,17 @@ end
 build_tree(
     nt::DynamicTrajectory{I},
     h::Hamiltonian,
+    z_temp::PhasePoint,
     z::PhasePoint,
     logu::AbstractFloat,
     v::Int,
     j::Int,
     H::AbstractFloat
-) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, z, logu, v, j, H)
+) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, z_temp, z, logu, v, j, H)
 
 function transition(
     rng::AbstractRNG,
+    z_temp::PhasePoint,
     nt::DynamicTrajectory{I},
     h::Hamiltonian,
     z::PhasePoint
@@ -178,11 +193,11 @@ function transition(
 
     local α, nα
     while s == 1 && j <= nt.max_depth
-        v = rand(rng, [-1, 1])
+        v = rand(rng, -1:2:1)
         if v == -1
-            zm, _, z′, n′, s′, α, nα = build_tree(rng, nt, h, zm, logu, v, j, H)
+            zm, _, z′, n′, s′, α, nα = build_tree(rng, nt, h, z_temp, zm, logu, v, j, H)
         else
-            zm, _, z′, n′, s′, α, nα = build_tree(rng, nt, h, zm, logu, v, j, H)
+            zm, _, z′, n′, s′, α, nα = build_tree(rng, nt, h, z_temp, zm, logu, v, j, H)
         end
 
         if s′ == 1
@@ -192,7 +207,7 @@ function transition(
         end
 
         n = n + n′
-        s = s′ * (dot(zp.θ - zm.θ, ∂H∂r(h, zm.r)) >= 0 ? 1 : 0) * (dot(zp.θ - zm.θ, ∂H∂r(h, zp.r)) >= 0 ? 1 : 0)
+        s = s′ * (dot_diff(zp.θ, zm.θ, ∂H∂r!(h, zm.r)) >= 0 ? 1 : 0) * (dot_diff(zp.θ, zm.θ, ∂H∂r!(h, zp.r)) >= 0 ? 1 : 0)
         j = j + 1
     end
 
@@ -215,9 +230,10 @@ function find_good_eps(
 
     r = rand(rng, h.metric)
     z = phasepoint(h, θ, r)
+    z_temp = deepcopy(z)
     H = -neg_energy(z)
 
-    z′ = step(Leapfrog(ϵ), h, z)
+    z′ = step!(z_temp, Leapfrog(ϵ), h, z)
     H_new = -neg_energy(z′)
 
     ΔH = H - H_new
@@ -226,7 +242,7 @@ function find_good_eps(
     # Crossing step: increase/decrease ϵ until accept ratio cross a_cross.
     for _ = 1:max_n_iters
         ϵ′ = direction == 1 ? d * ϵ : 1 / d * ϵ
-        z′ = step(Leapfrog(ϵ′), h, z)
+        z′ = step!(z_temp, Leapfrog(ϵ′), h, z)
         H_new = -neg_energy(z′)
 
         ΔH = H - H_new
@@ -245,7 +261,7 @@ function find_good_eps(
     ϵ, ϵ′ = ϵ < ϵ′ ? (ϵ, ϵ′) : (ϵ′, ϵ)  # ensure ϵ < ϵ′
     for _ = 1:max_n_iters
         ϵ_mid = middle(ϵ, ϵ′)
-        z′ = step(Leapfrog(ϵ_mid), h, z)
+        z′ = step!(z_temp, Leapfrog(ϵ_mid), h, z)
         H_new = -neg_energy(z′)
 
         ΔH = H - H_new

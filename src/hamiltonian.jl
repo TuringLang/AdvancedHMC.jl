@@ -1,20 +1,23 @@
 # TODO: add a type for kinetic energy
 # TODO: add cache for gradients by letting ∂logπ∂θ return both log density and gradient
 
-struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
+struct Hamiltonian{M<:AbstractMetric, Tlogπ, TF∂logπ∂θ, T∂H∂θ, T∂H∂r}
     metric::M
     ℓπ::Tlogπ
-    ∂ℓπ∂θ::T∂logπ∂θ
+    ∂ℓπ∂θ!::TF∂logπ∂θ
+    ∂H∂θ::T∂H∂θ
+    ∂H∂r::T∂H∂r
 end
+Hamiltonian(metric::AbstractMetric, ℓπ, ∂ℓπ∂θ!) = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ!, zeros(length(metric)), zeros(length(metric)))
 
 # Create a `Hamiltonian` with a new `M⁻¹`
-(h::Hamiltonian)(M⁻¹) = Hamiltonian(h.metric(M⁻¹), h.ℓπ, h.∂ℓπ∂θ)
+(h::Hamiltonian)(M⁻¹) = Hamiltonian(h.metric(M⁻¹), h.ℓπ, h.∂ℓπ∂θ!, h.∂H∂θ, h.∂H∂r)
 
-∂H∂θ(h::Hamiltonian, θ::AbstractVector) = -h.∂ℓπ∂θ(θ)
+∂H∂θ!(h::Hamiltonian, θ::AbstractVector) = rmul!(h.∂ℓπ∂θ!(h.∂H∂θ, θ), -1)
 
-∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric}, r::AbstractVector) = copy(r)
-∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ .* r
-∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ * r
+∂H∂r!(h::Hamiltonian{<:UnitEuclideanMetric}, r::AbstractVector) = (h.∂H∂r .= r; h.∂H∂r)
+∂H∂r!(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVector) = (h.∂H∂r .= h.metric.M⁻¹ .* r; h.∂H∂r)
+∂H∂r!(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVector) = (mul!(h.∂H∂r, h.metric.M⁻¹, r); h.∂H∂r)
 
 struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}}
     value::Tv    # Cached value, e.g. logπ(θ).
@@ -42,8 +45,8 @@ phasepoint(
     h::Hamiltonian,
     θ::T,
     r::T;
-    ℓπ = DualValue(neg_energy(h, r, θ), ∂H∂θ(h, θ)),
-    ℓκ = DualValue(neg_energy(h, θ), ∂H∂r(h, r))
+    ℓπ = DualValue(neg_energy(h, r, θ), ∂H∂θ!(h, θ)),
+    ℓκ = DualValue(neg_energy(h, θ), ∂H∂r!(h, r))
 ) where {T<:AbstractVector} = PhasePoint(θ, r, ℓπ, ℓκ)
 
 
@@ -71,8 +74,7 @@ function neg_energy(
     r::T,
     θ::T
 ) where {T<:AbstractVector}
-    _r = [abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r)]
-    return -sum(_r) / 2
+    return -sum(abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r))/2
 end
 
 function neg_energy(

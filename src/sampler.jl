@@ -32,9 +32,10 @@ function sample(
     h = update(h, θ) # Ensure h.metric has the same dim as θ.
     r = rand(rng, h.metric)
     z = phasepoint(h, θ, r)
+    z_temp = deepcopy(z)
     pm = progress ? Progress(n_samples, desc="Sampling", barlen=31) : nothing
     time = @elapsed for i = 1:n_samples
-        z, αs[i] = transition(rng, τ, h, z)
+        z, αs[i] = transition(rng, z_temp, τ, h, z)
         θs[i], Hs[i] = z.θ, neg_energy(z)
         progress && (showvalues = Tuple[(:iteration, i), (:hamiltonian_energy, Hs[i]), (:acceptance_rate, αs[i])])
         if !(adaptor isa Adaptation.NoAdaptation)

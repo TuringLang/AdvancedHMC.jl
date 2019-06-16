@@ -10,15 +10,16 @@ r_init = AdvancedHMC.rand(h.metric)
 
 n_steps = 10
 
-@testset "step(::Leapfrog) against steps(::Leapfrog)" begin
+@testset "step!(::Leapfrog) against steps(::Leapfrog)" begin
     z = AdvancedHMC.phasepoint(h, copy(θ_init), copy(r_init))
     z_step = z
+    z_temp = deepcopy(z)
 
     t_step = @elapsed for i = 1:n_steps
-        z_step = AdvancedHMC.step(lf, h, z_step)
+        z_step = AdvancedHMC.step!(z_temp, lf, h, z_step)
     end
 
-    t_steps = @elapsed z_steps = AdvancedHMC.step(lf, h, z, n_steps)
+    t_steps = @elapsed z_steps = AdvancedHMC.step!(z_temp, lf, h, z, n_steps)
 
     @info "Performance of step() v.s. steps()" n_steps t_step t_steps t_step / t_steps
 
@@ -42,7 +43,7 @@ using Statistics: mean
 @testset "Eq (2.11) from Neal (2011)" begin
     D = 1
     negU(q::AbstractVector{T}) where {T<:Real} = -dot(q, q) / 2
-    ∂negU∂q = q -> gradient(negU, q)
+    ∂negU∂q = (g, q) -> (g .= gradient(negU, q); g)
 
     ϵ = 0.01
     lf = Leapfrog(ϵ)
@@ -53,13 +54,14 @@ using Statistics: mean
 
     q, p = copy(q_init), copy(p_init)
     z = AdvancedHMC.phasepoint(h, q, p)
+    z_temp = deepcopy(z)
 
     n_steps = 10_000
     qs = zeros(n_steps)
     ps = zeros(n_steps)
     Hs = zeros(n_steps)
     for i = 1:n_steps
-        z = AdvancedHMC.step(lf, h, z)
+        z = AdvancedHMC.step!(z_temp, lf, h, z)
         qs[i] = z.θ[1]
         ps[i] = z.r[1]
         Hs[i] = -AdvancedHMC.neg_energy(z)
