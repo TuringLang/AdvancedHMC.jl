@@ -139,7 +139,7 @@ getM⁻¹(dpc::UnitPreconditioner{T}) where {T} = one(T)
 adapt!(
     ::UnitPreconditioner,
     ::AbstractVector{<:Real},
-    ::AbstractFloat;
+    ::AbstractFloat,
     is_update::Bool=true
 ) = nothing
 
@@ -164,7 +164,7 @@ getM⁻¹(dpc::DiagPreconditioner) = dpc.var
 function adapt!(
     dpc::DiagPreconditioner,
     θ::AbstractVector{T},
-    α::AbstractFloat;
+    α::AbstractFloat,
     is_update::Bool=true
 ) where {T<:Real}
     resize!(dpc, θ)
@@ -197,7 +197,7 @@ getM⁻¹(dpc::DensePreconditioner) = dpc.covar
 function adapt!(
     dpc::DensePreconditioner,
     θ::AbstractVector{T},
-    α::AbstractFloat;
+    α::AbstractFloat,
     is_update::Bool=true
 ) where {T<:AbstractFloat}
     resize!(dpc, θ)
