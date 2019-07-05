@@ -182,7 +182,7 @@ function transition(
         if v == -1
             zm, _, z′, n′, s′, α, nα = build_tree(rng, nt, h, zm, logu, v, j, H)
         else
-            zm, _, z′, n′, s′, α, nα = build_tree(rng, nt, h, zm, logu, v, j, H)
+            _, zp, z′, n′, s′, α, nα = build_tree(rng, nt, h, zp, logu, v, j, H)
         end
 
         if s′ == 1
