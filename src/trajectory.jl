@@ -161,6 +161,16 @@ end
 ### The doubling tree algorithm for expanding trajectory.
 ###
 
+struct DoublingTree
+    zleft   # left most leaf node
+    zright  # right most leaf node
+    zcand   # candidate leaf node
+    n
+    s
+    α
+    nα
+end
+
 # TODO: implement a more efficient way to build the balance tree
 function build_tree(
     rng::AbstractRNG,
