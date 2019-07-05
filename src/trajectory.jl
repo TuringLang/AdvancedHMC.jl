@@ -31,19 +31,19 @@ end
 ###
 
 """
-Termination (i.e. no-U-turn).
+Abstract type for termination.
 """
-abstract type Termination end
+abstract type AbstractTermination end
 
 # Termination type for HMC and HMCDA
-struct StaticTermination{M<:Integer, D<:AbstractFloat} <: Termination
-    n_steps :: Integer
-    Δ_max :: AbstractFloat
+struct StaticTermination{D<:AbstractFloat} <: AbstractTermination
+    n_steps :: Int
+    Δ_max :: D
 end
 
 # NUTS_Termination
-struct NUTS_Termination{M<:Integer, D<:AbstractFloat} <: Termination
-    max_depth :: M
+struct NUTS_Termination{D<:AbstractFloat} <: AbstractTermination
+    max_depth :: Int
     Δ_max :: D
     # TODO: add other necessary fields for No-U-Turn stopping creteria.
 end
@@ -55,7 +55,7 @@ is_terminated(
 
 struct Trajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
     integrator :: I
-    n_steps :: Integer # Counter for total leapfrog steps already applied.
+    n_steps :: Int # Counter for total leapfrog steps already applied.
     Δ :: AbstractFloat # Current hamiltonian energy minus starting hamiltonian energy
     # TODO: replace all ``*Trajectory` types with `Trajectory`.
     # TODO: add turn statistic, divergent statistic, proposal statistic
@@ -76,8 +76,8 @@ transition(
     τ::Trajectory{I},
     h::Hamiltonian,
     z::PhasePoint,
-    t::Termination
-) where {I<:AbstractIntegrator} = nothing
+    t::T
+) where {I<:AbstractIntegrator,T<:AbstractTermination} = nothing
 
 
 """
