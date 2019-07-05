@@ -41,8 +41,8 @@ struct StaticTermination{D<:AbstractFloat} <: AbstractTermination
     Δ_max :: D
 end
 
-# NUTS_Termination
-struct NUTS_Termination{D<:AbstractFloat} <: AbstractTermination
+# NoUTurnTermination
+struct NoUTurnTermination{D<:AbstractFloat} <: AbstractTermination
     max_depth :: Int
     Δ_max :: D
     # TODO: add other necessary fields for No-U-Turn stopping creteria.
