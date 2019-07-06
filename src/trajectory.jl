@@ -166,9 +166,13 @@ struct DoublingTree
     zright  # right most leaf node
     zcand   # candidate leaf node
     n       # MH stats, i.e. sum of MH accept prob for all leapfrog steps
-    s       # termination stats
+    s       # termination stats, i.e. 0 means termination and 1 means continuation
     α       # number of acceptable candicates, i.e. prob is larger than slice variable u
     nα      # total # of leap frog steps, i.e. phase points in a trajectory
+end
+
+function isUturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
+    return (dot(zright.θ - zleft.θ, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(zright.θ - zleft.θ, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
 end
 
 function merge(rng::AbstractRNG, h::Hamiltonian, dtleft::DoublingTree, dtright::DoublingTree)
@@ -176,11 +180,13 @@ function merge(rng::AbstractRNG, h::Hamiltonian, dtleft::DoublingTree, dtright::
     zright = dtright.zright
     # TODO: change below for multinomial sampling
     zcand = rand(rng) < dtleft.n / (dtleft.n + dtright.n) ? dtleft.zcand : dtright.zcand
-    s = dtleft.s * dtright.s * (dot(zright.θ - zleft.θ, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(zright.θ - zleft.θ, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
-    DoublingTree(zleft, zright, zcand, dtright.n + dtright.n, s, dtright.α + dtright.α, dtright.nα + dtright.nα)
+    s = dtleft.s * dtright.s * isUturn(h, zleft, zright)
+    return DoublingTree(zleft, zright, zcand, dtright.n + dtright.n, s, dtright.α + dtright.α, dtright.nα + dtright.nα)
 end
+
 """
     merge(h::Hamiltonian, dtleft::DoublingTree, dtright::DoublingTree)
+
 Merge a left tree `dtleft` and a right tree `dtright` under given Hamiltonian `h`.
 """
 merge(h::Hamiltonian, dtleft::DoublingTree, dtright::DoublingTree) = merge(GLOBAL_RNG, h, dtleft, dtright)
@@ -202,36 +208,29 @@ function build_tree(
         n′ = (logu <= -H′) ? 1 : 0
         s′ = (logu < nt.Δ_max + -H′) ? 1 : 0
         α′ = exp(min(0, H - H′))
-
         return DoublingTree(z′, z′, z′, n′, s′, α′, 1)
     else
         # Recursion - build the left and right subtrees.
-        # zm, zp, z′, n′, s′, α′, n′α = build_tree(rng, nt, h, z, logu, v, j - 1, H)
         dt′ = build_tree(rng, nt, h, z, logu, v, j - 1, H)
-
+        # Expand tree if not terminated
         if dt′.s == 1
+            # Expand left
             if v == -1
-                # zm, _, z′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, zm, logu, v, j - 1, H)
-                dt′′ = build_tree(rng, nt, h, dt′.zleft, logu, v, j - 1, H)
+                dt′′ = build_tree(rng, nt, h, dt′.zleft, logu, v, j - 1, H) # left tree
                 dt′ = merge(rng, h, dt′′, dt′)
-            else
-                # _, zp, z′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, zp, logu, v, j - 1, H)
-                dt′′ = build_tree(rng, nt, h, dt′.zright, logu, v, j - 1, H)
+            # Expand right
+            else    
+                dt′′ = build_tree(rng, nt, h, dt′.zright, logu, v, j - 1, H) # right tree
                 dt′ = merge(rng, h, dt′, dt′′)
             end
-            # if rand(rng) < n′′ / (n′ + n′′)
-            #     z′ = z′′
-            # end
-            # α′ = α′ + α′′
-            # n′α = n′α + n′′α
-            # s′ = s′′ * (dot(zp.θ - zm.θ, ∂H∂r(h, zm.r)) >= 0 ? 1 : 0) * (dot(zp.θ - zm.θ, ∂H∂r(h, zp.r)) >= 0 ? 1 : 0)
-            # n′ = n′ + n′′
         end
-
         return dt′
     end
 end
 
+"""
+Recursivly build a tree for a given depth `j`.
+"""
 build_tree(
     nt::DynamicTrajectory{I},
     h::Hamiltonian,
@@ -252,31 +251,31 @@ function transition(
     H = -neg_energy(z)
     logu = log(rand(rng)) - H
 
-    zm = z; zp = z; z_new = z; j = 0; n = 1; s = 1
+    zleft = z; zright = z; zcand = z; j = 0; n = 1; s = 1
 
-    local α, nα
+    local dt
     while s == 1 && j <= nt.max_depth
         v = rand(rng, [-1, 1])
         if v == -1
-            dt′ = build_tree(rng, nt, h, zm, logu, v, j, H)
-            zm, _, z′, n′, s′, α, nα = dt′.zleft, dt′.zright, dt′.zcand, dt′.n, dt′.s, dt′.α, dt′.nα
+            dt = build_tree(rng, nt, h, zleft, logu, v, j, H)
+            zleft = dt.zleft
         else
-            dt′ = build_tree(rng, nt, h, zp, logu, v, j, H)
-            _, zp, z′, n′, s′, α, nα = dt′.zleft, dt′.zright, dt′.zcand, dt′.n, dt′.s, dt′.α, dt′.nα
+            dt = build_tree(rng, nt, h, zright, logu, v, j, H)
+            zright = dt.zright
         end
 
-        if s′ == 1
-            if rand(rng) < min(1, n′ / n)
-                z_new = z′
+        if dt.s == 1
+            if rand(rng) < min(1, dt.n / n)
+                zcand = dt.zcand
             end
         end
 
-        n = n + n′
-        s = s * s′ * (dot(zp.θ - zm.θ, ∂H∂r(h, zm.r)) >= 0 ? 1 : 0) * (dot(zp.θ - zm.θ, ∂H∂r(h, zp.r)) >= 0 ? 1 : 0)
+        n = n + dt.n
+        s = s * dt.s * isUturn(h, zleft, zright)
         j = j + 1
     end
 
-    return z_new, α / nα
+    return zcand, dt.α / dt.nα
 end
 
 ###
