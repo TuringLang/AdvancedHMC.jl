@@ -410,6 +410,17 @@ function transition(
 end
 
 """
+A single Hamiltonian integration step.
+
+NOTE: this function is intended to be used in `find_good_eps` only.
+"""
+function A(rng, h, z, ϵ)
+    z′ = step(Leapfrog(ϵ), h, z)
+    H′ = -neg_energy(z′)
+    return z′, H′
+end
+
+"""
 Find a good initial leap-frog step-size via heuristic search.
 """
 function find_good_eps(
@@ -418,28 +429,30 @@ function find_good_eps(
     θ::AbstractVector{T};
     max_n_iters::Int=100
 ) where {T<:Real}
+    # Initialize searching parameters
     ϵ′ = ϵ = 0.1
     a_min, a_cross, a_max = 0.25, 0.5, 0.75 # minimal, crossing, maximal accept ratio
     d = 2.0
-
-    r = rand(rng, h.metric)
+    # Create starting phase point
+    r = rand(rng, h.metric) # sample momentum variable
     z = phasepoint(h, θ, r)
     H = -neg_energy(z)
 
-    z′ = step(Leapfrog(ϵ), h, z)
-    H_new = -neg_energy(z′)
-
-    ΔH = H - H_new
+    # Make a proposal phase point to decide direction
+    z′, H′ = A(rng, h, z, ϵ)
+    ΔH = H - H′ # compute the energy difference; `exp(ΔH)` is the MH accept ratio
     direction = ΔH > log(a_cross) ? 1 : -1
 
     # Crossing step: increase/decrease ϵ until accept ratio cross a_cross.
     for _ = 1:max_n_iters
+        # `direction` being  `1` means MH ratio too high
+        #     - this means our step size is too small, thus we increase
+        # `direction` being `-1` means MH ratio too small
+        #     - this means our step szie is too large, thus we decrease
         ϵ′ = direction == 1 ? d * ϵ : 1 / d * ϵ
-        z′ = step(Leapfrog(ϵ′), h, z)
-        H_new = -neg_energy(z′)
-
-        ΔH = H - H_new
-        DEBUG && @debug "Crossing step" direction H_new ϵ "α = $(min(1, exp(ΔH)))"
+        z′, H′ = A(rng, h, z, ϵ)
+        ΔH = H - H′
+        DEBUG && @debug "Crossing step" direction H′ ϵ "α = $(min(1, exp(ΔH)))"
         if (direction == 1) && !(ΔH > log(a_cross))
             break
         elseif (direction == -1) && !(ΔH < log(a_cross))
@@ -448,17 +461,22 @@ function find_good_eps(
             ϵ = ϵ′
         end
     end
+    # Note after the for loop, 
+    # `ϵ` and `ϵ′` are the two neighbour step sizes across `a_cross`.
 
     # Bisection step: ensure final accept ratio: a_min < a < a_max.
     # See https://en.wikipedia.org/wiki/Bisection_method
-    ϵ, ϵ′ = ϵ < ϵ′ ? (ϵ, ϵ′) : (ϵ′, ϵ)  # ensure ϵ < ϵ′
+    
+    ϵ, ϵ′ = ϵ < ϵ′ ? (ϵ, ϵ′) : (ϵ′, ϵ)  # ensure ϵ < ϵ′; 
+    # Here we want to use a value between these two given the 
+    # criteria that this value also gives us a MH ratio between `a_min` and `a_max`.
+    # This condition is quite mild and only intended to avoid cases where
+    # the middle value of `ϵ` and `ϵ′` is too extreme.
     for _ = 1:max_n_iters
         ϵ_mid = middle(ϵ, ϵ′)
-        z′ = step(Leapfrog(ϵ_mid), h, z)
-        H_new = -neg_energy(z′)
-
-        ΔH = H - H_new
-        DEBUG && @debug "Bisection step" H_new ϵ_mid "α = $(min(1, exp(ΔH)))"
+        z′, H′ = A(rng, h, z, ϵ_mid)
+        ΔH = H - H′
+        DEBUG && @debug "Bisection step" H′ ϵ_mid "α = $(min(1, exp(ΔH)))"
         if (exp(ΔH) > a_max)
             ϵ = ϵ_mid
         elseif (exp(ΔH) < a_min)
