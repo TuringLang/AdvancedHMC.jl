@@ -136,24 +136,37 @@ end
 ### Advanced HMC implementation with (adaptive) dynamic trajectory length.
 ###
 
+abstract type AbstractNUTSSampling end
+struct SliceNUTSSampling <: AbstractNUTSSampling end
+struct MultinomialNUTSSampling <: AbstractNUTSSampling end
+const SUPPORTED_NUTS_SAMPLING = Dict(:slice => SliceNUTSSampling(), :multinomial => MultinomialNUTSSampling())
+
 """
 Dynamic trajectory HMC using the no-U-turn termination criteria algorithm.
 """
-struct NUTS{I<:AbstractIntegrator} <: DynamicTrajectory{I}
+struct NUTS{I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractNUTSSampling} <: DynamicTrajectory{I}
     integrator  ::  I
     max_depth   ::  Int
-    Δ_max       ::  AbstractFloat
+    Δ_max       ::  F
+    sampling    ::  S
 end
 
-
 # Helper function to use default values
-NUTS(integrator::AbstractIntegrator) = NUTS(integrator, 10, 1000.0)
+function NUTS(
+    integrator::AbstractIntegrator, 
+    max_depth::Int=10, 
+    Δ_max::AbstractFloat=1000.0, 
+    ssym::Symbol=:multinomial
+) 
+    @assert ssym in keys(SUPPORTED_NUTS_SAMPLING) "NUTS only supports the following sampling methods: $(keys(SUPPORTED_NUTS_SAMPLING))"
+    return NUTS(integrator, max_depth, Δ_max, SUPPORTED_NUTS_SAMPLING[ssym])
+end
 
 """
 Create a `NUTS` with a new integrator
 """
-function (snuts::NUTS)(integrator::AbstractIntegrator)
-    return NUTS(integrator, snuts.max_depth, snuts.Δ_max)
+function (nuts::NUTS)(integrator::AbstractIntegrator)
+    return NUTS(integrator, nuts.max_depth, nuts.Δ_max, nuts.sampling)
 end
 
 
@@ -165,9 +178,11 @@ struct DoublingTree
     zleft   # left most leaf node
     zright  # right most leaf node
     zcand   # candidate leaf node
-    n       # MH stats, i.e. sum of MH accept prob for all leapfrog steps
+    n       # sampling stats, different for slice and multinomial sampling
+            # slice: number of acceptable candicates, i.e. prob is larger than slice variable u
+            # multinomial: total energy for the given tree, i.e. sum of energy of all leaves
     s       # termination stats, i.e. 0 means termination and 1 means continuation
-    α       # number of acceptable candicates, i.e. prob is larger than slice variable u
+    α       # MH stats, i.e. sum of MH accept prob for all leapfrog steps
     nα      # total # of leap frog steps, i.e. phase points in a trajectory
 end
 # TODO: merge DoublingTree and Trajectory
@@ -179,7 +194,6 @@ end
 function merge(rng::AbstractRNG, h::Hamiltonian, dtleft::DoublingTree, dtright::DoublingTree)
     zleft = dtleft.zleft
     zright = dtright.zright
-    # TODO: change below for multinomial sampling
     zcand = rand(rng) < dtleft.n / (dtleft.n + dtright.n) ? dtleft.zcand : dtright.zcand
     s = dtleft.s * dtright.s * isUturn(h, zleft, zright)
     return DoublingTree(zleft, zright, zcand, dtright.n + dtright.n, s, dtright.α + dtright.α, dtright.nα + dtright.nα)
@@ -194,14 +208,14 @@ merge(h::Hamiltonian, dtleft::DoublingTree, dtright::DoublingTree) = merge(GLOBA
 
 function build_tree(
     rng::AbstractRNG,
-    nt::DynamicTrajectory{I},
+    nt::NUTS{I,F,S},
     h::Hamiltonian,
     z::PhasePoint,
     logu::AbstractFloat,
     v::Int,
     j::Int,
     H::AbstractFloat
-) where {I<:AbstractIntegrator,T<:Real}
+) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractNUTSSampling}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
         z′ = step(nt.integrator, h, z, v)
@@ -233,21 +247,21 @@ end
 Recursivly build a tree for a given depth `j`.
 """
 build_tree(
-    nt::DynamicTrajectory{I},
+    nt::NUTS{I,F,S},
     h::Hamiltonian,
     z::PhasePoint,
     logu::AbstractFloat,
     v::Int,
     j::Int,
     H::AbstractFloat
-) where {I<:AbstractIntegrator,T<:Real} = build_tree(GLOBAL_RNG, nt, h, z, logu, v, j, H)
+) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractNUTSSampling} = build_tree(GLOBAL_RNG, nt, h, z, logu, v, j, H)
 
 function transition(
     rng::AbstractRNG,
-    nt::DynamicTrajectory{I},
+    nt::NUTS{I,F,S},
     h::Hamiltonian,
     z::PhasePoint
-) where {I<:AbstractIntegrator,T<:Real}
+) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractNUTSSampling}
     θ, r = z.θ, z.r
     H = -neg_energy(z)
     logu = log(rand(rng)) - H
