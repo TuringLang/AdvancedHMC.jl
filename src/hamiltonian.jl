@@ -28,9 +28,9 @@ struct PhasePoint{T<:AbstractVector, V<:DualValue}
     ℓκ::V # Cached neg kinect energy for the current r.
     function PhasePoint(θ::T, r::T, ℓπ::V, ℓκ::V) where {T,V}
         @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
-        # if !(all(isfinite, θ) && all(isfinite, r) && all(isfinite, ℓπ) && all(isfinite, ℓκ))
-        if !(isfinite(θ) && isfinite(r) && isfinite(ℓπ) && isfinite(ℓκ))
-            @warn "The current proposal will be rejected (due to numerical error(s))..."
+        isfiniteθ, isfiniter, isfiniteℓπ, isfiniteℓκ = isfinite(θ), isfinite(r), isfinite(ℓπ), isfinite(ℓκ)
+        if !(isfiniteθ && isfiniter && isfiniteℓπ && isfiniteℓκ)
+            @warn "The current proposal will be rejected due to numerical error(s)." isfiniteθ isfiniter isfiniteℓπ isfiniteℓκ
             ℓκ = DualValue(-Inf, ℓκ.gradient)
             ℓπ = DualValue(-Inf, ℓπ.gradient)
         end
