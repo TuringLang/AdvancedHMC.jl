@@ -48,11 +48,6 @@ struct NoUTurnTermination{D<:AbstractFloat} <: AbstractTermination
     # TODO: add other necessary fields for No-U-Turn stopping creteria.
 end
 
-is_terminated(
-    x::StaticTermination,
-    τ::Trajectory
-) = τ.n_steps >= x.n_steps || τ.Δ >= x.Δ_max
-
 struct Trajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
     integrator :: I
     n_steps :: Int # Counter for total leapfrog steps already applied.
@@ -60,6 +55,11 @@ struct Trajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
     # TODO: replace all ``*Trajectory` types with `Trajectory`.
     # TODO: add turn statistic, divergent statistic, proposal statistic
 end
+
+is_terminated(
+    x::StaticTermination,
+    τ::Trajectory
+) = τ.n_steps >= x.n_steps || τ.Δ >= x.Δ_max
 
 # Combine trajectories, e.g. those created by the build_tree algorithm.
 #  NOTE: combine proposal (via slice/multinomial sampling), combine turn statistic,
@@ -161,17 +161,30 @@ end
 ### The doubling tree algorithm for expanding trajectory.
 ###
 
-struct DoublingTree
+struct DoublingTree 
     zleft   # left most leaf node
     zright  # right most leaf node
     zcand   # candidate leaf node
-    n
-    s
-    α
-    nα
+    n       # MH stats, i.e. sum of MH accept prob for all leapfrog steps
+    s       # termination stats
+    α       # number of acceptable candicates, i.e. prob is larger than slice variable u
+    nα      # total # of leap frog steps, i.e. phase points in a trajectory
 end
 
-# TODO: implement a more efficient way to build the balance tree
+function merge(rng::AbstractRNG, h::Hamiltonian, dtleft::DoublingTree, dtright::DoublingTree)
+    zleft = dtleft.zleft
+    zright = dtright.zright
+    # TODO: change below for multinomial sampling
+    zcand = rand(rng) < dtleft.n / (dtleft.n + dtright.n) ? dtleft.zcand : dtright.zcand
+    s = dtleft.s * dtright.s * (dot(zright.θ - zleft.θ, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(zright.θ - zleft.θ, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
+    DoublingTree(zleft, zright, zcand, dtright.n + dtright.n, s, dtright.α + dtright.α, dtright.nα + dtright.nα)
+end
+"""
+    merge(h::Hamiltonian, dtleft::DoublingTree, dtright::DoublingTree)
+Merge a left tree `dtleft` and a right tree `dtright` under given Hamiltonian `h`.
+"""
+merge(h::Hamiltonian, dtleft::DoublingTree, dtright::DoublingTree) = merge(GLOBAL_RNG, h, dtleft, dtright)
+
 function build_tree(
     rng::AbstractRNG,
     nt::DynamicTrajectory{I},
@@ -190,31 +203,32 @@ function build_tree(
         s′ = (logu < nt.Δ_max + -H′) ? 1 : 0
         α′ = exp(min(0, H - H′))
 
-        return z′, z′, z′, n′, s′, α′, 1
+        return DoublingTree(z′, z′, z′, n′, s′, α′, 1)
     else
         # Recursion - build the left and right subtrees.
-        zm, zp, z′, n′, s′, α′, n′α = build_tree(rng, nt, h, z, logu, v, j - 1, H)
+        # zm, zp, z′, n′, s′, α′, n′α = build_tree(rng, nt, h, z, logu, v, j - 1, H)
+        dt′ = build_tree(rng, nt, h, z, logu, v, j - 1, H)
 
-        if s′ == 1
+        if dt′.s == 1
             if v == -1
-                zm, _, z′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, zm, logu, v, j - 1, H)
+                # zm, _, z′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, zm, logu, v, j - 1, H)
+                dt′′ = build_tree(rng, nt, h, dt′.zleft, logu, v, j - 1, H)
+                dt′ = merge(rng, h, dt′′, dt′)
             else
-                _, zp, z′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, zp, logu, v, j - 1, H)
+                # _, zp, z′′, n′′, s′′, α′′, n′′α = build_tree(rng, nt, h, zp, logu, v, j - 1, H)
+                dt′′ = build_tree(rng, nt, h, dt′.zright, logu, v, j - 1, H)
+                dt′ = merge(rng, h, dt′, dt′′)
             end
-            if rand(rng) < n′′ / (n′ + n′′)
-                z′ = z′′
-            end
-            α′ = α′ + α′′
-            n′α = n′α + n′′α
-            s′ = s′′ * (dot(zp.θ - zm.θ, ∂H∂r(h, zm.r)) >= 0 ? 1 : 0) * (dot(zp.θ - zm.θ, ∂H∂r(h, zp.r)) >= 0 ? 1 : 0)
-            n′ = n′ + n′′
+            # if rand(rng) < n′′ / (n′ + n′′)
+            #     z′ = z′′
+            # end
+            # α′ = α′ + α′′
+            # n′α = n′α + n′′α
+            # s′ = s′′ * (dot(zp.θ - zm.θ, ∂H∂r(h, zm.r)) >= 0 ? 1 : 0) * (dot(zp.θ - zm.θ, ∂H∂r(h, zp.r)) >= 0 ? 1 : 0)
+            # n′ = n′ + n′′
         end
 
-        # s: termination stats
-        # α: MH stats, i.e. sum of MH accept prob for all leapfrog steps
-        # nα: total # of leap frog steps, i.e. phase points in a trajectory
-        # n: # of acceptable candicates, i.e. prob is larger than slice variable u
-        return zm, zp, z′, n′, s′, α′, n′α
+        return dt′
     end
 end
 
@@ -244,9 +258,11 @@ function transition(
     while s == 1 && j <= nt.max_depth
         v = rand(rng, [-1, 1])
         if v == -1
-            zm, _, z′, n′, s′, α, nα = build_tree(rng, nt, h, zm, logu, v, j, H)
+            dt′ = build_tree(rng, nt, h, zm, logu, v, j, H)
+            zm, _, z′, n′, s′, α, nα = dt′.zleft, dt′.zright, dt′.zcand, dt′.n, dt′.s, dt′.α, dt′.nα
         else
-            _, zp, z′, n′, s′, α, nα = build_tree(rng, nt, h, zp, logu, v, j, H)
+            dt′ = build_tree(rng, nt, h, zp, logu, v, j, H)
+            _, zp, z′, n′, s′, α, nα = dt′.zleft, dt′.zright, dt′.zcand, dt′.n, dt′.s, dt′.α, dt′.nα
         end
 
         if s′ == 1
@@ -256,7 +272,7 @@ function transition(
         end
 
         n = n + n′
-        s = s′ * (dot(zp.θ - zm.θ, ∂H∂r(h, zm.r)) >= 0 ? 1 : 0) * (dot(zp.θ - zm.θ, ∂H∂r(h, zp.r)) >= 0 ? 1 : 0)
+        s = s * s′ * (dot(zp.θ - zm.θ, ∂H∂r(h, zm.r)) >= 0 ? 1 : 0) * (dot(zp.θ - zm.θ, ∂H∂r(h, zp.r)) >= 0 ? 1 : 0)
         j = j + 1
     end
 
