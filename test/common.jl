@@ -13,3 +13,15 @@ using ForwardDiff: gradient
 
 logπ(θ::AbstractVector{T}) where {T<:Real} = logpdf(MvNormal(zeros(D), ones(D)), θ)
 ∂logπ∂θ = θ -> gradient(logπ, θ)
+
+# Preparation for #56
+
+# using DiffResults: GradientResult, value, gradient
+# using ForwardDiff: gradient!
+
+# logπ(θ) = logpdf(MvNormal(zeros(D), ones(D)), θ)
+# function valgradf(θ)
+#     res = GradientResult(θ)
+#     gradient!(res, logπ, θ)
+#     return gradient(res), value(gradient)
+# end
