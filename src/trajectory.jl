@@ -170,6 +170,7 @@ struct DoublingTree
     α       # number of acceptable candicates, i.e. prob is larger than slice variable u
     nα      # total # of leap frog steps, i.e. phase points in a trajectory
 end
+# TODO: merge DoublingTree and Trajectory
 
 function isUturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
     return (dot(zright.θ - zleft.θ, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(zright.θ - zleft.θ, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
