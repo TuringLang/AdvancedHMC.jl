@@ -21,7 +21,8 @@ n_adapts = 2_000
         @testset "$(typeof(τ))" for τ in [
             StaticTrajectory(Leapfrog(ϵ), n_steps),
             HMCDA(Leapfrog(ϵ), ϵ * n_steps),
-            NUTS(Leapfrog(find_good_eps(h, θ_init))),
+            NUTS(Leapfrog(find_good_eps(h, θ_init)); sampling=:multinomial),
+            NUTS(Leapfrog(find_good_eps(h, θ_init)); sampling=:slice),
         ]
             samples = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
             @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL

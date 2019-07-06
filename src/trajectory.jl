@@ -2,7 +2,6 @@
 ## Hamiltonian dynamics numerical simulation trajectories
 ##
 
-
 abstract type AbstractProposal end
 abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
@@ -14,14 +13,9 @@ transition(
     z::PhasePoint
 ) where {I<:AbstractIntegrator} = transition(GLOBAL_RNG, τ, h, z)
 
-###
-### Standard HMC implementation with fixed leapfrog step numbers.
-###
-struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
-    integrator  ::  I
-    n_steps     ::  Int
-end
-
+#################################
+### Hong's abstraction starts ###
+#################################
 
 ###
 ### Create a `Termination` type for each `Trajectory` type, e.g. HMC, NUTS etc.
@@ -56,7 +50,7 @@ struct Trajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
     # TODO: add turn statistic, divergent statistic, proposal statistic
 end
 
-is_terminated(
+isterminated(
     x::StaticTermination,
     τ::Trajectory
 ) = τ.n_steps >= x.n_steps || τ.Δ >= x.Δ_max
@@ -71,6 +65,9 @@ combine_proposal(τ′::Trajectory, τ′′::Trajectory) = nothing # To-be-impl
 combine_turn(τ′::Trajectory, τ′′::Trajectory) = nothing # To-be-implemented.
 combine_divergence(τ′::Trajectory, τ′′::Trajectory) = nothing # To-be-implemented.
 
+###############################
+### Hong's abstraction ends ###
+###############################
 
 transition(
     τ::Trajectory{I},
@@ -79,6 +76,14 @@ transition(
     t::T
 ) where {I<:AbstractIntegrator,T<:AbstractTermination} = nothing
 
+
+###
+### Standard HMC implementation with fixed leapfrog step numbers.
+###
+struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
+    integrator  ::  I
+    n_steps     ::  Int
+end
 
 """
 Create a `StaticTrajectory` with a new integrator
@@ -136,10 +141,25 @@ end
 ### Advanced HMC implementation with (adaptive) dynamic trajectory length.
 ###
 
+# Types for slice and multinomial sampling; with types the branches for different sampling methods shall be compiled away
 abstract type AbstractNUTSSampling end
+
 struct SliceNUTSSampling <: AbstractNUTSSampling end
 struct MultinomialNUTSSampling <: AbstractNUTSSampling end
 const SUPPORTED_NUTS_SAMPLING = Dict(:slice => SliceNUTSSampling(), :multinomial => MultinomialNUTSSampling())
+
+abstract type AbstractNUTSSampler end
+
+struct SliceNUTSSampler{F<:AbstractFloat} <: AbstractNUTSSampler 
+    logu    ::  F     # slice variable in log space
+    n       ::  Int   # number of acceptable candicates, i.e. prob is larger than slice variable u
+end
+struct MultinomialNUTSSampler{F<:AbstractFloat} <: AbstractNUTSSampler
+    w       ::  F     # total energy for the given tree, i.e. sum of energy of all leaves
+end
+
+combine(s1::SliceNUTSSampler, s2::SliceNUTSSampler) = SliceNUTSSampler(s1.logu, s1.n + s2.n)
+combine(s1::MultinomialNUTSSampler, s2::MultinomialNUTSSampler) = MultinomialNUTSSampler(s1.w + s2.w)
 
 """
 Dynamic trajectory HMC using the no-U-turn termination criteria algorithm.
@@ -155,11 +175,11 @@ end
 function NUTS(
     integrator::AbstractIntegrator, 
     max_depth::Int=10, 
-    Δ_max::AbstractFloat=1000.0, 
-    ssym::Symbol=:multinomial
+    Δ_max::AbstractFloat=1000.0;
+    sampling::Symbol=:multinomial
 ) 
-    @assert ssym in keys(SUPPORTED_NUTS_SAMPLING) "NUTS only supports the following sampling methods: $(keys(SUPPORTED_NUTS_SAMPLING))"
-    return NUTS(integrator, max_depth, Δ_max, SUPPORTED_NUTS_SAMPLING[ssym])
+    @assert sampling in keys(SUPPORTED_NUTS_SAMPLING) "NUTS only supports the following sampling methods: $(keys(SUPPORTED_NUTS_SAMPLING))"
+    return NUTS(integrator, max_depth, Δ_max, SUPPORTED_NUTS_SAMPLING[sampling])
 end
 
 """
@@ -174,29 +194,37 @@ end
 ### The doubling tree algorithm for expanding trajectory.
 ###
 
-struct DoublingTree 
-    zleft   # left most leaf node
-    zright  # right most leaf node
-    zcand   # candidate leaf node
-    n       # sampling stats, different for slice and multinomial sampling
-            # slice: number of acceptable candicates, i.e. prob is larger than slice variable u
-            # multinomial: total energy for the given tree, i.e. sum of energy of all leaves
-    s       # termination stats, i.e. 0 means termination and 1 means continuation
-    α       # MH stats, i.e. sum of MH accept prob for all leapfrog steps
-    nα      # total # of leap frog steps, i.e. phase points in a trajectory
+struct DoublingTree{S<:AbstractNUTSSampler}
+    zleft       # left most leaf node
+    zright      # right most leaf node
+    zcand       # candidate leaf node
+    sampler::S  # condidate sampler
+    s           # termination stats, i.e. 0 means termination and 1 means continuation
+    α           # MH stats, i.e. sum of MH accept prob for all leapfrog steps
+    nα          # total # of leap frog steps, i.e. phase points in a trajectory
 end
 # TODO: merge DoublingTree and Trajectory
 
 function isUturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
-    return (dot(zright.θ - zleft.θ, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(zright.θ - zleft.θ, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
+    θdiff = zright.θ - zleft.θ
+    return (dot(θdiff, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(θdiff, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
 end
+
+function sample(rng::AbstractRNG, dtleft::DoublingTree{SliceNUTSSampler{F}}, dtright::DoublingTree{SliceNUTSSampler{F}}) where {F<:AbstractFloat}
+    return rand(rng) < dtleft.sampler.n / (dtleft.sampler.n + dtright.sampler.n) ? dtleft.zcand : dtright.zcand
+end
+function sample(rng::AbstractRNG, dtleft::DoublingTree{MultinomialNUTSSampler{F}}, dtright::DoublingTree{MultinomialNUTSSampler{F}}) where {F<:AbstractFloat}
+    return rand(rng) < dtleft.sampler.w / (dtleft.sampler.w + dtright.sampler.w) ? dtleft.zcand : dtright.zcand
+end
+sample(dtleft::DoublingTree, dtright::DoublingTree) = sample(GLOBAL_RNG, dtleft, dtright)
 
 function merge(rng::AbstractRNG, h::Hamiltonian, dtleft::DoublingTree, dtright::DoublingTree)
     zleft = dtleft.zleft
     zright = dtright.zright
-    zcand = rand(rng) < dtleft.n / (dtleft.n + dtright.n) ? dtleft.zcand : dtright.zcand
+    zcand = sample(rng, dtleft, dtright)
+    sampler = combine(dtleft.sampler, dtright.sampler)
     s = dtleft.s * dtright.s * isUturn(h, zleft, zright)
-    return DoublingTree(zleft, zright, zcand, dtright.n + dtright.n, s, dtright.α + dtright.α, dtright.nα + dtright.nα)
+    return DoublingTree(zleft, zright, zcand, sampler, s, dtright.α + dtright.α, dtright.nα + dtright.nα)
 end
 
 """
@@ -205,13 +233,19 @@ end
 Merge a left tree `dtleft` and a right tree `dtright` under given Hamiltonian `h`.
 """
 merge(h::Hamiltonian, dtleft::DoublingTree, dtright::DoublingTree) = merge(GLOBAL_RNG, h, dtleft, dtright)
+iscontinued(s::SliceNUTSSampler, nt::NUTS, H::AbstractFloat, H′::AbstractFloat) = (s.logu < nt.Δ_max + -H′) ? 1 : 0
+# REVIEW: @Hong can you please double check if the implementation below is correct
+iscontinued(s::MultinomialNUTSSampler, nt::NUTS, H::AbstractFloat, H′::AbstractFloat) = (-H < nt.Δ_max + -H′) ? 1 : 0
+
+BaseSampler(s::SliceNUTSSampler, H::AbstractFloat) = SliceNUTSSampler(s.logu, (s.logu <= -H) ? 1 : 0)
+BaseSampler(s::MultinomialNUTSSampler, H::AbstractFloat) = MultinomialNUTSSampler(H)
 
 function build_tree(
     rng::AbstractRNG,
     nt::NUTS{I,F,S},
     h::Hamiltonian,
     z::PhasePoint,
-    logu::AbstractFloat,
+    sampler::AbstractNUTSSampler,
     v::Int,
     j::Int,
     H::AbstractFloat
@@ -220,24 +254,25 @@ function build_tree(
         # Base case - take one leapfrog step in the direction v.
         z′ = step(nt.integrator, h, z, v)
         H′ = -neg_energy(z′)
-        n′ = (logu <= -H′) ? 1 : 0
-        s′ = (logu < nt.Δ_max + -H′) ? 1 : 0
+        sampler = BaseSampler(sampler, H′)
+        s′ = iscontinued(sampler, nt, H, H′)
         α′ = exp(min(0, H - H′))
-        return DoublingTree(z′, z′, z′, n′, s′, α′, 1)
+        return DoublingTree(z′, z′, z′, sampler, s′, α′, 1)
     else
         # Recursion - build the left and right subtrees.
-        dt′ = build_tree(rng, nt, h, z, logu, v, j - 1, H)
+        dt′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H)
         # Expand tree if not terminated
         if dt′.s == 1
             # Expand left
             if v == -1
-                dt′′ = build_tree(rng, nt, h, dt′.zleft, logu, v, j - 1, H) # left tree
-                dt′ = merge(rng, h, dt′′, dt′)
+                dt′′ = build_tree(rng, nt, h, dt′.zleft, sampler, v, j - 1, H) # left tree
+                dtleft, dtright = dt′′, dt′
             # Expand right
             else    
-                dt′′ = build_tree(rng, nt, h, dt′.zright, logu, v, j - 1, H) # right tree
-                dt′ = merge(rng, h, dt′, dt′′)
+                dt′′ = build_tree(rng, nt, h, dt′.zright, sampler, v, j - 1, H) # right tree
+                dtleft, dtright = dt′, dt′′
             end
+            dt′ = merge(rng, h, dtleft, dtright)
         end
         return dt′
     end
@@ -250,11 +285,19 @@ build_tree(
     nt::NUTS{I,F,S},
     h::Hamiltonian,
     z::PhasePoint,
-    logu::AbstractFloat,
+    sampler::AbstractNUTSSampler,
     v::Int,
     j::Int,
     H::AbstractFloat
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractNUTSSampling} = build_tree(GLOBAL_RNG, nt, h, z, logu, v, j, H)
+) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractNUTSSampling} = build_tree(GLOBAL_RNG, nt, h, z, sampler, v, j, H)
+
+mh_accept(rng::AbstractRNG, s::SliceNUTSSampler, s′::SliceNUTSSampler) = mh_accept(rng, s.n, s′.n)
+mh_accept(rng::AbstractRNG, s::MultinomialNUTSSampler, s′::MultinomialNUTSSampler) = mh_accept(rng, s.w, s′.w)
+mh_accept(s::AbstractNUTSSampler, s′::AbstractNUTSSampler) = mh_accept(GLOBAL_RNG, s, s′)
+
+InitSampler(rng::AbstractRNG, ::SliceNUTSSampling, H::AbstractFloat) = SliceNUTSSampler(log(rand(rng)) - H, 1)
+InitSampler(rng::AbstractRNG, ::MultinomialNUTSSampling, H::AbstractFloat) = MultinomialNUTSSampler(H)
+InitSampler(s::AbstractNUTSSampling, H::AbstractFloat) = InitSampler(GLOBAL_RNG, s, H)
 
 function transition(
     rng::AbstractRNG,
@@ -262,31 +305,32 @@ function transition(
     h::Hamiltonian,
     z::PhasePoint
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractNUTSSampling}
-    θ, r = z.θ, z.r
     H = -neg_energy(z)
-    logu = log(rand(rng)) - H
 
-    zleft = z; zright = z; zcand = z; j = 0; n = 1; s = 1
+    zleft = z; zright = z; zcand = z; j = 0; s = 1; sampler = InitSampler(rng, nt.sampling, H)
 
     local dt
     while s == 1 && j <= nt.max_depth
+        # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
         if v == -1
-            dt = build_tree(rng, nt, h, zleft, logu, v, j, H)
+            # Create a tree with depth `j` on the left
+            dt = build_tree(rng, nt, h, zleft, sampler, v, j, H)
             zleft = dt.zleft
         else
-            dt = build_tree(rng, nt, h, zright, logu, v, j, H)
+            # Create a tree with depth `j` on the right
+            dt = build_tree(rng, nt, h, zright, sampler, v, j, H)
             zright = dt.zright
         end
-
-        if dt.s == 1
-            if rand(rng) < min(1, dt.n / n)
-                zcand = dt.zcand
-            end
+        # Perform a MH step if not terminated
+        if dt.s == 1 && mh_accept(rng, sampler, dt.sampler)[1]
+            zcand = dt.zcand
         end
-
-        n = n + dt.n
+        # Combine the sampler from the proposed tree and the current tree
+        sampler = combine(sampler, dt.sampler)
+        # Detect termination
         s = s * dt.s * isUturn(h, zleft, zright)
+        # Increment tree depth
         j = j + 1
     end
 
