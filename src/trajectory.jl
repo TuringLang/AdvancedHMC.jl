@@ -170,14 +170,15 @@ Multinomial sampling.
 """
 struct MultinomialTreeSampling <: AbstractTreeSampling end
 
+##
+## Slice and multinomial sampling for trajectories.
+##
+
 """
 Sampler carried during the building of the tree.
 """
 abstract type AbstractTreeSampler end
 
-#
-# Slice and multinomial sampling for trajectories.
-#
 """
 Slice sampler carried during the building of the tree.
 It contains the slice variable and the number of acceptable condidates in the tree.
@@ -194,6 +195,18 @@ It contains the weight of the tree, defined as the total probabilities of the le
 struct MultinomialTreeSampler{F<:AbstractFloat} <: AbstractTreeSampler
     w       ::  F     # total energy for the given tree, i.e. sum of energy of all leaves
 end
+
+"""
+Slice sampler for the starting single leaf tree.
+Slice variable is initialized.
+"""
+InitSampler(rng::AbstractRNG, ::SliceTreeSampling, H::AbstractFloat) = SliceTreeSampler(log(rand(rng)) - H, 1)
+
+"""
+Multinomial sampler for the starting single leaf tree.
+Tree weight is just the probability of the only leave.
+"""
+InitSampler(rng::AbstractRNG, ::MultinomialTreeSampling, H::AbstractFloat) = MultinomialTreeSampler(exp(-H))
 
 """
 Create a slice sampler for a single leave tree:
@@ -370,20 +383,16 @@ function build_tree(
     end
 end
 
-mh_accept(rng::AbstractRNG, s::SliceTreeSampler, s′::SliceTreeSampler) = rand(rng) < min(1, s′.n / s.n)
-mh_accept(rng::AbstractRNG, s::MultinomialTreeSampler, s′::MultinomialTreeSampler) = rand(rng) < min(1, s′.w / s.w)
-
-"""
-Slice sampler for the starting single leaf tree.
-Slice variable is initialized.
-"""
-InitSampler(rng::AbstractRNG, ::SliceTreeSampling, H::AbstractFloat) = SliceTreeSampler(log(rand(rng)) - H, 1)
-
-"""
-Multinomial sampler for the starting single leaf tree.
-Tree weight is just the probability of the only leave.
-"""
-InitSampler(rng::AbstractRNG, ::MultinomialTreeSampling, H::AbstractFloat) = MultinomialTreeSampler(exp(-H))
+mh_accept(
+    rng::AbstractRNG,
+    s::SliceTreeSampler,
+    s′::SliceTreeSampler
+) = rand(rng) < min(1, s′.n / s.n)
+mh_accept(
+    rng::AbstractRNG,
+    s::MultinomialTreeSampler,
+    s′::MultinomialTreeSampler
+) = rand(rng) < min(1, s′.w / s.w)
 
 function transition(
     rng::AbstractRNG,
