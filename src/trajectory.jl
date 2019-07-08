@@ -175,11 +175,14 @@ Sampler carried during the building of the tree.
 """
 abstract type AbstractTreeSampler end
 
+#
+# Slice and multinomial sampling for trajectories.
+#
 """
 Slice sampler carried during the building of the tree.
 It contains the slice variable and the number of acceptable condidates in the tree.
 """
-struct SliceTreeSampler{F<:AbstractFloat} <: AbstractTreeSampler 
+struct SliceTreeSampler{F<:AbstractFloat} <: AbstractTreeSampler
     logu    ::  F     # slice variable in log space
     n       ::  Int   # number of acceptable candicates, i.e. those with prob larger than slice variable u
 end
@@ -193,9 +196,29 @@ struct MultinomialTreeSampler{F<:AbstractFloat} <: AbstractTreeSampler
 end
 
 """
+Create a slice sampler for a single leave tree:
+- the slice variable is copied from the passed-in sampler `s` and
+- the number of acceptable candicates is computed by comparing the slice variable against the current energy.
+"""
+BaseSampler(s::SliceTreeSampler, H::AbstractFloat) = SliceTreeSampler(s.logu, (s.logu <= -H) ? 1 : 0)
+
+"""
+Create a multinomial sampler for a single leave tree:
+- the tree weight is just the probability of the only leave.
+"""
+BaseSampler(s::MultinomialTreeSampler, H::AbstractFloat) = MultinomialTreeSampler(exp(-H))
+
+combine(s1::SliceTreeSampler, s2::SliceTreeSampler) = SliceTreeSampler(s1.logu, s1.n + s2.n)
+combine(s1::MultinomialTreeSampler, s2::MultinomialTreeSampler) = MultinomialTreeSampler(s1.w + s2.w)
+
+"""
 Dynamic trajectory HMC using the no-U-turn termination criteria algorithm.
 """
-struct NUTS{I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampling} <: DynamicTrajectory{I}
+struct NUTS{
+    I<:AbstractIntegrator,
+    F<:AbstractFloat,
+    S<:AbstractTreeSampling
+}<:DynamicTrajectory{I}
     integrator  ::  I
     max_depth   ::  Int
     Δ_max       ::  F
@@ -203,7 +226,7 @@ struct NUTS{I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampling} <: D
 end
 
 """
-Helper dictionary used to allow users pass symbol keyword argument 
+Helper dictionary used to allow users pass symbol keyword argument
 to create NUTS with different sampling algorithm.
 """
 const SUPPORTED_TREE_SAMPLING = Dict(:slice => SliceTreeSampling(), :multinomial => MultinomialTreeSampling())
@@ -211,8 +234,8 @@ const DEFAULT_TREE_SAMPLING = :multinomial
 
 """
     NUTS(
-        integrator::AbstractIntegrator, 
-        max_depth::Int=10, 
+        integrator::AbstractIntegrator,
+        max_depth::Int=10,
         Δ_max::AbstractFloat=1000.0;
         sampling::Symbol=:multinomial
     )
@@ -220,8 +243,8 @@ const DEFAULT_TREE_SAMPLING = :multinomial
 Create an instance for the No-U-Turn sampling algorithm.
 """
 function NUTS(
-    integrator::AbstractIntegrator, 
-    max_depth::Int=10, 
+    integrator::AbstractIntegrator,
+    max_depth::Int=10,
     Δ_max::AbstractFloat=1000.0;
     sampling::Symbol=DEFAULT_TREE_SAMPLING
 )
@@ -236,7 +259,6 @@ Create a new No-U-Turn sampling algorithm with a new integrator.
 function (nuts::NUTS)(integrator::AbstractIntegrator)
     return NUTS(integrator, nuts.max_depth, nuts.Δ_max, nuts.sampling)
 end
-
 
 ###
 ### The doubling tree algorithm for expanding trajectory.
@@ -264,24 +286,7 @@ function isUturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
 end
 
 """
-Sample a condidate point form two trees (`tleft` and `trigth`) under slice sampling.
-"""
-function sample(rng::AbstractRNG, tleft::FullBinaryTree{SliceTreeSampler{F}}, tright::FullBinaryTree{SliceTreeSampler{F}}) where {F<:AbstractFloat}
-    return rand(rng) < tleft.sampler.n / (tleft.sampler.n + tright.sampler.n) ? tleft.zcand : tright.zcand
-end
-
-"""
-Sample a condidate point form two trees (`tleft` and `trigth`) under multinomial sampling.
-"""
-function sample(rng::AbstractRNG, tleft::FullBinaryTree{MultinomialTreeSampler{F}}, tright::FullBinaryTree{MultinomialTreeSampler{F}}) where {F<:AbstractFloat}
-    return rand(rng) < tleft.sampler.w / (tleft.sampler.w + tright.sampler.w) ? tleft.zcand : tright.zcand
-end
-
-combine(s1::SliceTreeSampler, s2::SliceTreeSampler) = SliceTreeSampler(s1.logu, s1.n + s2.n)
-combine(s1::MultinomialTreeSampler, s2::MultinomialTreeSampler) = MultinomialTreeSampler(s1.w + s2.w)
-
-"""
-Merge two full binary tree by drawing a condidate sample for it and updating statistics.
+Merge two full binary tree by drawing a candidate sample for it and updating statistics.
 """
 function merge(rng::AbstractRNG, h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree)
     zleft = tleft.zleft
@@ -303,17 +308,26 @@ iscontinued(s::SliceTreeSampler, nt::NUTS, H0::AbstractFloat, H′::AbstractFloa
 iscontinued(s::MultinomialTreeSampler, nt::NUTS, H0::AbstractFloat, H′::AbstractFloat) = (-H0 < nt.Δ_max + -H′) ? 1 : 0
 
 """
-Create a slice sampler for a single leave tree:
-- the slice variable is copied from the passed-in sampler `s` and 
-- the number of acceptable candicates is computed by comparing the slice variable against the current energy.
+Sample a condidate point form two trees (`tleft` and `trigth`) under slice sampling.
 """
-BaseSampler(s::SliceTreeSampler, H::AbstractFloat) = SliceTreeSampler(s.logu, (s.logu <= -H) ? 1 : 0)
+function sample(
+    rng::AbstractRNG,
+    tleft::FullBinaryTree{SliceTreeSampler{F}},
+    tright::FullBinaryTree{SliceTreeSampler{F}}
+) where {F<:AbstractFloat}
+    return rand(rng) < tleft.sampler.n / (tleft.sampler.n + tright.sampler.n) ? tleft.zcand : tright.zcand
+end
 
 """
-Create a multinomial sampler for a single leave tree:
-- the tree weight is just the probability of the only leave.
+Sample a condidate point form two trees (`tleft` and `trigth`) under multinomial sampling.
 """
-BaseSampler(s::MultinomialTreeSampler, H::AbstractFloat) = MultinomialTreeSampler(exp(-H))
+function sample(
+    rng::AbstractRNG,
+    tleft::FullBinaryTree{MultinomialTreeSampler{F}},
+    tright::FullBinaryTree{MultinomialTreeSampler{F}}
+) where {F<:AbstractFloat}
+    return rand(rng) < tleft.sampler.w / (tleft.sampler.w + tright.sampler.w) ? tleft.zcand : tright.zcand
+end
 
 """
 Recursivly build a tree for a given depth `j`.
@@ -346,7 +360,7 @@ function build_tree(
                 t′′ = build_tree(rng, nt, h, t′.zleft, sampler, v, j - 1, H0) # left tree
                 tleft, tright = t′′, t′
             # Expand right
-            else    
+            else
                 t′′ = build_tree(rng, nt, h, t′.zright, sampler, v, j - 1, H0) # right tree
                 tleft, tright = t′, t′′
             end
@@ -461,14 +475,14 @@ function find_good_eps(
             ϵ = ϵ′
         end
     end
-    # Note after the for loop, 
+    # Note after the for loop,
     # `ϵ` and `ϵ′` are the two neighbour step sizes across `a_cross`.
 
     # Bisection step: ensure final accept ratio: a_min < a < a_max.
     # See https://en.wikipedia.org/wiki/Bisection_method
-    
-    ϵ, ϵ′ = ϵ < ϵ′ ? (ϵ, ϵ′) : (ϵ′, ϵ)  # ensure ϵ < ϵ′; 
-    # Here we want to use a value between these two given the 
+
+    ϵ, ϵ′ = ϵ < ϵ′ ? (ϵ, ϵ′) : (ϵ′, ϵ)  # ensure ϵ < ϵ′;
+    # Here we want to use a value between these two given the
     # criteria that this value also gives us a MH ratio between `a_min` and `a_max`.
     # This condition is quite mild and only intended to avoid cases where
     # the middle value of `ϵ` and `ϵ′` is too extreme.
