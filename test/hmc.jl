@@ -5,10 +5,10 @@ using Test, AdvancedHMC, LinearAlgebra
 using Statistics: mean, var, cov
 include("common.jl")
 
-θ_init = 2rand(D)
-ϵ = 0.02
+θ_init = randn(D)
+ϵ = 0.1
 n_steps = 20
-n_samples = 100_000
+n_samples = 10_000
 n_adapts = 2_000
 
 @testset "HMC and NUTS" begin
@@ -21,11 +21,13 @@ n_adapts = 2_000
         @testset "$τsym" for (τsym, τ) in Dict(
             :HMC => StaticTrajectory(Leapfrog(ϵ), n_steps),
             :HMCDA => HMCDA(Leapfrog(ϵ), ϵ * n_steps),
-            :MultinomialNUTS => NUTS(Leapfrog(find_good_eps(h, θ_init)); sampling=:multinomial),
-            :SliceNUTS => NUTS(Leapfrog(find_good_eps(h, θ_init)); sampling=:slice),
+            :MultinomialNUTS => NUTS(Leapfrog(ϵ); sampling=:multinomial),
+            :SliceNUTS => NUTS(Leapfrog(ϵ); sampling=:slice),
         )
-            samples = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
-            @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
+            @testset  "NoAdaptation" begin
+                samples = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
+                @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
+            end
 
             @testset "$adaptorsym" for (adaptorsym, adaptor) in Dict(
                 :PreconditionerOnly => Preconditioner(metric),
@@ -40,7 +42,10 @@ n_adapts = 2_000
                     NesterovDualAveraging(0.8, τ.integrator.ϵ),
                 ),
             )
-                samples = sample(h, τ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
+                # For `Preconditioner`, we use the pre-defined step size as the method cannot adapt the step size.
+                # For other adapatation methods that are able to adpat the step size, we use `find_good_eps`.
+                τ_used = adaptorsym == :PreconditionerOnly ? τ : τ(Leapfrog(find_good_eps(h, θ_init)))
+                samples = sample(h, τ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
                 @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
             end
         end
