@@ -229,8 +229,8 @@ end
 Helper dictionary used to allow users pass symbol keyword argument
 to create NUTS with different sampling algorithm.
 """
-const SUPPORTED_TREE_SAMPLERTYPE = Dict(:slice => SliceTreeSampler, :multinomial => MultinomialTreeSampler)
-const DEFAULT_TREE_SAMPLERTYPE = :multinomial
+const SUPPORTED_TREE_SAMPLING = Dict(:slice => SliceTreeSampler, :multinomial => MultinomialTreeSampler)
+const DEFAULT_TREE_SAMPLING = :multinomial
 
 """
     NUTS(
@@ -246,12 +246,12 @@ function NUTS(
     integrator::AbstractIntegrator,
     max_depth::Int=10,
     Δ_max::AbstractFloat=1000.0;
-    samplerType::Symbol=DEFAULT_TREE_SAMPLERTYPE
+    sampling::Symbol=DEFAULT_TREE_SAMPLING
 )
-    @assert samplerType in keys(SUPPORTED_TREE_SAMPLERTYPE) "NUTS only supports the following sampling methods: $(keys(SUPPORTED_TREE_SAMPLERTYPE))"
-    return NUTS(integrator, max_depth, Δ_max, SUPPORTED_TREE_SAMPLERTYPE[samplerType])
+    @assert sampling in keys(SUPPORTED_TREE_SAMPLING) "NUTS only supports the following sampling methods: $(keys(SUPPORTED_TREE_SAMPLING))"
+    return NUTS(integrator, max_depth, Δ_max, SUPPORTED_TREE_SAMPLING[sampling])
 end
-@info "Default NUTS tree sampling method is set to $DEFAULT_TREE_SAMPLERTYPE."
+@info "Default NUTS tree sampling method is set to $DEFAULT_TREE_SAMPLING."
 
 """
 Create a new No-U-Turn sampling algorithm with a new integrator.
