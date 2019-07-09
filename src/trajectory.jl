@@ -157,19 +157,6 @@ end
 ### Advanced HMC implementation with (adaptive) dynamic trajectory length.
 ###
 
-"""
-How to draw a sample from a tree-based trajectory when building up the tree?
-"""
-abstract type AbstractTreeSampling end
-"""
-Slice sampling.
-"""
-struct SliceTreeSampling <: AbstractTreeSampling end
-"""
-Multinomial sampling.
-"""
-struct MultinomialTreeSampling <: AbstractTreeSampling end
-
 ##
 ## Slice and multinomial sampling for trajectories.
 ##
@@ -200,26 +187,26 @@ end
 Slice sampler for the starting single leaf tree.
 Slice variable is initialized.
 """
-InitSampler(rng::AbstractRNG, ::SliceTreeSampling, H::AbstractFloat) = SliceTreeSampler(log(rand(rng)) - H, 1)
+SliceTreeSampler(rng::AbstractRNG, H::AbstractFloat) = SliceTreeSampler(log(rand(rng)) - H, 1)
 
 """
 Multinomial sampler for the starting single leaf tree.
 Tree weight is just the probability of the only leave.
 """
-InitSampler(rng::AbstractRNG, ::MultinomialTreeSampling, H::AbstractFloat) = MultinomialTreeSampler(exp(-H))
+MultinomialTreeSampler(rng::AbstractRNG, H::AbstractFloat) = MultinomialTreeSampler(exp(-H))
 
 """
-Create a slice sampler for a single leave tree:
+Create a slice sampler for a single leaf tree:
 - the slice variable is copied from the passed-in sampler `s` and
 - the number of acceptable candicates is computed by comparing the slice variable against the current energy.
 """
-BaseSampler(s::SliceTreeSampler, H::AbstractFloat) = SliceTreeSampler(s.logu, (s.logu <= -H) ? 1 : 0)
+makebase(s::SliceTreeSampler, H::AbstractFloat) = SliceTreeSampler(s.logu, (s.logu <= -H) ? 1 : 0)
 
 """
-Create a multinomial sampler for a single leave tree:
+Create a multinomial sampler for a single leaf tree:
 - the tree weight is just the probability of the only leave.
 """
-BaseSampler(s::MultinomialTreeSampler, H::AbstractFloat) = MultinomialTreeSampler(exp(-H))
+makebase(s::MultinomialTreeSampler, H::AbstractFloat) = MultinomialTreeSampler(exp(-H))
 
 combine(s1::SliceTreeSampler, s2::SliceTreeSampler) = SliceTreeSampler(s1.logu, s1.n + s2.n)
 combine(s1::MultinomialTreeSampler, s2::MultinomialTreeSampler) = MultinomialTreeSampler(s1.w + s2.w)
@@ -230,20 +217,20 @@ Dynamic trajectory HMC using the no-U-turn termination criteria algorithm.
 struct NUTS{
     I<:AbstractIntegrator,
     F<:AbstractFloat,
-    S<:AbstractTreeSampling
-}<:DynamicTrajectory{I}
+    S<:AbstractTreeSampler
+} <: DynamicTrajectory{I}
     integrator  ::  I
     max_depth   ::  Int
     Δ_max       ::  F
-    sampling    ::  S
+    samplerType ::  Type{S}
 end
 
 """
 Helper dictionary used to allow users pass symbol keyword argument
 to create NUTS with different sampling algorithm.
 """
-const SUPPORTED_TREE_SAMPLING = Dict(:slice => SliceTreeSampling(), :multinomial => MultinomialTreeSampling())
-const DEFAULT_TREE_SAMPLING = :multinomial
+const SUPPORTED_TREE_SAMPLERTYPE = Dict(:slice => SliceTreeSampler, :multinomial => MultinomialTreeSampler)
+const DEFAULT_TREE_SAMPLERTYPE = :multinomial
 
 """
     NUTS(
@@ -259,18 +246,18 @@ function NUTS(
     integrator::AbstractIntegrator,
     max_depth::Int=10,
     Δ_max::AbstractFloat=1000.0;
-    sampling::Symbol=DEFAULT_TREE_SAMPLING
+    samplerType::Symbol=DEFAULT_TREE_SAMPLERTYPE
 )
-    @assert sampling in keys(SUPPORTED_TREE_SAMPLING) "NUTS only supports the following sampling methods: $(keys(SUPPORTED_TREE_SAMPLING))"
-    return NUTS(integrator, max_depth, Δ_max, SUPPORTED_TREE_SAMPLING[sampling])
+    @assert samplerType in keys(SUPPORTED_TREE_SAMPLERTYPE) "NUTS only supports the following sampling methods: $(keys(SUPPORTED_TREE_SAMPLERTYPE))"
+    return NUTS(integrator, max_depth, Δ_max, SUPPORTED_TREE_SAMPLERTYPE[samplerType])
 end
-@info "Default NUTS tree sampling method is set to $DEFAULT_TREE_SAMPLING."
+@info "Default NUTS tree sampling method is set to $DEFAULT_TREE_SAMPLERTYPE."
 
 """
 Create a new No-U-Turn sampling algorithm with a new integrator.
 """
 function (nuts::NUTS)(integrator::AbstractIntegrator)
-    return NUTS(integrator, nuts.max_depth, nuts.Δ_max, nuts.sampling)
+    return NUTS(integrator, nuts.max_depth, nuts.Δ_max, nuts.samplerType)
 end
 
 ###
@@ -321,7 +308,7 @@ iscontinued(s::SliceTreeSampler, nt::NUTS, H0::AbstractFloat, H′::AbstractFloa
 iscontinued(s::MultinomialTreeSampler, nt::NUTS, H0::AbstractFloat, H′::AbstractFloat) = (-H0 < nt.Δ_max + -H′) ? 1 : 0
 
 """
-Sample a condidate point form two trees (`tleft` and `trigth`) under slice sampling.
+Sample a condidate point form two trees (`tleft` and `tright`) under slice sampling.
 """
 function sample(
     rng::AbstractRNG,
@@ -332,7 +319,7 @@ function sample(
 end
 
 """
-Sample a condidate point form two trees (`tleft` and `trigth`) under multinomial sampling.
+Sample a condidate point form two trees (`tleft` and `tright`) under multinomial sampling.
 """
 function sample(
     rng::AbstractRNG,
@@ -354,15 +341,15 @@ function build_tree(
     v::Int,
     j::Int,
     H0::AbstractFloat
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampling}
+) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
         z′ = step(nt.integrator, h, z, v)
         H′ = -neg_energy(z′)
-        sampler = BaseSampler(sampler, H′)
-        s′ = iscontinued(sampler, nt, H0, H′)
+        basesampler = makebase(sampler, H′)
+        s′ = iscontinued(basesampler, nt, H0, H′)
         α′ = exp(min(0, H0 - H′))
-        return FullBinaryTree(z′, z′, z′, sampler, s′, α′, 1)
+        return FullBinaryTree(z′, z′, z′, basesampler, s′, α′, 1)
     else
         # Recursion - build the left and right subtrees.
         t′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
@@ -399,10 +386,10 @@ function transition(
     nt::NUTS{I,F,S},
     h::Hamiltonian,
     z0::PhasePoint
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampling}
+) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler}
     H0 = -neg_energy(z0)
 
-    zleft = z0; zright = z0; zcand = z0; j = 0; s = 1; sampler = InitSampler(rng, nt.sampling, H0)
+    zleft = z0; zright = z0; zcand = z0; j = 0; s = 1; sampler = S(rng, H0)
 
     local t
     while s == 1 && j <= nt.max_depth
