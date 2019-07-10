@@ -282,11 +282,26 @@ end
 """
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 """
-function isUturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
+function isturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
     θdiff = zright.θ - zleft.θ
     return (dot(θdiff, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(θdiff, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
 end
 
+"""
+Check divergence of a Hamiltonian trajectory.
+"""
+isdivergent(
+    s::SliceTreeSampler,
+    nt::NUTS,
+    H0::F,
+    H′::F
+) where {F<:AbstractFloat} = (s.logu < nt.Δ_max + -H′) ? 0 : 1
+isdivergent(
+    s::MultinomialTreeSampler,
+    nt::NUTS,
+    H0::F,
+    H′::F
+) where {F<:AbstractFloat} = (-H0 < nt.Δ_max + -H′) ? 0 : 1
 
 """
     combine(h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree)
@@ -304,25 +319,9 @@ function combine(
     zright = tright.zright
     zcand = combine(tleft, tright; rng=rng)
     sampler = combine(tleft.sampler, tright.sampler)
-    s = tleft.s * tright.s * isUturn(h, zleft, zright)
+    s = tleft.s * tright.s * isturn(h, zleft, zright)
     return FullBinaryTree(zleft, zright, zcand, sampler, s, tright.α + tright.α, tright.nα + tright.nα)
 end
-
-"""
-Check whether the Hamiltonian trajectory has diverged.
-"""
-iscontinued(
-    s::SliceTreeSampler,
-    nt::NUTS,
-    H0::F,
-    H′::F
-) where {F<:AbstractFloat} = (s.logu < nt.Δ_max + -H′) ? 1 : 0
-iscontinued(
-    s::MultinomialTreeSampler,
-    nt::NUTS,
-    H0::F,
-    H′::F
-) where {F<:AbstractFloat} = (-H0 < nt.Δ_max + -H′) ? 1 : 0
 
 """
 Sample a condidate point form two trees (`tleft` and `tright`) under slice sampling.
@@ -364,7 +363,7 @@ function build_tree(
         z′ = step(nt.integrator, h, z, v)
         H′ = -neg_energy(z′)
         basesampler = makebase(sampler, H′)
-        s′ = iscontinued(basesampler, nt, H0, H′)
+        s′ = 1 - isdivergent(basesampler, nt, H0, H′)
         α′ = exp(min(0, H0 - H′))
         return FullBinaryTree(z′, z′, z′, basesampler, s′, α′, 1)
     else
@@ -428,7 +427,7 @@ function transition(
         # Combine the sampler from the proposed tree and the current tree
         sampler = combine(sampler, t.sampler)
         # Detect termination
-        s = s * t.s * isUturn(h, zleft, zright)
+        s = s * t.s * isturn(h, zleft, zright)
         # Increment tree depth
         j = j + 1
     end
