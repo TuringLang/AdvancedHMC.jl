@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/TuringLang/AdvancedHMC.jl.svg?branch=master)](https://travis-ci.org/TuringLang/AdvancedHMC.jl) [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
 
-**The code from this repository is used to implement HMC samplers in [Turing.jl](https://github.com/yebai/Turing.jl). Try it out when it's available!**
+**The code from this repository is used to implement HMC samplers in [Turing.jl](https://github.com/yebai/Turing.jl).**
 
 **UPDATE**: The gradient function passed in to `Hamiltonian` is supposed to return a value-gradient tuple now! 
 
