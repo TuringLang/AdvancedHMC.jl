@@ -30,70 +30,6 @@ transition(
     z::PhasePoint
 ) where {I<:AbstractIntegrator} = transition(GLOBAL_RNG, τ, h, z)
 
-#################################
-### Hong's abstraction starts ###
-#################################
-
-###
-### Create a `Termination` type for each `Trajectory` type, e.g. HMC, NUTS etc.
-### Merge all `Trajectory` types, and make `transition` dispatch on `Termination`,
-### such that we can overload `transition` for different HMC samplers.
-### NOTE:  stopping creteria, max_depth::Int, Δ_max::AbstractFloat, n_steps, λ
-###
-
-"""
-Abstract type for termination.
-"""
-abstract type AbstractTermination end
-
-# Termination type for HMC and HMCDA
-struct StaticTermination{D<:AbstractFloat} <: AbstractTermination
-    n_steps :: Int
-    Δ_max :: D
-end
-
-# NoUTurnTermination
-struct NoUTurnTermination{D<:AbstractFloat} <: AbstractTermination
-    max_depth :: Int
-    Δ_max :: D
-    # TODO: add other necessary fields for No-U-Turn stopping creteria.
-end
-
-struct Trajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
-    integrator :: I
-    n_steps :: Int # Counter for total leapfrog steps already applied.
-    Δ :: AbstractFloat # Current hamiltonian energy minus starting hamiltonian energy
-    # TODO: replace all ``*Trajectory` types with `Trajectory`.
-    # TODO: add turn statistic, divergent statistic, proposal statistic
-end
-
-isterminated(
-    x::StaticTermination,
-    τ::Trajectory
-) = τ.n_steps >= x.n_steps || τ.Δ >= x.Δ_max
-
-# Combine trajectories, e.g. those created by the build_tree algorithm.
-#  NOTE: combine proposal (via slice/multinomial sampling), combine turn statistic,
-#       and combine divergent statistic.
-combine_trajectory(τ′::Trajectory, τ′′::Trajectory) = nothing # To-be-implemented.
-
-## TODO: move slice variable `logu` into `Trajectory`?
-combine_proposal(τ′::Trajectory, τ′′::Trajectory) = nothing # To-be-implemented.
-combine_turn(τ′::Trajectory, τ′′::Trajectory) = nothing # To-be-implemented.
-combine_divergence(τ′::Trajectory, τ′′::Trajectory) = nothing # To-be-implemented.
-
-###############################
-### Hong's abstraction ends ###
-###############################
-
-transition(
-    τ::Trajectory{I},
-    h::Hamiltonian,
-    z::PhasePoint,
-    t::T
-) where {I<:AbstractIntegrator,T<:AbstractTermination} = nothing
-
-
 ###
 ### Standard HMC implementation with fixed leapfrog step numbers.
 ###
@@ -310,14 +246,14 @@ Merge a left tree `tleft` and a right tree `tright` under given Hamiltonian `h`,
 then draw a new candidate sample and update related statistics for the resulting tree.
 """
 function combine(
+    rng::AbstractRNG,
     h::Hamiltonian,
     tleft::FullBinaryTree,
-    tright::FullBinaryTree;
-    rng::AbstractRNG = GLOBAL_RNG
+    tright::FullBinaryTree
 )
     zleft = tleft.zleft
     zright = tright.zright
-    zcand = combine(tleft, tright; rng=rng)
+    zcand = combine(rng, tleft, tright)
     sampler = combine(tleft.sampler, tright.sampler)
     s = tleft.s * tright.s * isturn(h, zleft, zright)
     return FullBinaryTree(zleft, zright, zcand, sampler, s, tright.α + tright.α, tright.nα + tright.nα)
@@ -327,9 +263,9 @@ end
 Sample a condidate point form two trees (`tleft` and `tright`) under slice sampling.
 """
 function combine(
+    rng::AbstractRNG,
     tleft::FullBinaryTree{SliceTreeSampler{F}},
-    tright::FullBinaryTree{SliceTreeSampler{F}};
-    rng::AbstractRNG = GLOBAL_RNG
+    tright::FullBinaryTree{SliceTreeSampler{F}}
 ) where {F<:AbstractFloat}
     return rand(rng) < tleft.sampler.n / (tleft.sampler.n + tright.sampler.n) ? tleft.zcand : tright.zcand
 end
@@ -338,9 +274,9 @@ end
 Sample a condidate point form two trees (`tleft` and `tright`) under multinomial sampling.
 """
 function combine(
+    rng::AbstractRNG,
     tleft::FullBinaryTree{MultinomialTreeSampler{F}},
-    tright::FullBinaryTree{MultinomialTreeSampler{F}};
-    rng::AbstractRNG = GLOBAL_RNG
+    tright::FullBinaryTree{MultinomialTreeSampler{F}}
 ) where {F<:AbstractFloat}
     return rand(rng) < tleft.sampler.w / (tleft.sampler.w + tright.sampler.w) ? tleft.zcand : tright.zcand
 end
@@ -380,7 +316,7 @@ function build_tree(
                 t′′ = build_tree(rng, nt, h, t′.zright, sampler, v, j - 1, H0) # right tree
                 tleft, tright = t′, t′′
             end
-            t′ = combine(h, tleft, tright; rng=rng)
+            t′ = combine(rng, h, tleft, tright)
         end
         return t′
     end
