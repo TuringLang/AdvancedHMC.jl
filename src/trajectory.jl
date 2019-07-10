@@ -286,16 +286,14 @@ function isUturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
     return (dot(θdiff, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(θdiff, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
 end
 
-"""
-Merge two full binary tree by drawing a candidate sample for it and updating statistics.
-"""
+
 """
     merge(h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree)
 
-Merge a left tree `tleft` and a right tree `tright` under given Hamiltonian `h`.
+Merge a left tree `tleft` and a right tree `tright` under given Hamiltonian `h`,
+then draw a new candidate sample and update related statistics for the resulting tree.
 """
 function merge(
-    rng::AbstractRNG,
     h::Hamiltonian,
     tleft::FullBinaryTree,
     tright::FullBinaryTree;
@@ -303,12 +301,15 @@ function merge(
 )
     zleft = tleft.zleft
     zright = tright.zright
-    zcand = sample(rng, tleft, tright)
+    zcand = combine(tleft, tright; rng=rng)
     sampler = combine(tleft.sampler, tright.sampler)
     s = tleft.s * tright.s * isUturn(h, zleft, zright)
     return FullBinaryTree(zleft, zright, zcand, sampler, s, tright.α + tright.α, tright.nα + tright.nα)
 end
 
+"""
+Check whether the Hamiltonian trajectory has diverged.
+"""
 iscontinued(
     s::SliceTreeSampler,
     nt::NUTS,
@@ -325,10 +326,10 @@ iscontinued(
 """
 Sample a condidate point form two trees (`tleft` and `tright`) under slice sampling.
 """
-function sample(
-    rng::AbstractRNG,
+function combine(
     tleft::FullBinaryTree{SliceTreeSampler{F}},
-    tright::FullBinaryTree{SliceTreeSampler{F}}
+    tright::FullBinaryTree{SliceTreeSampler{F}};
+    rng::AbstractRNG = GLOBAL_RNG
 ) where {F<:AbstractFloat}
     return rand(rng) < tleft.sampler.n / (tleft.sampler.n + tright.sampler.n) ? tleft.zcand : tright.zcand
 end
@@ -336,10 +337,10 @@ end
 """
 Sample a condidate point form two trees (`tleft` and `tright`) under multinomial sampling.
 """
-function sample(
-    rng::AbstractRNG,
+function combine(
     tleft::FullBinaryTree{MultinomialTreeSampler{F}},
-    tright::FullBinaryTree{MultinomialTreeSampler{F}}
+    tright::FullBinaryTree{MultinomialTreeSampler{F}};
+    rng::AbstractRNG = GLOBAL_RNG
 ) where {F<:AbstractFloat}
     return rand(rng) < tleft.sampler.w / (tleft.sampler.w + tright.sampler.w) ? tleft.zcand : tright.zcand
 end
