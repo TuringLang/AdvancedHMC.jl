@@ -249,7 +249,8 @@ function NUTS(
     Δ_max::AbstractFloat=1000.0;
     sampling::Symbol=DEFAULT_TREE_SAMPLING
 )
-    @assert sampling in keys(SUPPORTED_TREE_SAMPLING) "NUTS only supports the following sampling methods: $(keys(SUPPORTED_TREE_SAMPLING))"
+    @assert sampling in keys(SUPPORTED_TREE_SAMPLING) "NUTS only supports the following
+        sampling methods: $(keys(SUPPORTED_TREE_SAMPLING))"
     return NUTS(integrator, max_depth, Δ_max, SUPPORTED_TREE_SAMPLING[sampling])
 end
 @info "Default NUTS tree sampling method is set to $DEFAULT_TREE_SAMPLING."
@@ -288,12 +289,12 @@ end
 
 
 """
-    merge(h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree)
+    combine(h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree)
 
 Merge a left tree `tleft` and a right tree `tright` under given Hamiltonian `h`,
 then draw a new candidate sample and update related statistics for the resulting tree.
 """
-function merge(
+function combine(
     h::Hamiltonian,
     tleft::FullBinaryTree,
     tright::FullBinaryTree;
@@ -380,7 +381,7 @@ function build_tree(
                 t′′ = build_tree(rng, nt, h, t′.zright, sampler, v, j - 1, H0) # right tree
                 tleft, tright = t′, t′′
             end
-            t′ = merge(h, tleft, tright; rng=rng)
+            t′ = combine(h, tleft, tright; rng=rng)
         end
         return t′
     end
