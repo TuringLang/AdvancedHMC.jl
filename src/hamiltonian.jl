@@ -42,8 +42,8 @@ phasepoint(
     h::Hamiltonian,
     θ::T,
     r::T;
-    ℓπ=DualValue(neg_energy(h, r, θ), ∂H∂θ(h, θ)),
-    ℓκ=DualValue(neg_energy(h, θ), ∂H∂r(h, r))
+    ℓπ=DualValue(neg_energy(h, θ), ∂H∂θ(h, θ)),
+    ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, r))
 ) where {T<:AbstractVector} = PhasePoint(θ, r, ℓπ, ℓκ)
 
 
