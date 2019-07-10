@@ -10,6 +10,7 @@ end
 # Create a `Hamiltonian` with a new `M⁻¹`
 (h::Hamiltonian)(M⁻¹) = Hamiltonian(h.metric(M⁻¹), h.ℓπ, h.∂ℓπ∂θ)
 
+# `∂H∂θ` now returns `(logprob, -∂ℓπ∂θ)`
 function ∂H∂θ(h::Hamiltonian, θ::AbstractVector)
     res = h.∂ℓπ∂θ(θ)
     return (res[1], -res[2]) 

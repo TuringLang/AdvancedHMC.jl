@@ -30,9 +30,9 @@ function step(
         r = r - ϵ/2 * ∇θ # Take a half leapfrog step for momentum variable
         ∇r = ∂H∂r(h, r)
         θ = θ + ϵ * ∇r   # Take a full leapfrog step for position variable
-        negH, ∇θ = ∂H∂θ(h, θ)
+        logprob, ∇θ = ∂H∂θ(h, θ)
         r = r - ϵ/2 * ∇θ # Take a half leapfrog step for momentum variable
-        z = phasepoint(h, θ, r; ℓπ=DualValue(negH, ∇θ))
+        z = phasepoint(h, θ, r; ℓπ=DualValue(logprob, ∇θ))
         !isfinite(z) && break
     end
     return z
