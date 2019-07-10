@@ -18,6 +18,5 @@ using ForwardDiff: gradient!
 function ∂ℓπ∂θ(θ)
     res = GradientResult(θ)
     gradient!(res, ℓπ, θ)
-    # return value(res), gradient(res)
-    return gradient(res)
+    return (value(res), gradient(res))
 end

@@ -42,7 +42,7 @@ using Statistics: mean
 @testset "Eq (2.11) from (Neal, 2011)" begin
     D = 1
     negU(q::AbstractVector{T}) where {T<:Real} = -dot(q, q) / 2
-    ∂negU∂q = q -> (res = GradientResult(q); gradient!(res, negU, q); gradient(res))
+    ∂negU∂q = q -> (res = GradientResult(q); gradient!(res, negU, q); (value(res), gradient(res)))
 
     ϵ = 0.01
     lf = Leapfrog(ϵ)
