@@ -5,7 +5,7 @@ using Distributed, Test
         "adaptation/precond",
         "hamiltonian",
         "integrator",
-        "proposal",
+        "trajectory",
         "hmc",
     ]
 

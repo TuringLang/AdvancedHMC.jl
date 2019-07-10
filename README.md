@@ -2,36 +2,46 @@
 
 [![Build Status](https://travis-ci.org/TuringLang/AdvancedHMC.jl.svg?branch=master)](https://travis-ci.org/TuringLang/AdvancedHMC.jl) [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
 
-**The code from this repository is used to implement HMC in [Turing.jl](https://github.com/yebai/Turing.jl). Try it out when it's available!**
+**The code from this repository is used to implement HMC samplers in [Turing.jl](https://github.com/yebai/Turing.jl).**
+
+**UPDATE**: The gradient function passed in to `Hamiltonian` is supposed to return a value-gradient tuple now! 
 
 ## Minimal examples - sampling from a multivariate Gaussian using NUTS
 
 ```julia
-using Distributions: MvNormal, logpdf
-using ForwardDiff: gradient
-using AdvancedHMC
+### Define the target distribution and its gradient
+using Distributions: logpdf, MvNormal
+using DiffResults: GradientResult, value, gradient
+using ForwardDiff: gradient!
 
-# Define the target distribution and its gradient
 const D = 10
 const target = MvNormal(zeros(D), ones(D))
-logπ(θ::AbstractVector{<:Real}) = logpdf(target, θ)
-∂logπ∂θ(θ::AbstractVector{<:Real}) = gradient(logπ, θ)
+ℓπ(θ) = logpdf(target, θ)
+
+function ∂ℓπ∂θ(θ)
+    res = GradientResult(θ)
+    gradient!(res, ℓπ, θ)
+    return (value(res), gradient(res))
+end
+
+### Build up a HMC sampler to draw samples
+using AdvancedHMC
 
 # Sampling parameter settings
 n_samples = 100_000
 n_adapts = 2_000
 
-# Initial points
+# Draw a random starting points
 θ_init = randn(D)
 
-# Define metric space, Hamiltonian and sampling method
-metric = DenseEuclideanMetric(D)
-h = Hamiltonian(metric, logπ, ∂logπ∂θ)
+# Define metric space, Hamiltonian, sampling method and adaptor
+metric = DiagEuclideanMetric(D)
+h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
 prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
 adaptor = StanHMCAdaptor(n_adapts, Preconditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))
 
 # Sampling
-samples = sample(h, prop, θ_init, n_samples, adaptor, n_adapts)
+samples = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; progress=true)
 ```
 
 ## Reference

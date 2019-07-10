@@ -6,7 +6,7 @@ include("common.jl")
 lf = Leapfrog(ϵ)
 
 θ_init = randn(D)
-h = Hamiltonian(UnitEuclideanMetric(D), logπ, ∂logπ∂θ)
+h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
 τ = NUTS(Leapfrog(find_good_eps(h, θ_init)))
 r_init = AdvancedHMC.rand(h.metric)
 

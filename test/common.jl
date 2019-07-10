@@ -9,7 +9,14 @@ const DETATOL = 1e-3 * D
 const RNDATOL = 5e-2 * D
 
 using Distributions: logpdf, MvNormal
-using ForwardDiff: gradient
 
-logπ(θ::AbstractVector{T}) where {T<:Real} = logpdf(MvNormal(zeros(D), ones(D)), θ)
-∂logπ∂θ = θ -> gradient(logπ, θ)
+ℓπ(θ) = logpdf(MvNormal(zeros(D), ones(D)), θ)
+
+using DiffResults: GradientResult, value, gradient
+using ForwardDiff: gradient!
+
+function ∂ℓπ∂θ(θ)
+    res = GradientResult(θ)
+    gradient!(res, ℓπ, θ)
+    return (value(res), gradient(res))
+end

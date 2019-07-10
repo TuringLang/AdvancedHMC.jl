@@ -5,7 +5,7 @@ include("common.jl")
 lf = Leapfrog(ϵ)
 
 θ_init = randn(D)
-h = Hamiltonian(UnitEuclideanMetric(D), logπ, ∂logπ∂θ)
+h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
 r_init = AdvancedHMC.rand(h.metric)
 
 n_steps = 10
@@ -39,10 +39,10 @@ end
 
 using LinearAlgebra: dot
 using Statistics: mean
-@testset "Eq (2.11) from Neal (2011)" begin
+@testset "Eq (2.11) from (Neal, 2011)" begin
     D = 1
     negU(q::AbstractVector{T}) where {T<:Real} = -dot(q, q) / 2
-    ∂negU∂q = q -> gradient(negU, q)
+    ∂negU∂q = q -> (res = GradientResult(q); gradient!(res, negU, q); (value(res), gradient(res)))
 
     ϵ = 0.01
     lf = Leapfrog(ϵ)

@@ -10,16 +10,20 @@ end
 # Create a `Hamiltonian` with a new `M⁻¹`
 (h::Hamiltonian)(M⁻¹) = Hamiltonian(h.metric(M⁻¹), h.ℓπ, h.∂ℓπ∂θ)
 
-∂H∂θ(h::Hamiltonian, θ::AbstractVector) = -h.∂ℓπ∂θ(θ)
-
-∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric}, r::AbstractVector) = copy(r)
-∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ .* r
-∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ * r
-
 struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}}
     value::Tv    # Cached value, e.g. logπ(θ).
     gradient::Tg # Cached gradient, e.g. ∇logπ(θ).
 end
+
+# `∂H∂θ` now returns `(logprob, -∂ℓπ∂θ)`
+function ∂H∂θ(h::Hamiltonian, θ::AbstractVector)
+    res = h.∂ℓπ∂θ(θ)
+    return DualValue(res[1], -res[2])
+end
+
+∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric}, r::AbstractVector) = copy(r)
+∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ .* r
+∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ * r
 
 struct PhasePoint{T<:AbstractVector, V<:DualValue}
     θ::T  # Position variables / model parameters.
@@ -28,11 +32,11 @@ struct PhasePoint{T<:AbstractVector, V<:DualValue}
     ℓκ::V # Cached neg kinect energy for the current r.
     function PhasePoint(θ::T, r::T, ℓπ::V, ℓκ::V) where {T,V}
         @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
-        # if !(all(isfinite, θ) && all(isfinite, r) && all(isfinite, ℓπ) && all(isfinite, ℓκ))
-        if !(isfinite(θ) && isfinite(r) && isfinite(ℓπ) && isfinite(ℓκ))
-            @warn "The current proposal will be rejected (due to numerical error(s))..."
-            ℓκ = DualValue(-Inf, ℓκ.gradient)
+        isfiniteθ, isfiniter, isfiniteℓπ, isfiniteℓκ = isfinite(θ), isfinite(r), isfinite(ℓπ), isfinite(ℓκ)
+        if !(isfiniteθ && isfiniter && isfiniteℓπ && isfiniteℓκ)
+            @warn "The current proposal will be rejected due to numerical error(s)." isfiniteθ isfiniter isfiniteℓπ isfiniteℓκ
             ℓπ = DualValue(-Inf, ℓπ.gradient)
+            ℓκ = DualValue(-Inf, ℓκ.gradient)
         end
         new{T,V}(θ, r, ℓπ, ℓκ)
     end
@@ -42,8 +46,8 @@ phasepoint(
     h::Hamiltonian,
     θ::T,
     r::T;
-    ℓπ = DualValue(neg_energy(h, r, θ), ∂H∂θ(h, θ)),
-    ℓκ = DualValue(neg_energy(h, θ), ∂H∂r(h, r))
+    ℓπ=∂H∂θ(h, θ),
+    ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, r))
 ) where {T<:AbstractVector} = PhasePoint(θ, r, ℓπ, ℓκ)
 
 
