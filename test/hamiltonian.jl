@@ -4,7 +4,7 @@ import AdvancedHMC: DualValue, PhasePoint
 include("common.jl")
 
 θ_init = randn(D)
-h = Hamiltonian(UnitEuclideanMetric(D), logπ, ∂logπ∂θ)
+h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
 r_init = ones(D)
 
 @test -AdvancedHMC.neg_energy(h, r_init, θ_init) == D / 2

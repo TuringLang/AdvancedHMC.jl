@@ -17,7 +17,7 @@ n_adapts = 2_000
         :DiagEuclideanMetric => DiagEuclideanMetric(D),
         :DenseEuclideanMetric => DenseEuclideanMetric(D),
     )
-        h = Hamiltonian(metric, logπ, ∂logπ∂θ)
+        h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         @testset "$τsym" for (τsym, τ) in Dict(
             :HMC => StaticTrajectory(Leapfrog(ϵ), n_steps),
             :HMCDA => HMCDA(Leapfrog(ϵ), ϵ * n_steps),
