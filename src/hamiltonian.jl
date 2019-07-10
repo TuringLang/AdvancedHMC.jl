@@ -10,20 +10,20 @@ end
 # Create a `Hamiltonian` with a new `M⁻¹`
 (h::Hamiltonian)(M⁻¹) = Hamiltonian(h.metric(M⁻¹), h.ℓπ, h.∂ℓπ∂θ)
 
+struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}}
+    value::Tv    # Cached value, e.g. logπ(θ).
+    gradient::Tg # Cached gradient, e.g. ∇logπ(θ).
+end
+
 # `∂H∂θ` now returns `(logprob, -∂ℓπ∂θ)`
 function ∂H∂θ(h::Hamiltonian, θ::AbstractVector)
     res = h.∂ℓπ∂θ(θ)
-    return (res[1], -res[2]) 
+    return DualValue(res[1], -res[2])
 end
 
 ∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric}, r::AbstractVector) = copy(r)
 ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ .* r
 ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ * r
-
-struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}}
-    value::Tv    # Cached value, e.g. logπ(θ).
-    gradient::Tg # Cached gradient, e.g. ∇logπ(θ).
-end
 
 struct PhasePoint{T<:AbstractVector, V<:DualValue}
     θ::T  # Position variables / model parameters.
@@ -46,7 +46,7 @@ phasepoint(
     h::Hamiltonian,
     θ::T,
     r::T;
-    ℓπ=DualValue(∂H∂θ(h, θ)...),
+    ℓπ=∂H∂θ(h, θ),
     ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, r))
 ) where {T<:AbstractVector} = PhasePoint(θ, r, ℓπ, ℓκ)
 
