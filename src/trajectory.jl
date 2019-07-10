@@ -289,7 +289,12 @@ end
 """
 Merge two full binary tree by drawing a candidate sample for it and updating statistics.
 """
-function merge(rng::AbstractRNG, h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree)
+function merge(
+    rng::AbstractRNG,
+    h::Hamiltonian,
+    tleft::FullBinaryTree,
+    tright::FullBinaryTree
+)
     zleft = tleft.zleft
     zright = tright.zright
     zcand = sample(rng, tleft, tright)
@@ -297,12 +302,6 @@ function merge(rng::AbstractRNG, h::Hamiltonian, tleft::FullBinaryTree, tright::
     s = tleft.s * tright.s * isUturn(h, zleft, zright)
     return FullBinaryTree(zleft, zright, zcand, sampler, s, tright.α + tright.α, tright.nα + tright.nα)
 end
-
-"""
-    merge(h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree)
-
-Merge a left tree `tleft` and a right tree `tright` under given Hamiltonian `h`.
-"""
 merge(
     h::Hamiltonian,
     tleft::FullBinaryTree,
@@ -315,7 +314,6 @@ iscontinued(
     H0::F,
     H′::F
 ) where {F<:AbstractFloat} = (s.logu < nt.Δ_max + -H′) ? 1 : 0
-# REVIEW: @Hong can you please double check if the implementation below is correct
 iscontinued(
     s::MultinomialTreeSampler,
     nt::NUTS,
