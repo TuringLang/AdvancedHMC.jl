@@ -289,11 +289,17 @@ end
 """
 Merge two full binary tree by drawing a candidate sample for it and updating statistics.
 """
+"""
+    merge(h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree)
+
+Merge a left tree `tleft` and a right tree `tright` under given Hamiltonian `h`.
+"""
 function merge(
     rng::AbstractRNG,
     h::Hamiltonian,
     tleft::FullBinaryTree,
-    tright::FullBinaryTree
+    tright::FullBinaryTree;
+    rng::AbstractRNG = GLOBAL_RNG
 )
     zleft = tleft.zleft
     zright = tright.zright
@@ -302,11 +308,6 @@ function merge(
     s = tleft.s * tright.s * isUturn(h, zleft, zright)
     return FullBinaryTree(zleft, zright, zcand, sampler, s, tright.α + tright.α, tright.nα + tright.nα)
 end
-merge(
-    h::Hamiltonian,
-    tleft::FullBinaryTree,
-    tright::FullBinaryTree
-) = merge(GLOBAL_RNG, h, tleft, tright)
 
 iscontinued(
     s::SliceTreeSampler,
@@ -378,7 +379,7 @@ function build_tree(
                 t′′ = build_tree(rng, nt, h, t′.zright, sampler, v, j - 1, H0) # right tree
                 tleft, tright = t′, t′′
             end
-            t′ = merge(rng, h, tleft, tright)
+            t′ = merge(h, tleft, tright; rng=rng)
         end
         return t′
     end
