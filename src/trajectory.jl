@@ -1,10 +1,11 @@
-#########################
-### Developers' Notes ###
-#########################################################################################
-# Not all functions that use `rng` requires a callback function with `GLOBAL_RNG`       #
-# as default. In short, only those exported to other libries need such a callback       #
-# function. Internal uses shall always use the explict `rng` version. (Kai Xu 6/Jul/19) #
-#########################################################################################
+####
+#### Implementation for Hamiltonian dynamics trajectories
+####
+#### Developers' Notes
+####
+#### Not all functions that use `rng` requires a callback function with `GLOBAL_RNG`
+#### as default. In short, only those exported to other libries need such a callback
+#### function. Internal uses shall always use the explict `rng` version. (Kai Xu 6/Jul/19)
 
 """
 Abstract Markov chain Monte Carlo proposal.
@@ -302,10 +303,25 @@ end
 
 Merge a left tree `tleft` and a right tree `tright` under given Hamiltonian `h`.
 """
-merge(h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree) = merge(GLOBAL_RNG, h, tleft, tright)
-iscontinued(s::SliceTreeSampler, nt::NUTS, H0::AbstractFloat, H′::AbstractFloat) = (s.logu < nt.Δ_max + -H′) ? 1 : 0
+merge(
+    h::Hamiltonian,
+    tleft::FullBinaryTree,
+    tright::FullBinaryTree
+) = merge(GLOBAL_RNG, h, tleft, tright)
+
+iscontinued(
+    s::SliceTreeSampler,
+    nt::NUTS,
+    H0::F,
+    H′::F
+) where {F<:AbstractFloat} = (s.logu < nt.Δ_max + -H′) ? 1 : 0
 # REVIEW: @Hong can you please double check if the implementation below is correct
-iscontinued(s::MultinomialTreeSampler, nt::NUTS, H0::AbstractFloat, H′::AbstractFloat) = (-H0 < nt.Δ_max + -H′) ? 1 : 0
+iscontinued(
+    s::MultinomialTreeSampler,
+    nt::NUTS,
+    H0::F,
+    H′::F
+) where {F<:AbstractFloat} = (-H0 < nt.Δ_max + -H′) ? 1 : 0
 
 """
 Sample a condidate point form two trees (`tleft` and `tright`) under slice sampling.
