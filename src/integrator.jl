@@ -26,6 +26,7 @@ function step(
 ) where {F<:AbstractFloat,T<:Real}
     @unpack θ, r = z
     ϵ = fwd ? lf.ϵ : -lf.ϵ
+    # Jitter step size; ref: https://github.com/stan-dev/stan/blob/1bb054027b01326e66ec610e95ef9b2a60aa6bec/src/stan/mcmc/hmc/base_hmc.hpp#L177-L178
     iszero(lf.jitter) || (ϵ *= (1 + lf.jitter * (2 * rand() - 1)))
 
     @unpack value, gradient = ∂H∂θ(h, θ)
