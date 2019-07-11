@@ -17,6 +17,8 @@ Hamiltonian dynamics numerical simulation trajectories.
 """
 abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
+const StaticTrajectoryStatistic = NamedTuple{(:x, :y),Tuple{Int64,Float64}}
+
 """
     transition(τ::AbstractTrajectory{I}, h::Hamiltonian, z::PhasePoint)
 
@@ -56,7 +58,9 @@ function transition(
     if is_accept
         z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
     end
-    return z, α, (n_steps=τ.n_steps, is_accept=is_accept)
+    stattuple = (τ.integrator.ϵ, τ.n_steps, is_accept, α, z.ℓπ.value, -neg_energy(z))
+    statnames = (:step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy)
+    return z, NamedTuple{statnames,typeof(stattuple)}(stattuple)
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
@@ -362,31 +366,31 @@ mh_accept(
 
 function transition(
     rng::AbstractRNG,
-    nt::NUTS{I,F,S},
+    τ::NUTS{I,F,S},
     h::Hamiltonian,
     z0::PhasePoint
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler}
     H0 = -neg_energy(z0)
 
-    zleft = z0; zright = z0; zcand = z0; 
+    zleft = z0; zright = z0; z = z0; 
     j = 0; div = Divergence(false, false); sampler = S(rng, H0)
 
     local t
-    while !isdivergent(div) && j <= nt.max_depth
+    while !isdivergent(div) && j <= τ.max_depth
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
         if v == -1
             # Create a tree with depth `j` on the left
-            t = build_tree(rng, nt, h, zleft, sampler, v, j, H0)
+            t = build_tree(rng, τ, h, zleft, sampler, v, j, H0)
             zleft = t.zleft
         else
             # Create a tree with depth `j` on the right
-            t = build_tree(rng, nt, h, zright, sampler, v, j, H0)
+            t = build_tree(rng, τ, h, zright, sampler, v, j, H0)
             zright = t.zright
         end
         # Perform a MH step if not terminated
         if !isdivergent(t.div) && mh_accept(rng, sampler, t.sampler)
-            zcand = t.zcand
+            z = t.zcand
         end
         # Combine the sampler from the proposed tree and the current tree
         sampler = combine(sampler, t.sampler)
@@ -396,7 +400,9 @@ function transition(
         j = j + 1
     end
 
-    return zcand, t.α / t.nα, (tree_depth=j, divergence=div)
+    stattuple = (τ.integrator.ϵ, 2^j, true, t.α / t.nα, z.ℓπ.value, -neg_energy(z), j, div)
+    statnames = (:step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :tree_depth, :divergence)
+    return z, NamedTuple{statnames,typeof(stattuple)}(stattuple)
 end
 
 """
