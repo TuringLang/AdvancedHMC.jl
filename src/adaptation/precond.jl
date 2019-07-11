@@ -247,20 +247,6 @@ end
 
 abstract type AbstractMetric end
 
-struct UnitEuclideanMetric{T} <: AbstractMetric
-    dim::Int
-end
-UnitEuclideanMetric(::Type{T}, dim::Int) where {T} = UnitEuclideanMetric{T}(dim)
-UnitEuclideanMetric(dim::Int) = UnitEuclideanMetric(Float64, dim)
-
-# Create a `UnitEuclideanMetric`; required for an unified interface
-(ue::UnitEuclideanMetric{T})(::Nothing) where {T} = UnitEuclideanMetric(T, ue.dim)
-
-Base.length(e::UnitEuclideanMetric) = e.dim
-(e::UnitEuclideanMetric{T})(dim::Int) where {T} = UnitEuclideanMetric(T, dim)
-(e::UnitEuclideanMetric{T})(::AbstractFloat) where {T} = UnitEuclideanMetric(T, e.dim)
-
-
 function _string_diag(d, n_chars::Int=32) :: String
     s_diag = string(d)
     l = length(s_diag)
@@ -269,6 +255,17 @@ function _string_diag(d, n_chars::Int=32) :: String
     return s_diag[1:min(n_diag_chars,end)] * (l > n_diag_chars ? s_dots : "")
 end
 
+struct UnitEuclideanMetric{T} <: AbstractMetric
+    dim::Int
+end
+UnitEuclideanMetric(::Type{T}, dim::Int) where {T} = UnitEuclideanMetric{T}(dim)
+UnitEuclideanMetric(dim::Int) = UnitEuclideanMetric(Float64, dim)
+
+# Create a `UnitEuclideanMetric`; required for an unified interface
+(ue::UnitEuclideanMetric{T})(::Nothing) where {T} = UnitEuclideanMetric(T, ue.dim)
+(e::UnitEuclideanMetric{T})(::AbstractFloat) where {T} = UnitEuclideanMetric(T, e.dim)
+
+Base.length(e::UnitEuclideanMetric) = e.dim
 Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, "UnitEuclideanMetric($(_string_diag(ones(uem.dim))))")
 
 struct DiagEuclideanMetric{T, A<:AbstractVector{T}} <: AbstractMetric
@@ -290,8 +287,6 @@ DiagEuclideanMetric(D::Int) = DiagEuclideanMetric(Float64, D)
 (dem::DiagEuclideanMetric)(M⁻¹::AbstractVector{<:Real}) = DiagEuclideanMetric(M⁻¹)
 
 Base.length(e::DiagEuclideanMetric) = size(e.M⁻¹, 1)
-(e::DiagEuclideanMetric{T})(dim::Int) where {T} = DiagEuclideanMetric(T, dim)
-
 Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_diag(dem.M⁻¹)))")
 
 function Base.getproperty(dem::DiagEuclideanMetric, d::Symbol)
@@ -324,8 +319,6 @@ DenseEuclideanMetric(D::Int) = DenseEuclideanMetric(Float64, D)
 (dem::DenseEuclideanMetric)(M⁻¹::AbstractMatrix{<:Real}) = DenseEuclideanMetric(M⁻¹)
 
 Base.length(e::DenseEuclideanMetric) = size(e.M⁻¹, 1)
-(e::DenseEuclideanMetric{T})(dim::Int) where {T} = DenseEuclideanMetric(T, dim)
-
 Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_diag(dem.M⁻¹)))")
 
 function Base.getproperty(dem::DenseEuclideanMetric, d::Symbol)
