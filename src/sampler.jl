@@ -57,7 +57,7 @@ function sample(
     time = @elapsed for i = 1:n_samples
         z, αs[i], stat = transition(rng, τ, h, z)
         θs[i], Hs[i] = z.θ, neg_energy(z)
-        statdict = Dict(pairs(stat)...)
+        statdict = Dict{Symbol,Any}(pairs(stat)...)
         statdict[:iteration] = i
         statdict[:hamiltonian_energy] = Hs[i]
         statdict[:acceptance_rate] = αs[i]

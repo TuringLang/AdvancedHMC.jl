@@ -13,38 +13,35 @@ abstract type AbstractAdaptor end
 ## Interface for adaptors
 ##
 
+getM⁻¹(adaptor::T) where {T<:AbstractAdaptor} = error("`getM⁻¹(adaptor::$T)` is not implemented.")
+getϵ(adaptor::T) where {T<:AbstractAdaptor} = error("`getϵ(adaptor::$T)` is not implemented.")
 adapt!(
-    ::AbstractAdaptor,
-    ::AbstractVector{T},
-    ::AbstractFloat,
+    adaptor::T,
+    θ::AbstractVector,
+    α::AbstractFloat,
     is_update::Bool=true
-) where {T<:Real}       = nothing
-getM⁻¹(::AbstractAdaptor) = nothing
-getϵ(::AbstractAdaptor)   = nothing
-reset!(::AbstractAdaptor) = nothing
-finalize!(::AbstractAdaptor) = nothing
+) where {T<:AbstractAdaptor} = error("`adapt!(adaptor::$T, θ::AbstractVector, α::AbstractFloat, is_update::Bool)` is not implemented.")
+reset!(adaptor::T) where {T<:AbstractAdaptor} = error("`reset!(adaptor::$T)` is not implemented.")
+finalize!(adaptor::T) where {T<:AbstractAdaptor} = error("`finalize!(adaptor::$T)` is not implemented.")
 
 struct NoAdaptation <: AbstractAdaptor end
 
 include("stepsize.jl")
 include("precond.jl")
 
-
 ##
 ## Compositional adaptor
 ## TODO: generalise this to a list of adaptors
 ##
 
-struct NaiveHMCAdaptor{M<:AbstractPreconditioner, Tssa <: StepSizeAdaptor} <: AbstractAdaptor
+struct NaiveHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
     pc  :: M
     ssa :: Tssa
 end
-
 Base.show(io::IO, a::NaiveHMCAdaptor) = print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
 
 getM⁻¹(aca::NaiveHMCAdaptor) = getM⁻¹(aca.pc)
-getϵ(aca::NaiveHMCAdaptor)   = getϵ(aca.ssa)
-finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)
+getϵ(aca::NaiveHMCAdaptor) = getϵ(aca.ssa)
 function adapt!(nca::NaiveHMCAdaptor, θ::AbstractVector{<:Real}, α::AbstractFloat)
     adapt!(nca.ssa, θ, α)
     adapt!(nca.pc, θ, α)
@@ -53,6 +50,7 @@ function reset!(aca::NaiveHMCAdaptor)
     reset!(aca.ssa)
     reset!(aca.pc)
 end
+finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)
 
 ##
 ## Stan's windowed adaptor.
