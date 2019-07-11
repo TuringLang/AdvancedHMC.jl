@@ -247,12 +247,13 @@ end
 
 abstract type AbstractMetric end
 
-function _string_diag(d, n_chars::Int=32) :: String
-    s_diag = string(d)
-    l = length(s_diag)
+_string_M⁻¹(mat::AbstractMatrix, n_chars::Int=32) = _string_M⁻¹(LinearAlgebra.diag(mat), n_chars)
+function _string_M⁻¹(vec::AbstractVector, n_chars::Int=32)
+    s_vec = string(vec)
+    l = length(s_vec)
     s_dots = " ...]"
     n_diag_chars = n_chars - length(s_dots)
-    return s_diag[1:min(n_diag_chars,end)] * (l > n_diag_chars ? s_dots : "")
+    return s_vec[1:min(n_diag_chars,end)] * (l > n_diag_chars ? s_dots : "")
 end
 
 struct UnitEuclideanMetric{T} <: AbstractMetric
@@ -265,7 +266,7 @@ UnitEuclideanMetric(dim::Int) = UnitEuclideanMetric(Float64, dim)
 renew(e::UnitEuclideanMetric{T}, ::AbstractFloat) where {T} = UnitEuclideanMetric(T, e.dim)
 
 Base.length(e::UnitEuclideanMetric) = e.dim
-Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, "UnitEuclideanMetric($(_string_diag(ones(uem.dim))))")
+Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, "UnitEuclideanMetric($(_string_M⁻¹(ones(uem.dim))))")
 
 struct DiagEuclideanMetric{T,A<:AbstractVector{T}} <: AbstractMetric
     # Diagnal of the inverse of the mass matrix
@@ -291,7 +292,7 @@ renew(
 ) where {T,A} = DiagEuclideanMetric(M⁻¹, sqrtM⁻¹, _temp)
 
 Base.length(e::DiagEuclideanMetric) = size(e.M⁻¹, 1)
-Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_diag(dem.M⁻¹)))")
+Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
 
 function Base.getproperty(dem::DiagEuclideanMetric, d::Symbol)
     return d === :dim ? size(getfield(dem, :M⁻¹), 1) : getfield(dem, d)
@@ -328,7 +329,7 @@ renew(
 ) where {T,AV,AM,TcholM⁻¹} = DenseEuclideanMetric(M⁻¹, cholM⁻¹, _temp)
 
 Base.length(e::DenseEuclideanMetric) = size(e.M⁻¹, 1)
-Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_diag(dem.M⁻¹)))")
+Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
 
 function Base.getproperty(dem::DenseEuclideanMetric, d::Symbol)
     return d === :dim ? size(getfield(dem, :M⁻¹), 1) : getfield(dem, d)
