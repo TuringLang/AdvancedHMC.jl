@@ -203,19 +203,6 @@ end
 ###
 
 """
-A full binary tree trajectory with only necessary leaves and information stored.
-"""
-struct FullBinaryTree{S<:AbstractTreeSampler}
-    zleft       # left most leaf node
-    zright      # right most leaf node
-    zcand       # candidate leaf node
-    sampler::S  # condidate sampler
-    s           # termination stats, i.e. 0 means termination and 1 means continuation
-    α           # MH stats, i.e. sum of MH accept prob for all leapfrog steps
-    nα          # total # of leap frog steps, i.e. phase points in a trajectory
-end
-
-"""
 Divergence reasons
 - `dynamic`: due to stoping criteria
 - `numeric`: due to large energy deviation from starting (possibly numeric errors)
@@ -227,6 +214,19 @@ end
 
 Base.:*(d1::Divergence, d2::Divergence) = Divergence(d1.dynamic || d2.dynamic, d1.numeric || d2.numeric)
 isdivergent(d::Divergence) = d.dynamic || d.numeric
+
+"""
+A full binary tree trajectory with only necessary leaves and information stored.
+"""
+struct FullBinaryTree{S<:AbstractTreeSampler}
+    zleft       # left most leaf node
+    zright      # right most leaf node
+    zcand       # candidate leaf node
+    sampler::S  # condidate sampler
+    div         # divergence reasons
+    α           # MH stats, i.e. sum of MH accept prob for all leapfrog steps
+    nα          # total # of leap frog steps, i.e. phase points in a trajectory
+end
 
 """
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
@@ -269,8 +269,8 @@ function combine(
     zright = tright.zright
     zcand = combine(rng, tleft, tright)
     sampler = combine(tleft.sampler, tright.sampler)
-    s = tleft.s * tright.s * isturn(h, zleft, zright)
-    return FullBinaryTree(zleft, zright, zcand, sampler, s, tright.α + tright.α, tright.nα + tright.nα)
+    div = tleft.div * tright.div * isturn(h, zleft, zright)
+    return FullBinaryTree(zleft, zright, zcand, sampler, div, tright.α + tright.α, tright.nα + tright.nα)
 end
 
 """
@@ -320,7 +320,7 @@ function build_tree(
         # Recursion - build the left and right subtrees.
         t′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
         # Expand tree if not terminated
-        if !isdivergent(t′.s)
+        if !isdivergent(t′.div)
             # Expand left
             if v == -1
                 t′′ = build_tree(rng, nt, h, t′.zleft, sampler, v, j - 1, H0) # left tree
@@ -356,10 +356,10 @@ function transition(
     H0 = -neg_energy(z0)
 
     zleft = z0; zright = z0; zcand = z0; 
-    j = 0; s = Divergence(false, false); sampler = S(rng, H0)
+    j = 0; div = Divergence(false, false); sampler = S(rng, H0)
 
     local t
-    while !isdivergent(s) && j <= nt.max_depth
+    while !isdivergent(div) && j <= nt.max_depth
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
         if v == -1
@@ -372,13 +372,13 @@ function transition(
             zright = t.zright
         end
         # Perform a MH step if not terminated
-        if !isdivergent(t.s) && mh_accept(rng, sampler, t.sampler)
+        if !isdivergent(t.div) && mh_accept(rng, sampler, t.sampler)
             zcand = t.zcand
         end
         # Combine the sampler from the proposed tree and the current tree
         sampler = combine(sampler, t.sampler)
         # Detect termination
-        s = s * t.s * isturn(h, zleft, zright)
+        div = div * t.div * isturn(h, zleft, zright)
         # Increment tree depth
         j = j + 1
     end
