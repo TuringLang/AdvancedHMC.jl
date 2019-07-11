@@ -12,6 +12,8 @@ using ArgCheck: @argcheck
 
 import StatsBase: sample
 
+function renew end  # this is needed as `AbstractMetric` are in `Adaptation`
+
 # Notations
 # d - dimension of sampling sapce
 # π(θ) - target distribution

@@ -507,7 +507,7 @@ update(
     h::Hamiltonian,
     τ::AbstractProposal,
     dpc::Adaptation.AbstractPreconditioner
-) = renew(h, h.metric(getM⁻¹(dpc))), τ
+) = foldr(renew, (h, h.metric, getM⁻¹(dpc))), τ
 
 update(
     h::Hamiltonian,
@@ -519,7 +519,7 @@ update(
     h::Hamiltonian,
     τ::AbstractProposal,
     ca::Union{Adaptation.NaiveHMCAdaptor, Adaptation.StanHMCAdaptor}
-) = renew(h, h.metric(getM⁻¹(ca.pc))), foldr(renew, (τ, τ.integrator, getϵ(ca.ssa)))
+) = foldr(renew, (h, h.metric, getM⁻¹(ca.pc))), foldr(renew, (τ, τ.integrator, getϵ(ca.ssa)))
 
 function update(
     h::Hamiltonian,
@@ -528,7 +528,7 @@ function update(
     metric = h.metric
     if length(metric) != length(θ)
         metric = metric(length(θ))
-        h = renew(h, h.metric(getM⁻¹(Preconditioner(metric))))
+        h = foldr(renew, (h, h.metric, getM⁻¹(Preconditioner(metric))))
     end
     return h
 end
