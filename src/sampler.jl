@@ -43,14 +43,12 @@ function sample(
     adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
     verbose::Bool=true,
-    progress::Bool=false,
-    return_stats::Bool=false
+    progress::Bool=false
 ) where {T<:Real}
     # Prepare containers to store sampling results
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
-    stats = Vector{Tuple}(undef, n_samples)
     # Prepare phase point for sampling
     h = update(h, θ) # Ensure h.metric has the same dim as θ.
     r = rand(rng, h.metric)
@@ -59,34 +57,28 @@ function sample(
     time = @elapsed for i = 1:n_samples
         z, αs[i], stat = transition(rng, τ, h, z)
         θs[i], Hs[i] = z.θ, neg_energy(z)
-        stat = (
-            :iteration => i, 
-            :hamiltonian_energy => Hs[i], 
-            :acceptance_rate => αs[i],
-            [k => v for (k, v) in pairs(stat)]...
-        )
+        statdict = Dict(pairs(stat)...)
+        statdict[:iteration] = i
+        statdict[:hamiltonian_energy] = Hs[i]
+        statdict[:acceptance_rate] = αs[i]
         if !(adaptor isa Adaptation.NoAdaptation)
             if i <= n_adapts
                 adapt!(adaptor, θs[i], αs[i])
                 # Finalize adapation
                 if i == n_adapts
                     finalize!(adaptor)
-                    if (verbose && !progress)
-                        @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
-                    end
+                    (verbose && !progress) && @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
                 end
                 h, τ = update(h, τ, adaptor)
             end
             # Progress info for adapation
-            progress && (stat = (stat..., :step_size => τ.integrator.ϵ, :precondition => h.metric))
+            progress && (statdict[:step_size] = τ.integrator.ϵ; statdict[:precondition] = h.metric)
         end
-        progress && ProgressMeter.next!(pm; showvalues=Tuple[zip(keys(stat), values(stat))...])
+        progress && ProgressMeter.next!(pm; showvalues=Tuple[zip(keys(statdict), values(statdict))...])
         # Refresh momentum for next iteration
         z = rand_momentum(rng, z, h)
     end
     # Report end of sampling
-    if verbose
-        @info "Finished $n_samples sampling steps in $time (s)" h τ EBFMI(Hs) mean(αs)
-    end
+    verbose && @info "Finished $n_samples sampling steps in $time (s)" h τ EBFMI(Hs) mean(αs)
     return θs
 end
