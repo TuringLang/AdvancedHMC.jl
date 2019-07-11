@@ -55,9 +55,14 @@ function sample(
     z = phasepoint(h, θ, r)
     pm = progress ? Progress(n_samples, desc="Sampling", barlen=31) : nothing
     time = @elapsed for i = 1:n_samples
-        z, αs[i] = transition(rng, τ, h, z)
+        z, αs[i], stat = transition(rng, τ, h, z)
         θs[i], Hs[i] = z.θ, neg_energy(z)
-        progress && (showvalues = Tuple[(:iteration, i), (:hamiltonian_energy, Hs[i]), (:acceptance_rate, αs[i])])
+        stat = (
+            :iteration => i, 
+            :hamiltonian_energy => Hs[i], 
+            :acceptance_rate => αs[i],
+            [k => v for (k, v) in pairs(stat)]...
+        )
         if !(adaptor isa Adaptation.NoAdaptation)
             if i <= n_adapts
                 adapt!(adaptor, θs[i], αs[i])
@@ -69,9 +74,9 @@ function sample(
                 h, τ = update(h, τ, adaptor)
             end
             # Progress info for adapation
-            progress && append!(showvalues, [(:step_size, τ.integrator.ϵ), (:precondition, h.metric)])
+            progress && (stat = (stat..., :step_size => τ.integrator.ϵ, :precondition => h.metric))
         end
-        progress && ProgressMeter.next!(pm; showvalues=showvalues)
+        progress && ProgressMeter.next!(pm; showvalues=Tuple[zip(keys(stat), values(stat))...])
         # Refresh momentum for next iteration
         z = rand_momentum(rng, z, h)
     end

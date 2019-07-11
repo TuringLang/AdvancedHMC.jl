@@ -57,7 +57,7 @@ function transition(
     if is_accept
         z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
     end
-    return z, α
+    return z, α, (n_steps=τ.n_steps, is_accept=is_accept)
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
@@ -212,6 +212,7 @@ struct Divergence
     numeric::Bool
 end
 
+Base.show(io::IO, d::Divergence) = print(io, "Divergence(dynamic=$(d.dynamic), numeric=$(d.numeric))")
 Base.:*(d1::Divergence, d2::Divergence) = Divergence(d1.dynamic || d2.dynamic, d1.numeric || d2.numeric)
 isdivergent(d::Divergence) = d.dynamic || d.numeric
 
@@ -383,7 +384,7 @@ function transition(
         j = j + 1
     end
 
-    return zcand, t.α / t.nα
+    return zcand, t.α / t.nα, (tree_depth=j, divergence=div)
 end
 
 """
