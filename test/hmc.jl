@@ -2,6 +2,7 @@
 const PROGRESS = length(ARGS) > 0 && ARGS[1] == "--progress" ? true : false
 
 using Test, AdvancedHMC, LinearAlgebra
+using AdvancedHMC: renew
 using Statistics: mean, var, cov
 include("common.jl")
 
@@ -48,7 +49,7 @@ n_adapts = 2_000
                 )
                     # For `Preconditioner`, we use the pre-defined step size as the method cannot adapt the step size.
                     # For other adapatation methods that are able to adpat the step size, we use `find_good_eps`.
-                    τ_used = adaptorsym == :PreconditionerOnly ? τ : τ(lf(find_good_eps(h, θ_init)))
+                    τ_used = adaptorsym == :PreconditionerOnly ? τ : foldr(renew, (τ, lf, find_good_eps(h, θ_init)))
                     samples = sample(h, τ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
                     @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
                 end

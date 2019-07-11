@@ -37,13 +37,12 @@ struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
     integrator  ::  I
     n_steps     ::  Int
 end
+Base.show(io::IO, τ::StaticTrajectory) = print(io, "StaticTrajectory(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
 
 """
 Create a `StaticTrajectory` with a new integrator
 """
-function (τ::StaticTrajectory)(integrator::AbstractIntegrator)
-    return StaticTrajectory(integrator, τ.n_steps)
-end
+renew(τ::StaticTrajectory{I}, integrator::I, n_steps::Int=τ.n_steps) where {I} = StaticTrajectory(integrator, n_steps)
 
 function transition(
     rng::AbstractRNG,
@@ -69,13 +68,12 @@ struct HMCDA{I<:AbstractIntegrator} <: DynamicTrajectory{I}
     integrator  ::  I
     λ           ::  AbstractFloat
 end
+Base.show(io::IO, τ::HMCDA) = print(io, "HMCDA(integrator=$(τ.integrator), λ=$(τ.λ)))")
 
 """
 Create a `HMCDA` with a new integrator
 """
-function (τ::HMCDA)(integrator::AbstractIntegrator)
-    return HMCDA(integrator, τ.λ)
-end
+renew(τ::HMCDA{I}, integrator::I, λ::AbstractFloat=τ.λ)  where {I} = HMCDA(integrator, λ)
 
 function transition(
     rng::AbstractRNG,
@@ -163,12 +161,18 @@ struct NUTS{
     Δ_max       ::  F
     samplerType ::  Type{S}
 end
+Base.show(io::IO, τ::NUTS{I,F,S}) where {I,F,S<:SliceTreeSampler} = 
+    print(io, "NUTS{Slice}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+Base.show(io::IO, τ::NUTS{I,F,S}) where {I,F,S<:MultinomialTreeSampler} = 
+    print(io, "NUTS{Multinomial}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 
-Base.show(io::IO, n::NUTS{I,F,S}) where {I,F,S<:SliceTreeSampler} = 
-    print(io, "NUTS{Slice}(integrator=$(n.integrator), max_depth=$(n.max_depth)), Δ_max=$(n.Δ_max))")
-
-Base.show(io::IO, n::NUTS{I,F,S}) where {I,F,S<:MultinomialTreeSampler} = 
-    print(io, "NUTS{Multinomial}(integrator=$(n.integrator), max_depth=$(n.max_depth)), Δ_max=$(n.Δ_max))")
+renew(
+    τ::NUTS{I,F,S}, 
+    integrator::I, 
+    max_depth::Int=τ.max_depth, 
+    Δ_max::F=τ.Δ_max, 
+    samplerType::Type{S}=τ.samplerType
+)  where {I,F,S} = NUTS(integrator, max_depth, Δ_max, samplerType)
 
 """
 Helper dictionary used to allow users pass symbol keyword argument
@@ -503,19 +507,19 @@ update(
     h::Hamiltonian,
     τ::AbstractProposal,
     dpc::Adaptation.AbstractPreconditioner
-) = h(getM⁻¹(dpc)), τ
+) = renew(h, h.metric(getM⁻¹(dpc))), τ
 
 update(
     h::Hamiltonian,
     τ::AbstractProposal,
     da::NesterovDualAveraging
-) = h, τ(τ.integrator(getϵ(da)))
+) = h, foldr(renew, (τ, τ.integrator, getϵ(da)))
 
 update(
     h::Hamiltonian,
     τ::AbstractProposal,
     ca::Union{Adaptation.NaiveHMCAdaptor, Adaptation.StanHMCAdaptor}
-) = h(getM⁻¹(ca.pc)), τ(τ.integrator(getϵ(ca.ssa)))
+) = renew(h, h.metric(getM⁻¹(ca.pc))), foldr(renew, (τ, τ.integrator, getϵ(ca.ssa)))
 
 function update(
     h::Hamiltonian,
@@ -524,7 +528,7 @@ function update(
     metric = h.metric
     if length(metric) != length(θ)
         metric = metric(length(θ))
-        h = h(getM⁻¹(Preconditioner(metric)))
+        h = renew(h, h.metric(getM⁻¹(Preconditioner(metric))))
     end
     return h
 end

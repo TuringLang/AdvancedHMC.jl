@@ -14,7 +14,7 @@ Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round(l.ϵ; sigdigits=
 Leapfrog(ϵ::T) where {T<:AbstractFloat} = Leapfrog(ϵ, zero(T))
 
 # Create a `Leapfrog` with a new `ϵ`
-(lf::Leapfrog)(ϵ::AbstractFloat) = Leapfrog(ϵ, lf.jitter)
+renew(lf::Leapfrog{T}, ϵ::T, jitter::T=lf.jitter) where {T} = Leapfrog(ϵ, lf.jitter)
 
 # TODO: double check the function below to see if it is type stable or not
 function step(
