@@ -45,6 +45,11 @@ function sample(
     verbose::Bool=true,
     progress::Bool=false
 ) where {T<:Real}
+    if verbose
+        # Verbosity formmater
+        rep1 = x -> replace(x, (r"AdvancedHMC.(Adaptation.)?" => ""))
+        rep2 = x -> replace(x, ( r"\{.+\}" => ""))
+    end
     # Prepare containers to store sampling results
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
@@ -69,7 +74,12 @@ function sample(
                 # Finalize adapation
                 if i == n_adapts
                     finalize!(adaptor)
-                    verbose && @info "Finished $n_adapts adapation steps" typeof(adaptor) τ.integrator.ϵ h.metric
+                    if (verbose && !progress)
+                        step_size = τ.integrator.ϵ
+                        adapation_type = string(typeof(adaptor)) |> rep1 |> rep2
+                        precondition = h.metric
+                        @info "Finished $n_adapts adapation steps" adapation_type step_size precondition
+                    end
                 end
                 h, τ = update(h, τ, adaptor)
             end
@@ -80,6 +90,10 @@ function sample(
         # Refresh momentum for next iteration
         z = rand_momentum(rng, z, h)
     end
-    verbose && @info "Finished $n_samples sampling steps in $time (s)" typeof(h.metric) typeof(τ) EBFMI(Hs) mean(αs)
+    if verbose
+        metric_type =  string(typeof(h.metric)) |> rep1 |> rep2
+        trajctory_type = string(typeof(τ)) |> rep1 |> rep2
+        @info "Finished $n_samples sampling steps in $time (s)" metric_type trajctory_type EBFMI(Hs) mean(αs)
+    end
     return θs
 end
