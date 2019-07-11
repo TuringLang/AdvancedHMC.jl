@@ -216,11 +216,25 @@ struct FullBinaryTree{S<:AbstractTreeSampler}
 end
 
 """
+Divergence reasons
+- `dynamic`: due to stoping criteria
+- `numeric`: due to large energy deviation from starting (possibly numeric errors)
+"""
+struct Divergence
+    dynamic::Bool
+    numeric::Bool
+end
+
+Base.:*(d1::Divergence, d2::Divergence) = Divergence(d1.dynamic || d2.dynamic, d1.numeric || d2.numeric)
+isdivergent(d::Divergence) = d.dynamic || d.numeric
+
+"""
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 """
 function isturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
     θdiff = zright.θ - zleft.θ
-    return (dot(θdiff, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(θdiff, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
+    s = (dot(θdiff, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(θdiff, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
+    return Divergence(s == 0, false)
 end
 
 """
@@ -231,13 +245,13 @@ isdivergent(
     nt::NUTS,
     H0::F,
     H′::F
-) where {F<:AbstractFloat} = (s.logu < nt.Δ_max + -H′) ? 0 : 1
+) where {F<:AbstractFloat} = Divergence(false, !(s.logu < nt.Δ_max + -H′))
 isdivergent(
     s::MultinomialTreeSampler,
     nt::NUTS,
     H0::F,
     H′::F
-) where {F<:AbstractFloat} = (-H0 < nt.Δ_max + -H′) ? 0 : 1
+) where {F<:AbstractFloat} = Divergence(false, !(-H0 < nt.Δ_max + -H′))
 
 """
     combine(h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree)
@@ -299,14 +313,14 @@ function build_tree(
         z′ = step(nt.integrator, h, z, v)
         H′ = -neg_energy(z′)
         basesampler = makebase(sampler, H′)
-        s′ = 1 - isdivergent(basesampler, nt, H0, H′)
+        div = isdivergent(basesampler, nt, H0, H′)
         α′ = exp(min(0, H0 - H′))
-        return FullBinaryTree(z′, z′, z′, basesampler, s′, α′, 1)
+        return FullBinaryTree(z′, z′, z′, basesampler, div, α′, 1)
     else
         # Recursion - build the left and right subtrees.
         t′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
         # Expand tree if not terminated
-        if t′.s == 1
+        if !isdivergent(t′.s)
             # Expand left
             if v == -1
                 t′′ = build_tree(rng, nt, h, t′.zleft, sampler, v, j - 1, H0) # left tree
@@ -341,10 +355,11 @@ function transition(
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler}
     H0 = -neg_energy(z0)
 
-    zleft = z0; zright = z0; zcand = z0; j = 0; s = 1; sampler = S(rng, H0)
+    zleft = z0; zright = z0; zcand = z0; 
+    j = 0; s = Divergence(false, false); sampler = S(rng, H0)
 
     local t
-    while s == 1 && j <= nt.max_depth
+    while !isdivergent(s) && j <= nt.max_depth
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
         if v == -1
@@ -357,7 +372,7 @@ function transition(
             zright = t.zright
         end
         # Perform a MH step if not terminated
-        if t.s == 1 && mh_accept(rng, sampler, t.sampler)
+        if !isdivergent(t.s) && mh_accept(rng, sampler, t.sampler)
             zcand = t.zcand
         end
         # Combine the sampler from the proposed tree and the current tree
