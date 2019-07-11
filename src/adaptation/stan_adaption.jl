@@ -22,6 +22,8 @@ struct StanHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: Abstr
     term_buffer :: Int
     state       :: StanHMCAdaptorState
 end
+Base.show(io::IO, a::StanHMCAdaptor) = 
+    print(io, "StanHMCAdaptor(n_adapts=$(a.n_adapts), pc=$(a.pc), ssa=$(a.ssa), init_buffer=$(a.init_buffer), term_buffer=$(a.term_buffer))")
 
 function StanHMCAdaptor(
     n_adapts::Int,

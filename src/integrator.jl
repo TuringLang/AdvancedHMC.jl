@@ -9,6 +9,8 @@ struct Leapfrog{T<:AbstractFloat} <: AbstractIntegrator
     ϵ   ::  T
 end
 
+Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round(l.ϵ; sigdigits=3)))")
+
 # Create a `Leapfrog` with a new `ϵ`
 function (::Leapfrog)(ϵ::AbstractFloat)
     return Leapfrog(ϵ)

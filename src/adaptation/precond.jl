@@ -131,6 +131,8 @@ end
 
 # Unit
 struct UnitPreconditioner{T} <: AbstractPreconditioner end
+Base.show(io::IO, ::UnitPreconditioner) = print(io, "UnitPreconditioner")
+
 UnitPreconditioner(::Type{T} = Float64) where {T} = UnitPreconditioner{T}()
 
 string(::UnitPreconditioner) = "I"
@@ -149,6 +151,7 @@ mutable struct DiagPreconditioner{T<:Real, AT<:AbstractVector{T}, TEst <: VarEst
     ve  :: TEst
     var :: AT
 end
+Base.show(io::IO, ::DiagPreconditioner) = print(io, "DiagPreconditioner")
 
 # Diagonal
 DiagPreconditioner(d::Int, n_min::Int=10) = DiagPreconditioner(Float64, d, n_min)
@@ -181,6 +184,7 @@ mutable struct DensePreconditioner{T<:AbstractFloat, TEst <: CovEstimator{T}} <:
     ce    :: TEst
     covar :: Matrix{T}
 end
+Base.show(io::IO, ::DensePreconditioner) = print(io, "DensePreconditioner")
 
 DensePreconditioner(d::Integer, n_min::Int=10) = DensePreconditioner(Float64, d, n_min)
 function DensePreconditioner(::Type{T}, d::Integer, n_min::Int=10) where {T}
@@ -257,12 +261,12 @@ Base.length(e::UnitEuclideanMetric) = e.dim
 function _string_diag(d, n_chars::Int=32) :: String
     s_diag = string(d)
     l = length(s_diag)
-    s_dots = " ..."
+    s_dots = " ...]"
     n_diag_chars = n_chars - length(s_dots)
     return s_diag[1:min(n_diag_chars,end)] * (l > n_diag_chars ? s_dots : "")
 end
 
-Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, _string_diag(ones(uem.dim)))
+Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, "UnitEuclideanMetric($(_string_diag(ones(uem.dim))))")
 
 struct DiagEuclideanMetric{T, A<:AbstractVector{T}} <: AbstractMetric
     # Diagnal of the inverse of the mass matrix
@@ -285,7 +289,7 @@ DiagEuclideanMetric(D::Int) = DiagEuclideanMetric(Float64, D)
 Base.length(e::DiagEuclideanMetric) = size(e.M⁻¹, 1)
 (e::DiagEuclideanMetric{T})(dim::Int) where {T} = DiagEuclideanMetric(T, dim)
 
-Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, _string_diag(dem.M⁻¹))
+Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_diag(dem.M⁻¹)))")
 
 function Base.getproperty(dem::DiagEuclideanMetric, d::Symbol)
     return d === :dim ? size(getfield(dem, :M⁻¹), 1) : getfield(dem, d)
@@ -319,7 +323,7 @@ DenseEuclideanMetric(D::Int) = DenseEuclideanMetric(Float64, D)
 Base.length(e::DenseEuclideanMetric) = size(e.M⁻¹, 1)
 (e::DenseEuclideanMetric{T})(dim::Int) where {T} = DenseEuclideanMetric(T, dim)
 
-Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, _string_diag(diag(dem.M⁻¹)))
+Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_diag(dem.M⁻¹)))")
 
 function Base.getproperty(dem::DenseEuclideanMetric, d::Symbol)
     return d === :dim ? size(getfield(dem, :M⁻¹), 1) : getfield(dem, d)

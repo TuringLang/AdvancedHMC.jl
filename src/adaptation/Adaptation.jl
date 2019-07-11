@@ -40,6 +40,8 @@ struct NaiveHMCAdaptor{M<:AbstractPreconditioner, Tssa <: StepSizeAdaptor} <: Ab
     ssa :: Tssa
 end
 
+Base.show(io::IO, a::NaiveHMCAdaptor) = print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
+
 getM⁻¹(aca::NaiveHMCAdaptor) = getM⁻¹(aca.pc)
 getϵ(aca::NaiveHMCAdaptor)   = getϵ(aca.ssa)
 finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)

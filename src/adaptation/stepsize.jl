@@ -59,6 +59,7 @@ struct NesterovDualAveraging{T<:AbstractFloat} <: StepSizeAdaptor
   δ     :: T
   state :: DAState{T}
 end
+Base.show(io::IO, a::NesterovDualAveraging) = print(io, "NesterovDualAveraging(γ=$(a.γ), t_0=$(a.t_0), κ=$(a.κ), δ=$(a.δ))")
 
 reset!(da::NesterovDualAveraging) = reset!(da.state)
 

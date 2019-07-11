@@ -112,6 +112,8 @@ struct SliceTreeSampler{F<:AbstractFloat} <: AbstractTreeSampler
     n       ::  Int   # number of acceptable candicates, i.e. those with prob larger than slice variable u
 end
 
+Base.show(io::IO, s::SliceTreeSampler) = print(io, "SliceTreeSampler(logu=$(s.logu), n=$(s.n))")
+
 """
 Multinomial sampler carried during the building of the tree.
 It contains the weight of the tree, defined as the total probabilities of the leaves.
@@ -161,6 +163,12 @@ struct NUTS{
     Δ_max       ::  F
     samplerType ::  Type{S}
 end
+
+Base.show(io::IO, n::NUTS{I,F,S}) where {I,F,S<:SliceTreeSampler} = 
+    print(io, "NUTS{Slice}(integrator=$(n.integrator), max_depth=$(n.max_depth)), Δ_max=$(n.Δ_max))")
+
+Base.show(io::IO, n::NUTS{I,F,S}) where {I,F,S<:MultinomialTreeSampler} = 
+    print(io, "NUTS{Multinomial}(integrator=$(n.integrator), max_depth=$(n.max_depth)), Δ_max=$(n.Δ_max))")
 
 """
 Helper dictionary used to allow users pass symbol keyword argument
