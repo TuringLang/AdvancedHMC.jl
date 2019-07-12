@@ -221,16 +221,16 @@ end
 """
 Divergence reasons
 - `dynamic`: due to stoping criteria
-- `numeric`: due to large energy deviation from starting (possibly numeric errors)
+- `numerical`: due to large energy deviation from starting (possibly numerical errors)
 """
 struct Divergence
     dynamic::Bool
-    numeric::Bool
+    numerical::Bool
 end
 
-Base.show(io::IO, d::Divergence) = print(io, "Divergence(dynamic=$(d.dynamic), numeric=$(d.numeric))")
-Base.:*(d1::Divergence, d2::Divergence) = Divergence(d1.dynamic || d2.dynamic, d1.numeric || d2.numeric)
-isdivergent(d::Divergence) = d.dynamic || d.numeric
+Base.show(io::IO, d::Divergence) = print(io, "Divergence(dynamic=$(d.dynamic), numerical=$(d.numerical))")
+Base.:*(d1::Divergence, d2::Divergence) = Divergence(d1.dynamic || d2.dynamic, d1.numerical || d2.numerical)
+isdivergent(d::Divergence) = d.dynamic || d.numerical
 
 """
 A full binary tree trajectory with only necessary leaves and information stored.
@@ -400,8 +400,8 @@ function transition(
         j = j + 1
     end
 
-    stattuple = (τ.integrator.ϵ, 2^j, true, t.α / t.nα, z.ℓπ.value, -neg_energy(z), j, div)
-    statnames = (:step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :tree_depth, :divergence)
+    stattuple = (τ.integrator.ϵ, 2^j, true, t.α / t.nα, z.ℓπ.value, -neg_energy(z), j, div.numerical)
+    statnames = (:step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :tree_depth, :numerical_error)
     return z, NamedTuple{statnames,typeof(stattuple)}(stattuple)
 end
 
