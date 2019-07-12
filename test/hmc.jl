@@ -30,7 +30,7 @@ n_adapts = 2_000
                 :SliceNUTS => NUTS(lf; sampling=:slice),
             )
                 @testset  "NoAdaptation" begin
-                    samples = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
+                    samples, stats = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
                     @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
                 end
 
@@ -50,7 +50,7 @@ n_adapts = 2_000
                     # For `Preconditioner`, we use the pre-defined step size as the method cannot adapt the step size.
                     # For other adapatation methods that are able to adpat the step size, we use `find_good_eps`.
                     τ_used = adaptorsym == :PreconditionerOnly ? τ : foldr(renew, (τ, lf, find_good_eps(h, θ_init)))
-                    samples = sample(h, τ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
+                    samples, stats = sample(h, τ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
                     @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
                 end
             end
