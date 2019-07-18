@@ -17,8 +17,6 @@ Hamiltonian dynamics numerical simulation trajectories.
 """
 abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
-const StaticTrajectoryStatistic = NamedTuple{(:x, :y),Tuple{Int64,Float64}}
-
 """
     transition(τ::AbstractTrajectory{I}, h::Hamiltonian, z::PhasePoint)
 
