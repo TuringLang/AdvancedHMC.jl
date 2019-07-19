@@ -56,9 +56,15 @@ function transition(
     if is_accept
         z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
     end
-    stattuple = (τ.integrator.ϵ, τ.n_steps, is_accept, α, z.ℓπ.value, -neg_energy(z))
-    statnames = (:step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy)
-    return z, NamedTuple{statnames,typeof(stattuple)}(stattuple)
+    stat = (
+        step_size=τ.integrator.ϵ, 
+        n_steps=τ.n_steps, 
+        is_accept=is_accept, 
+        acceptance_rate=α, 
+        log_density=z.ℓπ.value, 
+        hamiltonian_energy=-neg_energy(z), 
+       )
+    return z, stat
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
@@ -398,9 +404,17 @@ function transition(
         j = j + 1
     end
 
-    stattuple = (τ.integrator.ϵ, 2^j, true, t.α / t.nα, z.ℓπ.value, -neg_energy(z), j, div.numerical)
-    statnames = (:step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :tree_depth, :numerical_error)
-    return z, NamedTuple{statnames,typeof(stattuple)}(stattuple)
+    stat = (
+        step_size=τ.integrator.ϵ, 
+        n_steps=2^j, 
+        is_accept=true, 
+        acceptance_rate=t.α / t.nα, 
+        log_density=z.ℓπ.value, 
+        hamiltonian_energy=-neg_energy(z), 
+        tree_depth=j, 
+        numerical_error=div.numerical,
+       )
+    return z, stat
 end
 
 """
