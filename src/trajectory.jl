@@ -39,11 +39,6 @@ struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
 end
 Base.show(io::IO, τ::StaticTrajectory) = print(io, "StaticTrajectory(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
 
-"""
-Create a `StaticTrajectory` with a new integrator
-"""
-renew(τ::StaticTrajectory{I}, integrator::I, n_steps::Int=τ.n_steps) where {I} = StaticTrajectory(integrator, n_steps)
-
 function transition(
     rng::AbstractRNG,
     τ::StaticTrajectory,
@@ -77,11 +72,6 @@ struct HMCDA{I<:AbstractIntegrator} <: DynamicTrajectory{I}
     λ           ::  AbstractFloat
 end
 Base.show(io::IO, τ::HMCDA) = print(io, "HMCDA(integrator=$(τ.integrator), λ=$(τ.λ)))")
-
-"""
-Create a `HMCDA` with a new integrator
-"""
-renew(τ::HMCDA{I}, integrator::I, λ::AbstractFloat=τ.λ)  where {I} = HMCDA(integrator, λ)
 
 function transition(
     rng::AbstractRNG,
@@ -173,14 +163,6 @@ Base.show(io::IO, τ::NUTS{I,F,S}) where {I,F,S<:SliceTreeSampler} =
     print(io, "NUTS{Slice}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 Base.show(io::IO, τ::NUTS{I,F,S}) where {I,F,S<:MultinomialTreeSampler} = 
     print(io, "NUTS{Multinomial}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
-
-renew(
-    τ::NUTS{I,F,S}, 
-    integrator::I, 
-    max_depth::Int=τ.max_depth, 
-    Δ_max::F=τ.Δ_max, 
-    samplerType::Type{S}=τ.samplerType
-)  where {I,F,S} = NUTS(integrator, max_depth, Δ_max, samplerType)
 
 """
 Helper dictionary used to allow users pass symbol keyword argument
@@ -521,23 +503,37 @@ end
 #### Adaption
 ####
 
-update(
+function update(
     h::Hamiltonian,
     τ::AbstractProposal,
-    dpc::Adaptation.AbstractPreconditioner
-) = foldr(renew, (h, h.metric, getM⁻¹(dpc))), τ
+    pc::Adaptation.AbstractPreconditioner
+) 
+    metric = renew(h.metric, getM⁻¹(pc))
+    h = reconstruct(h, metric=metric)
+    return h, τ
+end
 
-update(
+function update(
     h::Hamiltonian,
     τ::AbstractProposal,
     da::NesterovDualAveraging
-) = h, foldr(renew, (τ, τ.integrator, getϵ(da)))
+) 
+    integrator = reconstruct(τ.integrator, ϵ=getϵ(da))
+    τ = reconstruct(τ, integrator=integrator)
+    return h, τ
+end
 
-update(
+function update(
     h::Hamiltonian,
     τ::AbstractProposal,
     ca::Union{Adaptation.NaiveHMCAdaptor, Adaptation.StanHMCAdaptor}
-) = foldr(renew, (h, h.metric, getM⁻¹(ca.pc))), foldr(renew, (τ, τ.integrator, getϵ(ca.ssa)))
+)
+    metric = renew(h.metric, getM⁻¹(ca.pc))
+    h = reconstruct(h, metric=metric)
+    integrator = reconstruct(τ.integrator, ϵ=getϵ(ca.ssa))
+    τ = reconstruct(τ, integrator=integrator)
+    return h, τ
+end
 
 function update(
     h::Hamiltonian,
@@ -545,8 +541,8 @@ function update(
 ) where {T<:Real}
     metric = h.metric
     if length(metric) != length(θ)
-        metric = metric(length(θ))
-        h = foldr(renew, (h, h.metric, getM⁻¹(Preconditioner(metric))))
+        metric = typeof(metric)(length(θ))
+        h = reconstruct(h, metric=metric)
     end
     return h
 end
