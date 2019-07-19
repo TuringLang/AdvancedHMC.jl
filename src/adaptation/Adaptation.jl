@@ -5,7 +5,6 @@ using Random: GLOBAL_RNG, AbstractRNG
 using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky
 import LinearAlgebra, Statistics
 using ..AdvancedHMC: DEBUG
-import ..AdvancedHMC: renew
 using Parameters: @unpack, @pack!
 
 abstract type AbstractAdaptor end
