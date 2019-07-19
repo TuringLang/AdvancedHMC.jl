@@ -234,7 +234,7 @@ end
 
 Base.show(io::IO, d::Termination) = print(io, "Termination(dynamic=$(d.dynamic), numerical=$(d.numerical))")
 Base.:*(d1::Termination, d2::Termination) = Termination(d1.dynamic || d2.dynamic, d1.numerical || d2.numerical)
-isdivergent(d::Termination) = d.dynamic || d.numerical
+isterminated(d::Termination) = d.dynamic || d.numerical
 
 """
 A full binary tree trajectory with only necessary leaves and information stored.
@@ -244,7 +244,7 @@ struct FullBinaryTree{S<:AbstractTreeSampler}
     zright      # right most leaf node
     zcand       # candidate leaf node
     sampler::S  # condidate sampler
-    div         # divergence reasons
+    termination # termination reasons
     α           # MH stats, i.e. sum of MH accept prob for all leapfrog steps
     nα          # total # of leap frog steps, i.e. phase points in a trajectory
 end
@@ -259,15 +259,15 @@ function isturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
 end
 
 """
-Check divergence of a Hamiltonian trajectory.
+Check termination of a Hamiltonian trajectory.
 """
-isdivergent(
+isterminated(
     s::SliceTreeSampler,
     nt::NUTS,
     H0::F,
     H′::F
 ) where {F<:AbstractFloat} = Termination(false, !(s.logu < nt.Δ_max + -H′))
-isdivergent(
+isterminated(
     s::MultinomialTreeSampler,
     nt::NUTS,
     H0::F,
@@ -290,8 +290,8 @@ function combine(
     zright = tright.zright
     zcand = combine(rng, tleft, tright)
     sampler = combine(tleft.sampler, tright.sampler)
-    div = tleft.div * tright.div * isturn(h, zleft, zright)
-    return FullBinaryTree(zleft, zright, zcand, sampler, div, tright.α + tright.α, tright.nα + tright.nα)
+    termination = tleft.termination * tright.termination * isturn(h, zleft, zright)
+    return FullBinaryTree(zleft, zright, zcand, sampler, termination, tright.α + tright.α, tright.nα + tright.nα)
 end
 
 """
@@ -334,14 +334,14 @@ function build_tree(
         z′ = step(nt.integrator, h, z, v)
         H′ = -neg_energy(z′)
         basesampler = makebase(sampler, H′)
-        div = isdivergent(basesampler, nt, H0, H′)
+        termination = isterminated(basesampler, nt, H0, H′)
         α′ = exp(min(0, H0 - H′))
-        return FullBinaryTree(z′, z′, z′, basesampler, div, α′, 1)
+        return FullBinaryTree(z′, z′, z′, basesampler, termination, α′, 1)
     else
         # Recursion - build the left and right subtrees.
         t′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
         # Expand tree if not terminated
-        if !isdivergent(t′.div)
+        if !isterminated(t′.termination)
             # Expand left
             if v == -1
                 t′′ = build_tree(rng, nt, h, t′.zleft, sampler, v, j - 1, H0) # left tree
@@ -377,10 +377,10 @@ function transition(
     H0 = -neg_energy(z0)
 
     zleft = z0; zright = z0; z = z0; 
-    j = 0; div = Termination(false, false); sampler = S(rng, H0)
+    j = 0; termination = Termination(false, false); sampler = S(rng, H0)
 
     local t
-    while !isdivergent(div) && j <= τ.max_depth
+    while !isterminated(termination) && j <= τ.max_depth
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
         if v == -1
@@ -393,13 +393,13 @@ function transition(
             zright = t.zright
         end
         # Perform a MH step if not terminated
-        if !isdivergent(t.div) && mh_accept(rng, sampler, t.sampler)
+        if !isterminated(t.termination) && mh_accept(rng, sampler, t.sampler)
             z = t.zcand
         end
         # Combine the sampler from the proposed tree and the current tree
         sampler = combine(sampler, t.sampler)
         # Detect termination
-        div = div * t.div * isturn(h, zleft, zright)
+        termination = termination * t.termination * isturn(h, zleft, zright)
         # Increment tree depth
         j = j + 1
     end
@@ -412,7 +412,7 @@ function transition(
         log_density=z.ℓπ.value, 
         hamiltonian_energy=-neg_energy(z), 
         tree_depth=j, 
-        numerical_error=div.numerical,
+        numerical_error=termination.numerical,
        )
     return z, stat
 end
