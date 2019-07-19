@@ -9,9 +9,6 @@ end
 Base.show(io::IO, h::Hamiltonian) = print(io, "Hamiltonian(metric=$(h.metric))")
 
 
-# Create a `Hamiltonian` with a new `M⁻¹`
-renew(h::Hamiltonian{M,Tl,Tg}, metric::M, ℓπ::Tl=h.ℓπ, ∂ℓπ∂θ::Tg=h.∂ℓπ∂θ) where {M,Tl,Tg} = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-
 struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}}
     value::Tv    # Cached value, e.g. logπ(θ).
     gradient::Tg # Cached gradient, e.g. ∇logπ(θ).
