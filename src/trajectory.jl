@@ -223,18 +223,18 @@ end
 ###
 
 """
-Divergence reasons
+Termination reasons
 - `dynamic`: due to stoping criteria
 - `numerical`: due to large energy deviation from starting (possibly numerical errors)
 """
-struct Divergence
+struct Termination
     dynamic::Bool
     numerical::Bool
 end
 
-Base.show(io::IO, d::Divergence) = print(io, "Divergence(dynamic=$(d.dynamic), numerical=$(d.numerical))")
-Base.:*(d1::Divergence, d2::Divergence) = Divergence(d1.dynamic || d2.dynamic, d1.numerical || d2.numerical)
-isdivergent(d::Divergence) = d.dynamic || d.numerical
+Base.show(io::IO, d::Termination) = print(io, "Termination(dynamic=$(d.dynamic), numerical=$(d.numerical))")
+Base.:*(d1::Termination, d2::Termination) = Termination(d1.dynamic || d2.dynamic, d1.numerical || d2.numerical)
+isdivergent(d::Termination) = d.dynamic || d.numerical
 
 """
 A full binary tree trajectory with only necessary leaves and information stored.
@@ -255,7 +255,7 @@ Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonia
 function isturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
     θdiff = zright.θ - zleft.θ
     s = (dot(θdiff, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(θdiff, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
-    return Divergence(s == 0, false)
+    return Termination(s == 0, false)
 end
 
 """
@@ -266,13 +266,13 @@ isdivergent(
     nt::NUTS,
     H0::F,
     H′::F
-) where {F<:AbstractFloat} = Divergence(false, !(s.logu < nt.Δ_max + -H′))
+) where {F<:AbstractFloat} = Termination(false, !(s.logu < nt.Δ_max + -H′))
 isdivergent(
     s::MultinomialTreeSampler,
     nt::NUTS,
     H0::F,
     H′::F
-) where {F<:AbstractFloat} = Divergence(false, !(-H0 < nt.Δ_max + -H′))
+) where {F<:AbstractFloat} = Termination(false, !(-H0 < nt.Δ_max + -H′))
 
 """
     combine(h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree)
@@ -377,7 +377,7 @@ function transition(
     H0 = -neg_energy(z0)
 
     zleft = z0; zright = z0; z = z0; 
-    j = 0; div = Divergence(false, false); sampler = S(rng, H0)
+    j = 0; div = Termination(false, false); sampler = S(rng, H0)
 
     local t
     while !isdivergent(div) && j <= τ.max_depth
