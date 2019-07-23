@@ -140,7 +140,7 @@ UnitPreconditioner(::Type{T}=Float64) where {T} = UnitPreconditioner{T}()
 
 string(::UnitPreconditioner) = "I"
 reset!(::UnitPreconditioner) = nothing
-getM⁻¹(dpc::UnitPreconditioner{T}) where {T} = one(T)
+getM⁻¹(dpc::UnitPreconditioner{T}) where {T<:AbstractFloat} = UniformScaling{T}(one(T))
 adapt!(
     ::UnitPreconditioner,
     ::AbstractVector{<:Real},
@@ -257,13 +257,11 @@ function _string_M⁻¹(vec::AbstractVector, n_chars::Int=32)
 end
 
 struct UnitEuclideanMetric{T} <: AbstractMetric
+    M⁻¹::UniformScaling{T}
     dim::Int
 end
-UnitEuclideanMetric(::Type{T}, dim::Int) where {T} = UnitEuclideanMetric{T}(dim)
+UnitEuclideanMetric(::Type{T}, dim::Int) where {T} = UnitEuclideanMetric{T}(UniformScaling{T}(one(T)), dim)
 UnitEuclideanMetric(dim::Int) = UnitEuclideanMetric(Float64, dim)
-
-# Create a `UnitEuclideanMetric`
-renew(e::UnitEuclideanMetric{T}, ::AbstractFloat) where {T} = UnitEuclideanMetric(T, e.dim)
 
 Base.length(e::UnitEuclideanMetric) = e.dim
 Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, "UnitEuclideanMetric($(_string_M⁻¹(ones(uem.dim))))")
@@ -282,14 +280,6 @@ function DiagEuclideanMetric(M⁻¹::AbstractVector{T}) where {T<:Real}
 end
 DiagEuclideanMetric(::Type{T}, D::Int) where {T} = DiagEuclideanMetric(ones(T, D))
 DiagEuclideanMetric(D::Int) = DiagEuclideanMetric(Float64, D)
-
-# Create a `DiagEuclideanMetric` with a new `M⁻¹`
-renew(
-    dem::DiagEuclideanMetric{T,A}, 
-    M⁻¹::A, 
-    sqrtM⁻¹::A=dem.sqrtM⁻¹, 
-    _temp::A=dem._temp
-) where {T,A} = DiagEuclideanMetric(M⁻¹, sqrtM⁻¹, _temp)
 
 Base.length(e::DiagEuclideanMetric) = size(e.M⁻¹, 1)
 Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
@@ -319,14 +309,6 @@ function DenseEuclideanMetric(M⁻¹::AbstractMatrix{T}) where {T<:Real}
 end
 DenseEuclideanMetric(::Type{T}, D::Int) where {T} = DenseEuclideanMetric(Matrix{T}(I, D, D))
 DenseEuclideanMetric(D::Int) = DenseEuclideanMetric(Float64, D)
-
-# Create a `DenseEuclideanMetric` with a new `M⁻¹`
-renew(
-    dem::DenseEuclideanMetric{T,AV,AM,TcholM⁻¹}, 
-    M⁻¹::AM, 
-    cholM⁻¹::TcholM⁻¹=dem.cholM⁻¹, 
-    _temp::AV=dem._temp
-) where {T,AV,AM,TcholM⁻¹} = DenseEuclideanMetric(M⁻¹, cholM⁻¹, _temp)
 
 Base.length(e::DenseEuclideanMetric) = size(e.M⁻¹, 1)
 Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")

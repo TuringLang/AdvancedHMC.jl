@@ -2,7 +2,7 @@ module Adaptation
 
 import Base: string, rand
 using Random: GLOBAL_RNG, AbstractRNG
-using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky
+using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
 import LinearAlgebra, Statistics
 using ..AdvancedHMC: DEBUG
 using Parameters: @unpack, @pack!

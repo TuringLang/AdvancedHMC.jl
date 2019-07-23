@@ -508,7 +508,7 @@ function update(
     τ::AbstractProposal,
     pc::Adaptation.AbstractPreconditioner
 ) 
-    metric = Adaptation.renew(h.metric, getM⁻¹(pc))
+    metric = reconstruct(h.metric, M⁻¹=getM⁻¹(pc))
     h = reconstruct(h, metric=metric)
     return h, τ
 end
@@ -528,7 +528,7 @@ function update(
     τ::AbstractProposal,
     ca::Union{Adaptation.NaiveHMCAdaptor, Adaptation.StanHMCAdaptor}
 )
-    metric = Adaptation.renew(h.metric, getM⁻¹(ca.pc))
+    metric = reconstruct(h.metric, M⁻¹=getM⁻¹(ca.pc))
     h = reconstruct(h, metric=metric)
     integrator = reconstruct(τ.integrator, ϵ=getϵ(ca.ssa))
     τ = reconstruct(τ, integrator=integrator)
