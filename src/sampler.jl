@@ -49,32 +49,34 @@ function sample(
     θs = Vector{Vector{T}}(undef, n_samples)
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
+    stats = Vector{NamedTuple}(undef, n_samples)
     # Prepare phase point for sampling
     h = update(h, θ) # Ensure h.metric has the same dim as θ.
     r = rand(rng, h.metric)
     z = phasepoint(h, θ, r)
     pm = progress ? Progress(n_samples, desc="Sampling", barlen=31) : nothing
     time = @elapsed for i = 1:n_samples
-        z, αs[i] = transition(rng, τ, h, z)
-        θs[i], Hs[i] = z.θ, neg_energy(z)
-        progress && (showvalues = Tuple[(:iteration, i), (:hamiltonian_energy, Hs[i]), (:acceptance_rate, αs[i])])
+        z, stat = transition(rng, τ, h, z)
+        θs[i], αs[i], Hs[i], stats[i] = z.θ, stat.acceptance_rate, stat.hamiltonian_energy, stat
+        showvalues = Dict{Symbol,Any}(pairs(stat)...)
         if !(adaptor isa Adaptation.NoAdaptation)
             if i <= n_adapts
                 adapt!(adaptor, θs[i], αs[i])
                 # Finalize adapation
                 if i == n_adapts
                     finalize!(adaptor)
-                    verbose && @info "Finished $n_adapts adapation steps" typeof(adaptor) τ.integrator.ϵ h.metric
+                    (verbose && !progress) && @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
                 end
                 h, τ = update(h, τ, adaptor)
             end
             # Progress info for adapation
-            progress && append!(showvalues, [(:step_size, τ.integrator.ϵ), (:precondition, h.metric)])
+            progress && (showvalues[:step_size] = τ.integrator.ϵ; showvalues[:precondition] = h.metric)
         end
-        progress && ProgressMeter.next!(pm; showvalues=showvalues)
         # Refresh momentum for next iteration
         z = rand_momentum(rng, z, h)
+        progress && ProgressMeter.next!(pm; showvalues=Tuple[(:iteration, i), zip(keys(showvalues), values(showvalues))...])
     end
-    verbose && @info "Finished $n_samples sampling steps in $time (s)" typeof(h.metric) typeof(τ) EBFMI(Hs) mean(αs)
-    return θs
+    # Report end of sampling
+    verbose && @info "Finished $n_samples sampling steps in $time (s)" h τ EBFMI(Hs) mean(αs)
+    return θs, stats
 end

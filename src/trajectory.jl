@@ -37,13 +37,7 @@ struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
     integrator  ::  I
     n_steps     ::  Int
 end
-
-"""
-Create a `StaticTrajectory` with a new integrator
-"""
-function (τ::StaticTrajectory)(integrator::AbstractIntegrator)
-    return StaticTrajectory(integrator, τ.n_steps)
-end
+Base.show(io::IO, τ::StaticTrajectory) = print(io, "StaticTrajectory(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
 
 function transition(
     rng::AbstractRNG,
@@ -57,7 +51,15 @@ function transition(
     if is_accept
         z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
     end
-    return z, α
+    stat = (
+        step_size=τ.integrator.ϵ, 
+        n_steps=τ.n_steps, 
+        is_accept=is_accept, 
+        acceptance_rate=α, 
+        log_density=z.ℓπ.value, 
+        hamiltonian_energy=-neg_energy(z), 
+       )
+    return z, stat
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
@@ -69,13 +71,7 @@ struct HMCDA{I<:AbstractIntegrator} <: DynamicTrajectory{I}
     integrator  ::  I
     λ           ::  AbstractFloat
 end
-
-"""
-Create a `HMCDA` with a new integrator
-"""
-function (τ::HMCDA)(integrator::AbstractIntegrator)
-    return HMCDA(integrator, τ.λ)
-end
+Base.show(io::IO, τ::HMCDA) = print(io, "HMCDA(integrator=$(τ.integrator), λ=$(τ.λ)))")
 
 function transition(
     rng::AbstractRNG,
@@ -111,6 +107,8 @@ struct SliceTreeSampler{F<:AbstractFloat} <: AbstractTreeSampler
     logu    ::  F     # slice variable in log space
     n       ::  Int   # number of acceptable candicates, i.e. those with prob larger than slice variable u
 end
+
+Base.show(io::IO, s::SliceTreeSampler) = print(io, "SliceTreeSampler(logu=$(s.logu), n=$(s.n))")
 
 """
 Multinomial sampler carried during the building of the tree.
@@ -161,6 +159,10 @@ struct NUTS{
     Δ_max       ::  F
     samplerType ::  Type{S}
 end
+Base.show(io::IO, τ::NUTS{I,F,S}) where {I,F,S<:SliceTreeSampler} = 
+    print(io, "NUTS{Slice}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+Base.show(io::IO, τ::NUTS{I,F,S}) where {I,F,S<:MultinomialTreeSampler} = 
+    print(io, "NUTS{Multinomial}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 
 """
 Helper dictionary used to allow users pass symbol keyword argument
@@ -203,6 +205,20 @@ end
 ###
 
 """
+Termination reasons
+- `dynamic`: due to stoping criteria
+- `numerical`: due to large energy deviation from starting (possibly numerical errors)
+"""
+struct Termination
+    dynamic::Bool
+    numerical::Bool
+end
+
+Base.show(io::IO, d::Termination) = print(io, "Termination(dynamic=$(d.dynamic), numerical=$(d.numerical))")
+Base.:*(d1::Termination, d2::Termination) = Termination(d1.dynamic || d2.dynamic, d1.numerical || d2.numerical)
+isterminated(d::Termination) = d.dynamic || d.numerical
+
+"""
 A full binary tree trajectory with only necessary leaves and information stored.
 """
 struct FullBinaryTree{S<:AbstractTreeSampler}
@@ -210,7 +226,7 @@ struct FullBinaryTree{S<:AbstractTreeSampler}
     zright      # right most leaf node
     zcand       # candidate leaf node
     sampler::S  # condidate sampler
-    s           # termination stats, i.e. 0 means termination and 1 means continuation
+    termination # termination reasons
     α           # MH stats, i.e. sum of MH accept prob for all leapfrog steps
     nα          # total # of leap frog steps, i.e. phase points in a trajectory
 end
@@ -220,24 +236,25 @@ Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonia
 """
 function isturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
     θdiff = zright.θ - zleft.θ
-    return (dot(θdiff, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(θdiff, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
+    s = (dot(θdiff, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(θdiff, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
+    return Termination(s == 0, false)
 end
 
 """
-Check divergence of a Hamiltonian trajectory.
+Check termination of a Hamiltonian trajectory.
 """
-isdivergent(
+isterminated(
     s::SliceTreeSampler,
     nt::NUTS,
     H0::F,
     H′::F
-) where {F<:AbstractFloat} = (s.logu < nt.Δ_max + -H′) ? 0 : 1
-isdivergent(
+) where {F<:AbstractFloat} = Termination(false, !(s.logu < nt.Δ_max + -H′))
+isterminated(
     s::MultinomialTreeSampler,
     nt::NUTS,
     H0::F,
     H′::F
-) where {F<:AbstractFloat} = (-H0 < nt.Δ_max + -H′) ? 0 : 1
+) where {F<:AbstractFloat} = Termination(false, !(-H0 < nt.Δ_max + -H′))
 
 """
     combine(h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree)
@@ -255,8 +272,8 @@ function combine(
     zright = tright.zright
     zcand = combine(rng, tleft, tright)
     sampler = combine(tleft.sampler, tright.sampler)
-    s = tleft.s * tright.s * isturn(h, zleft, zright)
-    return FullBinaryTree(zleft, zright, zcand, sampler, s, tright.α + tright.α, tright.nα + tright.nα)
+    termination = tleft.termination * tright.termination * isturn(h, zleft, zright)
+    return FullBinaryTree(zleft, zright, zcand, sampler, termination, tright.α + tright.α, tright.nα + tright.nα)
 end
 
 """
@@ -299,14 +316,14 @@ function build_tree(
         z′ = step(nt.integrator, h, z, v)
         H′ = -neg_energy(z′)
         basesampler = makebase(sampler, H′)
-        s′ = 1 - isdivergent(basesampler, nt, H0, H′)
+        termination = isterminated(basesampler, nt, H0, H′)
         α′ = exp(min(0, H0 - H′))
-        return FullBinaryTree(z′, z′, z′, basesampler, s′, α′, 1)
+        return FullBinaryTree(z′, z′, z′, basesampler, termination, α′, 1)
     else
         # Recursion - build the left and right subtrees.
         t′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
         # Expand tree if not terminated
-        if t′.s == 1
+        if !isterminated(t′.termination)
             # Expand left
             if v == -1
                 t′′ = build_tree(rng, nt, h, t′.zleft, sampler, v, j - 1, H0) # left tree
@@ -335,40 +352,51 @@ mh_accept(
 
 function transition(
     rng::AbstractRNG,
-    nt::NUTS{I,F,S},
+    τ::NUTS{I,F,S},
     h::Hamiltonian,
     z0::PhasePoint
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler}
     H0 = -neg_energy(z0)
 
-    zleft = z0; zright = z0; zcand = z0; j = 0; s = 1; sampler = S(rng, H0)
+    zleft = z0; zright = z0; z = z0; 
+    j = 0; termination = Termination(false, false); sampler = S(rng, H0)
 
     local t
-    while s == 1 && j <= nt.max_depth
+    while !isterminated(termination) && j <= τ.max_depth
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
         if v == -1
             # Create a tree with depth `j` on the left
-            t = build_tree(rng, nt, h, zleft, sampler, v, j, H0)
+            t = build_tree(rng, τ, h, zleft, sampler, v, j, H0)
             zleft = t.zleft
         else
             # Create a tree with depth `j` on the right
-            t = build_tree(rng, nt, h, zright, sampler, v, j, H0)
+            t = build_tree(rng, τ, h, zright, sampler, v, j, H0)
             zright = t.zright
         end
         # Perform a MH step if not terminated
-        if t.s == 1 && mh_accept(rng, sampler, t.sampler)
-            zcand = t.zcand
+        if !isterminated(t.termination) && mh_accept(rng, sampler, t.sampler)
+            z = t.zcand
         end
         # Combine the sampler from the proposed tree and the current tree
         sampler = combine(sampler, t.sampler)
         # Detect termination
-        s = s * t.s * isturn(h, zleft, zright)
+        termination = termination * t.termination * isturn(h, zleft, zright)
         # Increment tree depth
         j = j + 1
     end
 
-    return zcand, t.α / t.nα
+    stat = (
+        step_size=τ.integrator.ϵ, 
+        n_steps=2^j, 
+        is_accept=true, 
+        acceptance_rate=t.α / t.nα, 
+        log_density=z.ℓπ.value, 
+        hamiltonian_energy=-neg_energy(z), 
+        tree_depth=j, 
+        numerical_error=termination.numerical,
+       )
+    return z, stat
 end
 
 """
@@ -475,23 +503,37 @@ end
 #### Adaption
 ####
 
-update(
+function update(
     h::Hamiltonian,
     τ::AbstractProposal,
-    dpc::Adaptation.AbstractPreconditioner
-) = h(getM⁻¹(dpc)), τ
+    pc::Adaptation.AbstractPreconditioner
+) 
+    metric = reconstruct(h.metric, M⁻¹=getM⁻¹(pc))
+    h = reconstruct(h, metric=metric)
+    return h, τ
+end
 
-update(
+function update(
     h::Hamiltonian,
     τ::AbstractProposal,
     da::NesterovDualAveraging
-) = h, τ(τ.integrator(getϵ(da)))
+) 
+    integrator = reconstruct(τ.integrator, ϵ=getϵ(da))
+    τ = reconstruct(τ, integrator=integrator)
+    return h, τ
+end
 
-update(
+function update(
     h::Hamiltonian,
     τ::AbstractProposal,
     ca::Union{Adaptation.NaiveHMCAdaptor, Adaptation.StanHMCAdaptor}
-) = h(getM⁻¹(ca.pc)), τ(τ.integrator(getϵ(ca.ssa)))
+)
+    metric = reconstruct(h.metric, M⁻¹=getM⁻¹(ca.pc))
+    h = reconstruct(h, metric=metric)
+    integrator = reconstruct(τ.integrator, ϵ=getϵ(ca.ssa))
+    τ = reconstruct(τ, integrator=integrator)
+    return h, τ
+end
 
 function update(
     h::Hamiltonian,
@@ -499,8 +541,8 @@ function update(
 ) where {T<:Real}
     metric = h.metric
     if length(metric) != length(θ)
-        metric = metric(length(θ))
-        h = h(getM⁻¹(Preconditioner(metric)))
+        metric = typeof(metric)(length(θ))
+        h = reconstruct(h, metric=metric)
     end
     return h
 end

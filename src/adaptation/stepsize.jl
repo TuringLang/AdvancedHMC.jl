@@ -36,13 +36,16 @@ end
 
 abstract type StepSizeAdaptor <: AbstractAdaptor end
 
+# finalize!(adaptor::T) where {T<:StepSizeAdaptor} = nothing
+
+getϵ(ss::StepSizeAdaptor) = ss.state.ϵ
+
 struct FixedStepSize{T<:AbstractFloat} <: StepSizeAdaptor
     ϵ :: T
 end
+Base.show(io::IO, a::FixedStepSize) = print(io, "FixedStepSize($(a.ϵ))")
 
-function getϵ(fss::FixedStepSize)
-    return fss.ϵ
-end
+getϵ(fss::FixedStepSize) = fss.ϵ
 
 """
 An implementation of the Nesterov dual averaging algorithm to tune step size.
@@ -59,32 +62,22 @@ struct NesterovDualAveraging{T<:AbstractFloat} <: StepSizeAdaptor
   δ     :: T
   state :: DAState{T}
 end
+Base.show(io::IO, a::NesterovDualAveraging) = print(io, "NesterovDualAveraging(γ=$(a.γ), t_0=$(a.t_0), κ=$(a.κ), δ=$(a.δ), state.ϵ=$(getϵ(a)))")
 
-reset!(da::NesterovDualAveraging) = reset!(da.state)
-
-function NesterovDualAveraging(γ::AbstractFloat, t_0::AbstractFloat, κ::AbstractFloat, δ::AbstractFloat, ϵ::AbstractFloat)
-    return NesterovDualAveraging(γ, t_0, κ, δ, DAState(ϵ))
-end
-
-function NesterovDualAveraging(δ::AbstractFloat, ϵ::AbstractFloat)
-    return NesterovDualAveraging(0.05, 10.0, 0.75, δ, ϵ)
-end
-
-function getϵ(da::NesterovDualAveraging)
-    return da.state.ϵ
-end
+NesterovDualAveraging(γ::T, t_0::T, κ::T, δ::T, ϵ::T) where {T<:AbstractFloat} = NesterovDualAveraging(γ, t_0, κ, δ, DAState(ϵ))
+NesterovDualAveraging(δ::T, ϵ::T) where {T<:AbstractFloat} = NesterovDualAveraging(0.05, 10.0, 0.75, δ, ϵ)
 
 struct ManualSSAdaptor{T<:AbstractFloat} <:StepSizeAdaptor
     state :: MSSState{T}
 end
+Base.show(io::IO, a::ManualSSAdaptor) = print(io, "ManualSSAdaptor()")
 
-function getϵ(mssa::ManualSSAdaptor)
-    return mssa.state.ϵ
-end
+ManualSSAdaptor(initϵ::T) where {T<:AbstractFloat} = ManualSSAdaptor{T}(MSSState(initϵ))
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
-# TODO: merge this function with adapt!
-function adapt_stepsize!(da::NesterovDualAveraging, α::T) where {T <: AbstractFloat}
+# Note: This function is not merged with `adapt!` to empahsize the fact that 
+#       step size adaptation is not dependent on `θ`.
+function adapt_stepsize!(da::NesterovDualAveraging{T}, α::T) where {T <: AbstractFloat}
     DEBUG && @debug "Adapting step size..." α
     
     # Clip average MH acceptance probability
@@ -115,9 +108,9 @@ function adapt_stepsize!(da::NesterovDualAveraging, α::T) where {T <: AbstractF
     @pack! state = m, ϵ, x_bar, H_bar
 end
 
-function adapt!(da::NesterovDualAveraging, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat)
-    adapt_stepsize!(da, α)
-end
+adapt!(da::NesterovDualAveraging, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat) = adapt_stepsize!(da, α)
+
+reset!(da::NesterovDualAveraging) = reset!(da.state)
 
 function finalize!(da::NesterovDualAveraging)
     da.state.ϵ = exp(da.state.x_bar)

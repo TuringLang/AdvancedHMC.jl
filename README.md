@@ -40,8 +40,10 @@ h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
 prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
 adaptor = StanHMCAdaptor(n_adapts, Preconditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))
 
-# Sampling
-samples = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; progress=true)
+# Draw samples via simulating Hamiltonian dynamics
+# - `samples` will store the samples
+# - `stats` will store statistics for each sample
+samples, stats = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; progress=true)
 ```
 
 ## Reference

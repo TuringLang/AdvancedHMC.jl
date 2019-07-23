@@ -22,6 +22,8 @@ struct StanHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: Abstr
     term_buffer :: Int
     state       :: StanHMCAdaptorState
 end
+Base.show(io::IO, a::StanHMCAdaptor) = 
+    print(io, "StanHMCAdaptor(n_adapts=$(a.n_adapts), pc=$(a.pc), ssa=$(a.ssa), init_buffer=$(a.init_buffer), term_buffer=$(a.term_buffer))")
 
 function StanHMCAdaptor(
     n_adapts::Int,
@@ -71,6 +73,7 @@ function adapt!(tp::StanHMCAdaptor, θ::AbstractVector{<:Real}, α::AbstractFloa
     adapt!(tp.ssa, θ, α)
 
     resize!(tp.pc, θ) # Resize pre-conditioner if necessary.
+    
     # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/adapt_diag_e_nuts.hpp
     if is_in_window(tp)
         # We accumlate stats from θ online and only trigger the update of M⁻¹ in the end of window.

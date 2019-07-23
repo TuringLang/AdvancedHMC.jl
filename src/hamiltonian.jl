@@ -6,9 +6,8 @@ struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
     ℓπ::Tlogπ
     ∂ℓπ∂θ::T∂logπ∂θ
 end
+Base.show(io::IO, h::Hamiltonian) = print(io, "Hamiltonian(metric=$(h.metric))")
 
-# Create a `Hamiltonian` with a new `M⁻¹`
-(h::Hamiltonian)(M⁻¹) = Hamiltonian(h.metric(M⁻¹), h.ℓπ, h.∂ℓπ∂θ)
 
 struct DualValue{Tv<:AbstractFloat, Tg<:AbstractVector{Tv}}
     value::Tv    # Cached value, e.g. logπ(θ).

@@ -1,9 +1,3 @@
-###
-### Preconditioning matrix adaptors.
-###
-
-abstract type AbstractPreconditioner <: AbstractAdaptor end
-
 ####
 #### Robust online (co-)variance estimators.
 ####
@@ -70,7 +64,7 @@ end
 
 abstract type CovEstimator{T} end
 
-# NOTE: this naive covariance estimator is used only in testing
+# NOTE: This naive covariance estimator is used only in testing.
 mutable struct NaiveCov{T} <: CovEstimator{T}
     n :: Int
     S :: Vector{Vector{T}}
@@ -82,14 +76,14 @@ function add_sample!(nc::NaiveCov, s::AbstractVector)
     push!(nc.S, s)
 end
 
-function reset!(nc::NaiveCov{T}) where {T<:AbstractFloat}
-    nc.n = 0
-    nc.S = Vector{Vector{T}}()
-end
-
 function get_cov(nc::NaiveCov{T})::Matrix{T} where {T<:AbstractFloat}
     @assert nc.n >= 2 "Cannot get covariance with only one sample"
     return Statistics.cov(nc.S)
+end
+
+function reset!(nc::NaiveCov{T}) where {T<:AbstractFloat}
+    nc.n = 0
+    nc.S = Vector{Vector{T}}()
 end
 
 # Ref: https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_covar_estimator.hpp
@@ -118,6 +112,7 @@ function add_sample!(wc::WelfordCov, s::AbstractVector)
     μ .+= δ ./ n
     M .+= (s .- μ) .* δ'
 end
+
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/covar_adaptation.hpp
 function get_cov(wc::WelfordCov{T}) where {T<:AbstractFloat}
     n, M = wc.n, wc.M
@@ -125,17 +120,27 @@ function get_cov(wc::WelfordCov{T}) where {T<:AbstractFloat}
     return (n*one(T) / ((n + 5) * (n - 1))) .* M + T(1e-3) * (5*one(T) / (n + 5)) * LinearAlgebra.I
 end
 
+###
+### Preconditioning matrix adaptors.
+###
+
+abstract type AbstractPreconditioner <: AbstractAdaptor end
+
+finalize!(adaptor::T) where {T<:AbstractPreconditioner} = nothing
+
 ####
 #### Preconditioning matrix adaption implementation.
 ####
 
 # Unit
 struct UnitPreconditioner{T} <: AbstractPreconditioner end
-UnitPreconditioner(::Type{T} = Float64) where {T} = UnitPreconditioner{T}()
+Base.show(io::IO, ::UnitPreconditioner) = print(io, "UnitPreconditioner")
+
+UnitPreconditioner(::Type{T}=Float64) where {T} = UnitPreconditioner{T}()
 
 string(::UnitPreconditioner) = "I"
 reset!(::UnitPreconditioner) = nothing
-getM⁻¹(dpc::UnitPreconditioner{T}) where {T} = one(T)
+getM⁻¹(dpc::UnitPreconditioner{T}) where {T<:AbstractFloat} = UniformScaling{T}(one(T))
 adapt!(
     ::UnitPreconditioner,
     ::AbstractVector{<:Real},
@@ -149,6 +154,7 @@ mutable struct DiagPreconditioner{T<:Real, AT<:AbstractVector{T}, TEst <: VarEst
     ve  :: TEst
     var :: AT
 end
+Base.show(io::IO, ::DiagPreconditioner) = print(io, "DiagPreconditioner")
 
 # Diagonal
 DiagPreconditioner(d::Int, n_min::Int=10) = DiagPreconditioner(Float64, d, n_min)
@@ -181,11 +187,12 @@ mutable struct DensePreconditioner{T<:AbstractFloat, TEst <: CovEstimator{T}} <:
     ce    :: TEst
     covar :: Matrix{T}
 end
+Base.show(io::IO, ::DensePreconditioner) = print(io, "DensePreconditioner")
 
-DensePreconditioner(d::Integer, n_min::Int=10) = DensePreconditioner(Float64, d, n_min)
-function DensePreconditioner(::Type{T}, d::Integer, n_min::Int=10) where {T}
+DensePreconditioner(d::Int, n_min::Int=10) = DensePreconditioner(Float64, d, n_min)
+function DensePreconditioner(::Type{T}, d::Int, n_min::Int=10) where {T}
     ce = WelfordCov(T, d)
-    # TODO: take use of the line below when we have an interface to set which pre-conditioner to use
+    # TODO: take use of the line below when we have an interface to set which covariance estimator to use
     # ce = NaiveCov(T)
     return DensePreconditioner(n_min, ce, LinearAlgebra.diagm(0 => ones(T, d)))
 end
@@ -240,31 +247,26 @@ end
 
 abstract type AbstractMetric end
 
+_string_M⁻¹(mat::AbstractMatrix, n_chars::Int=32) = _string_M⁻¹(LinearAlgebra.diag(mat), n_chars)
+function _string_M⁻¹(vec::AbstractVector, n_chars::Int=32)
+    s_vec = string(vec)
+    l = length(s_vec)
+    s_dots = " ...]"
+    n_diag_chars = n_chars - length(s_dots)
+    return s_vec[1:min(n_diag_chars,end)] * (l > n_diag_chars ? s_dots : "")
+end
+
 struct UnitEuclideanMetric{T} <: AbstractMetric
+    M⁻¹::UniformScaling{T}
     dim::Int
 end
-UnitEuclideanMetric(::Type{T}, dim::Int) where {T} = UnitEuclideanMetric{T}(dim)
+UnitEuclideanMetric(::Type{T}, dim::Int) where {T} = UnitEuclideanMetric{T}(UniformScaling{T}(one(T)), dim)
 UnitEuclideanMetric(dim::Int) = UnitEuclideanMetric(Float64, dim)
 
-# Create a `UnitEuclideanMetric`; required for an unified interface
-(ue::UnitEuclideanMetric{T})(::Nothing) where {T} = UnitEuclideanMetric(T, ue.dim)
-
 Base.length(e::UnitEuclideanMetric) = e.dim
-(e::UnitEuclideanMetric{T})(dim::Int) where {T} = UnitEuclideanMetric(T, dim)
-(e::UnitEuclideanMetric{T})(::AbstractFloat) where {T} = UnitEuclideanMetric(T, e.dim)
+Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, "UnitEuclideanMetric($(_string_M⁻¹(ones(uem.dim))))")
 
-
-function _string_diag(d, n_chars::Int=32) :: String
-    s_diag = string(d)
-    l = length(s_diag)
-    s_dots = " ..."
-    n_diag_chars = n_chars - length(s_dots)
-    return s_diag[1:min(n_diag_chars,end)] * (l > n_diag_chars ? s_dots : "")
-end
-
-Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, _string_diag(ones(uem.dim)))
-
-struct DiagEuclideanMetric{T, A<:AbstractVector{T}} <: AbstractMetric
+struct DiagEuclideanMetric{T,A<:AbstractVector{T}} <: AbstractMetric
     # Diagnal of the inverse of the mass matrix
     M⁻¹     ::  A
     # Sqare root of the inverse of the mass matrix
@@ -279,13 +281,8 @@ end
 DiagEuclideanMetric(::Type{T}, D::Int) where {T} = DiagEuclideanMetric(ones(T, D))
 DiagEuclideanMetric(D::Int) = DiagEuclideanMetric(Float64, D)
 
-# Create a `DiagEuclideanMetric` with a new `M⁻¹`
-(dem::DiagEuclideanMetric)(M⁻¹::AbstractVector{<:Real}) = DiagEuclideanMetric(M⁻¹)
-
 Base.length(e::DiagEuclideanMetric) = size(e.M⁻¹, 1)
-(e::DiagEuclideanMetric{T})(dim::Int) where {T} = DiagEuclideanMetric(T, dim)
-
-Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, _string_diag(dem.M⁻¹))
+Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
 
 function Base.getproperty(dem::DiagEuclideanMetric, d::Symbol)
     return d === :dim ? size(getfield(dem, :M⁻¹), 1) : getfield(dem, d)
@@ -313,13 +310,8 @@ end
 DenseEuclideanMetric(::Type{T}, D::Int) where {T} = DenseEuclideanMetric(Matrix{T}(I, D, D))
 DenseEuclideanMetric(D::Int) = DenseEuclideanMetric(Float64, D)
 
-# Create a `DenseEuclideanMetric` with a new `M⁻¹`
-(dem::DenseEuclideanMetric)(M⁻¹::AbstractMatrix{<:Real}) = DenseEuclideanMetric(M⁻¹)
-
 Base.length(e::DenseEuclideanMetric) = size(e.M⁻¹, 1)
-(e::DenseEuclideanMetric{T})(dim::Int) where {T} = DenseEuclideanMetric(T, dim)
-
-Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, _string_diag(diag(dem.M⁻¹)))
+Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
 
 function Base.getproperty(dem::DenseEuclideanMetric, d::Symbol)
     return d === :dim ? size(getfield(dem, :M⁻¹), 1) : getfield(dem, d)
@@ -358,28 +350,9 @@ Base.rand(metric::AbstractMetric) = rand(GLOBAL_RNG, metric)
 #### Preconditioner constructors
 ####
 
-function Preconditioner(::UnitEuclideanMetric{T}) where {T}
-    return UnitPreconditioner(T)
-end
+Preconditioner(m::UnitEuclideanMetric{T}) where {T} = UnitPreconditioner(T)
+Preconditioner(m::DiagEuclideanMetric{T}) where {T} = DiagPreconditioner(T, m.dim)
+Preconditioner(m::DenseEuclideanMetric{T}) where {T} = DensePreconditioner(T, m.dim)
 
-function Preconditioner(m::DiagEuclideanMetric{T}) where {T}
-    return DiagPreconditioner(T, m.dim)
-end
-
-function Preconditioner(m::DenseEuclideanMetric{T}) where {T}
-    return DensePreconditioner(T, m.dim)
-end
-
-Preconditioner(m, dim::Integer=2) = Preconditioner(Float64, m, dim)
-function Preconditioner(::Type{T}, m, dim::Integer=2) where {T <: AbstractFloat}
-    if m == UnitEuclideanMetric
-        pc = UnitPreconditioner(T)
-    elseif m == DiagEuclideanMetric
-        pc = DiagPreconditioner(T, dim)
-    elseif m == DenseEuclideanMetric
-        pc = DensePreconditioner(T, dim)
-    else
-        @error "m needs to be one of [UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric]"
-    end
-    return pc
-end
+Preconditioner(m::Type{TM}, dim::Int=2) where {TM<:AbstractMetric} = Preconditioner(Float64, m, dim)
+Preconditioner(::Type{T}, ::Type{TM}, dim::Int=2) where {T<:AbstractFloat,TM<:AbstractMetric} = Preconditioner(TM(T, dim))
