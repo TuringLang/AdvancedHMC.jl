@@ -331,7 +331,7 @@ function Base.rand(
     metric::DiagEuclideanMetric{T}
 ) where {T}
     r = randn(rng, T, metric.dim)
-    r ./= metric.sqrtM⁻¹
+    r .*= metric.sqrtM⁻¹
     return r
 end
 
@@ -340,7 +340,7 @@ function Base.rand(
     metric::DenseEuclideanMetric{T}
 ) where {T}
     r = randn(rng, T, metric.dim)
-    ldiv!(metric.cholM⁻¹, r)
+    mul!(r, metric.cholM⁻¹, r)
     return r
 end
 

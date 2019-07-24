@@ -21,8 +21,8 @@ function ∂H∂θ(h::Hamiltonian, θ::AbstractVector)
 end
 
 ∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric}, r::AbstractVector) = copy(r)
-∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ .* r
-∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVector) = h.metric.M⁻¹ * r
+∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVector) = h.metric.sqrtM⁻¹ .* r
+∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVector) = h.metric.cholM⁻¹ * r
 
 struct PhasePoint{T<:AbstractVector, V<:DualValue}
     θ::T  # Position variables / model parameters.
@@ -62,30 +62,7 @@ Base.isfinite(z::PhasePoint) = isfinite(z.ℓπ) && isfinite(z.ℓκ)
 neg_energy(z::PhasePoint) = z.ℓπ.value + z.ℓκ.value
 
 neg_energy(h::Hamiltonian, θ::AbstractVector) = h.ℓπ(θ)
-
-neg_energy(
-    h::Hamiltonian{<:UnitEuclideanMetric},
-    r::T,
-    θ::T
-) where {T<:AbstractVector} = -sum(abs2, r) / 2
-
-function neg_energy(
-    h::Hamiltonian{<:DiagEuclideanMetric},
-    r::T,
-    θ::T
-) where {T<:AbstractVector}
-    _r = [abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r)]
-    return -sum(_r) / 2
-end
-
-function neg_energy(
-    h::Hamiltonian{<:DenseEuclideanMetric},
-    r::T,
-    θ::T
-) where {T<:AbstractVector}
-    mul!(h.metric._temp, h.metric.M⁻¹, r)
-    return -dot(r, h.metric._temp) / 2
-end
+neg_energy(h::Hamiltonian, r::T, θ::T) where {T<:AbstractVector} = -sum(abs2, r) / 2
 
 ####
 #### Momentum sampler
