@@ -239,6 +239,11 @@ function isturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
     s = (dot(θdiff, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(θdiff, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
     return Termination(s == 0, false)
 end
+# function isturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
+#     θdiff = zright.θ - zleft.θ
+#     s = (dot(-θdiff, ∂H∂r(h, zleft.r)) < 0) && (dot(θdiff, ∂H∂r(h, zright.r)) < 0)
+#     return Termination(s, false)
+# end
 
 """
 Check termination of a Hamiltonian trajectory.
