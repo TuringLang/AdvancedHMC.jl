@@ -62,12 +62,9 @@ function sample(
         if !(adaptor isa Adaptation.NoAdaptation)
             if i <= n_adapts
                 adapt!(adaptor, θs[i], αs[i])
-                # Finalize adapation
-                if i == n_adapts
-                    finalize!(adaptor)
-                    (verbose && !progress) && @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
-                end
+                i == n_adapts && finalize!(adaptor)
                 h, τ = update(h, τ, adaptor)
+                (i == n_adapts && verbose && !progress) && @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
             end
             # Progress info for adapation
             progress && (showvalues[:step_size] = τ.integrator.ϵ; showvalues[:precondition] = h.metric)

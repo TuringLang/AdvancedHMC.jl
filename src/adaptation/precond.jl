@@ -260,8 +260,11 @@ struct UnitEuclideanMetric{T} <: AbstractMetric
     M⁻¹::UniformScaling{T}
     dim::Int
 end
+
 UnitEuclideanMetric(::Type{T}, dim::Int) where {T} = UnitEuclideanMetric{T}(UniformScaling{T}(one(T)), dim)
 UnitEuclideanMetric(dim::Int) = UnitEuclideanMetric(Float64, dim)
+
+renew(ue::UnitEuclideanMetric, M⁻¹) = UnitEuclideanMetric(M⁻¹, ue.dim)
 
 Base.length(e::UnitEuclideanMetric) = e.dim
 Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, "UnitEuclideanMetric($(_string_M⁻¹(ones(uem.dim))))")
@@ -280,6 +283,8 @@ function DiagEuclideanMetric(M⁻¹::AbstractVector{T}) where {T<:Real}
 end
 DiagEuclideanMetric(::Type{T}, D::Int) where {T} = DiagEuclideanMetric(ones(T, D))
 DiagEuclideanMetric(D::Int) = DiagEuclideanMetric(Float64, D)
+
+renew(ue::DiagEuclideanMetric, M⁻¹) = DiagEuclideanMetric(M⁻¹)
 
 Base.length(e::DiagEuclideanMetric) = size(e.M⁻¹, 1)
 Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
@@ -309,6 +314,8 @@ function DenseEuclideanMetric(M⁻¹::AbstractMatrix{T}) where {T<:Real}
 end
 DenseEuclideanMetric(::Type{T}, D::Int) where {T} = DenseEuclideanMetric(Matrix{T}(I, D, D))
 DenseEuclideanMetric(D::Int) = DenseEuclideanMetric(Float64, D)
+
+renew(ue::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
 
 Base.length(e::DenseEuclideanMetric) = size(e.M⁻¹, 1)
 Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")

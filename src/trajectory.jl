@@ -239,6 +239,11 @@ function isturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
     s = (dot(θdiff, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(θdiff, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
     return Termination(s == 0, false)
 end
+# function isturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
+#     θdiff = zright.θ - zleft.θ
+#     s = (dot(-θdiff, ∂H∂r(h, zleft.r)) < 0) && (dot(θdiff, ∂H∂r(h, zright.r)) < 0)
+#     return Termination(s, false)
+# end
 
 """
 Check termination of a Hamiltonian trajectory.
@@ -508,7 +513,7 @@ function update(
     τ::AbstractProposal,
     pc::Adaptation.AbstractPreconditioner
 ) 
-    metric = reconstruct(h.metric, M⁻¹=getM⁻¹(pc))
+    metric = renew(h.metric, getM⁻¹(pc))
     h = reconstruct(h, metric=metric)
     return h, τ
 end
@@ -528,7 +533,7 @@ function update(
     τ::AbstractProposal,
     ca::Union{Adaptation.NaiveHMCAdaptor, Adaptation.StanHMCAdaptor}
 )
-    metric = reconstruct(h.metric, M⁻¹=getM⁻¹(ca.pc))
+    metric = renew(h.metric, getM⁻¹(ca.pc))
     h = reconstruct(h, metric=metric)
     integrator = reconstruct(τ.integrator, ϵ=getϵ(ca.ssa))
     τ = reconstruct(τ, integrator=integrator)

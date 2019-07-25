@@ -6,6 +6,7 @@ using Distributed, Test
         "hamiltonian",
         "integrator",
         "trajectory",
+        "models",
         "hmc",
     ]
 
