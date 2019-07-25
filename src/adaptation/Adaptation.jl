@@ -57,7 +57,7 @@ finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)
 ##
 include("stan_adaption.jl")
 
-export adapt!, finalize!, getϵ, getM⁻¹, reset!,
+export adapt!, finalize!, getϵ, getM⁻¹, reset!, renew,
        NesterovDualAveraging,
        UnitPreconditioner, DiagPreconditioner, DensePreconditioner,
        AbstractMetric, UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric,
