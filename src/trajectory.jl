@@ -115,7 +115,7 @@ Multinomial sampler carried during the building of the tree.
 It contains the weight of the tree, defined as the total probabilities of the leaves.
 """
 struct MultinomialTreeSampler{F<:AbstractFloat} <: AbstractTreeSampler
-    w       ::  F     # total energy for the given tree, i.e. sum of energy of all leaves
+    logw    ::  F     # total energy for the given tree, i.e. sum of energy of all leaves
 end
 
 """
@@ -128,7 +128,7 @@ SliceTreeSampler(rng::AbstractRNG, H::AbstractFloat) = SliceTreeSampler(log(rand
 Multinomial sampler for the starting single leaf tree.
 Tree weight is just the probability of the only leave.
 """
-MultinomialTreeSampler(rng::AbstractRNG, H::AbstractFloat) = MultinomialTreeSampler(exp(-H))
+MultinomialTreeSampler(rng::AbstractRNG, H::AbstractFloat) = MultinomialTreeSampler(-H)
 
 """
 Create a slice sampler for a single leaf tree:
@@ -141,10 +141,10 @@ makebase(s::SliceTreeSampler, H::AbstractFloat) = SliceTreeSampler(s.logu, (s.lo
 Create a multinomial sampler for a single leaf tree:
 - the tree weight is just the probability of the only leave.
 """
-makebase(s::MultinomialTreeSampler, H::AbstractFloat) = MultinomialTreeSampler(exp(-H))
+makebase(s::MultinomialTreeSampler, H::AbstractFloat) = MultinomialTreeSampler(-H)
 
 combine(s1::SliceTreeSampler, s2::SliceTreeSampler) = SliceTreeSampler(s1.logu, s1.n + s2.n)
-combine(s1::MultinomialTreeSampler, s2::MultinomialTreeSampler) = MultinomialTreeSampler(s1.w + s2.w)
+combine(s1::MultinomialTreeSampler, s2::MultinomialTreeSampler) = MultinomialTreeSampler(logaddexp(s1.logw, s2.logw))
 
 """
 Dynamic trajectory HMC using the no-U-turn termination criteria algorithm.
@@ -300,7 +300,7 @@ function combine(
     tleft::FullBinaryTree{MultinomialTreeSampler{F}},
     tright::FullBinaryTree{MultinomialTreeSampler{F}}
 ) where {F<:AbstractFloat}
-    return rand(rng) < tleft.sampler.w / (tleft.sampler.w + tright.sampler.w) ? tleft.zcand : tright.zcand
+    return rand(rng) < exp(tleft.sampler.logw - logaddexp(tleft.sampler.logw, tright.sampler.logw)) ? tleft.zcand : tright.zcand
 end
 
 """
@@ -353,7 +353,7 @@ mh_accept(
     rng::AbstractRNG,
     s::MultinomialTreeSampler,
     s′::MultinomialTreeSampler
-) = rand(rng) < min(1, s′.w / s.w)
+) = rand(rng) < exp(min(0, s′.logw - s.logw))
 
 function transition(
     rng::AbstractRNG,
