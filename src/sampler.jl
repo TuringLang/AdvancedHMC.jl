@@ -70,7 +70,7 @@ function sample(
             progress && (showvalues[:step_size] = τ.integrator.ϵ; showvalues[:precondition] = h.metric)
         end
         # Refresh momentum for next iteration
-        z = rand_momentum(rng, z, h)
+        z = refresh(rng, z, h)
         progress && ProgressMeter.next!(pm; showvalues=Tuple[(:iteration, i), zip(keys(showvalues), values(showvalues))...])
     end
     # Report end of sampling

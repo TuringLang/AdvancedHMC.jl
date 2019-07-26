@@ -88,16 +88,11 @@ function neg_energy(
 end
 
 ####
-#### Momentum sampler
+#### Momentum refreshment
 ####
 
-rand_momentum(
+refresh(
     rng::AbstractRNG,
     z::PhasePoint,
     h::Hamiltonian
 ) = phasepoint(h, z.θ, rand(rng, h.metric))
-
-rand_momentum(
-    z::PhasePoint,
-    h::Hamiltonian
-) = phasepoint(h, z.θ, rand(GLOBAL_RNG, h.metric))
