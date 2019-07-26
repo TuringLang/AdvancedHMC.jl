@@ -227,7 +227,7 @@ function Base.resize!(
     if length(θ) != length(dpc.var)
         @assert dpc.ve.n == 0 "Cannot resize a var estimator when it contains samples."
         dpc.ve = WelfordVar(T, length(θ))
-        dpc.var = zeros(T, length(θ))
+        dpc.var = ones(T, length(θ))
     end
 end
 function Base.resize!(
