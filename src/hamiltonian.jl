@@ -49,9 +49,9 @@ phasepoint(
     ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, r))
 ) where {T<:AbstractVector} = PhasePoint(θ, r, ℓπ, ℓκ)
 
-# If position variable and momentum variable are in different container,
+# If position variable and momentum variable are in different containers,
 # move the momentum variable to that of the position variable.
-# This is neeced for AHMC to work with CuArrays (without depending on it).
+# This is needed for AHMC to work with CuArrays (without depending on it).
 phasepoint(
     h::Hamiltonian,
     θ::T1,
