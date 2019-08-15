@@ -425,9 +425,9 @@ function find_good_eps(
     max_n_iters::Int=100
 ) where {T<:Real}
     # Initialize searching parameters
-    ϵ′ = ϵ = 0.1
-    a_min, a_cross, a_max = 0.25, 0.5, 0.75 # minimal, crossing, maximal accept ratio
-    d = 2.0
+    ϵ′ = ϵ = T(0.1)
+    a_min, a_cross, a_max = T(0.25), T(0.5), T(0.75) # minimal, crossing, maximal accept ratio
+    d = T(2.0)
     # Create starting phase point
     r = rand(rng, h.metric) # sample momentum variable
     z = phasepoint(h, θ, r)
