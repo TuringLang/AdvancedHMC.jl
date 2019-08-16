@@ -372,7 +372,7 @@ function build_tree(
         z′ = step(nt.integrator, h, z, v)
         H′ = -neg_energy(z′)
         basesampler = makebase(sampler, H′)
-        c = C(z)
+        c = C(z′)
         termination = Termination(basesampler, nt, H0, H′)
         α′ = exp(min(0, H0 - H′))
         return FullBinaryTree(z′, z′, z′, basesampler, c, termination, α′, 1)
