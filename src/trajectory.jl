@@ -146,6 +146,10 @@ makebase(s::MultinomialTreeSampler, H::AbstractFloat) = MultinomialTreeSampler(-
 combine(s1::SliceTreeSampler, s2::SliceTreeSampler) = SliceTreeSampler(s1.logu, s1.n + s2.n)
 combine(s1::MultinomialTreeSampler, s2::MultinomialTreeSampler) = MultinomialTreeSampler(logaddexp(s1.logw, s2.logw))
 
+##
+## Variants of no-U-turn criteria
+##
+
 abstract type AbstractTerminationCriterion end
 
 struct OriginalNoUTurn <: AbstractTerminationCriterion
@@ -186,6 +190,9 @@ function isturn(h::Hamiltonian, cleft::NoUTurn, cright::NoUTurn)
     return Termination(s, false)
 end
 
+##
+## NUTS
+##
 
 """
 Dynamic trajectory HMC using the no-U-turn termination criteria algorithm.
