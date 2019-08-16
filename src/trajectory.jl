@@ -146,23 +146,66 @@ makebase(s::MultinomialTreeSampler, H::AbstractFloat) = MultinomialTreeSampler(-
 combine(s1::SliceTreeSampler, s2::SliceTreeSampler) = SliceTreeSampler(s1.logu, s1.n + s2.n)
 combine(s1::MultinomialTreeSampler, s2::MultinomialTreeSampler) = MultinomialTreeSampler(logaddexp(s1.logw, s2.logw))
 
+abstract type AbstractTerminationCriterion end
+
+struct OriginalNoUTurn <: AbstractTerminationCriterion
+    zleft::PhasePoint
+    zright::PhasePoint
+end
+
+OriginalNoUTurn(z::PhasePoint) = OriginalNoUTurn(z, z)
+
+struct NoUTurn <: AbstractTerminationCriterion
+    zleft::PhasePoint
+    zright::PhasePoint
+end
+
+NoUTurn(z::PhasePoint) = NoUTurn(z, z)
+
+combine(cleft::T, cright::T) where {T<:Union{OriginalNoUTurn,NoUTurn}} = T(cleft.zleft, cright.zright)
+
+"""
+Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`.
+
+Ref: https://arxiv.org/abs/1111.4246
+"""
+function isturn(h::Hamiltonian, cleft::OriginalNoUTurn, cright::OriginalNoUTurn)
+    θdiff = cright.zright.θ - cleft.zleft.θ
+    s = (dot(θdiff, ∂H∂r(h, cleft.zleft.r)) >= 0 ? 1 : 0) * (dot(θdiff, ∂H∂r(h, cright.zright.r)) >= 0 ? 1 : 0)
+    return Termination(s == 0, false)
+end
+
+"""
+Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`.
+
+Ref: https://arxiv.org/abs/1701.02434
+"""
+function isturn(h::Hamiltonian, cleft::NoUTurn, cright::NoUTurn)
+    θdiff = cright.zright.θ - cleft.zleft.θ
+    s = (dot(-θdiff, ∂H∂r(h, cleft.zleft.r)) < 0) && (dot(θdiff, ∂H∂r(h, cright.zright.r)) < 0)
+    return Termination(s, false)
+end
+
+
 """
 Dynamic trajectory HMC using the no-U-turn termination criteria algorithm.
 """
 struct NUTS{
     I<:AbstractIntegrator,
     F<:AbstractFloat,
-    S<:AbstractTreeSampler
+    S<:AbstractTreeSampler,
+    C<:AbstractTerminationCriterion
 } <: DynamicTrajectory{I}
-    integrator  ::  I
-    max_depth   ::  Int
-    Δ_max       ::  F
-    samplerType ::  Type{S}
+    integrator      ::  I
+    max_depth       ::  Int
+    Δ_max           ::  F
+    samplerType     ::  Type{S}
+    criterionType   ::  Type{C}
 end
-Base.show(io::IO, τ::NUTS{I,F,S}) where {I,F,S<:SliceTreeSampler} = 
-    print(io, "NUTS{Slice}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
-Base.show(io::IO, τ::NUTS{I,F,S}) where {I,F,S<:MultinomialTreeSampler} = 
-    print(io, "NUTS{Multinomial}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+Base.show(io::IO, τ::NUTS{I,F,S,C}) where {I,F,S<:SliceTreeSampler,C} = 
+    print(io, "NUTS{Slice,$C}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+Base.show(io::IO, τ::NUTS{I,F,S,C}) where {I,F,S<:MultinomialTreeSampler,C} = 
+    print(io, "NUTS{Multinomial,$C}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 
 """
 Helper dictionary used to allow users pass symbol keyword argument
@@ -172,11 +215,19 @@ const SUPPORTED_TREE_SAMPLING = Dict(:slice => SliceTreeSampler, :multinomial =>
 const DEFAULT_TREE_SAMPLING = :multinomial
 
 """
+Helper dictionary used to allow users pass symbol keyword argument
+to create NUTS with different termination criteria.
+"""
+const SUPPORTED_TERMINATION_CRITERION = Dict(:original => OriginalNoUTurn, :modern => NoUTurn)
+const DEFAULT_TERMINATION_CRITERION = :modern
+
+"""
     NUTS(
         integrator::AbstractIntegrator,
         max_depth::Int=10,
         Δ_max::AbstractFloat=1000.0;
-        sampling::Symbol=:multinomial
+        sampling::Symbol=:multinomial,
+        criterion::Symbol=:modern
     )
 
 Create an instance for the No-U-Turn sampling algorithm.
@@ -185,13 +236,23 @@ function NUTS(
     integrator::AbstractIntegrator,
     max_depth::Int=10,
     Δ_max::AbstractFloat=1000.0;
-    sampling::Symbol=DEFAULT_TREE_SAMPLING
+    sampling::Symbol=DEFAULT_TREE_SAMPLING,
+    criterion::Symbol=DEFAULT_TERMINATION_CRITERION
 )
     @assert sampling in keys(SUPPORTED_TREE_SAMPLING) "NUTS only supports the following
         sampling methods: $(keys(SUPPORTED_TREE_SAMPLING))"
-    return NUTS(integrator, max_depth, Δ_max, SUPPORTED_TREE_SAMPLING[sampling])
+    @assert criterion in keys(SUPPORTED_TERMINATION_CRITERION) "NUTS only supports the following
+        criterion: $(keys(SUPPORTED_TERMINATION_CRITERION))"
+    return NUTS(
+        integrator, 
+        max_depth, 
+        Δ_max, 
+        SUPPORTED_TREE_SAMPLING[sampling], 
+        SUPPORTED_TERMINATION_CRITERION[criterion]
+    )
 end
 @info "Default NUTS tree sampling method is set to $DEFAULT_TREE_SAMPLING."
+@info "Default NUTS termination criterion is set to $DEFAULT_TERMINATION_CRITERION."
 
 """
 Create a new No-U-Turn sampling algorithm with a new integrator.
@@ -219,47 +280,38 @@ Base.:*(d1::Termination, d2::Termination) = Termination(d1.dynamic || d2.dynamic
 isterminated(d::Termination) = d.dynamic || d.numerical
 
 """
-A full binary tree trajectory with only necessary leaves and information stored.
-"""
-struct FullBinaryTree{S<:AbstractTreeSampler}
-    zleft       # left most leaf node
-    zright      # right most leaf node
-    zcand       # candidate leaf node
-    sampler::S  # condidate sampler
-    termination # termination reasons
-    α           # MH stats, i.e. sum of MH accept prob for all leapfrog steps
-    nα          # total # of leap frog steps, i.e. phase points in a trajectory
-end
-
-"""
-Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
-"""
-function isturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
-    θdiff = zright.θ - zleft.θ
-    s = (dot(θdiff, ∂H∂r(h, zleft.r)) >= 0 ? 1 : 0) * (dot(θdiff, ∂H∂r(h, zright.r)) >= 0 ? 1 : 0)
-    return Termination(s == 0, false)
-end
-# function isturn(h::Hamiltonian, zleft::PhasePoint, zright::PhasePoint)
-#     θdiff = zright.θ - zleft.θ
-#     s = (dot(-θdiff, ∂H∂r(h, zleft.r)) < 0) && (dot(θdiff, ∂H∂r(h, zright.r)) < 0)
-#     return Termination(s, false)
-# end
-
-"""
 Check termination of a Hamiltonian trajectory.
 """
-isterminated(
+Termination(
     s::SliceTreeSampler,
     nt::NUTS,
     H0::F,
     H′::F
 ) where {F<:AbstractFloat} = Termination(false, !(s.logu < nt.Δ_max + -H′))
-isterminated(
+
+"""
+Check termination of a Hamiltonian trajectory.
+"""
+Termination(
     s::MultinomialTreeSampler,
     nt::NUTS,
     H0::F,
     H′::F
 ) where {F<:AbstractFloat} = Termination(false, !(-H0 < nt.Δ_max + -H′))
+
+"""
+A full binary tree trajectory with only necessary leaves and information stored.
+"""
+struct FullBinaryTree{S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}
+    zleft       # left most leaf node
+    zright      # right most leaf node
+    zcand       # candidate leaf node
+    sampler::S  # condidate sampler
+    c::C        # termination criterion
+    termination # termination reasons
+    α           # MH stats, i.e. sum of MH accept prob for all leapfrog steps
+    nα          # total # of leap frog steps, i.e. phase points in a trajectory
+end
 
 """
     combine(h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree)
@@ -273,33 +325,32 @@ function combine(
     tleft::FullBinaryTree,
     tright::FullBinaryTree
 )
-    zleft = tleft.zleft
-    zright = tright.zright
-    zcand = combine(rng, tleft, tright)
+    zcand = sample(rng, tleft, tright)
     sampler = combine(tleft.sampler, tright.sampler)
-    termination = tleft.termination * tright.termination * isturn(h, zleft, zright)
-    return FullBinaryTree(zleft, zright, zcand, sampler, termination, tright.α + tright.α, tright.nα + tright.nα)
+    c = combine(tleft.c, tright.c)
+    termination = tleft.termination * tright.termination * isturn(h, tleft.c, tright.c)
+    return FullBinaryTree(tleft.zleft, tright.zright, zcand, sampler, c, termination, tright.α + tright.α, tright.nα + tright.nα)
 end
 
 """
 Sample a condidate point form two trees (`tleft` and `tright`) under slice sampling.
 """
-function combine(
+function sample(
     rng::AbstractRNG,
-    tleft::FullBinaryTree{SliceTreeSampler{F}},
-    tright::FullBinaryTree{SliceTreeSampler{F}}
-) where {F<:AbstractFloat}
+    tleft::FullBinaryTree{SliceTreeSampler{F},C},
+    tright::FullBinaryTree{SliceTreeSampler{F},C}
+) where {F<:AbstractFloat,C}
     return rand(rng) < tleft.sampler.n / (tleft.sampler.n + tright.sampler.n) ? tleft.zcand : tright.zcand
 end
 
 """
 Sample a condidate point form two trees (`tleft` and `tright`) under multinomial sampling.
 """
-function combine(
+function sample(
     rng::AbstractRNG,
-    tleft::FullBinaryTree{MultinomialTreeSampler{F}},
-    tright::FullBinaryTree{MultinomialTreeSampler{F}}
-) where {F<:AbstractFloat}
+    tleft::FullBinaryTree{MultinomialTreeSampler{F},C},
+    tright::FullBinaryTree{MultinomialTreeSampler{F},C}
+) where {F<:AbstractFloat,C}
     return rand(rng) < exp(tleft.sampler.logw - logaddexp(tleft.sampler.logw, tright.sampler.logw)) ? tleft.zcand : tright.zcand
 end
 
@@ -308,22 +359,23 @@ Recursivly build a tree for a given depth `j`.
 """
 function build_tree(
     rng::AbstractRNG,
-    nt::NUTS{I,F,S},
+    nt::NUTS{I,F,S,C},
     h::Hamiltonian,
     z::PhasePoint,
     sampler::AbstractTreeSampler,
     v::Int,
     j::Int,
     H0::AbstractFloat
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler}
+) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
         z′ = step(nt.integrator, h, z, v)
         H′ = -neg_energy(z′)
         basesampler = makebase(sampler, H′)
-        termination = isterminated(basesampler, nt, H0, H′)
+        c = C(z)
+        termination = Termination(basesampler, nt, H0, H′)
         α′ = exp(min(0, H0 - H′))
-        return FullBinaryTree(z′, z′, z′, basesampler, termination, α′, 1)
+        return FullBinaryTree(z′, z′, z′, basesampler, c, termination, α′, 1)
     else
         # Recursion - build the left and right subtrees.
         t′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
@@ -357,14 +409,17 @@ mh_accept(
 
 function transition(
     rng::AbstractRNG,
-    τ::NUTS{I,F,S},
+    τ::NUTS{I,F,S,C},
     h::Hamiltonian,
     z0::PhasePoint
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler}
+) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}
     H0 = -neg_energy(z0)
 
-    zleft = z0; zright = z0; z = z0; 
-    j = 0; termination = Termination(false, false); sampler = S(rng, H0)
+    termination = Termination(false, false)
+    z = zleft = zright = z0
+    cleft = cright = C(z0)
+    sampler = S(rng, H0)
+    j = 0
 
     local t
     while !isterminated(termination) && j <= τ.max_depth
@@ -374,10 +429,12 @@ function transition(
             # Create a tree with depth `j` on the left
             t = build_tree(rng, τ, h, zleft, sampler, v, j, H0)
             zleft = t.zleft
+            cleft = t.c
         else
             # Create a tree with depth `j` on the right
             t = build_tree(rng, τ, h, zright, sampler, v, j, H0)
             zright = t.zright
+            cright = t.c
         end
         # Perform a MH step if not terminated
         if !isterminated(t.termination) && mh_accept(rng, sampler, t.sampler)
@@ -386,7 +443,7 @@ function transition(
         # Combine the sampler from the proposed tree and the current tree
         sampler = combine(sampler, t.sampler)
         # Detect termination
-        termination = termination * t.termination * isturn(h, zleft, zright)
+        termination = termination * t.termination * isturn(h, cleft, cright)
         # Increment tree depth
         j = j + 1
     end
