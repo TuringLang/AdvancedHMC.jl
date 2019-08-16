@@ -24,3 +24,19 @@ r_init = AdvancedHMC.rand(h.metric)
         @test z1′.r == z2′.r
     end
 end
+
+@testset "TreeSampler" begin
+    logu = rand()
+    s1 = AdvancedHMC.SliceTreeSampler(logu, 1) 
+    s2 = AdvancedHMC.SliceTreeSampler(logu, 2) 
+    s3 = AdvancedHMC.combine(s1, s2)
+    @test s3.logu == logu
+    @test s3.n == 1 + 2
+
+    w1 = rand()
+    s1 = AdvancedHMC.MultinomialTreeSampler(log(w1))
+    w2 = rand()
+    s2 = AdvancedHMC.MultinomialTreeSampler(log(w2))
+    s3 = AdvancedHMC.combine(s1, s2)
+    @test s3.logw == log(w1 + w2)
+end
