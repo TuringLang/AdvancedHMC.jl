@@ -97,3 +97,7 @@ end
     @test AdvancedHMC.isterminated(t11 * t10) == true
     @test AdvancedHMC.isterminated(t11 * t11) == true
 end
+
+@testset "FullBinaryTree" begin
+    @warn "FullBinaryTree not tested"
+end
