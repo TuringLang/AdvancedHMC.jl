@@ -152,66 +152,23 @@ combine(s1::MultinomialTreeSampler, s2::MultinomialTreeSampler) = MultinomialTre
 
 abstract type AbstractTerminationCriterion end
 
-struct OriginalNoUTurn <: AbstractTerminationCriterion
-    zleft::PhasePoint
-    zright::PhasePoint
-end
+struct OriginalNoUTurn <: AbstractTerminationCriterion end
 
-OriginalNoUTurn(z::PhasePoint) = OriginalNoUTurn(z, z)
+OriginalNoUTurn(::PhasePoint) = OriginalNoUTurn()
 
-struct NoUTurn <: AbstractTerminationCriterion
-    zleft::PhasePoint
-    zright::PhasePoint
-end
+struct NoUTurn <: AbstractTerminationCriterion end
 
-NoUTurn(z::PhasePoint) = NoUTurn(z, z)
+NoUTurn(::PhasePoint) = NoUTurn()
 
 struct GeneralisedNoUTurn{TR<:Real,TV<:AbstractVector{TR}} <: AbstractTerminationCriterion
-    rleft::TV
-    rright::TV
     rho::TV
 end
 
-GeneralisedNoUTurn(z::PhasePoint) = GeneralisedNoUTurn(z.r, z.r, z.r)
+GeneralisedNoUTurn(z::PhasePoint) = GeneralisedNoUTurn(z.r)
 
-combine(cleft::T, cright::T) where {T<:Union{OriginalNoUTurn,NoUTurn}} = T(cleft.zleft, cright.zright)
-combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rleft, cright.rright, cleft.rho + cright.rho)
+combine(cleft::T, cright::T) where {T<:Union{OriginalNoUTurn,NoUTurn}} = T()
+combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rho + cright.rho)
 
-"""
-Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
-using the no-U-turn criterion from the original NUTS paper.
-
-Ref: https://arxiv.org/abs/1111.4246
-"""
-function isturn(h::Hamiltonian, cleft::OriginalNoUTurn, cright::OriginalNoUTurn)
-    θdiff = cright.zright.θ - cleft.zleft.θ
-    s = (dot(θdiff, ∂H∂r(h, cleft.zleft.r)) >= 0 ? 1 : 0) * (dot(θdiff, ∂H∂r(h, cright.zright.r)) >= 0 ? 1 : 0)
-    return Termination(s == 0, false)
-end
-
-"""
-Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
-using the "modern" no-U-turn cirterion.
-
-Ref: https://arxiv.org/abs/1701.02434
-"""
-function isturn(h::Hamiltonian, cleft::NoUTurn, cright::NoUTurn)
-    θdiff = cright.zright.θ - cleft.zleft.θ
-    s = (dot(-θdiff, ∂H∂r(h, cleft.zleft.r)) < 0) && (dot(θdiff, ∂H∂r(h, cright.zright.r)) < 0)
-    return Termination(s, false)
-end
-
-"""
-Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
-using the generalised no-U-turn criterion.
-
-Ref: https://arxiv.org/abs/1701.02434
-"""
-function isturn(h::Hamiltonian, cleft::GeneralisedNoUTurn, cright::GeneralisedNoUTurn)
-    rho = cleft.rho + cright.rho
-    s = (dot(rho, ∂H∂r(h, cleft.rleft)) < 0) && (dot(rho, ∂H∂r(h, cright.rright)) < 0)
-    return Termination(s, false)
-end
 
 ##
 ## NUTS
@@ -249,7 +206,7 @@ Helper dictionary used to allow users pass symbol keyword argument
 to create NUTS with different termination criteria.
 """
 const SUPPORTED_TERMINATION_CRITERION = Dict(:original => OriginalNoUTurn, :modern => NoUTurn, :generalised => GeneralisedNoUTurn)
-const DEFAULT_TERMINATION_CRITERION = :modern
+const DEFAULT_TERMINATION_CRITERION = :generalised
 
 """
     NUTS(
@@ -353,13 +310,13 @@ function combine(
     rng::AbstractRNG,
     h::Hamiltonian,
     tleft::FullBinaryTree,
-    tright::FullBinaryTree
+    tright::FullBinaryTree;
+    zcand=sample(rng, tleft, tright)
 )
-    zcand = sample(rng, tleft, tright)
     sampler = combine(tleft.sampler, tright.sampler)
     c = combine(tleft.c, tright.c)
-    termination = tleft.termination * tright.termination * isturn(h, tleft.c, tright.c)
-    return FullBinaryTree(tleft.zleft, tright.zright, zcand, sampler, c, termination, tright.α + tright.α, tright.nα + tright.nα)
+    termination = tleft.termination * tright.termination * isturn(h, tleft, tright)
+    return FullBinaryTree(tleft.zleft, tright.zright, zcand, sampler, c, termination, tleft.α + tright.α, tleft.nα + tright.nα)
 end
 
 """
@@ -382,6 +339,43 @@ function sample(
     tright::FullBinaryTree{MultinomialTreeSampler{F},C}
 ) where {F<:AbstractFloat,C}
     return rand(rng) < exp(tleft.sampler.logw - logaddexp(tleft.sampler.logw, tright.sampler.logw)) ? tleft.zcand : tright.zcand
+end
+
+
+"""
+Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
+using the no-U-turn criterion from the original NUTS paper.
+
+Ref: https://arxiv.org/abs/1111.4246
+"""
+function isturn(h::Hamiltonian, tleft::FullBinaryTree{S,C}, tright::FullBinaryTree{S,C}) where {S,C<:OriginalNoUTurn}
+    θdiff = tright.zright.θ - tleft.zleft.θ
+    s = (dot(θdiff, ∂H∂r(h, tleft.zleft.r)) >= 0 ? 1 : 0) * (dot(θdiff, ∂H∂r(h, tright.zright.r)) >= 0 ? 1 : 0)
+    return Termination(s == 0, false)
+end
+
+"""
+Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
+using the "modern" no-U-turn cirterion.
+
+Ref: https://arxiv.org/abs/1701.02434
+"""
+function isturn(h::Hamiltonian, tleft::FullBinaryTree{S,C}, tright::FullBinaryTree{S,C}) where {S,C<:NoUTurn}
+    θdiff = tright.zright.θ - tleft.zleft.θ
+    s = (dot(-θdiff, ∂H∂r(h, tleft.zleft.r)) < 0) && (dot(θdiff, ∂H∂r(h, tright.zright.r)) < 0)
+    return Termination(s, false)
+end
+
+"""
+Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
+using the generalised no-U-turn criterion.
+
+Ref: https://arxiv.org/abs/1701.02434
+"""
+function isturn(h::Hamiltonian, tleft::FullBinaryTree{S,C}, tright::FullBinaryTree{S,C}) where {S,C<:GeneralisedNoUTurn}
+    rho = tleft.c.rho + tright.c.rho
+    s = (dot(rho, ∂H∂r(h, tleft.zleft.r)) > 0) && (dot(rho, ∂H∂r(h, tright.zright.r)) > 0)
+    return Termination(s, false)
 end
 
 """
@@ -444,49 +438,51 @@ function transition(
     z0::PhasePoint
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}
     H0 = -neg_energy(z0)
+    t = FullBinaryTree(
+        z0,
+        z0, 
+        z0, 
+        S(rng, H0), 
+        C(z0), 
+        Termination(false, false),
+        zero(F),
+        zero(F)
+    )
+    z = t.zcand
 
-    termination = Termination(false, false)
-    z = zleft = zright = z0
-    cleft = cright = C(z0)
-    sampler = S(rng, H0)
     j = 0
-
-    local t
-    while !isterminated(termination) && j <= τ.max_depth
+    while !isterminated(t.termination) && j <= τ.max_depth
+        tleft = tright = t
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
         if v == -1
             # Create a tree with depth `j` on the left
-            t = build_tree(rng, τ, h, zleft, sampler, v, j, H0)
-            zleft = t.zleft
-            cleft = t.c
+            t′ = build_tree(rng, τ, h, t.zleft, t.sampler, v, j, H0)
+            tleft = t′
         else
             # Create a tree with depth `j` on the right
-            t = build_tree(rng, τ, h, zright, sampler, v, j, H0)
-            zright = t.zright
-            cright = t.c
+            t′ = build_tree(rng, τ, h, t.zright, t.sampler, v, j, H0)
+            tright = t′
         end
         # Perform a MH step if not terminated
-        if !isterminated(t.termination) && mh_accept(rng, sampler, t.sampler)
-            z = t.zcand
+        if !isterminated(t′.termination) && mh_accept(rng, t.sampler, t′.sampler)
+            z = t′.zcand
         end
-        # Combine the sampler from the proposed tree and the current tree
-        sampler = combine(sampler, t.sampler)
-        # Detect termination
-        termination = termination * t.termination * isturn(h, cleft, cright)
+        # Combine the proposed tree and the current tree
+        t = combine(rng, h, tleft, tright; zcand=z)
         # Increment tree depth
         j = j + 1
     end
 
     stat = (
         step_size=τ.integrator.ϵ, 
-        n_steps=2^j, 
+        n_steps=t.nα, 
         is_accept=true, 
         acceptance_rate=t.α / t.nα, 
         log_density=z.ℓπ.value, 
         hamiltonian_energy=-neg_energy(z), 
         tree_depth=j, 
-        numerical_error=termination.numerical,
+        numerical_error=t.termination.numerical,
        )
     return z, stat
 end
