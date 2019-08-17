@@ -166,10 +166,20 @@ end
 
 NoUTurn(z::PhasePoint) = NoUTurn(z, z)
 
+struct GeneralisedNoUTurn{TR<:Real,TV<:AbstractVector{TR}} <: AbstractTerminationCriterion
+    rleft::TV
+    rright::TV
+    rho::TV
+end
+
+GeneralisedNoUTurn(z::PhasePoint) = GeneralisedNoUTurn(z.r, z.r, z.r)
+
 combine(cleft::T, cright::T) where {T<:Union{OriginalNoUTurn,NoUTurn}} = T(cleft.zleft, cright.zright)
+combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rleft, cright.rright, cleft.rho + cright.rho)
 
 """
-Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`.
+Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
+using the no-U-turn criterion from the original NUTS paper.
 
 Ref: https://arxiv.org/abs/1111.4246
 """
@@ -180,13 +190,26 @@ function isturn(h::Hamiltonian, cleft::OriginalNoUTurn, cright::OriginalNoUTurn)
 end
 
 """
-Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`.
+Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
+using the "modern" no-U-turn cirterion.
 
 Ref: https://arxiv.org/abs/1701.02434
 """
 function isturn(h::Hamiltonian, cleft::NoUTurn, cright::NoUTurn)
     θdiff = cright.zright.θ - cleft.zleft.θ
     s = (dot(-θdiff, ∂H∂r(h, cleft.zleft.r)) < 0) && (dot(θdiff, ∂H∂r(h, cright.zright.r)) < 0)
+    return Termination(s, false)
+end
+
+"""
+Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
+using the generalised no-U-turn criterion.
+
+Ref: https://arxiv.org/abs/1701.02434
+"""
+function isturn(h::Hamiltonian, cleft::GeneralisedNoUTurn, cright::GeneralisedNoUTurn)
+    rho = cleft.rho + cright.rho
+    s = (dot(rho, ∂H∂r(h, cleft.rleft)) < 0) && (dot(rho, ∂H∂r(h, cright.rright)) < 0)
     return Termination(s, false)
 end
 
@@ -210,9 +233,9 @@ struct NUTS{
     criterionType   ::  Type{C}
 end
 Base.show(io::IO, τ::NUTS{I,F,S,C}) where {I,F,S<:SliceTreeSampler,C} = 
-    print(io, "NUTS{Slice,$C}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+    print(io, "NUTS{Slice}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 Base.show(io::IO, τ::NUTS{I,F,S,C}) where {I,F,S<:MultinomialTreeSampler,C} = 
-    print(io, "NUTS{Multinomial,$C}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+    print(io, "NUTS{Multinomial}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 
 """
 Helper dictionary used to allow users pass symbol keyword argument
@@ -225,7 +248,7 @@ const DEFAULT_TREE_SAMPLING = :multinomial
 Helper dictionary used to allow users pass symbol keyword argument
 to create NUTS with different termination criteria.
 """
-const SUPPORTED_TERMINATION_CRITERION = Dict(:original => OriginalNoUTurn, :modern => NoUTurn)
+const SUPPORTED_TERMINATION_CRITERION = Dict(:original => OriginalNoUTurn, :modern => NoUTurn, :generalised => GeneralisedNoUTurn)
 const DEFAULT_TERMINATION_CRITERION = :modern
 
 """

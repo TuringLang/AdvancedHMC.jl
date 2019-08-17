@@ -38,5 +38,5 @@ end
     w2 = rand()
     s2 = AdvancedHMC.MultinomialTreeSampler(log(w2))
     s3 = AdvancedHMC.combine(s1, s2)
-    @test s3.logw == log(w1 + w2)
+    @test s3.logw ≈ log(w1 + w2)
 end
