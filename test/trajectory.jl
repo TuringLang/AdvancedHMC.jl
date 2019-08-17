@@ -40,3 +40,28 @@ end
     s3 = AdvancedHMC.combine(s1, s2)
     @test s3.logw ≈ log(w1 + w2)
 end
+
+@testset "TerminationCriterion" begin
+    z1 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
+    c1 = AdvancedHMC.OriginalNoUTurn(z1)
+    z2 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
+    c2 = AdvancedHMC.OriginalNoUTurn(z2)
+    c3 = AdvancedHMC.combine(c1, c2)
+    @test c1 == c2 == c3
+
+    z1 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
+    c1 = AdvancedHMC.NoUTurn(z1)
+    z2 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
+    c2 = AdvancedHMC.NoUTurn(z2)
+    c3 = AdvancedHMC.combine(c1, c2)
+    @test c1 == c2 == c3
+
+    r1 = randn(D)
+    z1 = AdvancedHMC.phasepoint(h, θ_init, r1)
+    c1 = AdvancedHMC.GeneralisedNoUTurn(z1) 
+    r2 = randn(D)
+    z2 = AdvancedHMC.phasepoint(h, θ_init, r2)
+    c2 = AdvancedHMC.GeneralisedNoUTurn(z2) 
+    c3 = AdvancedHMC.combine(c1, c2)
+    @test c3.rho == r1 + r2
+end
