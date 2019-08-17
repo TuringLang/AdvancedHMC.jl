@@ -65,3 +65,35 @@ end
     c3 = AdvancedHMC.combine(c1, c2)
     @test c3.rho == r1 + r2
 end
+
+@testset "Termination" begin
+    t00 = AdvancedHMC.Termination(false, false)
+    t01 = AdvancedHMC.Termination(false, true)
+    t10 = AdvancedHMC.Termination(true, false)
+    t11 = AdvancedHMC.Termination(true, true)
+
+    @test AdvancedHMC.isterminated(t00) == false
+    @test AdvancedHMC.isterminated(t01) == true
+    @test AdvancedHMC.isterminated(t10) == true
+    @test AdvancedHMC.isterminated(t11) == true
+
+    @test AdvancedHMC.isterminated(t00 * t00) == false
+    @test AdvancedHMC.isterminated(t00 * t01) == true
+    @test AdvancedHMC.isterminated(t00 * t10) == true
+    @test AdvancedHMC.isterminated(t00 * t11) == true
+
+    @test AdvancedHMC.isterminated(t01 * t00) == true
+    @test AdvancedHMC.isterminated(t01 * t01) == true
+    @test AdvancedHMC.isterminated(t01 * t10) == true
+    @test AdvancedHMC.isterminated(t01 * t11) == true
+
+    @test AdvancedHMC.isterminated(t10 * t00) == true
+    @test AdvancedHMC.isterminated(t10 * t01) == true
+    @test AdvancedHMC.isterminated(t10 * t10) == true
+    @test AdvancedHMC.isterminated(t10 * t11) == true
+
+    @test AdvancedHMC.isterminated(t11 * t00) == true
+    @test AdvancedHMC.isterminated(t11 * t01) == true
+    @test AdvancedHMC.isterminated(t11 * t10) == true
+    @test AdvancedHMC.isterminated(t11 * t11) == true
+end
