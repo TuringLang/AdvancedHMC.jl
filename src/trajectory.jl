@@ -213,7 +213,7 @@ Helper dictionary used to allow users pass symbol keyword argument
 to create NUTS with different termination criteria.
 """
 const SUPPORTED_TERMINATION_CRITERION = Dict(:original => OriginalNoUTurn, :modern => NoUTurn, :generalised => GeneralisedNoUTurn)
-const DEFAULT_TERMINATION_CRITERION = :modern
+const DEFAULT_TERMINATION_CRITERION = :generalised
 
 """
     NUTS(
@@ -369,7 +369,7 @@ Ref: https://arxiv.org/abs/1701.02434
 """
 function isturn(h::Hamiltonian, tleft::FullBinaryTree{S,C}, tright::FullBinaryTree{S,C}) where {S,C<:NoUTurn}
     θdiff = tright.zright.θ - tleft.zleft.θ
-    s = (dot(-θdiff, ∂H∂r(h, tleft.zleft.r)) < 0) || (dot(θdiff, ∂H∂r(h, tright.zright.r)) < 0)
+    s = (dot(θdiff, ∂H∂r(h, tleft.zleft.r)) < 0) || (dot(θdiff, ∂H∂r(h, tright.zright.r)) < 0)
     return Termination(s, false)
 end
 
