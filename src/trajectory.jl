@@ -49,6 +49,7 @@ function transition(
     # Accept via MH criteria
     is_accept, α = mh_accept_ratio(rng, -neg_energy(z), -neg_energy(z′))
     if is_accept
+        # Reverse momentum variable to preserve reversibility
         z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
     end
     stat = (
@@ -122,26 +123,32 @@ end
 Slice sampler for the starting single leaf tree.
 Slice variable is initialized.
 """
-SliceTreeSampler(rng::AbstractRNG, H::AbstractFloat) = SliceTreeSampler(log(rand(rng)) - H, 1)
+SliceTreeSampler(rng::AbstractRNG, H0::AbstractFloat, H::AbstractFloat) = 
+    SliceTreeSampler(log(rand(rng)) - H, 1)
 
 """
 Multinomial sampler for the starting single leaf tree.
 Tree weight is just the probability of the only leave.
+
+Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/base_nuts.hpp#L226
 """
-MultinomialTreeSampler(rng::AbstractRNG, H::AbstractFloat) = MultinomialTreeSampler(-H)
+MultinomialTreeSampler(rng::AbstractRNG, H0::AbstractFloat, H::AbstractFloat) = 
+    MultinomialTreeSampler(H0 - H)
 
 """
 Create a slice sampler for a single leaf tree:
 - the slice variable is copied from the passed-in sampler `s` and
 - the number of acceptable candicates is computed by comparing the slice variable against the current energy.
 """
-makebase(s::SliceTreeSampler, H::AbstractFloat) = SliceTreeSampler(s.logu, (s.logu <= -H) ? 1 : 0)
+makebase(s::SliceTreeSampler, H0::AbstractFloat, H::AbstractFloat) = 
+    SliceTreeSampler(s.logu, (s.logu <= -H) ? 1 : 0)
 
 """
 Create a multinomial sampler for a single leaf tree:
 - the tree weight is just the probability of the only leave.
 """
-makebase(s::MultinomialTreeSampler, H::AbstractFloat) = MultinomialTreeSampler(-H)
+makebase(s::MultinomialTreeSampler, H0::AbstractFloat, H::AbstractFloat) = 
+    MultinomialTreeSampler(H0 - H)
 
 combine(s1::SliceTreeSampler, s2::SliceTreeSampler) = SliceTreeSampler(s1.logu, s1.n + s2.n)
 combine(s1::MultinomialTreeSampler, s2::MultinomialTreeSampler) = MultinomialTreeSampler(logaddexp(s1.logw, s2.logw))
@@ -206,15 +213,15 @@ Helper dictionary used to allow users pass symbol keyword argument
 to create NUTS with different termination criteria.
 """
 const SUPPORTED_TERMINATION_CRITERION = Dict(:original => OriginalNoUTurn, :modern => NoUTurn, :generalised => GeneralisedNoUTurn)
-const DEFAULT_TERMINATION_CRITERION = :generalised
+const DEFAULT_TERMINATION_CRITERION = :modern
 
 """
     NUTS(
         integrator::AbstractIntegrator,
         max_depth::Int=10,
         Δ_max::AbstractFloat=1000.0;
-        sampling::Symbol=:multinomial,
-        criterion::Symbol=:modern
+        sampling::Symbol=:$DEFAULT_TREE_SAMPLING,
+        criterion::Symbol=:$DEFAULT_TERMINATION_CRITERION
     )
 
 Create an instance for the No-U-Turn sampling algorithm.
@@ -362,7 +369,7 @@ Ref: https://arxiv.org/abs/1701.02434
 """
 function isturn(h::Hamiltonian, tleft::FullBinaryTree{S,C}, tright::FullBinaryTree{S,C}) where {S,C<:NoUTurn}
     θdiff = tright.zright.θ - tleft.zleft.θ
-    s = (dot(-θdiff, ∂H∂r(h, tleft.zleft.r)) < 0) && (dot(θdiff, ∂H∂r(h, tright.zright.r)) < 0)
+    s = (dot(-θdiff, ∂H∂r(h, tleft.zleft.r)) < 0) || (dot(θdiff, ∂H∂r(h, tright.zright.r)) < 0)
     return Termination(s, false)
 end
 
@@ -374,7 +381,7 @@ Ref: https://arxiv.org/abs/1701.02434
 """
 function isturn(h::Hamiltonian, tleft::FullBinaryTree{S,C}, tright::FullBinaryTree{S,C}) where {S,C<:GeneralisedNoUTurn}
     rho = tleft.c.rho + tright.c.rho
-    s = (dot(rho, ∂H∂r(h, tleft.zleft.r)) > 0) && (dot(rho, ∂H∂r(h, tright.zright.r)) > 0)
+    s = (dot(rho, ∂H∂r(h, tleft.zleft.r)) < 0) || (dot(rho, ∂H∂r(h, tright.zright.r)) < 0)
     return Termination(s, false)
 end
 
@@ -395,7 +402,7 @@ function build_tree(
         # Base case - take one leapfrog step in the direction v.
         z′ = step(nt.integrator, h, z, v)
         H′ = -neg_energy(z′)
-        basesampler = makebase(sampler, H′)
+        basesampler = makebase(sampler, H0, H′)
         c = C(z′)
         termination = Termination(basesampler, nt, H0, H′)
         α′ = exp(min(0, H0 - H′))
@@ -442,7 +449,7 @@ function transition(
         z0,
         z0, 
         z0, 
-        S(rng, H0), 
+        S(rng, H0, H0), 
         C(z0), 
         Termination(false, false),
         zero(F),
@@ -452,17 +459,16 @@ function transition(
 
     j = 0
     while !isterminated(t.termination) && j <= τ.max_depth
-        tleft = tright = t
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
         if v == -1
             # Create a tree with depth `j` on the left
             t′ = build_tree(rng, τ, h, t.zleft, t.sampler, v, j, H0)
-            tleft = t′
+            tleft, tright = t′, t
         else
             # Create a tree with depth `j` on the right
             t′ = build_tree(rng, τ, h, t.zright, t.sampler, v, j, H0)
-            tright = t′
+            tleft, tright = t, t′
         end
         # Perform a MH step if not terminated
         if !isterminated(t′.termination) && mh_accept(rng, t.sampler, t′.sampler)
