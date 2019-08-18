@@ -43,13 +43,6 @@ end
 
 @testset "TerminationCriterion" begin
     z1 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
-    c1 = AdvancedHMC.OriginalNoUTurn(z1)
-    z2 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
-    c2 = AdvancedHMC.OriginalNoUTurn(z2)
-    c3 = AdvancedHMC.combine(c1, c2)
-    @test c1 == c2 == c3
-
-    z1 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
     c1 = AdvancedHMC.NoUTurn(z1)
     z2 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
     c2 = AdvancedHMC.NoUTurn(z2)
