@@ -220,7 +220,7 @@ function NUTS{S,C}(
 end
 
 """
-    NUTS(args...) = NUTS{MultinomialTreeSampler,NoUTurn}(args...)
+    NUTS(args...) = NUTS{MultinomialTreeSampler,GeneralisedNoUTurn}(args...)
 
 Create an instance for the No-U-Turn sampling algorithm
 with multinomial sampling and original no U-turn criterion.
@@ -229,7 +229,7 @@ Below is the doc for NUTS{S,C}.
 
 $NUTS_DOCSTR
 """
-NUTS(args...) = NUTS{MultinomialTreeSampler,NoUTurn}(args...)
+NUTS(args...) = NUTS{MultinomialTreeSampler,GeneralisedNoUTurn}(args...)
 
 ###
 ### The doubling tree algorithm for expanding trajectory.
@@ -278,7 +278,6 @@ struct FullBinaryTree{S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}
     zcand       # candidate leaf node
     sampler::S  # condidate sampler
     c::C        # termination criterion
-    termination # termination reasons
     α           # MH stats, i.e. sum of MH accept prob for all leapfrog steps
     nα          # total # of leap frog steps, i.e. phase points in a trajectory
 end
@@ -293,14 +292,12 @@ function combine(
     rng::AbstractRNG,
     h::Hamiltonian,
     tleft::FullBinaryTree,
-    tright::FullBinaryTree,
-    v::Int;
+    tright::FullBinaryTree;
     zcand=sample(rng, tleft, tright)
 )
     sampler = combine(tleft.sampler, tright.sampler)
     c = combine(tleft.c, tright.c)
-    termination = tleft.termination * tright.termination * isterminated(h, tleft, tright, v)
-    return FullBinaryTree(tleft.zleft, tright.zright, zcand, sampler, c, termination, tleft.α + tright.α, tleft.nα + tright.nα)
+    return FullBinaryTree(tleft.zleft, tright.zright, zcand, sampler, c, tleft.α + tright.α, tleft.nα + tright.nα)
 end
 
 """
@@ -397,26 +394,26 @@ function build_tree(
         H′ = -neg_energy(z′)
         basesampler = makebase(sampler, H0, H′)
         c = C(z′)
-        termination = Termination(basesampler, nt, H0, H′)
         α′ = exp(min(0, H0 - H′))
-        return FullBinaryTree(z′, z′, z′, basesampler, c, termination, α′, 1)
+        return FullBinaryTree(z′, z′, z′, basesampler, c, α′, 1), Termination(basesampler, nt, H0, H′)
     else
         # Recursion - build the left and right subtrees.
-        t′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
+        t′, termination′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
         # Expand tree if not terminated
-        if !isterminated(t′.termination)
+        if !isterminated(termination′)
             # Expand left
             if v == -1
-                t′′ = build_tree(rng, nt, h, t′.zleft, sampler, v, j - 1, H0) # left tree
+                t′′, termination′′ = build_tree(rng, nt, h, t′.zleft, sampler, v, j - 1, H0) # left tree
                 tleft, tright = t′′, t′
             # Expand right
             else
-                t′′ = build_tree(rng, nt, h, t′.zright, sampler, v, j - 1, H0) # right tree
+                t′′, termination′′ = build_tree(rng, nt, h, t′.zright, sampler, v, j - 1, H0) # right tree
                 tleft, tright = t′, t′′
             end
-            t′ = combine(rng, h, tleft, tright, v)
+            t′ = combine(rng, h, tleft, tright)
+            termination′ = termination′ * termination′′ * isterminated(h, tleft, tright, v)
         end
-        return t′
+        return t′, termination′
     end
 end
 
@@ -444,34 +441,35 @@ function transition(
         z0, 
         S(rng, H0, H0), 
         C(z0), 
-        Termination(false, false),
         zero(F),
         zero(F)
     )
+    termination = Termination(false, false)
     z = t.zcand
 
     j = 0
-    while !isterminated(t.termination) && j <= τ.max_depth
+    while !isterminated(termination) && j <= τ.max_depth
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
         if v == -1
             # Create a tree with depth `j` on the left
-            t′ = build_tree(rng, τ, h, t.zleft, t.sampler, v, j, H0)
+            t′, termination′ = build_tree(rng, τ, h, t.zleft, t.sampler, v, j, H0)
             tleft, tright = t′, t
         else
             # Create a tree with depth `j` on the right
-            t′ = build_tree(rng, τ, h, t.zright, t.sampler, v, j, H0)
+            t′, termination′ = build_tree(rng, τ, h, t.zright, t.sampler, v, j, H0)
             tleft, tright = t, t′
         end
         # Perform a MH step and increse depth if not terminated
-        if !isterminated(t′.termination)
+        if !isterminated(termination′)
             j = j + 1   # increment tree depth
             if mh_accept(rng, t.sampler, t′.sampler)
                 z = t′.zcand
             end
         end
         # Combine the proposed tree and the current tree (no matter terminated or not)
-        t = combine(rng, h, tleft, tright, v; zcand=z)
+        t = combine(rng, h, tleft, tright; zcand=z)
+        termination = termination * termination′ * isterminated(h, tleft, tright, v)
     end
 
     stat = (
@@ -482,7 +480,7 @@ function transition(
         log_density=z.ℓπ.value, 
         hamiltonian_energy=-neg_energy(z), 
         tree_depth=j, 
-        numerical_error=t.termination.numerical,
+        numerical_error=termination.numerical,
        )
     return z, stat
 end
