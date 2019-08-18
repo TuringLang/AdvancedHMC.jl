@@ -377,7 +377,7 @@ using the generalised no-U-turn criterion.
 
 Ref: https://arxiv.org/abs/1701.02434
 """
-function isturn(h::Hamiltonian, tleft::FullBinaryTree{S,C}, tright::FullBinaryTree{S,C}, ::Int) where {S,C<:GeneralisedNoUTurn}
+function isturn(h::Hamiltonian, tleft::FullBinaryTree{S,C}, tright::FullBinaryTree{S,C}, v::Int) where {S,C<:GeneralisedNoUTurn}
     # z0 is starting point and z1 is ending point
     z0 = tleft.zleft
     z1 = tright.zright
