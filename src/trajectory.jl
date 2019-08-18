@@ -181,75 +181,51 @@ combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rho + crigh
 Dynamic trajectory HMC using the no-U-turn termination criteria algorithm.
 """
 struct NUTS{
-    I<:AbstractIntegrator,
-    F<:AbstractFloat,
     S<:AbstractTreeSampler,
-    C<:AbstractTerminationCriterion
+    C<:AbstractTerminationCriterion,
+    I<:AbstractIntegrator,
+    F<:AbstractFloat
 } <: DynamicTrajectory{I}
     integrator      ::  I
     max_depth       ::  Int
     Δ_max           ::  F
-    samplerType     ::  Type{S}
-    criterionType   ::  Type{C}
 end
-Base.show(io::IO, τ::NUTS{I,F,S,C}) where {I,F,S<:SliceTreeSampler,C} = 
+
+Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTreeSampler,C} = 
     print(io, "NUTS{Slice}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
-Base.show(io::IO, τ::NUTS{I,F,S,C}) where {I,F,S<:MultinomialTreeSampler,C} = 
+Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:MultinomialTreeSampler,C} = 
     print(io, "NUTS{Multinomial}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 
-"""
-Helper dictionary used to allow users pass symbol keyword argument
-to create NUTS with different sampling algorithm.
-"""
-const SUPPORTED_TREE_SAMPLING = Dict(:slice => SliceTreeSampler, :multinomial => MultinomialTreeSampler)
-const DEFAULT_TREE_SAMPLING = :multinomial
-
-"""
-Helper dictionary used to allow users pass symbol keyword argument
-to create NUTS with different termination criteria.
-"""
-const SUPPORTED_TERMINATION_CRITERION = Dict(:original => NoUTurn, :generalised => GeneralisedNoUTurn)
-const DEFAULT_TERMINATION_CRITERION = :generalised
-
-"""
-    NUTS(
-        integrator::AbstractIntegrator,
+const NUTS_DOCSTR = """
+    NUTS{S,C}(
+        integrator::I,
         max_depth::Int=10,
-        Δ_max::AbstractFloat=1000.0;
-        sampling::Symbol=:$DEFAULT_TREE_SAMPLING,
-        criterion::Symbol=:$DEFAULT_TERMINATION_CRITERION
-    )
+        Δ_max::F=1000.0
+    ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}
 
 Create an instance for the No-U-Turn sampling algorithm.
 """
-function NUTS(
-    integrator::AbstractIntegrator,
+
+"$NUTS_DOCSTR"
+function NUTS{S,C}(
+    integrator::I,
     max_depth::Int=10,
-    Δ_max::AbstractFloat=1000.0;
-    sampling::Symbol=DEFAULT_TREE_SAMPLING,
-    criterion::Symbol=DEFAULT_TERMINATION_CRITERION
-)
-    @assert sampling in keys(SUPPORTED_TREE_SAMPLING) "NUTS only supports the following
-        sampling methods: $(keys(SUPPORTED_TREE_SAMPLING))"
-    @assert criterion in keys(SUPPORTED_TERMINATION_CRITERION) "NUTS only supports the following
-        criterion: $(keys(SUPPORTED_TERMINATION_CRITERION))"
-    return NUTS(
-        integrator, 
-        max_depth, 
-        Δ_max, 
-        SUPPORTED_TREE_SAMPLING[sampling], 
-        SUPPORTED_TERMINATION_CRITERION[criterion]
-    )
+    Δ_max::F=1000.0
+) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}
+    return NUTS{S,C,I,F}(integrator, max_depth, Δ_max)
 end
-@info "Default NUTS tree sampling method is set to $DEFAULT_TREE_SAMPLING."
-@info "Default NUTS termination criterion is set to $DEFAULT_TERMINATION_CRITERION."
 
 """
-Create a new No-U-Turn sampling algorithm with a new integrator.
+    NUTS(args...) = NUTS{MultinomialTreeSampler,NoUTurn}(args...)
+
+Create an instance for the No-U-Turn sampling algorithm
+with multinomial sampling and original no U-turn criterion.
+
+Below is the doc for NUTS{S,C}.
+
+$NUTS_DOCSTR
 """
-function (nuts::NUTS)(integrator::AbstractIntegrator)
-    return NUTS(integrator, nuts.max_depth, nuts.Δ_max, nuts.samplerType)
-end
+NUTS(args...) = NUTS{MultinomialTreeSampler,NoUTurn}(args...)
 
 ###
 ### The doubling tree algorithm for expanding trajectory.
@@ -403,7 +379,7 @@ Recursivly build a tree for a given depth `j`.
 """
 function build_tree(
     rng::AbstractRNG,
-    nt::NUTS{I,F,S,C},
+    nt::NUTS{S,C,I,F},
     h::Hamiltonian,
     z::PhasePoint,
     sampler::AbstractTreeSampler,
@@ -453,7 +429,7 @@ mh_accept(
 
 function transition(
     rng::AbstractRNG,
-    τ::NUTS{I,F,S,C},
+    τ::NUTS{S,C,I,F},
     h::Hamiltonian,
     z0::PhasePoint
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}

@@ -26,7 +26,8 @@ n_adapts = 2_000
 # Define metric space, Hamiltonian, sampling method and adaptor
 metric = DiagEuclideanMetric(D)
 h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
+int = Leapfrog(find_good_eps(h, θ_init))
+prop = NUTS(int)
 adaptor = StanHMCAdaptor(n_adapts, Preconditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))
 
 # Draw samples via simulating Hamiltonian dynamics
