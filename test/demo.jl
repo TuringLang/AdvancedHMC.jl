@@ -3,8 +3,8 @@ using Distributions: logpdf, MvNormal
 using DiffResults: GradientResult, value, gradient
 using ForwardDiff: gradient!
 
-const D = 10
-const target = MvNormal(zeros(D), ones(D))
+D = 10
+target = MvNormal(zeros(D), ones(D))
 ℓπ(θ) = logpdf(target, θ)
 
 function ∂ℓπ∂θ(θ)

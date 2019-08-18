@@ -124,34 +124,48 @@ end
     @test t3.nα == 3
 end
 
-function hand_isturn(z0, z1, rho, v=1)
-    θ0minusθ1 = z0.θ - z1.θ
-    r0, r1 = z0.r, z1.r
-    if v == -1
-        r0 = -r0
-        r1 = -r1
+### Test NoUTurn and GeneralisedNoUTurn
+
+function makeplot(
+    plt,
+    traj_θ,
+    traj_θ_bk,
+    ts_list...
+)
+    function plotturn!(traj_θ, ts)
+        s = 9.0
+        idcs_nodiv = ts .== false
+        idcs_div = ts .== true
+        idcs_nodiv[1] = idcs_div[1] = false # avoid plotting the first point
+        plt.scatter(traj_θ[1,idcs_nodiv], traj_θ[2,idcs_nodiv], s=s, c="black",  label="¬div")
+        plt.scatter(traj_θ[1,idcs_div], traj_θ[2,idcs_div],  s=s, c="red",    label="div")
+        plt.scatter(traj_θ[1,1], traj_θ[2,1], s=s, c="yellow", label="init")
     end
-    s = (dot(-θ0minusθ1, -r0) >= 0) || (dot(θ0minusθ1, r1) >= 0)
-    return s
-end
 
-ahmc_isturn(z0, z1, rho, v=1) = 
-    AdvancedHMC.isterminated(h, AdvancedHMC.FullBinaryTree(z0, z1, NoUTurn(), 0, 0), v).dynamic
+    fig = plt.figure(figsize=(16, 6))
 
-function hand_isturn_generalised(z0, z1, rho, v=1)
-    r0 = z0.r
-    r1 = z1.r
-    if v == -1
-        r0 = -r0
-        r1 = -r1
-        rho = -rho
+    for (i, ts, title) in zip(
+        1:length(ts_list),
+        ts_list,
+        [
+            "Hand original (v = -1)",
+            "Hand original (v = 1)",
+            "AHMC original (v = -1)",
+            "AHMC original (v = 1)",
+            "Hand generalised (v = -1)",
+            "Hand generalised (v = 1)",
+            "AHMC generalised (v = -1)",
+            "AHMC generalised (v = 1)"
+        ]
+    )
+        plt.subplot(2, 4, i)
+        plotturn!(i % 2 == 0 ? traj_θ_bk : traj_θ, ts)
+        plt.gca().set_title(title)
+        plt.legend()
     end
-    s = (dot(rho, -r0) >= 0) || (dot(-rho, r1) >= 0)
-    return s
-end
 
-ahmc_isturn_generalised(z0, z1, rho, v=1) = 
-    AdvancedHMC.isterminated(h, AdvancedHMC.FullBinaryTree(z0, z1, GeneralisedNoUTurn(rho), 0, 0), v).dynamic
+    return fig
+end
 
 function gettraj(rng, ϵ=0.1, n_steps=50)
     lf = Leapfrog(ϵ)
@@ -169,65 +183,40 @@ function gettraj(rng, ϵ=0.1, n_steps=50)
     return traj_z
 end
 
-function makeplot(
-    plt,
-    traj_θ,
-    ts_hand_isturn_bk, 
-    ts_hand_isturn_fwd, 
-    ts_ahmc_isturn_bk, 
-    ts_ahmc_isturn_fwd,
-    ts_hand_isturn_generalised_bk, 
-    ts_hand_isturn_generalised_fwd, 
-    ts_ahmc_isturn_generalised_bk, 
-    ts_ahmc_isturn_generalised_fwd
-)
-    function plotturn!(traj_θ, ts)
-        s = 9.0
-        idcs_nodiv = ts .== false
-        idcs_div = ts .== true
-        idcs_div[1] = false # avoid plotting the first point
-        plt.scatter(traj_θ[1,idcs_nodiv], traj_θ[2,idcs_nodiv], s=s, c="black",  label="¬div")
-        plt.scatter(traj_θ[1,idcs_div], traj_θ[2,idcs_div],  s=s, c="red",    label="div")
-        plt.scatter(traj_θ[1,1], traj_θ[2,1], s=s, c="yellow", label="init")
+function hand_isturn(z0, z1, rho, v=1)
+    if v == -1
+        z0, z1 = z1, z0
     end
-
-    fig = plt.figure(figsize=(16, 6))
-
-    plt.subplot(2, 4, 1)
-    plotturn!(traj_θ, ts_hand_isturn_bk)
-    plt.gca().set_title("Hand original (v = -1)")
-    plt.legend()
-    plt.subplot(2, 4, 2)
-    plotturn!(traj_θ, ts_hand_isturn_fwd)
-    plt.legend()
-    plt.gca().set_title("Hand original (v = 1)")
-    plt.subplot(2, 4, 3)
-    plotturn!(traj_θ, ts_ahmc_isturn_bk)
-    plt.legend()
-    plt.gca().set_title("AHMC original (v = -1)")
-    plt.subplot(2, 4, 4)
-    plotturn!(traj_θ, ts_ahmc_isturn_fwd)
-    plt.legend()
-    plt.gca().set_title("AHMC original (v = 1)")
-    plt.subplot(2, 4, 5)
-    plotturn!(traj_θ, ts_hand_isturn_generalised_bk)
-    plt.gca().set_title("Hand generalised (v = -1)")
-    plt.legend()
-    plt.subplot(2, 4, 6)
-    plotturn!(traj_θ, ts_hand_isturn_generalised_fwd)
-    plt.gca().set_title("Hand generalised (v = 1)")
-    plt.legend()
-    plt.subplot(2, 4, 7)
-    plotturn!(traj_θ, ts_ahmc_isturn_generalised_bk)
-    plt.legend()
-    plt.gca().set_title("AHMC generalised (v = -1)")
-    plt.subplot(2, 4, 8)
-    plotturn!(traj_θ, ts_ahmc_isturn_generalised_fwd)
-    plt.legend()
-    plt.gca().set_title("AHMC generalised (v = 1)")
-
-    return fig
+    θ0minusθ1 = z0.θ - z1.θ
+    r0, r1 = z0.r, z1.r
+    if v == -1
+        r0 = -r0
+        r1 = -r1
+    end
+    s = (dot(-θ0minusθ1, -r0) >= 0) || (dot(θ0minusθ1, r1) >= 0)
+    return s
 end
+
+ahmc_isturn(z0, z1, rho, v=1) = 
+    AdvancedHMC.isterminated(h, AdvancedHMC.FullBinaryTree(z0, z1, NoUTurn(), 0, 0), v).dynamic
+
+function hand_isturn_generalised(z0, z1, rho, v=1)
+    if v == -1
+        z0, z1 = z1, z0
+    end
+    r0 = z0.r
+    r1 = z1.r
+    if v == -1
+        r0 = -r0
+        r1 = -r1
+        rho = -rho
+    end
+    s = (dot(rho, -r0) >= 0) || (dot(-rho, r1) >= 0)
+    return s
+end
+
+ahmc_isturn_generalised(z0, z1, rho, v=1) = 
+    AdvancedHMC.isterminated(h, AdvancedHMC.FullBinaryTree(z0, z1, GeneralisedNoUTurn(rho), 0, 0), v).dynamic
 
 @testset "NoUTurn" begin
     n_tests = 4
@@ -239,38 +228,34 @@ end
             traj_θ = hcat(map(z -> z.θ, traj_z)...)
             traj_r = hcat(map(z -> z.r, traj_z)...)
             rho = cumsum(traj_r, dims=2)
+            
+            traj_z_bk = reverse(traj_z)
+            traj_θ_bk = hcat(map(z -> z.θ, traj_z_bk)...)
+            traj_r_bk = hcat(map(z -> z.r, traj_z_bk)...)
+            rho_bk = cumsum(traj_r_bk, dims=2)
 
-            ts_hand_isturn_bk = hand_isturn.(traj_z, Ref(traj_z[1]), [rho[:,i] for i = 1:length(traj_z)], Ref(-1))
+            ts_hand_isturn_bk = hand_isturn.(traj_z_bk, Ref(traj_z_bk[1]), [rho_bk[:,i] for i = 1:length(traj_z)], Ref(-1))
             ts_hand_isturn_fwd = hand_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
-            ts_ahmc_isturn_bk = ahmc_isturn.(traj_z, Ref(traj_z[1]), [rho[:,i] for i = 1:length(traj_z)], Ref(-1))
+            ts_ahmc_isturn_bk = ahmc_isturn.(traj_z_bk, Ref(traj_z_bk[1]), [rho_bk[:,i] for i = 1:length(traj_z)], Ref(-1))
             ts_ahmc_isturn_fwd = ahmc_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
-            ts_hand_isturn_generalised_bk = hand_isturn_generalised.(traj_z, Ref(traj_z[1]), [rho[:,i] for i = 1:length(traj_z)], Ref(-1))
+            ts_hand_isturn_generalised_bk = hand_isturn_generalised.(traj_z_bk, Ref(traj_z_bk[1]), [rho_bk[:,i] for i = 1:length(traj_z)], Ref(-1))
             ts_hand_isturn_generalised_fwd = hand_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
-            ts_ahmc_isturn_generalised_bk = ahmc_isturn_generalised.(traj_z, Ref(traj_z[1]), [rho[:,i] for i = 1:length(traj_z)], Ref(-1))
+            ts_ahmc_isturn_generalised_bk = ahmc_isturn_generalised.(traj_z_bk, Ref(traj_z_bk[1]), [rho_bk[:,i] for i = 1:length(traj_z)], Ref(-1))
             ts_ahmc_isturn_generalised_fwd = ahmc_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
-            # Check if hand fwd and bk gives the same results
-            @test ts_hand_isturn_bk == ts_hand_isturn_fwd
-            @test ts_hand_isturn_generalised_bk == ts_hand_isturn_generalised_fwd
+            # Check if fowrward
+            @test ts_hand_isturn_bk[2:end] == ts_ahmc_isturn_bk[2:end] == ts_hand_isturn_generalised_bk[2:end] == ts_ahmc_isturn_generalised_bk[2:end]
 
-            # Check if hand bk and ahmc bk is the same
-            @test ts_hand_isturn_bk == ts_ahmc_isturn_bk
-            @test ts_hand_isturn_generalised_bk == ts_ahmc_isturn_generalised_bk
-
-            # Check if ahmc fwd and bk gives the same results
-            @test ts_ahmc_isturn_bk == ts_ahmc_isturn_fwd
-            @test ts_ahmc_isturn_generalised_bk == ts_ahmc_isturn_generalised_fwd
-
-            # Check if hand fwd and ahmc fwd is the same
-            @test ts_hand_isturn_fwd == ts_ahmc_isturn_fwd
-            @test ts_hand_isturn_generalised_fwd == ts_ahmc_isturn_generalised_fwd
+            # Check if backward
+            @test ts_hand_isturn_fwd[2:end] == ts_ahmc_isturn_fwd[2:end] == ts_hand_isturn_generalised_fwd[2:end] == ts_ahmc_isturn_generalised_fwd[2:end]
             
             if length(ARGS) > 0 && ARGS[1] == "--plot"
                 import PyPlot
                 fig = makeplot(
                     PyPlot,
                     traj_θ,
+                    traj_θ_bk,
                     ts_hand_isturn_bk, 
                     ts_hand_isturn_fwd, 
                     ts_ahmc_isturn_bk, 
@@ -285,3 +270,5 @@ end
         end
     end
 end
+
+;

@@ -331,6 +331,10 @@ Ref: https://arxiv.org/abs/1111.4246, https://arxiv.org/abs/1701.02434
 function isterminated(h::Hamiltonian, t::FullBinaryTree{C}, v::Int) where {S,C<:NoUTurn}
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
+    # Swap  starting point and ending point
+    if v == -1
+        z0, z1 = z1, z0
+    end
     θ0minusθ1 = z0.θ - z1.θ
     r0, r1 = z0.r, z1.r
     # Negating momentum variable
@@ -350,6 +354,10 @@ Ref: https://arxiv.org/abs/1701.02434
 function isterminated(h::Hamiltonian, t::FullBinaryTree{C}, v::Int) where {S,C<:GeneralisedNoUTurn}
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
+    # Swap  starting point and ending point
+    if v == -1
+        z0, z1 = z1, z0
+    end
     rho = t.c.rho
     r0, r1 = z0.r, z1.r
     # Negating momentum variable
