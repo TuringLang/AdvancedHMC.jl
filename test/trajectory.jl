@@ -179,8 +179,7 @@ function makeplot(
     ts_hand_isturn_generalised_bk, 
     ts_hand_isturn_generalised_fwd, 
     ts_ahmc_isturn_generalised_bk, 
-    ts_ahmc_isturn_generalised_fwd,
-    figname::String
+    ts_ahmc_isturn_generalised_fwd
 )
     function plotturn!(traj_θ, ts)
         s = 9.0
@@ -227,7 +226,7 @@ function makeplot(
     plt.legend()
     plt.gca().set_title("AHMC generalised (v = 1)")
 
-    fig.savefig(figname)
+    return fig
 end
 
 @testset "NoUTurn" begin
@@ -269,7 +268,7 @@ end
             
             if length(ARGS) > 0 && ARGS[1] == "--plot"
                 import PyPlot
-                makeplot(
+                fig = makeplot(
                     PyPlot,
                     traj_θ,
                     ts_hand_isturn_bk, 
@@ -279,9 +278,9 @@ end
                     ts_hand_isturn_generalised_bk, 
                     ts_hand_isturn_generalised_fwd, 
                     ts_ahmc_isturn_generalised_bk, 
-                    ts_ahmc_isturn_generalised_fwd,
-                    "seed=$seed.png"
+                    ts_ahmc_isturn_generalised_fwd
                 )
+                fig.savefig("seed=$seed.png")
             end
         end
     end
