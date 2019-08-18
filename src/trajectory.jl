@@ -165,7 +165,7 @@ end
 
 function combine(rng::AbstractRNG, s1::MultinomialTreeSampler, s2::MultinomialTreeSampler)
     logw = logaddexp(s1.logw, s2.logw)
-    zcand = rand(rng) < exp(s1.logw - logw) ? s2.zcand : s2.zcand
+    zcand = rand(rng) < exp(s1.logw - logw) ? s1.zcand : s2.zcand
     MultinomialTreeSampler(zcand, logw)
 end
 
