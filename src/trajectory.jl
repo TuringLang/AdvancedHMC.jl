@@ -483,14 +483,15 @@ function transition(
             t′ = build_tree(rng, τ, h, t.zright, t.sampler, v, j, H0)
             tleft, tright = t, t′
         end
-        # Perform a MH step if not terminated
-        if !isterminated(t′.termination) && mh_accept(rng, t.sampler, t′.sampler)
-            z = t′.zcand
+        # Perform a MH step and increse depth if not terminated
+        if !isterminated(t′.termination)
+            j = j + 1   # increment tree depth
+            if mh_accept(rng, t.sampler, t′.sampler)
+                z = t′.zcand
+            end
         end
-        # Combine the proposed tree and the current tree
+        # Combine the proposed tree and the current tree (no matter terminated or not)
         t = combine(rng, h, tleft, tright, v; zcand=z)
-        # Increment tree depth
-        j = j + 1
     end
 
     stat = (
