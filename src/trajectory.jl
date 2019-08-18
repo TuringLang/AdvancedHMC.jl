@@ -330,19 +330,12 @@ Ref: https://arxiv.org/abs/1111.4246, https://arxiv.org/abs/1701.02434
 """
 function isterminated(h::Hamiltonian, t::FullBinaryTree{C}, v::Int) where {S,C<:NoUTurn}
     # z0 is starting point and z1 is ending point
-    z0 = t.zleft
-    z1 = t.zright
-    # Swap starting and ending point
-    if v == -1
-        z0, z1 = z1, z0
-    end
+    z0, z1 = t.zleft, t.zright
     θ0minusθ1 = z0.θ - z1.θ
-    r0 = z0.r
-    r1 = z1.r
+    r0, r1 = z0.r, z1.r
     # Negating momentum variable
     if v == -1
-        r0 = -r0
-        r1 = -r1
+        r0, r1 = -r0, -r1
     end
     s = (dot(-θ0minusθ1, ∂H∂r(h, -r0)) >= 0) || (dot(θ0minusθ1, ∂H∂r(h, r1)) >= 0)
     return Termination(s, false)
@@ -356,19 +349,12 @@ Ref: https://arxiv.org/abs/1701.02434
 """
 function isterminated(h::Hamiltonian, t::FullBinaryTree{C}, v::Int) where {S,C<:GeneralisedNoUTurn}
     # z0 is starting point and z1 is ending point
-    z0 = t.zleft
-    z1 = t.zright
+    z0, z1 = t.zleft, t.zright
     rho = t.c.rho
-    # Swap starting and ending point
-    if v == -1
-        z0, z1 = z1, z0
-    end
-    r0 = z0.r
-    r1 = z1.r
+    r0, r1 = z0.r, z1.r
     # Negating momentum variable
     if v == -1
-        r0 = -r0
-        r1 = -r1
+        r0, r1 = -r0, -r1
         rho = -rho
     end
     s = (dot(rho, ∂H∂r(h, -r0)) >= 0) || (dot(-rho, ∂H∂r(h, r1)) >= 0)

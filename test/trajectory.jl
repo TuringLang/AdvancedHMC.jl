@@ -1,5 +1,6 @@
-using Test, AdvancedHMC
-using Random
+using Test, AdvancedHMC, Random
+using Statistics: mean
+using LinearAlgebra: dot
 include("common.jl")
 
 ϵ = 0.01
@@ -26,19 +27,40 @@ r_init = AdvancedHMC.rand(h.metric)
 end
 
 @testset "TreeSampler" begin
-    logu = rand()
-    s1 = AdvancedHMC.SliceTreeSampler(logu, 1) 
-    s2 = AdvancedHMC.SliceTreeSampler(logu, 2) 
-    s3 = AdvancedHMC.combine(s1, s2)
-    @test s3.logu == logu
-    @test s3.n == 1 + 2
+    n_samples = 10_000
+    z1 = AdvancedHMC.phasepoint(h, zeros(D), r_init)
+    z2 = AdvancedHMC.phasepoint(h, ones(D), r_init)
 
-    w1 = rand()
-    s1 = AdvancedHMC.MultinomialTreeSampler(log(w1))
-    w2 = rand()
-    s2 = AdvancedHMC.MultinomialTreeSampler(log(w2))
-    s3 = AdvancedHMC.combine(s1, s2)
+    rng = MersenneTwister(1234)
+
+    logu = rand()
+    n1 = 2
+    s1 = AdvancedHMC.SliceTreeSampler(z1, logu, n1) 
+    n2 = 1
+    s2 = AdvancedHMC.SliceTreeSampler(z2, logu, n2) 
+    s3 = AdvancedHMC.combine(rng, s1, s2)
+    @test s3.logu == logu
+    @test s3.n == n1 + n2
+
+    
+    s3_θ = Vector(undef, n_samples)
+    for i = 1:n_samples
+        s3_θ[i] = AdvancedHMC.combine(rng, s1, s2).zcand.θ
+    end
+    @test mean(s3_θ) ≈ ones(D) * n2 / (n1 + n2) rtol=0.01
+
+    w1 = 100
+    s1 = AdvancedHMC.MultinomialTreeSampler(z1, log(w1))
+    w2 = 150
+    s2 = AdvancedHMC.MultinomialTreeSampler(z2, log(w2))
+    s3 = AdvancedHMC.combine(rng, s1, s2)
     @test s3.logw ≈ log(w1 + w2)
+
+    s3_θ = Vector(undef, n_samples)
+    for i = 1:n_samples
+        s3_θ[i] = AdvancedHMC.combine(rng, s1, s2).zcand.θ
+    end
+    @test mean(s3_θ) ≈ ones(D) * w2 / (w1 + w2) rtol=0.01
 end
 
 @testset "TerminationCriterion" begin
