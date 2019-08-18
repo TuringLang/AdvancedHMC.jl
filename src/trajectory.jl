@@ -191,10 +191,14 @@ struct NUTS{
     Δ_max           ::  F
 end
 
-Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTreeSampler,C} = 
+Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTreeSampler,C<:NoUTurn} = 
     print(io, "NUTS{Slice}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
-Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:MultinomialTreeSampler,C} = 
+Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTreeSampler,C<:GeneralisedNoUTurn} = 
+    print(io, "NUTS{Slice,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:MultinomialTreeSampler,C<:NoUTurn} = 
     print(io, "NUTS{Multinomial}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:MultinomialTreeSampler,C<:GeneralisedNoUTurn} = 
+    print(io, "NUTS{Multinomial,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 
 const NUTS_DOCSTR = """
     NUTS{S,C}(
