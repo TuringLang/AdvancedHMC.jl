@@ -98,6 +98,8 @@ function neg_energy(
     return -dot(r, h.metric._temp) / 2
 end
 
+energy(args...) = -neg_energy(args...)
+
 ####
 #### Momentum refreshment
 ####

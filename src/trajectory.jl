@@ -47,7 +47,7 @@ function transition(
 ) where {T<:Real}
     z′ = step(τ.integrator, h, z, τ.n_steps)
     # Accept via MH criteria
-    is_accept, α = mh_accept_ratio(rng, -neg_energy(z), -neg_energy(z′))
+    is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
     if is_accept
         # Reverse momentum variable to preserve reversibility
         z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
@@ -58,7 +58,7 @@ function transition(
         is_accept=is_accept, 
         acceptance_rate=α, 
         log_density=z.ℓπ.value, 
-        hamiltonian_energy=-neg_energy(z), 
+        hamiltonian_energy=energy(z), 
        )
     return z, stat
 end
@@ -125,8 +125,7 @@ end
 Slice sampler for the starting single leaf tree.
 Slice variable is initialized.
 """
-SliceTreeSampler(rng::AbstractRNG, H0::AbstractFloat, H::AbstractFloat, zcand::PhasePoint) = 
-    SliceTreeSampler(zcand, log(rand(rng)) - H, 1)
+SliceTreeSampler(rng::AbstractRNG, z0::PhasePoint) = SliceTreeSampler(z0, log(rand(rng)) - energy(z0), 1)
 
 """
 Multinomial sampler for the starting single leaf tree.
@@ -134,23 +133,22 @@ Tree weight is the (unnormalised) energy of the leaf.
 
 Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/base_nuts.hpp#L226
 """
-MultinomialTreeSampler(rng::AbstractRNG, H0::AbstractFloat, H::AbstractFloat, zcand::PhasePoint) = 
-    MultinomialTreeSampler(zcand, H0 - H)
+MultinomialTreeSampler(rng::AbstractRNG, z0::PhasePoint) = MultinomialTreeSampler(z0, zero(energy(z0)))
 
 """
 Create a slice sampler for a single leaf tree:
 - the slice variable is copied from the passed-in sampler `s` and
 - the number of acceptable candicates is computed by comparing the slice variable against the current energy.
 """
-SliceTreeSampler(s::SliceTreeSampler, H0::AbstractFloat, H::AbstractFloat, zcand::PhasePoint) = 
-    SliceTreeSampler(zcand, s.logu, (s.logu <= -H) ? 1 : 0)
+SliceTreeSampler(s::SliceTreeSampler, H0::AbstractFloat, zcand::PhasePoint) = 
+    SliceTreeSampler(zcand, s.logu, (s.logu <= -energy(zcand)) ? 1 : 0)
 
 """
 Multinomial sampler for the starting single leaf tree.
 - tree weight is the (unnormalised) energy of the leaf.
 """
-MultinomialTreeSampler(s::MultinomialTreeSampler, H0::AbstractFloat, H::AbstractFloat, zcand::PhasePoint) = 
-    MultinomialTreeSampler(zcand, H0 - H)
+MultinomialTreeSampler(s::MultinomialTreeSampler, H0::AbstractFloat, zcand::PhasePoint) = 
+    MultinomialTreeSampler(zcand, H0 - energy(zcand))
 
 function combine(rng::AbstractRNG, s1::SliceTreeSampler, s2::SliceTreeSampler)
     @assert s1.logu == s2.logu "Cannot combine two slice sampler with different slice variable"
@@ -321,15 +319,8 @@ end
 Merge a left tree `tleft` and a right tree `tright` under given Hamiltonian `h`,
 then draw a new candidate sample and update related statistics for the resulting tree.
 """
-function combine(
-    rng::AbstractRNG,
-    h::Hamiltonian,
-    tleft::FullBinaryTree,
-    tright::FullBinaryTree
-)
-    c = combine(tleft.c, tright.c)
-    return FullBinaryTree(tleft.zleft, tright.zright, c, tleft.α + tright.α, tleft.nα + tright.nα)
-end
+combine(rng::AbstractRNG, h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree) = 
+    FullBinaryTree(tleft.zleft, tright.zright, combine(tleft.c, tright.c), tleft.α + tright.α, tleft.nα + tright.nα)
 
 """
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
@@ -400,10 +391,10 @@ function build_tree(
     if j == 0
         # Base case - take one leapfrog step in the direction v.
         z′ = step(nt.integrator, h, z, v)
-        H′ = -neg_energy(z′)
+        H′ = energy(z′)
         c = C(z′)
         α′ = exp(min(0, H0 - H′))
-        sampler′ = S(sampler, H0, H′, z′)
+        sampler′ = S(sampler, H0, z′)
         return FullBinaryTree(z′, z′, c, α′, 1), sampler′, Termination(sampler′, nt, H0, H′)
     else
         # Recursion - build the left and right subtrees.
@@ -433,15 +424,9 @@ function transition(
     h::Hamiltonian,
     z0::PhasePoint
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}
-    H0 = -neg_energy(z0)
-    t = FullBinaryTree(
-        z0,
-        z0, 
-        C(z0), 
-        zero(F),
-        zero(F)
-    )
-    sampler = S(rng, H0, H0, z0)
+    H0 = energy(z0)
+    t = FullBinaryTree(z0, z0, C(z0), zero(F), zero(Int))
+    sampler = S(rng, z0)
     termination = Termination(false, false)
     zcand = z0
 
@@ -479,7 +464,7 @@ function transition(
         is_accept=true, 
         acceptance_rate=t.α / t.nα, 
         log_density=zcand.ℓπ.value, 
-        hamiltonian_energy=-neg_energy(zcand), 
+        hamiltonian_energy=energy(zcand), 
         tree_depth=j, 
         numerical_error=termination.numerical,
        )
@@ -493,7 +478,7 @@ NOTE: this function is intended to be used in `find_good_eps` only.
 """
 function A(rng, h, z, ϵ)
     z′ = step(Leapfrog(ϵ), h, z)
-    H′ = -neg_energy(z′)
+    H′ = energy(z′)
     return z′, H′
 end
 
@@ -513,7 +498,7 @@ function find_good_eps(
     # Create starting phase point
     r = rand(rng, h.metric) # sample momentum variable
     z = phasepoint(h, θ, r)
-    H = -neg_energy(z)
+    H = energy(z)
 
     # Make a proposal phase point to decide direction
     z′, H′ = A(rng, h, z, ϵ)
