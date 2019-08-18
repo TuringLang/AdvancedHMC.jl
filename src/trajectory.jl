@@ -140,14 +140,14 @@ Create a slice sampler for a single leaf tree:
 - the slice variable is copied from the passed-in sampler `s` and
 - the number of acceptable candicates is computed by comparing the slice variable against the current energy.
 """
-makebase(s::SliceTreeSampler, H0::AbstractFloat, H::AbstractFloat) = 
+SliceTreeSampler(s::SliceTreeSampler, H0::AbstractFloat, H::AbstractFloat) = 
     SliceTreeSampler(s.logu, (s.logu <= -H) ? 1 : 0)
 
 """
 Create a multinomial sampler for a single leaf tree:
 - the tree weight is just the probability of the only leave.
 """
-makebase(s::MultinomialTreeSampler, H0::AbstractFloat, H::AbstractFloat) = 
+MultinomialTreeSampler(s::MultinomialTreeSampler, H0::AbstractFloat, H::AbstractFloat) = 
     MultinomialTreeSampler(H0 - H)
 
 combine(s1::SliceTreeSampler, s2::SliceTreeSampler) = SliceTreeSampler(s1.logu, s1.n + s2.n)
@@ -328,10 +328,10 @@ using the (original) no-U-turn cirterion.
 
 Ref: https://arxiv.org/abs/1111.4246, https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, tleft::FullBinaryTree{S,C}, tright::FullBinaryTree{S,C}, v::Int) where {S,C<:NoUTurn}
+function isterminated(h::Hamiltonian, t::FullBinaryTree{S,C}, v::Int) where {S,C<:NoUTurn}
     # z0 is starting point and z1 is ending point
-    z0 = tleft.zleft
-    z1 = tright.zright
+    z0 = t.zleft
+    z1 = t.zright
     # Swap starting and ending point
     if v == -1
         z0, z1 = z1, z0
@@ -354,11 +354,11 @@ using the generalised no-U-turn criterion.
 
 Ref: https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, tleft::FullBinaryTree{S,C}, tright::FullBinaryTree{S,C}, v::Int) where {S,C<:GeneralisedNoUTurn}
+function isterminated(h::Hamiltonian, t::FullBinaryTree{S,C}, v::Int) where {S,C<:GeneralisedNoUTurn}
     # z0 is starting point and z1 is ending point
-    z0 = tleft.zleft
-    z1 = tright.zright
-    rho = tleft.c.rho + tright.c.rho
+    z0 = t.zleft
+    z1 = t.zright
+    rho = t.c.rho
     # Swap starting and ending point
     if v == -1
         z0, z1 = z1, z0
@@ -392,7 +392,7 @@ function build_tree(
         # Base case - take one leapfrog step in the direction v.
         z′ = step(nt.integrator, h, z, v)
         H′ = -neg_energy(z′)
-        basesampler = makebase(sampler, H0, H′)
+        basesampler = S(sampler, H0, H′)
         c = C(z′)
         α′ = exp(min(0, H0 - H′))
         return FullBinaryTree(z′, z′, z′, basesampler, c, α′, 1), Termination(basesampler, nt, H0, H′)
@@ -411,7 +411,7 @@ function build_tree(
                 tleft, tright = t′, t′′
             end
             t′ = combine(rng, h, tleft, tright)
-            termination′ = termination′ * termination′′ * isterminated(h, tleft, tright, v)
+            termination′ = termination′ * termination′′ * isterminated(h, t′, v)
         end
         return t′, termination′
     end
@@ -469,7 +469,7 @@ function transition(
         end
         # Combine the proposed tree and the current tree (no matter terminated or not)
         t = combine(rng, h, tleft, tright; zcand=z)
-        termination = termination * termination′ * isterminated(h, tleft, tright, v)
+        termination = termination * termination′ * isterminated(h, t, v)
     end
 
     stat = (
