@@ -29,7 +29,6 @@ n_adapts = 2_000
                 :MultinomialNUTS => NUTS(lf; sampling=:multinomial),
                 :SliceNUTS => NUTS(lf; sampling=:slice),
                 :SliceNUTSOriginal => NUTS(lf; sampling=:slice, criterion=:original),
-                :SliceNUTSModern => NUTS(lf; sampling=:slice, criterion=:modern),
             )
                 @testset  "NoAdaptation" begin
                     samples, stats = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
