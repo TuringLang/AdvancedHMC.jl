@@ -314,12 +314,12 @@ struct FullBinaryTree{C<:AbstractTerminationCriterion}
 end
 
 """
-    combine(h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree)
+    combine(tleft::FullBinaryTree, tright::FullBinaryTree)
 
 Merge a left tree `tleft` and a right tree `tright` under given Hamiltonian `h`,
 then draw a new candidate sample and update related statistics for the resulting tree.
 """
-combine(rng::AbstractRNG, h::Hamiltonian, tleft::FullBinaryTree, tright::FullBinaryTree) = 
+combine(tleft::FullBinaryTree, tright::FullBinaryTree) = 
     FullBinaryTree(tleft.zleft, tright.zright, combine(tleft.c, tright.c), tleft.α + tright.α, tleft.nα + tright.nα)
 
 """
@@ -396,7 +396,7 @@ function build_tree(
                 t′′, sampler′′, termination′′ = build_tree(rng, nt, h, t′.zright, sampler, v, j - 1, H0) # right tree
                 tleft, tright = t′, t′′
             end
-            t′ = combine(rng, h, tleft, tright)
+            t′ = combine(tleft, tright)
             sampler′ = combine(rng, sampler′, sampler′′)
             termination′ = termination′ * termination′′ * isterminated(h, t′, v)
         end
@@ -437,7 +437,7 @@ function transition(
             end
         end
         # Combine the proposed tree and the current tree (no matter terminated or not)
-        t = combine(rng, h, tleft, tright)
+        t = combine(tleft, tright)
         # Update sampler
         sampler = combine(zcand, sampler, sampler′)
         # update termination

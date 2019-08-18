@@ -114,7 +114,14 @@ end
 end
 
 @testset "FullBinaryTree" begin
-    @warn "FullBinaryTree not tested"
+    z = AdvancedHMC.phasepoint(h, θ_init, randn(D))
+
+    t1 = AdvancedHMC.FullBinaryTree(z, z, NoUTurn(), 0.1, 1)
+    t2 = AdvancedHMC.FullBinaryTree(z, z, NoUTurn(), 1.1, 2)
+    t3 = AdvancedHMC.combine(t1, t2)
+
+    @test t3.α ≈ 1.2 atol=1e-9
+    @test t3.nα == 3
 end
 
 function hand_isturn(z0, z1, rho, v=1)
