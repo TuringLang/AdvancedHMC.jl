@@ -299,7 +299,7 @@ function combine(
 )
     sampler = combine(tleft.sampler, tright.sampler)
     c = combine(tleft.c, tright.c)
-    termination = tleft.termination * tright.termination * isturn(h, tleft, tright, v)
+    termination = tleft.termination * tright.termination * isterminated(h, tleft, tright, v)
     return FullBinaryTree(tleft.zleft, tright.zright, zcand, sampler, c, termination, tleft.α + tright.α, tleft.nα + tright.nα)
 end
 
@@ -331,7 +331,7 @@ using the (original) no-U-turn cirterion.
 
 Ref: https://arxiv.org/abs/1111.4246, https://arxiv.org/abs/1701.02434
 """
-function isturn(h::Hamiltonian, tleft::FullBinaryTree{S,C}, tright::FullBinaryTree{S,C}, v::Int) where {S,C<:NoUTurn}
+function isterminated(h::Hamiltonian, tleft::FullBinaryTree{S,C}, tright::FullBinaryTree{S,C}, v::Int) where {S,C<:NoUTurn}
     # z0 is starting point and z1 is ending point
     z0 = tleft.zleft
     z1 = tright.zright
@@ -357,7 +357,7 @@ using the generalised no-U-turn criterion.
 
 Ref: https://arxiv.org/abs/1701.02434
 """
-function isturn(h::Hamiltonian, tleft::FullBinaryTree{S,C}, tright::FullBinaryTree{S,C}, v::Int) where {S,C<:GeneralisedNoUTurn}
+function isterminated(h::Hamiltonian, tleft::FullBinaryTree{S,C}, tright::FullBinaryTree{S,C}, v::Int) where {S,C<:GeneralisedNoUTurn}
     # z0 is starting point and z1 is ending point
     z0 = tleft.zleft
     z1 = tright.zright
