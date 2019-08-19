@@ -1,6 +1,7 @@
-using AdvancedHMC
+using Test, LinearAlgebra, Distributions, AdvancedHMC
 using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, add_sample!, get_var, get_cov, reset!
-using Test, LinearAlgebra, Distributions
+using DiffResults: GradientResult, value, gradient
+using ForwardDiff: gradient!
 
 # Check that the estimated variance is approximately correct.
 @testset "Online v.s. naive v.s. true var/cov estimation" begin
@@ -77,4 +78,77 @@ end
     AdvancedHMC.adapt!(adaptor3, θ, 1.)
     @test AdvancedHMC.Adaptation.getM⁻¹(adaptor2) == ones(length(θ))
     @test AdvancedHMC.Adaptation.getM⁻¹(adaptor3) == LinearAlgebra.diagm(0 => ones(length(θ)))
+end
+
+@testset "Adapted mass v.s. true variance" begin
+
+    function buildfuncs(target)
+        ℓπ(θ) = logpdf(target, θ)
+
+        function ∂ℓπ∂θ(θ)
+            res = GradientResult(θ)
+            gradient!(res, ℓπ, θ)
+            return (value(res), gradient(res))
+        end
+        
+        return ℓπ, ∂ℓπ∂θ
+    end
+
+    function runnuts(ℓπ, ∂ℓπ∂θ, metricT)
+        n_samples = 2_000
+        n_adapts = 1_000
+
+        θ_init = randn(D)
+        
+        metric = metricT(length(θ_init))
+        h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+        prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
+        adaptor = StanHMCAdaptor(
+            n_adapts, 
+            Preconditioner(metric), 
+            NesterovDualAveraging(0.8, prop.integrator.ϵ)
+        )
+        samples, stats = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; verbose=false)
+        return (samples=samples, stats=stats, adaptor=adaptor)
+    end
+
+    D = 10
+
+    n_tests = 5
+
+    @testset "DiagEuclideanMetric" begin
+        for _ in 1:n_tests
+            # Random variance
+            σ = ones(D) + abs.(randn(D))
+        
+            # Diagonal Gaussian
+            target = MvNormal(zeros(D), σ)
+            ℓπ, ∂ℓπ∂θ = buildfuncs(target)
+            
+            res = runnuts(ℓπ, ∂ℓπ∂θ, DiagEuclideanMetric)
+            @test res.adaptor.pc.var ≈ σ .^ 2 rtol=0.2
+            
+            res = runnuts(ℓπ, ∂ℓπ∂θ, DenseEuclideanMetric)
+            @test res.adaptor.pc.covar ≈ diagm(0 => σ.^2) rtol=0.25
+        end
+    end
+
+    @testset "DenseEuclideanMetric" begin
+        for _ in 1:n_tests
+            # Random covariance
+            m = randn(D, D)
+            Σ = m' * m
+
+            # Correlated Gaussian
+            target = MvNormal(zeros(D), Σ)
+            ℓπ, ∂ℓπ∂θ = buildfuncs(target)
+            
+            res = runnuts(ℓπ, ∂ℓπ∂θ, DiagEuclideanMetric)
+            @test res.adaptor.pc.var ≈ diag(Σ) rtol=0.2
+            
+            res = runnuts(ℓπ, ∂ℓπ∂θ, DenseEuclideanMetric)
+            @test res.adaptor.pc.covar ≈ Σ rtol=0.25
+        end
+    end
+
 end

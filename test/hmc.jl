@@ -9,7 +9,7 @@ include("common.jl")
 θ_init = randn(D)
 ϵ = 0.1
 n_steps = 20
-n_samples = 20_000
+n_samples = 10_000
 n_adapts = 2_000
 
 @testset "HMC and NUTS" begin
@@ -26,8 +26,10 @@ n_adapts = 2_000
             @testset "$τsym" for (τsym, τ) in Dict(
                 :HMC => StaticTrajectory(lf, n_steps),
                 :HMCDA => HMCDA(lf, ϵ * n_steps),
-                :MultinomialNUTS => NUTS(lf; sampling=:multinomial),
-                :SliceNUTS => NUTS(lf; sampling=:slice),
+                :(NUTS{Slice,Original}) => NUTS{Slice,ClassicNoUTurn}(lf),
+                :(NUTS{Slice,Generalised}) => NUTS{Slice,GeneralisedNoUTurn}(lf),
+                :(NUTS{Multinomial,Original}) => NUTS{Multinomial,ClassicNoUTurn}(lf),
+                :(NUTS{Multinomial,Generalised}) => NUTS{Multinomial,GeneralisedNoUTurn}(lf),
             )
                 @testset  "NoAdaptation" begin
                     samples, stats = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
