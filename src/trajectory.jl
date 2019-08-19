@@ -196,8 +196,8 @@ struct ClassicNoUTurn <: AbstractTerminationCriterion end
 
 ClassicNoUTurn(::PhasePoint) = ClassicNoUTurn()
 
-struct GeneralisedNoUTurn{TR<:Real,TV<:AbstractVector{TR}} <: AbstractTerminationCriterion
-    rho::TV
+struct GeneralisedNoUTurn{T<:AbstractVector{<:Real}} <: AbstractTerminationCriterion
+    rho::T
 end
 
 GeneralisedNoUTurn(z::PhasePoint) = GeneralisedNoUTurn(z.r)
