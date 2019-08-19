@@ -331,6 +331,9 @@ Ref: https://arxiv.org/abs/1111.4246, https://arxiv.org/abs/1701.02434
 function isterminated(h::Hamiltonian, t::FullBinaryTree{C}, v::Int) where {S,C<:NoUTurn}
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
+    if v == -1
+        z0, z1 = z1, z0
+    end
     θ0minusθ1 = z0.θ - z1.θ
     s = (dot(-θ0minusθ1, ∂H∂r(h, -z0.r)) >= 0) || (dot(θ0minusθ1, ∂H∂r(h, z1.r)) >= 0)
     return Termination(s, false)
