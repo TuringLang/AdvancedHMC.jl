@@ -129,7 +129,7 @@ SliceTreeSampler(rng::AbstractRNG, z0::PhasePoint) = SliceTreeSampler(z0, log(ra
 
 """
 Multinomial sampler for the starting single leaf tree.
-Tree weight is the (unnormalised) energy of the leaf.
+(Log) weights for leaf nodes are their (unnormalised) Hamiltonian energies.
 
 Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/base_nuts.hpp#L226
 """
@@ -144,7 +144,7 @@ SliceTreeSampler(s::SliceTreeSampler, H0::AbstractFloat, zcand::PhasePoint) =
     SliceTreeSampler(zcand, s.ℓu, (s.ℓu <= -energy(zcand)) ? 1 : 0)
 
 """
-Multinomial sampler for the starting single leaf tree.
+Multinomial sampler for for a trajectory consisting only a leaf node.
 - tree weight is the (unnormalised) energy of the leaf.
 """
 MultinomialTrajectorySampler(s::MultinomialTrajectorySampler, H0::AbstractFloat, zcand::PhasePoint) = 
