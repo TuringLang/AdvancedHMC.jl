@@ -328,12 +328,9 @@ using the (original) no-U-turn cirterion.
 
 Ref: https://arxiv.org/abs/1111.4246, https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, t::FullBinaryTree{C}, v::Int) where {S,C<:NoUTurn}
+function isterminated(h::Hamiltonian, t::FullBinaryTree{C}) where {S,C<:NoUTurn}
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
-    if v == -1
-        z0, z1 = z1, z0
-    end
     θ0minusθ1 = z0.θ - z1.θ
     s = (dot(-θ0minusθ1, ∂H∂r(h, -z0.r)) >= 0) || (dot(θ0minusθ1, ∂H∂r(h, z1.r)) >= 0)
     return Termination(s, false)
@@ -345,7 +342,7 @@ using the generalised no-U-turn criterion.
 
 Ref: https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, t::FullBinaryTree{C}, v::Int) where {S,C<:GeneralisedNoUTurn}
+function isterminated(h::Hamiltonian, t::FullBinaryTree{C}) where {S,C<:GeneralisedNoUTurn}
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
     rho = t.c.rho
@@ -389,7 +386,7 @@ function build_tree(
             end
             t′ = combine(tleft, tright)
             sampler′ = combine(rng, sampler′, sampler′′)
-            termination′ = termination′ * termination′′ * isterminated(h, t′, v)
+            termination′ = termination′ * termination′′ * isterminated(h, t′)
         end
         return t′, sampler′, termination′
     end
@@ -432,7 +429,7 @@ function transition(
         # Update sampler
         sampler = combine(zcand, sampler, sampler′)
         # update termination
-        termination = termination * termination′ * isterminated(h, t, v)
+        termination = termination * termination′ * isterminated(h, t)
     end
 
     stat = (
