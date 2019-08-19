@@ -104,13 +104,13 @@ abstract type AbstractTreeSampler end
 Slice sampler carried during the building of the tree.
 It contains the slice variable and the number of acceptable condidates in the tree.
 """
-struct SliceTreeSampler{F<:AbstractFloat} <: AbstractTreeSampler
+struct SliceTrajectorySampler{F<:AbstractFloat} <: AbstractTreeSampler
     zcand   ::  PhasePoint
     ℓu      ::  F     # slice variable in log space
     n       ::  Int   # number of acceptable candicates, i.e. those with prob larger than slice variable u
 end
 
-Base.show(io::IO, s::SliceTreeSampler) = print(io, "SliceTreeSampler(ℓu=$(s.ℓu), n=$(s.n))")
+Base.show(io::IO, s::SliceTrajectorySampler) = print(io, "SliceTrajectorySampler(ℓu=$(s.ℓu), n=$(s.n))")
 
 """
 Multinomial sampler carried during the building of the tree.
@@ -125,7 +125,7 @@ end
 Slice sampler for the starting single leaf tree.
 Slice variable is initialized.
 """
-SliceTreeSampler(rng::AbstractRNG, z0::PhasePoint) = SliceTreeSampler(z0, log(rand(rng)) - energy(z0), 1)
+SliceTrajectorySampler(rng::AbstractRNG, z0::PhasePoint) = SliceTrajectorySampler(z0, log(rand(rng)) - energy(z0), 1)
 
 """
 Multinomial sampler for the starting single leaf tree.
@@ -140,8 +140,8 @@ Create a slice sampler for a single leaf tree:
 - the slice variable is copied from the passed-in sampler `s` and
 - the number of acceptable candicates is computed by comparing the slice variable against the current energy.
 """
-SliceTreeSampler(s::SliceTreeSampler, H0::AbstractFloat, zcand::PhasePoint) = 
-    SliceTreeSampler(zcand, s.ℓu, (s.ℓu <= -energy(zcand)) ? 1 : 0)
+SliceTrajectorySampler(s::SliceTrajectorySampler, H0::AbstractFloat, zcand::PhasePoint) = 
+    SliceTrajectorySampler(zcand, s.ℓu, (s.ℓu <= -energy(zcand)) ? 1 : 0)
 
 """
 Multinomial sampler for a trajectory consisting only a leaf node.
@@ -150,17 +150,17 @@ Multinomial sampler for a trajectory consisting only a leaf node.
 MultinomialTrajectorySampler(s::MultinomialTrajectorySampler, H0::AbstractFloat, zcand::PhasePoint) = 
     MultinomialTrajectorySampler(zcand, H0 - energy(zcand))
 
-function combine(rng::AbstractRNG, s1::SliceTreeSampler, s2::SliceTreeSampler)
+function combine(rng::AbstractRNG, s1::SliceTrajectorySampler, s2::SliceTrajectorySampler)
     @assert s1.ℓu == s2.ℓu "Cannot combine two slice sampler with different slice variable"
     n = s1.n + s2.n
     zcand = rand(rng) < s1.n / n ? s1.zcand : s2.zcand
-    SliceTreeSampler(zcand, s1.ℓu, n)
+    SliceTrajectorySampler(zcand, s1.ℓu, n)
 end
 
-function combine(zcand::PhasePoint, s1::SliceTreeSampler, s2::SliceTreeSampler)
+function combine(zcand::PhasePoint, s1::SliceTrajectorySampler, s2::SliceTrajectorySampler)
     @assert s1.ℓu == s2.ℓu "Cannot combine two slice sampler with different slice variable"
     n = s1.n + s2.n
-    SliceTreeSampler(zcand, s1.ℓu, n)
+    SliceTrajectorySampler(zcand, s1.ℓu, n)
 end
 
 function combine(rng::AbstractRNG, s1::MultinomialTrajectorySampler, s2::MultinomialTrajectorySampler)
@@ -176,8 +176,8 @@ end
 
 mh_accept(
     rng::AbstractRNG,
-    s::SliceTreeSampler,
-    s′::SliceTreeSampler
+    s::SliceTrajectorySampler,
+    s′::SliceTrajectorySampler
 ) = rand(rng) < min(1, s′.n / s.n)
 
 mh_accept(
@@ -224,9 +224,9 @@ struct NUTS{
     Δ_max           ::  F
 end
 
-Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTreeSampler,C<:ClassicNoUTurn} = 
+Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTrajectorySampler,C<:ClassicNoUTurn} = 
     print(io, "NUTS{Slice}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
-Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTreeSampler,C<:GeneralisedNoUTurn} = 
+Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTrajectorySampler,C<:GeneralisedNoUTurn} = 
     print(io, "NUTS{Slice,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:MultinomialTrajectorySampler,C<:ClassicNoUTurn} = 
     print(io, "NUTS{Multinomial}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
@@ -286,7 +286,7 @@ isterminated(d::Termination) = d.dynamic || d.numerical
 Check termination of a Hamiltonian trajectory.
 """
 Termination(
-    s::SliceTreeSampler,
+    s::SliceTrajectorySampler,
     nt::NUTS,
     H0::F,
     H′::F
