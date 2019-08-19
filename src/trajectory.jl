@@ -306,11 +306,11 @@ Termination(
 A full binary tree trajectory with only necessary leaves and information stored.
 """
 struct BinaryTree{C<:AbstractTerminationCriterion}
-    zleft       # left most leaf node
-    zright      # right most leaf node
-    c::C        # termination criterion
-    α           # MH stats, i.e. sum of MH accept prob for all leapfrog steps
-    nα          # total # of leap frog steps, i.e. phase points in a trajectory
+    zleft   # left most leaf node
+    zright  # right most leaf node
+    c::C    # termination criterion
+    sum_α   # MH stats, i.e. sum of MH accept prob for all leapfrog steps
+    nα      # total # of leap frog steps, i.e. phase points in a trajectory
 end
 
 """
@@ -320,7 +320,7 @@ Merge a left tree `treeleft` and a right tree `treeright` under given Hamiltonia
 then draw a new candidate sample and update related statistics for the resulting tree.
 """
 combine(treeleft::BinaryTree, treeright::BinaryTree) = 
-    BinaryTree(treeleft.zleft, treeright.zright, combine(treeleft.c, treeright.c), treeleft.α + treeright.α, treeleft.nα + treeright.nα)
+    BinaryTree(treeleft.zleft, treeright.zright, combine(treeleft.c, treeright.c), treeleft.sum_α + treeright.sum_α, treeleft.nα + treeright.nα)
 
 """
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
@@ -436,7 +436,7 @@ function transition(
         step_size=τ.integrator.ϵ, 
         n_steps=tree.nα, 
         is_accept=true, 
-        acceptance_rate=tree.α / tree.nα, 
+        acceptance_rate=tree.sum_α / tree.nα, 
         log_density=zcand.ℓπ.value, 
         hamiltonian_energy=energy(zcand), 
         tree_depth=j, 

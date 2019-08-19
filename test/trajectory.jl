@@ -120,7 +120,7 @@ end
     t2 = AdvancedHMC.BinaryTree(z, z, ClassicNoUTurn(), 1.1, 2)
     t3 = AdvancedHMC.combine(t1, t2)
 
-    @test t3.α ≈ 1.2 atol=1e-9
+    @test t3.sum_α ≈ 1.2 atol=1e-9
     @test t3.nα == 3
 end
 
