@@ -118,7 +118,7 @@ It contains the weight of the tree, defined as the total probabilities of the le
 """
 struct MultinomialTrajectorySampler{F<:AbstractFloat} <: AbstractTreeSampler
     zcand   ::  PhasePoint
-    logw    ::  F     # total energy for the given tree, i.e. sum of energy of all leaves
+    ℓw      ::  F     # total energy for the given tree, i.e. sum of energy of all leaves
 end
 
 """
@@ -164,14 +164,14 @@ function combine(zcand::PhasePoint, s1::SliceTreeSampler, s2::SliceTreeSampler)
 end
 
 function combine(rng::AbstractRNG, s1::MultinomialTrajectorySampler, s2::MultinomialTrajectorySampler)
-    logw = logaddexp(s1.logw, s2.logw)
-    zcand = rand(rng) < exp(s1.logw - logw) ? s1.zcand : s2.zcand
-    MultinomialTrajectorySampler(zcand, logw)
+    ℓw = logaddexp(s1.ℓw, s2.ℓw)
+    zcand = rand(rng) < exp(s1.ℓw - ℓw) ? s1.zcand : s2.zcand
+    MultinomialTrajectorySampler(zcand, ℓw)
 end
 
 function combine(zcand::PhasePoint, s1::MultinomialTrajectorySampler, s2::MultinomialTrajectorySampler)
-    logw = logaddexp(s1.logw, s2.logw)
-    MultinomialTrajectorySampler(zcand, logw)
+    ℓw = logaddexp(s1.ℓw, s2.ℓw)
+    MultinomialTrajectorySampler(zcand, ℓw)
 end
 
 mh_accept(
@@ -184,7 +184,7 @@ mh_accept(
     rng::AbstractRNG,
     s::MultinomialTrajectorySampler,
     s′::MultinomialTrajectorySampler
-) = rand(rng) < exp(min(0, s′.logw - s.logw))
+) = rand(rng) < exp(min(0, s′.ℓw - s.ℓw))
 
 ##
 ## Variants of no-U-turn criteria

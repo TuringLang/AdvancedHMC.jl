@@ -54,7 +54,7 @@ end
     w2 = 150
     s2 = AdvancedHMC.MultinomialTrajectorySampler(z2, log(w2))
     s3 = AdvancedHMC.combine(rng, s1, s2)
-    @test s3.logw ≈ log(w1 + w2)
+    @test s3.ℓw ≈ log(w1 + w2)
 
     s3_θ = Vector(undef, n_samples)
     for i = 1:n_samples
