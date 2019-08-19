@@ -314,13 +314,13 @@ struct FullBinaryTree{C<:AbstractTerminationCriterion}
 end
 
 """
-    combine(tleft::FullBinaryTree, tright::FullBinaryTree)
+    combine(treeleft::FullBinaryTree, treeright::FullBinaryTree)
 
-Merge a left tree `tleft` and a right tree `tright` under given Hamiltonian `h`,
+Merge a left tree `treeleft` and a right tree `treeright` under given Hamiltonian `h`,
 then draw a new candidate sample and update related statistics for the resulting tree.
 """
-combine(tleft::FullBinaryTree, tright::FullBinaryTree) = 
-    FullBinaryTree(tleft.zleft, tright.zright, combine(tleft.c, tright.c), tleft.α + tright.α, tleft.nα + tright.nα)
+combine(treeleft::FullBinaryTree, treeright::FullBinaryTree) = 
+    FullBinaryTree(treeleft.zleft, treeright.zright, combine(treeleft.c, treeright.c), treeleft.α + treeright.α, treeleft.nα + treeright.nα)
 
 """
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
@@ -372,23 +372,23 @@ function build_tree(
         return FullBinaryTree(z′, z′, C(z′), α′, 1), sampler′, Termination(sampler′, nt, H0, H′)
     else
         # Recursion - build the left and right subtrees.
-        t′, sampler′, termination′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
+        tree′, sampler′, termination′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
         # Expand tree if not terminated
         if !isterminated(termination′)
             # Expand left
             if v == -1
-                t′′, sampler′′, termination′′ = build_tree(rng, nt, h, t′.zleft, sampler, v, j - 1, H0) # left tree
-                tleft, tright = t′′, t′
+                tree′′, sampler′′, termination′′ = build_tree(rng, nt, h, tree′.zleft, sampler, v, j - 1, H0) # left tree
+                treeleft, treeright = tree′′, tree′
             # Expand right
             else
-                t′′, sampler′′, termination′′ = build_tree(rng, nt, h, t′.zright, sampler, v, j - 1, H0) # right tree
-                tleft, tright = t′, t′′
+                tree′′, sampler′′, termination′′ = build_tree(rng, nt, h, tree′.zright, sampler, v, j - 1, H0) # right tree
+                treeleft, treeright = tree′, tree′′
             end
-            t′ = combine(tleft, tright)
+            tree′ = combine(treeleft, treeright)
             sampler′ = combine(rng, sampler′, sampler′′)
-            termination′ = termination′ * termination′′ * isterminated(h, t′)
+            termination′ = termination′ * termination′′ * isterminated(h, tree′)
         end
-        return t′, sampler′, termination′
+        return tree′, sampler′, termination′
     end
 end
 
@@ -399,7 +399,7 @@ function transition(
     z0::PhasePoint
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}
     H0 = energy(z0)
-    t = FullBinaryTree(z0, z0, C(z0), zero(F), zero(Int))
+    tree = FullBinaryTree(z0, z0, C(z0), zero(F), zero(Int))
     sampler = S(rng, z0)
     termination = Termination(false, false)
     zcand = z0
@@ -410,12 +410,12 @@ function transition(
         v = rand(rng, [-1, 1])
         if v == -1
             # Create a tree with depth `j` on the left
-            t′, sampler′, termination′ = build_tree(rng, τ, h, t.zleft, sampler, v, j, H0)
-            tleft, tright = t′, t
+            tree′, sampler′, termination′ = build_tree(rng, τ, h, tree.zleft, sampler, v, j, H0)
+            treeleft, treeright = tree′, tree
         else
             # Create a tree with depth `j` on the right
-            t′, sampler′, termination′ = build_tree(rng, τ, h, t.zright, sampler, v, j, H0)
-            tleft, tright = t, t′
+            tree′, sampler′, termination′ = build_tree(rng, τ, h, tree.zright, sampler, v, j, H0)
+            treeleft, treeright = tree, tree′
         end
         # Perform a MH step and increse depth if not terminated
         if !isterminated(termination′)
@@ -425,18 +425,18 @@ function transition(
             end
         end
         # Combine the proposed tree and the current tree (no matter terminated or not)
-        t = combine(tleft, tright)
+        tree = combine(treeleft, treeright)
         # Update sampler
         sampler = combine(zcand, sampler, sampler′)
         # update termination
-        termination = termination * termination′ * isterminated(h, t)
+        termination = termination * termination′ * isterminated(h, tree)
     end
 
     stat = (
         step_size=τ.integrator.ϵ, 
-        n_steps=t.nα, 
+        n_steps=tree.nα, 
         is_accept=true, 
-        acceptance_rate=t.α / t.nα, 
+        acceptance_rate=tree.α / tree.nα, 
         log_density=zcand.ℓπ.value, 
         hamiltonian_energy=energy(zcand), 
         tree_depth=j, 
