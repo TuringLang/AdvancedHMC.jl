@@ -328,7 +328,7 @@ using the (original) no-U-turn cirterion.
 
 Ref: https://arxiv.org/abs/1111.4246, https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, t::BinaryTree{ClassicNoUTurn})
+function isterminated(h::Hamiltonian, t::BinaryTree{C}) where {C<:ClassicNoUTurn}
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
     Δθ = z1.θ - z0.θ
@@ -342,7 +342,7 @@ using the generalised no-U-turn criterion.
 
 Ref: https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, t::BinaryTree{GeneralisedNoUTurn})
+function isterminated(h::Hamiltonian, t::BinaryTree{C}) where {C<:GeneralisedNoUTurn}
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
     rho = t.c.rho
