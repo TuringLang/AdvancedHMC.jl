@@ -144,7 +144,7 @@ SliceTreeSampler(s::SliceTreeSampler, H0::AbstractFloat, zcand::PhasePoint) =
     SliceTreeSampler(zcand, s.ℓu, (s.ℓu <= -energy(zcand)) ? 1 : 0)
 
 """
-Multinomial sampler for for a trajectory consisting only a leaf node.
+Multinomial sampler for a trajectory consisting only a leaf node.
 - tree weight is the (unnormalised) energy of the leaf.
 """
 MultinomialTrajectorySampler(s::MultinomialTrajectorySampler, H0::AbstractFloat, zcand::PhasePoint) = 
