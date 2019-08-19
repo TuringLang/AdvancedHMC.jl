@@ -184,7 +184,7 @@ mh_accept(
     rng::AbstractRNG,
     s::MultinomialTrajectorySampler,
     s′::MultinomialTrajectorySampler
-) = rand(rng) < exp(min(0, s′.ℓw - s.ℓw))
+) = rand(rng) < min(1, exp(s′.ℓw - s.ℓw))
 
 ##
 ## Variants of no-U-turn criteria
