@@ -98,13 +98,13 @@ end
 """
 Sampler carried during the building of the tree.
 """
-abstract type AbstractTreeSampler end
+abstract type AbstractTrajectorySampler end
 
 """
 Slice sampler carried during the building of the tree.
 It contains the slice variable and the number of acceptable condidates in the tree.
 """
-struct SliceTrajectorySampler{F<:AbstractFloat} <: AbstractTreeSampler
+struct SliceTrajectorySampler{F<:AbstractFloat} <: AbstractTrajectorySampler
     zcand   ::  PhasePoint
     ℓu      ::  F     # slice variable in log space
     n       ::  Int   # number of acceptable candicates, i.e. those with prob larger than slice variable u
@@ -116,7 +116,7 @@ Base.show(io::IO, s::SliceTrajectorySampler) = print(io, "SliceTrajectorySampler
 Multinomial sampler carried during the building of the tree.
 It contains the weight of the tree, defined as the total probabilities of the leaves.
 """
-struct MultinomialTrajectorySampler{F<:AbstractFloat} <: AbstractTreeSampler
+struct MultinomialTrajectorySampler{F<:AbstractFloat} <: AbstractTrajectorySampler
     zcand   ::  PhasePoint
     ℓw      ::  F     # total energy for the given tree, i.e. sum of energy of all leaves
 end
@@ -214,7 +214,7 @@ combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rho + crigh
 Dynamic trajectory HMC using the no-U-turn termination criteria algorithm.
 """
 struct NUTS{
-    S<:AbstractTreeSampler,
+    S<:AbstractTrajectorySampler,
     C<:AbstractTerminationCriterion,
     I<:AbstractIntegrator,
     F<:AbstractFloat
@@ -238,7 +238,7 @@ const NUTS_DOCSTR = """
         integrator::I,
         max_depth::Int=10,
         Δ_max::F=1000.0
-    ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}
+    ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
 
 Create an instance for the No-U-Turn sampling algorithm.
 """
@@ -248,7 +248,7 @@ function NUTS{S,C}(
     integrator::I,
     max_depth::Int=10,
     Δ_max::F=1000.0
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}
+) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
     return NUTS{S,C,I,F}(integrator, max_depth, Δ_max)
 end
 
@@ -358,11 +358,11 @@ function build_tree(
     nt::NUTS{S,C,I,F},
     h::Hamiltonian,
     z::PhasePoint,
-    sampler::AbstractTreeSampler,
+    sampler::AbstractTrajectorySampler,
     v::Int,
     j::Int,
     H0::AbstractFloat
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}
+) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
         z′ = step(nt.integrator, h, z, v)
@@ -397,7 +397,7 @@ function transition(
     τ::NUTS{S,C,I,F},
     h::Hamiltonian,
     z0::PhasePoint
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}
+) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
     H0 = energy(z0)
     tree = BinaryTree(z0, z0, C(z0), zero(F), zero(Int))
     sampler = S(rng, z0)
