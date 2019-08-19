@@ -305,7 +305,7 @@ Termination(
 """
 A full binary tree trajectory with only necessary leaves and information stored.
 """
-struct FullBinaryTree{C<:AbstractTerminationCriterion}
+struct BinaryTree{C<:AbstractTerminationCriterion}
     zleft       # left most leaf node
     zright      # right most leaf node
     c::C        # termination criterion
@@ -314,13 +314,13 @@ struct FullBinaryTree{C<:AbstractTerminationCriterion}
 end
 
 """
-    combine(treeleft::FullBinaryTree, treeright::FullBinaryTree)
+    combine(treeleft::BinaryTree, treeright::BinaryTree)
 
 Merge a left tree `treeleft` and a right tree `treeright` under given Hamiltonian `h`,
 then draw a new candidate sample and update related statistics for the resulting tree.
 """
-combine(treeleft::FullBinaryTree, treeright::FullBinaryTree) = 
-    FullBinaryTree(treeleft.zleft, treeright.zright, combine(treeleft.c, treeright.c), treeleft.α + treeright.α, treeleft.nα + treeright.nα)
+combine(treeleft::BinaryTree, treeright::BinaryTree) = 
+    BinaryTree(treeleft.zleft, treeright.zright, combine(treeleft.c, treeright.c), treeleft.α + treeright.α, treeleft.nα + treeright.nα)
 
 """
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
@@ -328,7 +328,7 @@ using the (original) no-U-turn cirterion.
 
 Ref: https://arxiv.org/abs/1111.4246, https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, t::FullBinaryTree{ClassicNoUTurn})
+function isterminated(h::Hamiltonian, t::BinaryTree{ClassicNoUTurn})
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
     Δθ = z1.θ - z0.θ
@@ -342,7 +342,7 @@ using the generalised no-U-turn criterion.
 
 Ref: https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, t::FullBinaryTree{GeneralisedNoUTurn})
+function isterminated(h::Hamiltonian, t::BinaryTree{GeneralisedNoUTurn})
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
     rho = t.c.rho
@@ -369,7 +369,7 @@ function build_tree(
         H′ = energy(z′)
         α′ = exp(min(0, H0 - H′))
         sampler′ = S(sampler, H0, z′)
-        return FullBinaryTree(z′, z′, C(z′), α′, 1), sampler′, Termination(sampler′, nt, H0, H′)
+        return BinaryTree(z′, z′, C(z′), α′, 1), sampler′, Termination(sampler′, nt, H0, H′)
     else
         # Recursion - build the left and right subtrees.
         tree′, sampler′, termination′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
@@ -399,7 +399,7 @@ function transition(
     z0::PhasePoint
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTreeSampler,C<:AbstractTerminationCriterion}
     H0 = energy(z0)
-    tree = FullBinaryTree(z0, z0, C(z0), zero(F), zero(Int))
+    tree = BinaryTree(z0, z0, C(z0), zero(F), zero(Int))
     sampler = S(rng, z0)
     termination = Termination(false, false)
     zcand = z0

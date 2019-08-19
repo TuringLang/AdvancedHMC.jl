@@ -113,11 +113,11 @@ end
     @test AdvancedHMC.isterminated(t11 * t11) == true
 end
 
-@testset "FullBinaryTree" begin
+@testset "BinaryTree" begin
     z = AdvancedHMC.phasepoint(h, θ_init, randn(D))
 
-    t1 = AdvancedHMC.FullBinaryTree(z, z, ClassicNoUTurn(), 0.1, 1)
-    t2 = AdvancedHMC.FullBinaryTree(z, z, ClassicNoUTurn(), 1.1, 2)
+    t1 = AdvancedHMC.BinaryTree(z, z, ClassicNoUTurn(), 0.1, 1)
+    t2 = AdvancedHMC.BinaryTree(z, z, ClassicNoUTurn(), 1.1, 2)
     t3 = AdvancedHMC.combine(t1, t2)
 
     @test t3.α ≈ 1.2 atol=1e-9
@@ -185,7 +185,7 @@ function hand_isturn(z0, z1, rho, v=1)
 end
 
 ahmc_isturn(z0, z1, rho, v=1) = 
-    AdvancedHMC.isterminated(h, AdvancedHMC.FullBinaryTree(z0, z1, ClassicNoUTurn(), 0, 0)).dynamic
+    AdvancedHMC.isterminated(h, AdvancedHMC.BinaryTree(z0, z1, ClassicNoUTurn(), 0, 0)).dynamic
 
 function hand_isturn_generalised(z0, z1, rho, v=1)
     s = (dot(rho, -z0.r) >= 0) || (dot(-rho, z1.r) >= 0)
@@ -193,7 +193,7 @@ function hand_isturn_generalised(z0, z1, rho, v=1)
 end
 
 ahmc_isturn_generalised(z0, z1, rho, v=1) = 
-    AdvancedHMC.isterminated(h, AdvancedHMC.FullBinaryTree(z0, z1, GeneralisedNoUTurn(rho), 0, 0)).dynamic
+    AdvancedHMC.isterminated(h, AdvancedHMC.BinaryTree(z0, z1, GeneralisedNoUTurn(rho), 0, 0)).dynamic
 
 @testset "ClassicNoUTurn" begin
     n_tests = 4
