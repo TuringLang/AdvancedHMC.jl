@@ -17,8 +17,7 @@ end
 using AdvancedHMC
 
 # Sampling parameter settings
-n_samples = 100_000
-n_adapts = 2_000
+n_samples, n_adapts = 10_000, 2_000
 
 # Draw a random starting points
 θ_init = randn(D)
@@ -27,8 +26,8 @@ n_adapts = 2_000
 metric = DiagEuclideanMetric(D)
 h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
 int = Leapfrog(find_good_eps(h, θ_init))
-prop = NUTS(int)
-adaptor = StanHMCAdaptor(n_adapts, Preconditioner(metric), NesterovDualAveraging(0.8, prop.integrator.ϵ))
+prop = NUTS{MultinomialTreeSampler,GeneralisedNoUTurn}(int)
+adaptor = StanHMCAdaptor(n_adapts, Preconditioner(metric), NesterovDualAveraging(0.8, int.ϵ))
 
 # Draw samples via simulating Hamiltonian dynamics
 # - `samples` will store the samples
