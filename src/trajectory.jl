@@ -192,9 +192,9 @@ mh_accept(
 
 abstract type AbstractTerminationCriterion end
 
-struct NoUTurn <: AbstractTerminationCriterion end
+struct ClassicNoUTurn <: AbstractTerminationCriterion end
 
-NoUTurn(::PhasePoint) = NoUTurn()
+ClassicNoUTurn(::PhasePoint) = ClassicNoUTurn()
 
 struct GeneralisedNoUTurn{TR<:Real,TV<:AbstractVector{TR}} <: AbstractTerminationCriterion
     rho::TV
@@ -202,7 +202,7 @@ end
 
 GeneralisedNoUTurn(z::PhasePoint) = GeneralisedNoUTurn(z.r)
 
-combine(cleft::T, cright::T) where {T<:NoUTurn} = T()
+combine(cleft::T, cright::T) where {T<:ClassicNoUTurn} = T()
 combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rho + cright.rho)
 
 
@@ -224,11 +224,11 @@ struct NUTS{
     Δ_max           ::  F
 end
 
-Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTreeSampler,C<:NoUTurn} = 
+Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTreeSampler,C<:ClassicNoUTurn} = 
     print(io, "NUTS{Slice}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTreeSampler,C<:GeneralisedNoUTurn} = 
     print(io, "NUTS{Slice,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
-Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:MultinomialTrajectorySampler,C<:NoUTurn} = 
+Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:MultinomialTrajectorySampler,C<:ClassicNoUTurn} = 
     print(io, "NUTS{Multinomial}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:MultinomialTrajectorySampler,C<:GeneralisedNoUTurn} = 
     print(io, "NUTS{Multinomial,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
@@ -328,7 +328,7 @@ using the (original) no-U-turn cirterion.
 
 Ref: https://arxiv.org/abs/1111.4246, https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, t::FullBinaryTree{C}) where {S,C<:NoUTurn}
+function isterminated(h::Hamiltonian, t::FullBinaryTree{C}) where {S,C<:ClassicNoUTurn}
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
     θ0minusθ1 = z0.θ - z1.θ
