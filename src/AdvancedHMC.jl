@@ -28,7 +28,7 @@ export Hamiltonian
 include("integrator.jl")
 export Leapfrog
 include("trajectory.jl")
-export StaticTrajectory, find_good_eps, HMCDA, NUTS, SliceTreeSampler, MultinomialTreeSampler, NoUTurn, GeneralisedNoUTurn
+export StaticTrajectory, find_good_eps, HMCDA, NUTS, SliceTrajectorySampler, MultinomialTrajectorySampler, NoUTurn, GeneralisedNoUTurn
 
 include("diagnosis.jl")
 include("sampler.jl")

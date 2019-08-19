@@ -26,10 +26,10 @@ n_adapts = 2_000
             @testset "$τsym" for (τsym, τ) in Dict(
                 :HMC => StaticTrajectory(lf, n_steps),
                 :HMCDA => HMCDA(lf, ϵ * n_steps),
-                :(NUTS{Slice,Original}) => NUTS{SliceTreeSampler,NoUTurn}(lf),
-                :(NUTS{Slice,Generalised}) => NUTS{SliceTreeSampler,GeneralisedNoUTurn}(lf),
-                :(NUTS{Multinomial,Original}) => NUTS{MultinomialTreeSampler,NoUTurn}(lf),
-                :(NUTS{Multinomial,Generalised}) => NUTS{MultinomialTreeSampler,GeneralisedNoUTurn}(lf),
+                :(NUTS{Slice,Original}) => NUTS{SliceTrajectorySampler,NoUTurn}(lf),
+                :(NUTS{Slice,Generalised}) => NUTS{SliceTrajectorySampler,GeneralisedNoUTurn}(lf),
+                :(NUTS{Multinomial,Original}) => NUTS{MultinomialTrajectorySampler,NoUTurn}(lf),
+                :(NUTS{Multinomial,Generalised}) => NUTS{MultinomialTrajectorySampler,GeneralisedNoUTurn}(lf),
             )
                 @testset  "NoAdaptation" begin
                     samples, stats = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)

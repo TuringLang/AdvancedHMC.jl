@@ -116,7 +116,7 @@ Base.show(io::IO, s::SliceTreeSampler) = print(io, "SliceTreeSampler(logu=$(s.lo
 Multinomial sampler carried during the building of the tree.
 It contains the weight of the tree, defined as the total probabilities of the leaves.
 """
-struct MultinomialTreeSampler{F<:AbstractFloat} <: AbstractTreeSampler
+struct MultinomialTrajectorySampler{F<:AbstractFloat} <: AbstractTreeSampler
     zcand   ::  PhasePoint
     logw    ::  F     # total energy for the given tree, i.e. sum of energy of all leaves
 end
@@ -133,7 +133,7 @@ Tree weight is the (unnormalised) energy of the leaf.
 
 Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/base_nuts.hpp#L226
 """
-MultinomialTreeSampler(rng::AbstractRNG, z0::PhasePoint) = MultinomialTreeSampler(z0, zero(energy(z0)))
+MultinomialTrajectorySampler(rng::AbstractRNG, z0::PhasePoint) = MultinomialTrajectorySampler(z0, zero(energy(z0)))
 
 """
 Create a slice sampler for a single leaf tree:
@@ -147,8 +147,8 @@ SliceTreeSampler(s::SliceTreeSampler, H0::AbstractFloat, zcand::PhasePoint) =
 Multinomial sampler for the starting single leaf tree.
 - tree weight is the (unnormalised) energy of the leaf.
 """
-MultinomialTreeSampler(s::MultinomialTreeSampler, H0::AbstractFloat, zcand::PhasePoint) = 
-    MultinomialTreeSampler(zcand, H0 - energy(zcand))
+MultinomialTrajectorySampler(s::MultinomialTrajectorySampler, H0::AbstractFloat, zcand::PhasePoint) = 
+    MultinomialTrajectorySampler(zcand, H0 - energy(zcand))
 
 function combine(rng::AbstractRNG, s1::SliceTreeSampler, s2::SliceTreeSampler)
     @assert s1.logu == s2.logu "Cannot combine two slice sampler with different slice variable"
@@ -163,15 +163,15 @@ function combine(zcand::PhasePoint, s1::SliceTreeSampler, s2::SliceTreeSampler)
     SliceTreeSampler(zcand, s1.logu, n)
 end
 
-function combine(rng::AbstractRNG, s1::MultinomialTreeSampler, s2::MultinomialTreeSampler)
+function combine(rng::AbstractRNG, s1::MultinomialTrajectorySampler, s2::MultinomialTrajectorySampler)
     logw = logaddexp(s1.logw, s2.logw)
     zcand = rand(rng) < exp(s1.logw - logw) ? s1.zcand : s2.zcand
-    MultinomialTreeSampler(zcand, logw)
+    MultinomialTrajectorySampler(zcand, logw)
 end
 
-function combine(zcand::PhasePoint, s1::MultinomialTreeSampler, s2::MultinomialTreeSampler)
+function combine(zcand::PhasePoint, s1::MultinomialTrajectorySampler, s2::MultinomialTrajectorySampler)
     logw = logaddexp(s1.logw, s2.logw)
-    MultinomialTreeSampler(zcand, logw)
+    MultinomialTrajectorySampler(zcand, logw)
 end
 
 mh_accept(
@@ -182,8 +182,8 @@ mh_accept(
 
 mh_accept(
     rng::AbstractRNG,
-    s::MultinomialTreeSampler,
-    s′::MultinomialTreeSampler
+    s::MultinomialTrajectorySampler,
+    s′::MultinomialTrajectorySampler
 ) = rand(rng) < exp(min(0, s′.logw - s.logw))
 
 ##
@@ -228,9 +228,9 @@ Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTreeSampler,C<:NoUTurn} 
     print(io, "NUTS{Slice}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTreeSampler,C<:GeneralisedNoUTurn} = 
     print(io, "NUTS{Slice,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
-Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:MultinomialTreeSampler,C<:NoUTurn} = 
+Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:MultinomialTrajectorySampler,C<:NoUTurn} = 
     print(io, "NUTS{Multinomial}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
-Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:MultinomialTreeSampler,C<:GeneralisedNoUTurn} = 
+Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:MultinomialTrajectorySampler,C<:GeneralisedNoUTurn} = 
     print(io, "NUTS{Multinomial,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 
 const NUTS_DOCSTR = """
@@ -253,7 +253,7 @@ function NUTS{S,C}(
 end
 
 """
-    NUTS(args...) = NUTS{MultinomialTreeSampler,GeneralisedNoUTurn}(args...)
+    NUTS(args...) = NUTS{MultinomialTrajectorySampler,GeneralisedNoUTurn}(args...)
 
 Create an instance for the No-U-Turn sampling algorithm
 with multinomial sampling and original no U-turn criterion.
@@ -262,7 +262,7 @@ Below is the doc for NUTS{S,C}.
 
 $NUTS_DOCSTR
 """
-NUTS(args...) = NUTS{MultinomialTreeSampler,GeneralisedNoUTurn}(args...)
+NUTS(args...) = NUTS{MultinomialTrajectorySampler,GeneralisedNoUTurn}(args...)
 
 ###
 ### The doubling tree algorithm for expanding trajectory.
@@ -296,7 +296,7 @@ Termination(
 Check termination of a Hamiltonian trajectory.
 """
 Termination(
-    s::MultinomialTreeSampler,
+    s::MultinomialTrajectorySampler,
     nt::NUTS,
     H0::F,
     H′::F

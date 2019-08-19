@@ -35,9 +35,9 @@ end
 
     logu = rand()
     n1 = 2
-    s1 = AdvancedHMC.SliceTreeSampler(z1, logu, n1) 
+    s1 = AdvancedHMC.SliceTrajectorySampler(z1, logu, n1) 
     n2 = 1
-    s2 = AdvancedHMC.SliceTreeSampler(z2, logu, n2) 
+    s2 = AdvancedHMC.SliceTrajectorySampler(z2, logu, n2) 
     s3 = AdvancedHMC.combine(rng, s1, s2)
     @test s3.logu == logu
     @test s3.n == n1 + n2
@@ -50,9 +50,9 @@ end
     @test mean(s3_θ) ≈ ones(D) * n2 / (n1 + n2) rtol=0.01
 
     w1 = 100
-    s1 = AdvancedHMC.MultinomialTreeSampler(z1, log(w1))
+    s1 = AdvancedHMC.MultinomialTrajectorySampler(z1, log(w1))
     w2 = 150
-    s2 = AdvancedHMC.MultinomialTreeSampler(z2, log(w2))
+    s2 = AdvancedHMC.MultinomialTrajectorySampler(z2, log(w2))
     s3 = AdvancedHMC.combine(rng, s1, s2)
     @test s3.logw ≈ log(w1 + w2)
 
