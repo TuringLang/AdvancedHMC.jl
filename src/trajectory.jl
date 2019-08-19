@@ -106,11 +106,11 @@ It contains the slice variable and the number of acceptable condidates in the tr
 """
 struct SliceTreeSampler{F<:AbstractFloat} <: AbstractTreeSampler
     zcand   ::  PhasePoint
-    logu    ::  F     # slice variable in log space
+    ℓu      ::  F     # slice variable in log space
     n       ::  Int   # number of acceptable candicates, i.e. those with prob larger than slice variable u
 end
 
-Base.show(io::IO, s::SliceTreeSampler) = print(io, "SliceTreeSampler(logu=$(s.logu), n=$(s.n))")
+Base.show(io::IO, s::SliceTreeSampler) = print(io, "SliceTreeSampler(ℓu=$(s.ℓu), n=$(s.n))")
 
 """
 Multinomial sampler carried during the building of the tree.
@@ -141,7 +141,7 @@ Create a slice sampler for a single leaf tree:
 - the number of acceptable candicates is computed by comparing the slice variable against the current energy.
 """
 SliceTreeSampler(s::SliceTreeSampler, H0::AbstractFloat, zcand::PhasePoint) = 
-    SliceTreeSampler(zcand, s.logu, (s.logu <= -energy(zcand)) ? 1 : 0)
+    SliceTreeSampler(zcand, s.ℓu, (s.ℓu <= -energy(zcand)) ? 1 : 0)
 
 """
 Multinomial sampler for the starting single leaf tree.
@@ -151,16 +151,16 @@ MultinomialTrajectorySampler(s::MultinomialTrajectorySampler, H0::AbstractFloat,
     MultinomialTrajectorySampler(zcand, H0 - energy(zcand))
 
 function combine(rng::AbstractRNG, s1::SliceTreeSampler, s2::SliceTreeSampler)
-    @assert s1.logu == s2.logu "Cannot combine two slice sampler with different slice variable"
+    @assert s1.ℓu == s2.ℓu "Cannot combine two slice sampler with different slice variable"
     n = s1.n + s2.n
     zcand = rand(rng) < s1.n / n ? s1.zcand : s2.zcand
-    SliceTreeSampler(zcand, s1.logu, n)
+    SliceTreeSampler(zcand, s1.ℓu, n)
 end
 
 function combine(zcand::PhasePoint, s1::SliceTreeSampler, s2::SliceTreeSampler)
-    @assert s1.logu == s2.logu "Cannot combine two slice sampler with different slice variable"
+    @assert s1.ℓu == s2.ℓu "Cannot combine two slice sampler with different slice variable"
     n = s1.n + s2.n
-    SliceTreeSampler(zcand, s1.logu, n)
+    SliceTreeSampler(zcand, s1.ℓu, n)
 end
 
 function combine(rng::AbstractRNG, s1::MultinomialTrajectorySampler, s2::MultinomialTrajectorySampler)
@@ -290,7 +290,7 @@ Termination(
     nt::NUTS,
     H0::F,
     H′::F
-) where {F<:AbstractFloat} = Termination(false, !(s.logu < nt.Δ_max + -H′))
+) where {F<:AbstractFloat} = Termination(false, !(s.ℓu < nt.Δ_max + -H′))
 
 """
 Check termination of a Hamiltonian trajectory.

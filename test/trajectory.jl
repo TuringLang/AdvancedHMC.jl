@@ -33,13 +33,13 @@ end
 
     rng = MersenneTwister(1234)
 
-    logu = rand()
+    ℓu = rand()
     n1 = 2
-    s1 = AdvancedHMC.SliceTrajectorySampler(z1, logu, n1) 
+    s1 = AdvancedHMC.SliceTrajectorySampler(z1, ℓu, n1) 
     n2 = 1
-    s2 = AdvancedHMC.SliceTrajectorySampler(z2, logu, n2) 
+    s2 = AdvancedHMC.SliceTrajectorySampler(z2, ℓu, n2) 
     s3 = AdvancedHMC.combine(rng, s1, s2)
-    @test s3.logu == logu
+    @test s3.ℓu == ℓu
     @test s3.n == n1 + n2
 
     
