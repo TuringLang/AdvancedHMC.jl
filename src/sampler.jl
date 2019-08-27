@@ -2,6 +2,15 @@
 ## Interface functions
 ##
 
+function init(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
+    # Ensure h.metric has the same dim as θ.
+    h = update(h, θ)
+    # Prepare phase point for sampling
+    r = rand(rng, h.metric)
+    z = phasepoint(h, θ, r)
+    return h, z
+end
+
 function step(rng::AbstractRNG, h::Hamiltonian, τ::AbstractProposal, z::PhasePoint)
     # Make transition
     z, stat = transition(rng, τ, h, z)
@@ -93,10 +102,7 @@ function sample(
     Hs = Vector{T}(undef, n_samples)
     αs = Vector{T}(undef, n_samples)
     stats = Vector{NamedTuple}(undef, n_samples)
-    # Prepare phase point for sampling
-    h = update(h, θ) # Ensure h.metric has the same dim as θ.
-    r = rand(rng, h.metric)
-    z = phasepoint(h, θ, r)
+    h, z = init(rng, h, θ)
     # Progress meter
     pm = progress ? Progress(n_samples, desc="Sampling", barlen=31) : nothing
     time = @elapsed for i = 1:n_samples
