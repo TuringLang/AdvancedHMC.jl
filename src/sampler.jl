@@ -15,7 +15,7 @@ function step(rng::AbstractRNG, h::Hamiltonian, τ::AbstractProposal, z::PhasePo
     # Make transition
     z, stat = transition(rng, τ, h, z)
     # Collect stats
-    θ, α, H, stat = z.θ, stat.acceptance_rate, stat.hamiltonian_energy, stat
+    θ, α, H = z.θ, stat.acceptance_rate, stat.hamiltonian_energy
     # Refresh momentum for next iteration
     z = refresh(rng, z, h)
     return z, θ, α, H, stat
@@ -48,6 +48,12 @@ function adapt!(
         isadapted = true
     end
     return h, τ, isadapted
+end
+
+function ProgressMeter.next!(pm, stat::NamedTuple, i::Int, metric)
+    # Add current iteration and mass matrix
+    stat = (iterations=i, stat..., mass_matrix=metric)
+    ProgressMeter.next!(pm; showvalues=[tuple(s...) for s in pairs(stat)])
 end
 
 ##
@@ -113,14 +119,7 @@ function sample(
         if isadapted && i == n_adapts && verbose && !progress
             @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
         end
-        if progress
-            # Prepare show values for progress meter
-            showvalues = Dict{Symbol,Any}(pairs(stats[i])...)
-            showvalues[:mass_matrix] = h.metric # add mass matrix
-            showvalues[:iteration] = i          # add current iteration
-            # Update progress meter
-            ProgressMeter.next!(pm; showvalues=collect(zip(keys(showvalues), values(showvalues))))
-        end
+        progress && ProgressMeter.next!(pm, stats[i], i, h.metric)
     end
     # Report end of sampling
     verbose && @info "Finished $n_samples sampling steps in $time (s)" h τ EBFMI(Hs) mean(αs)
