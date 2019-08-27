@@ -113,10 +113,14 @@ function sample(
         if isadapted && i == n_adapts && verbose && !progress
             @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
         end
-        # Prepare show values for progress meter
-        showvalues = Dict{Symbol,Any}(pairs(stats[i])...)
-        # Update progress meter
-        progress && ProgressMeter.next!(pm; showvalues=Tuple[(:iteration, i), zip(keys(showvalues), values(showvalues))...])
+        if progress
+            # Prepare show values for progress meter
+            showvalues = Dict{Symbol,Any}(pairs(stats[i])...)
+            showvalues[:mass_matrix] = h.metric # add mass matrix
+            showvalues[:iteration] = i          # add current iteration
+            # Update progress meter
+            ProgressMeter.next!(pm; showvalues=collect(zip(keys(showvalues), values(showvalues))))
+        end
     end
     # Report end of sampling
     verbose && @info "Finished $n_samples sampling steps in $time (s)" h τ EBFMI(Hs) mean(αs)
