@@ -59,6 +59,7 @@ function transition(
         acceptance_rate=α, 
         log_density=z.ℓπ.value, 
         hamiltonian_energy=energy(z), 
+        mass_metric=h.metric,
        )
     return z, stat
 end
@@ -439,6 +440,7 @@ function transition(
         acceptance_rate=tree.sum_α / tree.nα, 
         log_density=zcand.ℓπ.value, 
         hamiltonian_energy=energy(zcand), 
+        mass_metric=h.metric,
         tree_depth=j, 
         numerical_error=termination.numerical,
        )

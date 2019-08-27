@@ -1,4 +1,47 @@
 ##
+## Interface functions
+##
+
+function step(rng::AbstractRNG, h::Hamiltonian, τ::AbstractProposal, z::PhasePoint)
+    # Make transition
+    z, stat = transition(rng, τ, h, z)
+    # Collect stats
+    θ, α, H, stat = z.θ, stat.acceptance_rate, stat.hamiltonian_energy, stat
+    # Refresh momentum for next iteration
+    z = refresh(rng, z, h)
+    return z, θ, α, H, stat
+end
+
+adapt!(
+    h::Hamiltonian,
+    τ::AbstractProposal,
+    adaptor::Adaptation.NoAdaptation,
+    i::Int,
+    n_adapts::Int,
+    θ::AbstractVector{T},
+    α::T
+) where {T<:Real} = h, τ, false
+
+function adapt!(
+    h::Hamiltonian,
+    τ::AbstractProposal,
+    adaptor::Adaptation.AbstractAdaptor,
+    i::Int,
+    n_adapts::Int,
+    θ::AbstractVector{T},
+    α::T
+) where {T<:Real}
+    isadapted = false
+    if i <= n_adapts
+        adapt!(adaptor, θ, α)
+        i == n_adapts && finalize!(adaptor)
+        h, τ = update(h, τ, adaptor)
+        isadapted = true
+    end
+    return h, τ, isadapted
+end
+
+##
 ## Sampling functions
 ##
 
@@ -54,23 +97,19 @@ function sample(
     h = update(h, θ) # Ensure h.metric has the same dim as θ.
     r = rand(rng, h.metric)
     z = phasepoint(h, θ, r)
+    # Progress meter
     pm = progress ? Progress(n_samples, desc="Sampling", barlen=31) : nothing
     time = @elapsed for i = 1:n_samples
-        z, stat = transition(rng, τ, h, z)
-        θs[i], αs[i], Hs[i], stats[i] = z.θ, stat.acceptance_rate, stat.hamiltonian_energy, stat
-        showvalues = Dict{Symbol,Any}(pairs(stat)...)
-        if !(adaptor isa Adaptation.NoAdaptation)
-            if i <= n_adapts
-                adapt!(adaptor, θs[i], αs[i])
-                i == n_adapts && finalize!(adaptor)
-                h, τ = update(h, τ, adaptor)
-                (i == n_adapts && verbose && !progress) && @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
-            end
-            # Progress info for adapation
-            progress && (showvalues[:step_size] = τ.integrator.ϵ; showvalues[:precondition] = h.metric)
+        z, θs[i], αs[i], Hs[i], stats[i] = step(rng, h, τ, z)
+        # Adapt h and τ; what mutable is the adaptor
+        h, τ, isadapted = adapt!(h, τ, adaptor, i, n_adapts, θs[i], αs[i])
+        # Adapation finish
+        if isadapted && i == n_adapts && verbose && !progress
+            @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
         end
-        # Refresh momentum for next iteration
-        z = refresh(rng, z, h)
+        # Prepare show values for progress meter
+        showvalues = Dict{Symbol,Any}(pairs(stats[i])...)
+        # Update progress meter
         progress && ProgressMeter.next!(pm; showvalues=Tuple[(:iteration, i), zip(keys(showvalues), values(showvalues))...])
     end
     # Report end of sampling
