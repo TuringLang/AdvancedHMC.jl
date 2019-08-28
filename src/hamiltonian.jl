@@ -104,6 +104,12 @@ energy(args...) = -neg_energy(args...)
 #### Momentum refreshment
 ####
 
+phasepoint(
+    rng::AbstractRNG, 
+    θ::AbstractVector{T},
+    h::Hamiltonian
+) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric))
+
 refresh(
     rng::AbstractRNG,
     z::PhasePoint,

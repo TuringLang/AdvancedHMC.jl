@@ -2,23 +2,26 @@
 ## Interface functions
 ##
 
-function init(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
-    # Ensure h.metric has the same dim as θ.
-    h = update(h, θ)
-    # Prepare phase point for sampling
-    r = rand(rng, h.metric)
-    z = phasepoint(h, θ, r)
-    return h, z
+struct Sample{P<:PhasePoint, NT<:NamedTuple}
+    z       ::  P
+    stat    ::  NT
 end
 
+function sample_init(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
+    # Ensure h.metric has the same dim as θ.
+    h = update(h, θ)
+    # Initial transition
+    s = Sample(phasepoint(rng, θ, h), NamedTuple())
+    return h, s
+end
+
+# A step is a momentum refreshment plus a transition
 function step(rng::AbstractRNG, h::Hamiltonian, τ::AbstractProposal, z::PhasePoint)
+    # Refresh momentum
+    z = refresh(rng, z, h)
     # Make transition
     z, stat = transition(rng, τ, h, z)
-    # Collect stats
-    θ, α, H = z.θ, stat.acceptance_rate, stat.hamiltonian_energy
-    # Refresh momentum for next iteration
-    z = refresh(rng, z, h)
-    return z, θ, α, H, stat
+    return Sample(z, stat)
 end
 
 adapt!(
@@ -104,24 +107,27 @@ function sample(
     progress::Bool=false
 ) where {T<:Real}
     # Prepare containers to store sampling results
-    θs = Vector{Vector{T}}(undef, n_samples)
-    Hs = Vector{T}(undef, n_samples)
-    αs = Vector{T}(undef, n_samples)
-    stats = Vector{NamedTuple}(undef, n_samples)
-    h, z = init(rng, h, θ)
+    θs, stats = Vector{Vector{T}}(undef, n_samples), Vector{NamedTuple}(undef, n_samples)
+    # Initial sampling
+    h, s = sample_init(rng, h, θ)
     # Progress meter
     pm = progress ? Progress(n_samples, desc="Sampling", barlen=31) : nothing
     time = @elapsed for i = 1:n_samples
-        z, θs[i], αs[i], Hs[i], stats[i] = step(rng, h, τ, z)
+        # Make a step
+        s = step(rng, h, τ, s.z)
         # Adapt h and τ; what mutable is the adaptor
-        h, τ, isadapted = adapt!(h, τ, adaptor, i, n_adapts, θs[i], αs[i])
+        h, τ, isadapted = adapt!(h, τ, adaptor, i, n_adapts, s.z.θ, s.stat.acceptance_rate)
         # Adapation finish
         if isadapted && i == n_adapts && verbose && !progress
             @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
         end
-        progress && ProgressMeter.next!(pm, stats[i], i, h.metric)
+        progress && ProgressMeter.next!(pm, s.stat, i, h.metric)
+        # Store sample
+        θs[i], stats[i] = s.z.θ, s.stat
     end
     # Report end of sampling
-    verbose && @info "Finished $n_samples sampling steps in $time (s)" h τ EBFMI(Hs) mean(αs)
+    EBFMI_est = EBFMI(map(s -> s.hamiltonian_energy, stats)) 
+    average_acceptance_rate = mean(map(s -> s.acceptance_rate, stats))
+    verbose && @info "Finished $n_samples sampling steps in $time (s)" h τ EBFMI_est average_acceptance_rate
     return θs, stats
 end
