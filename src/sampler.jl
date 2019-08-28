@@ -53,11 +53,19 @@ function adapt!(
     return h, τ, isadapted
 end
 
-function ProgressMeter.next!(pm, stat::NamedTuple, i::Int, metric)
+"""
+Progress meter update with all trajectory stats, iteration number and metric shown.
+"""
+function pm_next!(pm, stat::NamedTuple, i::Int, metric::AbstractMetric)
     # Add current iteration and mass matrix
     stat = (iterations=i, stat..., mass_matrix=metric)
     ProgressMeter.next!(pm; showvalues=[tuple(s...) for s in pairs(stat)])
 end
+
+"""
+Simple progress meter update without any show values.
+"""
+simple_pm_next!(pm, stat::NamedTuple, ::Int, ::AbstractMetric) = ProgressMeter.next!(pm)
 
 ##
 ## Sampling functions
@@ -71,8 +79,9 @@ sample(
     adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
     verbose::Bool=true,
-    progress::Bool=false
-) where {T<:Real} = sample(GLOBAL_RNG, h, τ, θ, n_samples, adaptor, n_adapts; verbose=verbose, progress=progress)
+    progress::Bool=false,
+    (pm_next!)::Function=pm_next!
+) where {T<:Real} = sample(GLOBAL_RNG, h, τ, θ, n_samples, adaptor, n_adapts; verbose=verbose, progress=progress, (pm_next!)=pm_next!)
 
 """
     sample(
@@ -104,7 +113,8 @@ function sample(
     adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
     verbose::Bool=true,
-    progress::Bool=false
+    progress::Bool=false,
+    (pm_next!)::Function=pm_next!
 ) where {T<:Real}
     # Prepare containers to store sampling results
     θs, stats = Vector{Vector{T}}(undef, n_samples), Vector{NamedTuple}(undef, n_samples)
@@ -117,11 +127,13 @@ function sample(
         s = step(rng, h, τ, s.z)
         # Adapt h and τ; what mutable is the adaptor
         h, τ, isadapted = adapt!(h, τ, adaptor, i, n_adapts, s.z.θ, s.stat.acceptance_rate)
-        # Adapation finish
-        if isadapted && i == n_adapts && verbose && !progress
+        # Update progress meter
+        if progress
+            pm_next!(pm, s.stat, i, h.metric)
+        # Report finish of adapation
+        elseif verbose && isadapted && i == n_adapts
             @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
         end
-        progress && ProgressMeter.next!(pm, s.stat, i, h.metric)
         # Store sample
         θs[i], stats[i] = s.z.θ, s.stat
     end
