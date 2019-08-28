@@ -198,7 +198,7 @@ ahmc_isturn_generalised(z0, z1, rho, v=1) =
 @testset "ClassicNoUTurn" begin
     n_tests = 4
     for _ = 1:n_tests
-        seed = abs(rand(Int8))
+        seed = abs(rand(Int8) + 128)
         rng = MersenneTwister(seed)
         @testset "seed = $seed" begin
             traj_z = gettraj(rng)
