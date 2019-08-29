@@ -15,11 +15,11 @@ r_init = AdvancedHMC.rand(h.metric)
     for seed in [1234, 5678, 90]
         rng = MersenneTwister(seed)
         z = AdvancedHMC.phasepoint(h, θ_init, r_init)
-        z1′, _ = AdvancedHMC.transition(rng, τ, h, z)
+        z1′ = AdvancedHMC.transition(rng, τ, h, z).z
 
         rng = MersenneTwister(seed)
         z = AdvancedHMC.phasepoint(h, θ_init, r_init)
-        z2′, _ = AdvancedHMC.transition(rng, τ, h, z)
+        z2′ = AdvancedHMC.transition(rng, τ, h, z).z
 
         @test z1′.θ == z2′.θ
         @test z1′.r == z2′.r

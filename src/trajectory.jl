@@ -8,6 +8,15 @@
 #### function. Internal uses shall always use the explict `rng` version. (Kai Xu 6/Jul/19)
 
 """
+A transition that contains the phase point and 
+other statistics of the transition.
+"""
+struct Transition{P<:PhasePoint, NT<:NamedTuple}
+    z       ::  P
+    stat    ::  NT
+end
+
+"""
 Abstract Markov chain Monte Carlo proposal.
 """
 abstract type AbstractProposal end
@@ -60,7 +69,7 @@ function transition(
         log_density=z.ℓπ.value, 
         hamiltonian_energy=energy(z), 
        )
-    return z, stat
+    return Transition(z, stat)
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
@@ -442,7 +451,7 @@ function transition(
         tree_depth=j, 
         numerical_error=termination.numerical,
        )
-    return zcand, stat
+    return Transition(zcand, stat)
 end
 
 """

@@ -2,17 +2,12 @@
 ## Interface functions
 ##
 
-struct Sample{P<:PhasePoint, NT<:NamedTuple}
-    z       ::  P
-    stat    ::  NT
-end
-
 function sample_init(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
     # Ensure h.metric has the same dim as θ.
     h = update(h, θ)
     # Initial transition
-    s = Sample(phasepoint(rng, θ, h), NamedTuple())
-    return h, s
+    t = Transition(phasepoint(rng, θ, h), NamedTuple())
+    return h, t
 end
 
 # A step is a momentum refreshment plus a transition
@@ -20,8 +15,7 @@ function step(rng::AbstractRNG, h::Hamiltonian, τ::AbstractProposal, z::PhasePo
     # Refresh momentum
     z = refresh(rng, z, h)
     # Make transition
-    z, stat = transition(rng, τ, h, z)
-    return Sample(z, stat)
+    return transition(rng, τ, h, z)
 end
 
 adapt!(
@@ -119,23 +113,23 @@ function sample(
     # Prepare containers to store sampling results
     θs, stats = Vector{Vector{T}}(undef, n_samples), Vector{NamedTuple}(undef, n_samples)
     # Initial sampling
-    h, s = sample_init(rng, h, θ)
+    h, t = sample_init(rng, h, θ)
     # Progress meter
     pm = progress ? Progress(n_samples, desc="Sampling", barlen=31) : nothing
     time = @elapsed for i = 1:n_samples
         # Make a step
-        s = step(rng, h, τ, s.z)
+        t = step(rng, h, τ, t.z)
         # Adapt h and τ; what mutable is the adaptor
-        h, τ, isadapted = adapt!(h, τ, adaptor, i, n_adapts, s.z.θ, s.stat.acceptance_rate)
+        h, τ, isadapted = adapt!(h, τ, adaptor, i, n_adapts, t.z.θ, t.stat.acceptance_rate)
         # Update progress meter
         if progress
-            pm_next!(pm, s.stat, i, h.metric)
+            pm_next!(pm, t.stat, i, h.metric)
         # Report finish of adapation
         elseif verbose && isadapted && i == n_adapts
             @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
         end
         # Store sample
-        θs[i], stats[i] = s.z.θ, s.stat
+        θs[i], stats[i] = t.z.θ, t.stat
     end
     # Report end of sampling
     EBFMI_est = EBFMI(map(s -> s.hamiltonian_energy, stats)) 
