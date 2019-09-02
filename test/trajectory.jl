@@ -15,11 +15,11 @@ r_init = AdvancedHMC.rand(h.metric)
     for seed in [1234, 5678, 90]
         rng = MersenneTwister(seed)
         z = AdvancedHMC.phasepoint(h, θ_init, r_init)
-        z1′, _ = AdvancedHMC.transition(rng, τ, h, z)
+        z1′ = AdvancedHMC.transition(rng, τ, h, z).z
 
         rng = MersenneTwister(seed)
         z = AdvancedHMC.phasepoint(h, θ_init, r_init)
-        z2′, _ = AdvancedHMC.transition(rng, τ, h, z)
+        z2′ = AdvancedHMC.transition(rng, τ, h, z).z
 
         @test z1′.θ == z2′.θ
         @test z1′.r == z2′.r
@@ -198,7 +198,7 @@ ahmc_isturn_generalised(z0, z1, rho, v=1) =
 @testset "ClassicNoUTurn" begin
     n_tests = 4
     for _ = 1:n_tests
-        seed = abs(rand(Int8))
+        seed = abs(rand(Int8) + 128)
         rng = MersenneTwister(seed)
         @testset "seed = $seed" begin
             traj_z = gettraj(rng)
