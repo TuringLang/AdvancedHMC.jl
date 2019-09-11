@@ -9,7 +9,7 @@ include("common.jl")
 θ_init = randn(D)
 ϵ = 0.1
 n_steps = 20
-n_samples = 10_000
+n_samples = 5_000
 n_adapts = 2_000
 
 @testset "HMC and NUTS" begin
@@ -22,6 +22,7 @@ n_adapts = 2_000
         @testset "$lfsym" for (lfsym, lf) in Dict(
             :Leapfrog => Leapfrog(ϵ),
             :JitteredLeapfrog => Leapfrog(ϵ; jitter=1.0),
+            :TemperedLeapfrog => Leapfrog(ϵ; α=1.05),
         )
             @testset "$τsym" for (τsym, τ) in Dict(
                 :HMC => StaticTrajectory(lf, n_steps),
@@ -34,6 +35,12 @@ n_adapts = 2_000
                 @testset  "NoAdaptation" begin
                     samples, stats = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
                     @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
+                end
+
+                # Skip adaptation tests for HMCDA with tempering
+                if τsym == :HMCDA && lfsym == :TemperedLeapfrog
+                    @info "Adaptation tests for $τsym with $lfsym on $metricsym are skipped"
+                    continue
                 end
 
                 @testset "$adaptorsym" for (adaptorsym, adaptor) in Dict(
