@@ -7,19 +7,19 @@ abstract type AbstractIntegrator end
 
 struct Leapfrog{T<:AbstractFloat} <: AbstractIntegrator
     ϵ       ::  T
-    jitter  :: T
+    jitter  ::  T
 end
 Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round(l.ϵ; sigdigits=3)))")
 
-Leapfrog(ϵ::T) where {T<:AbstractFloat} = Leapfrog(ϵ, zero(T))
+Leapfrog(ϵ::T; jitter::T=zero(T)) where {T<:AbstractFloat} = Leapfrog{T}(ϵ, jitter)
 
 function step(
-    lf::Leapfrog{F},
+    lf::Leapfrog{T},
     h::Hamiltonian,
     z::PhasePoint,
     n_steps::Int=1;
     fwd::Bool=n_steps > 0 # simulate hamiltonian backward when n_steps < 0,
-) where {F<:AbstractFloat,T<:Real}
+) where {T<:AbstractFloat}
     @unpack θ, r = z
     ϵ = fwd ? lf.ϵ : -lf.ϵ
     # Jitter step size; ref: https://github.com/stan-dev/stan/blob/1bb054027b01326e66ec610e95ef9b2a60aa6bec/src/stan/mcmc/hmc/base_hmc.hpp#L177-L178
