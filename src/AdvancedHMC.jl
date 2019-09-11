@@ -7,16 +7,11 @@ using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, chol
 using StatsFuns: logaddexp
 using LazyArrays: BroadcastArray
 using Random: GLOBAL_RNG, AbstractRNG
-using ProgressMeter
+using ProgressMeter: Progress, next!
 using Parameters: @unpack, reconstruct
 using ArgCheck: @argcheck
 
 import StatsBase: sample
-
-# Notations
-# d - dimension of sampling sapce
-# π(θ) - target distribution
-# r - momentum variable
 
 include("adaptation/Adaptation.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric

@@ -13,7 +13,6 @@ Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round(l.ϵ; sigdigits=
 
 Leapfrog(ϵ::T) where {T<:AbstractFloat} = Leapfrog(ϵ, zero(T))
 
-# TODO: double check the function below to see if it is type stable or not
 function step(
     lf::Leapfrog{F},
     h::Hamiltonian,

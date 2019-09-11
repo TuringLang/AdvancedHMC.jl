@@ -53,13 +53,13 @@ Progress meter update with all trajectory stats, iteration number and metric sho
 function pm_next!(pm, stat::NamedTuple, i::Int, metric::AbstractMetric)
     # Add current iteration and mass matrix
     stat = (iterations=i, stat..., mass_matrix=metric)
-    ProgressMeter.next!(pm; showvalues=[tuple(s...) for s in pairs(stat)])
+    next!(pm; showvalues=[tuple(s...) for s in pairs(stat)])
 end
 
 """
 Simple progress meter update without any show values.
 """
-simple_pm_next!(pm, stat::NamedTuple, ::Int, ::AbstractMetric) = ProgressMeter.next!(pm)
+simple_pm_next!(pm, stat::NamedTuple, ::Int, ::AbstractMetric) = next!(pm)
 
 ##
 ## Sampling functions
