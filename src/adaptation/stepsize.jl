@@ -35,6 +35,7 @@ end
 ################
 
 abstract type StepSizeAdaptor <: AbstractAdaptor end
+setM⁻¹!(::StepSizeAdaptor, ::Any) = nothing
 
 # finalize!(adaptor::T) where {T<:StepSizeAdaptor} = nothing
 
