@@ -63,6 +63,7 @@ function compute_next_window!(tp::StanHMCAdaptor)
 end
 
 getM⁻¹(adaptor::StanHMCAdaptor) = getM⁻¹(adaptor.pc)
+setM⁻¹!(adaptor::StanHMCAdaptor, x) = setM⁻¹!(adaptor.pc, x)
 getϵ(adaptor::StanHMCAdaptor)   = getϵ(adaptor.ssa)
 finalize!(adaptor::StanHMCAdaptor) = finalize!(adaptor.ssa)
 # reset!(adaptor::StanHMCAdaptor) # Not used.

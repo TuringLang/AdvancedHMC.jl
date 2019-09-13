@@ -37,6 +37,9 @@ function adapt!(
     θ::AbstractVector{T},
     α::T
 ) where {T<:Real}
+    if i == 1
+        setM⁻¹!(adaptor, h.metric.M⁻¹)
+    end
     isadapted = false
     if i <= n_adapts
         adapt!(adaptor, θ, α)
@@ -132,8 +135,10 @@ function sample(
         θs[i], stats[i] = t.z.θ, t.stat
     end
     # Report end of sampling
-    EBFMI_est = EBFMI(map(s -> s.hamiltonian_energy, stats)) 
-    average_acceptance_rate = mean(map(s -> s.acceptance_rate, stats))
-    verbose && @info "Finished $n_samples sampling steps in $time (s)" h τ EBFMI_est average_acceptance_rate
+    if verbose
+        EBFMI_est = EBFMI(map(s -> s.hamiltonian_energy, stats)) 
+        average_acceptance_rate = mean(map(s -> s.acceptance_rate, stats))
+        @info "Finished $n_samples sampling steps in $time (s)" h τ EBFMI_est average_acceptance_rate
+    end
     return θs, stats
 end

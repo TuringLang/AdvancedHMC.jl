@@ -141,6 +141,8 @@ UnitPreconditioner(::Type{T}=Float64) where {T} = UnitPreconditioner{T}()
 string(::UnitPreconditioner) = "I"
 reset!(::UnitPreconditioner) = nothing
 getM⁻¹(dpc::UnitPreconditioner{T}) where {T<:AbstractFloat} = UniformScaling{T}(one(T))
+setM⁻¹!(dpc::UnitPreconditioner, ::Any) = nothing
+
 adapt!(
     ::UnitPreconditioner,
     ::AbstractVector{<:Real},
@@ -166,6 +168,7 @@ end
 string(dpc::DiagPreconditioner) = string(dpc.var)
 reset!(dpc::DiagPreconditioner) = reset!(dpc.ve)
 getM⁻¹(dpc::DiagPreconditioner) = dpc.var
+setM⁻¹!(dpc::DiagPreconditioner, var) = dpc.var = var
 
 function adapt!(
     dpc::DiagPreconditioner,
@@ -200,6 +203,7 @@ end
 string(dpc::DensePreconditioner) = string(LinearAlgebra.diag(dpc.covar))
 reset!(dpc::DensePreconditioner) = reset!(dpc.ce)
 getM⁻¹(dpc::DensePreconditioner) = dpc.covar
+setM⁻¹!(dpc::DensePreconditioner, covar) = dpc.covar = covar
 
 function adapt!(
     dpc::DensePreconditioner,
