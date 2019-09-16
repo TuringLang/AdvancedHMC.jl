@@ -37,9 +37,6 @@ function adapt!(
     θ::AbstractVector{T},
     α::T
 ) where {T<:Real}
-    if i == 1
-        setM⁻¹!(adaptor, h.metric.M⁻¹)
-    end
     isadapted = false
     if i <= n_adapts
         adapt!(adaptor, θ, α)

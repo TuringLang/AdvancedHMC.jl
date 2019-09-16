@@ -14,7 +14,6 @@ abstract type AbstractAdaptor end
 ##
 
 getM⁻¹(adaptor::T) where {T<:AbstractAdaptor} = error("`getM⁻¹(adaptor::$T)` is not implemented.")
-setM⁻¹!(adaptor::T, ::Any) where {T<:AbstractAdaptor} = error("`setM⁻¹!(adaptor::$T, ::Any)` is not implemented.")
 getϵ(adaptor::T) where {T<:AbstractAdaptor} = error("`getϵ(adaptor::$T)` is not implemented.")
 adapt!(
     adaptor::T,
@@ -42,7 +41,6 @@ end
 Base.show(io::IO, a::NaiveHMCAdaptor) = print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
 
 getM⁻¹(aca::NaiveHMCAdaptor) = getM⁻¹(aca.pc)
-setM⁻¹!(aca::NaiveHMCAdaptor, x) = setM⁻¹!(aca.pc, x)
 getϵ(aca::NaiveHMCAdaptor) = getϵ(aca.ssa)
 function adapt!(nca::NaiveHMCAdaptor, θ::AbstractVector{<:Real}, α::AbstractFloat)
     adapt!(nca.ssa, θ, α)
@@ -59,7 +57,7 @@ finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)
 ##
 include("stan_adaption.jl")
 
-export adapt!, finalize!, getϵ, getM⁻¹, setM⁻¹!, reset!, renew,
+export adapt!, finalize!, getϵ, getM⁻¹, reset!, renew,
        NesterovDualAveraging,
        UnitPreconditioner, DiagPreconditioner, DensePreconditioner,
        AbstractMetric, UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric,
