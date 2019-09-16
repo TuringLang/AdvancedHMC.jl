@@ -149,18 +149,27 @@ adapt!(
 ) = nothing
 
 
-mutable struct DiagPreconditioner{T<:Real, AT<:AbstractVector{T}, TEst <: VarEstimator{T}} <: AbstractPreconditioner
+mutable struct DiagPreconditioner{
+    T<:Real, 
+    AT<:AbstractVector{T}, 
+    TEst<:VarEstimator{T}
+} <: AbstractPreconditioner
     n_min   :: Int
-    ve  :: TEst
-    var :: AT
+    ve      :: TEst
+    var     :: AT
 end
 Base.show(io::IO, ::DiagPreconditioner) = print(io, "DiagPreconditioner")
 
 # Diagonal
 DiagPreconditioner(d::Int, n_min::Int=10) = DiagPreconditioner(Float64, d, n_min)
-function DiagPreconditioner(::Type{T}, d::Int, n_min::Int=10) where {T}
+function DiagPreconditioner(
+    ::Type{T}, 
+    d::Int; 
+    n_min::Int=10, 
+    var=Vector(ones(T, d))
+) where {T}
     ve = WelfordVar(T, d)
-    return DiagPreconditioner(n_min, ve, Vector(ones(T, d)))
+    return DiagPreconditioner(n_min, ve, var)
 end
 
 string(dpc::DiagPreconditioner) = string(dpc.var)
@@ -182,7 +191,10 @@ function adapt!(
 end
 
 # Dense
-mutable struct DensePreconditioner{T<:AbstractFloat, TEst <: CovEstimator{T}} <: AbstractPreconditioner
+mutable struct DensePreconditioner{
+    T<:AbstractFloat, 
+    TEst<:CovEstimator{T}
+} <: AbstractPreconditioner
     n_min :: Int
     ce    :: TEst
     covar :: Matrix{T}
@@ -190,11 +202,16 @@ end
 Base.show(io::IO, ::DensePreconditioner) = print(io, "DensePreconditioner")
 
 DensePreconditioner(d::Int, n_min::Int=10) = DensePreconditioner(Float64, d, n_min)
-function DensePreconditioner(::Type{T}, d::Int, n_min::Int=10) where {T}
+function DensePreconditioner(
+    ::Type{T}, 
+    d::Int; 
+    n_min::Int=10, 
+    covar=LinearAlgebra.diagm(0 => ones(T, d))
+) where {T}
     ce = WelfordCov(T, d)
     # TODO: take use of the line below when we have an interface to set which covariance estimator to use
     # ce = NaiveCov(T)
-    return DensePreconditioner(n_min, ce, LinearAlgebra.diagm(0 => ones(T, d)))
+    return DensePreconditioner(n_min, ce, covar)
 end
 
 string(dpc::DensePreconditioner) = string(LinearAlgebra.diag(dpc.covar))
@@ -358,8 +375,8 @@ Base.rand(metric::AbstractMetric) = rand(GLOBAL_RNG, metric)
 ####
 
 Preconditioner(m::UnitEuclideanMetric{T}) where {T} = UnitPreconditioner(T)
-Preconditioner(m::DiagEuclideanMetric{T}) where {T} = DiagPreconditioner(T, m.dim)
-Preconditioner(m::DenseEuclideanMetric{T}) where {T} = DensePreconditioner(T, m.dim)
+Preconditioner(m::DiagEuclideanMetric{T}) where {T} = DiagPreconditioner(T, m.dim; var=m.M⁻¹)
+Preconditioner(m::DenseEuclideanMetric{T}) where {T} = DensePreconditioner(T, m.dim; covar=m.M⁻¹)
 
 Preconditioner(m::Type{TM}, dim::Int=2) where {TM<:AbstractMetric} = Preconditioner(Float64, m, dim)
-Preconditioner(::Type{T}, ::Type{TM}, dim::Int=2) where {T<:AbstractFloat,TM<:AbstractMetric} = Preconditioner(TM(T, dim))
+Preconditioner(::Type{T}, ::Type{TM}, dim::Int=2) where {T<:AbstractFloat, TM<:AbstractMetric} = Preconditioner(TM(T, dim))
