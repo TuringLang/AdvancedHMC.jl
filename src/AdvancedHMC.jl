@@ -22,7 +22,7 @@ import .Adaptation: adapt!
 include("hamiltonian.jl")
 export Hamiltonian
 include("integrator.jl")
-export Leapfrog
+export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 include("trajectory.jl")
 export StaticTrajectory, find_good_eps, HMCDA, NUTS, Slice, Multinomial, ClassicNoUTurn, GeneralisedNoUTurn
 

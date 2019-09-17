@@ -21,8 +21,8 @@ n_adapts = 2_000
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         @testset "$lfsym" for (lfsym, lf) in Dict(
             :Leapfrog => Leapfrog(ϵ),
-            :JitteredLeapfrog => Leapfrog(ϵ; jitter=1.0),
-            :TemperedLeapfrog => Leapfrog(ϵ; α=1.05),
+            :JitteredLeapfrog => JitteredLeapfrog(ϵ, 1.0),
+            :TemperedLeapfrog => TemperedLeapfrog(ϵ, 1.05),
         )
             @testset "$τsym" for (τsym, τ) in Dict(
                 :HMC => StaticTrajectory(lf, n_steps),
