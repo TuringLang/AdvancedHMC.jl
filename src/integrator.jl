@@ -7,11 +7,12 @@ abstract type AbstractIntegrator end
 
 abstract type AbstractLeapfrog{T} <: AbstractIntegrator end
 
-jitter(::AbstractLeapfrog, ϵ) = ϵ
+jitter(::AbstractRNG, ::AbstractLeapfrog, ϵ) = ϵ
 temper_first(::AbstractLeapfrog, r, ::Int, ::Int) = r
 temper_second(::AbstractLeapfrog, r, ::Int, ::Int) = r
 
 function step(
+    rng::AbstractRNG,
     lf::AbstractLeapfrog{T},
     h::Hamiltonian,
     z::PhasePoint,
@@ -20,7 +21,7 @@ function step(
 ) where {T<:AbstractFloat}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
     ϵ = fwd ? lf.ϵ : -lf.ϵ
-    ϵ = jitter(lf, ϵ)
+    ϵ = jitter(rng, lf, ϵ)
 
     @unpack θ, r = z
     @unpack value, gradient = ∂H∂θ(h, θ)
@@ -37,6 +38,10 @@ function step(
         !isfinite(z) && break
     end
     return z
+end
+
+function step(lf::AbstractLeapfrog, h::Hamiltonian, z::PhasePoint, n_steps::Int=1; fwd::Bool=n_steps > 0)
+    return step(GLOBAL_RNG, lf, h, z, n_steps; fwd=fwd)
 end
 
 struct Leapfrog{T<:AbstractFloat} <: AbstractLeapfrog{T}
@@ -56,7 +61,7 @@ function Base.show(io::IO, l::JitteredLeapfrog)
 end
 
 # Jitter step size; ref: https://github.com/stan-dev/stan/blob/1bb054027b01326e66ec610e95ef9b2a60aa6bec/src/stan/mcmc/hmc/base_hmc.hpp#L177-L178
-jitter(lf::JitteredLeapfrog, ϵ) = ϵ * (1 + lf.jitter * (2 * rand() - 1))
+jitter(rng::AbstractRNG, lf::JitteredLeapfrog, ϵ) = ϵ * (1 + lf.jitter * (2 * rand(rng) - 1))
 
 ### Tempering
 
