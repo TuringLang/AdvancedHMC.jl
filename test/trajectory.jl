@@ -12,14 +12,16 @@ h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
 r_init = AdvancedHMC.rand(h.metric)
 
 @testset "Passing random number generator" begin
-    for seed in [1234, 5678, 90]
+    τ_with_jittered_lf = NUTS(JitteredLeapfrog(find_good_eps(h, θ_init), 1.0))
+    for τ_test in [τ, τ_with_jittered_lf],
+        seed in [1234, 5678, 90]
         rng = MersenneTwister(seed)
         z = AdvancedHMC.phasepoint(h, θ_init, r_init)
-        z1′ = AdvancedHMC.transition(rng, τ, h, z).z
+        z1′ = AdvancedHMC.transition(rng, τ_test, h, z).z
 
         rng = MersenneTwister(seed)
         z = AdvancedHMC.phasepoint(h, θ_init, r_init)
-        z2′ = AdvancedHMC.transition(rng, τ, h, z).z
+        z2′ = AdvancedHMC.transition(rng, τ_test, h, z).z
 
         @test z1′.θ == z2′.θ
         @test z1′.r == z2′.r
