@@ -8,9 +8,7 @@ abstract type AbstractIntegrator end
 abstract type AbstractLeapfrog{T} <: AbstractIntegrator end
 
 jitter(::AbstractRNG, ::AbstractLeapfrog, ϵ) = ϵ
-function get_tempering_schedule(lf::AbstractLeapfrog, n_steps)
-    return Iterators.repeated(r -> r, 1 + 2n_steps)
-end
+temper(lf::AbstractLeapfrog, r, i::Tuple{Int,Bool}, n_steps::Int) = r
 
 function step(
     rng::AbstractRNG,
@@ -23,26 +21,22 @@ function step(
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
     ϵ = fwd ? lf.ϵ : -lf.ϵ
     ϵ = jitter(rng, lf, ϵ)
-    tempering_schedule = get_tempering_schedule(lf, n_steps)
 
     @unpack θ, r = z
     @unpack value, gradient = ∂H∂θ(h, θ)
-    _, temper_state = iterate(tempering_schedule)
     for i = 1:n_steps
         # Tempering
-        temper, temper_state = iterate(tempering_schedule, temper_state)
-        r = temper(r)
+        r = temper(lf, r, (i,false), n_steps)
         # Take a half leapfrog step for momentum variable
         r = r - ϵ / 2 * gradient
         # Take a full leapfrog step for position variable
         ∇r = ∂H∂r(h, r)
         θ = θ + ϵ * ∇r
-        # Take a half leapfrog step for momentum variable              
+        # Take a half leapfrog step for momentum variable
         @unpack value, gradient = ∂H∂θ(h, θ)
         r = r - ϵ / 2 * gradient
-        # Tempering    
-        temper, temper_state = iterate(tempering_schedule, temper_state)
-        r = temper(r)
+        # Tempering
+        r = temper(lf, r, (i,true), n_steps)
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
         !isfinite(z) && break
@@ -84,8 +78,12 @@ function Base.show(io::IO, l::TemperedLeapfrog)
     print(io, "TemperedLeapfrog(ϵ=$(round(l.ϵ; sigdigits=3)), α=$(round(l.α; sigdigits=3)))")
 end
 
-function get_tempering_schedule(lf::TemperedLeapfrog, n_steps)
-    up(r) = r * sqrt(lf.α)
-    down(r) = r / sqrt(lf.α)
-    return (i == 0 ? r -> r : i <= n_steps ? up : down for i in 0:2n_steps)
+function temper(lf::TemperedLeapfrog, r, i::Tuple{Int,Bool}, n_steps::Int)
+    if i[2] == true # first half of leapfrog
+        # `ceil` includes mid if `n_steps` is odd, e.g. `<= ceil(5 / 2)` => `<= 3`
+        return i[1] <= ceil(Int, n_steps / 2) ? r * sqrt(lf.α) : r / sqrt(lf.α)
+    else           # second half of leapfrog
+        # `floor` excludes mid if `n_steps` is odd, e.g. `<= floor(5 / 2)` => `<= 2`
+        return i[1] <= floor(Int, n_steps / 2) ? r * sqrt(lf.α) : r / sqrt(lf.α)
+    end
 end
