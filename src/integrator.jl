@@ -8,7 +8,7 @@ abstract type AbstractIntegrator end
 abstract type AbstractLeapfrog{T} <: AbstractIntegrator end
 
 jitter(::AbstractRNG, ::AbstractLeapfrog, ϵ) = ϵ
-temper(lf::AbstractLeapfrog, r, i::Tuple{Int,Bool}, n_steps::Int) = r
+temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_first),Tuple{Int64,Bool}}, ::Int) = r
 
 function step(
     rng::AbstractRNG,
@@ -26,7 +26,7 @@ function step(
     @unpack value, gradient = ∂H∂θ(h, θ)
     for i = 1:n_steps
         # Tempering
-        r = temper(lf, r, (i,false), n_steps)
+        r = temper(lf, r, (i=i, is_first=true), n_steps)
         # Take a half leapfrog step for momentum variable
         r = r - ϵ / 2 * gradient
         # Take a full leapfrog step for position variable
@@ -36,7 +36,7 @@ function step(
         @unpack value, gradient = ∂H∂θ(h, θ)
         r = r - ϵ / 2 * gradient
         # Tempering
-        r = temper(lf, r, (i,true), n_steps)
+        r = temper(lf, r, (i=i, is_first=false), n_steps)
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
         !isfinite(z) && break
@@ -78,12 +78,15 @@ function Base.show(io::IO, l::TemperedLeapfrog)
     print(io, "TemperedLeapfrog(ϵ=$(round(l.ϵ; sigdigits=3)), α=$(round(l.α; sigdigits=3)))")
 end
 
-function temper(lf::TemperedLeapfrog, r, i::Tuple{Int,Bool}, n_steps::Int)
-    if i[2] == true # first half of leapfrog
-        # `ceil` includes mid if `n_steps` is odd, e.g. `<= ceil(5 / 2)` => `<= 3`
-        return i[1] <= ceil(Int, n_steps / 2) ? r * sqrt(lf.α) : r / sqrt(lf.α)
-    else           # second half of leapfrog
-        # `floor` excludes mid if `n_steps` is odd, e.g. `<= floor(5 / 2)` => `<= 2`
-        return i[1] <= floor(Int, n_steps / 2) ? r * sqrt(lf.α) : r / sqrt(lf.α)
-    end
+"""
+    temper(lf::TemperedLeapfrog, r, step::NamedTuple{(:i, :is_first),Tuple{Int64,Bool}}, n_steps::Int)
+
+Tempering step. `step` is a named tuple with 
+- `i` being the current leapfrog iteration and 
+- `is_first` indicating whether or not it's the first half momentum/tempering step
+
+"""
+function temper(lf::TemperedLeapfrog, r, step::NamedTuple{(:i, :is_first),Tuple{Int64,Bool}}, n_steps::Int)
+    i_temper = 2(step.i - 1) + 1 + step.is_first    # counter for half temper steps
+    return i_temper <= n_steps ? r * sqrt(lf.α) : r / sqrt(lf.α)
 end
