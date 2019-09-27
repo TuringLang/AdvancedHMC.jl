@@ -8,8 +8,9 @@ abstract type AbstractIntegrator end
 abstract type AbstractLeapfrog{T} <: AbstractIntegrator end
 
 jitter(::AbstractRNG, ::AbstractLeapfrog, ϵ) = ϵ
-temper_first(::AbstractLeapfrog, r, ::Int, ::Int) = r
-temper_second(::AbstractLeapfrog, r, ::Int, ::Int) = r
+function get_tempering_schedule(lf::AbstractLeapfrog, n_steps)
+    return Iterators.repeated(r -> r, 1 + 2n_steps)
+end
 
 function step(
     rng::AbstractRNG,
@@ -22,17 +23,26 @@ function step(
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
     ϵ = fwd ? lf.ϵ : -lf.ϵ
     ϵ = jitter(rng, lf, ϵ)
+    tempering_schedule = get_tempering_schedule(lf, n_steps)
 
     @unpack θ, r = z
     @unpack value, gradient = ∂H∂θ(h, θ)
+    _, temper_state = iterate(tempering_schedule)
     for i = 1:n_steps
-        r = temper_first(lf, r, i, n_steps)
-        r = r - ϵ / 2 * gradient    # take a half leapfrog step for momentum variable
+        # Tempering
+        temper, temper_state = iterate(tempering_schedule, temper_state)
+        r = temper(r)
+        # Take a half leapfrog step for momentum variable
+        r = r - ϵ / 2 * gradient
+        # Take a full leapfrog step for position variable
         ∇r = ∂H∂r(h, r)
-        θ = θ + ϵ * ∇r              # take a full leapfrog step for position variable
+        θ = θ + ϵ * ∇r
+        # Take a half leapfrog step for momentum variable              
         @unpack value, gradient = ∂H∂θ(h, θ)
-        r = r - ϵ / 2 * gradient    # take a half leapfrog step for momentum variable
-        r = temper_second(lf, r, i, n_steps)
+        r = r - ϵ / 2 * gradient
+        # Tempering    
+        temper, temper_state = iterate(tempering_schedule, temper_state)
+        r = temper(r)
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
         !isfinite(z) && break
@@ -74,12 +84,8 @@ function Base.show(io::IO, l::TemperedLeapfrog)
     print(io, "TemperedLeapfrog(ϵ=$(round(l.ϵ; sigdigits=3)), α=$(round(l.α; sigdigits=3)))")
 end
 
-function temper_first(lf::TemperedLeapfrog, r, i::Int, n_steps::Int)
-    # `ceil` includes mid if `n_steps` is odd, e.g. `<= ceil(5 / 2)` => `<= 3` 
-    return i <= ceil(Int, n_steps / 2) ? r * sqrt(lf.α) : r / sqrt(lf.α)
-end
-
-function temper_second(lf::TemperedLeapfrog, r, i::Int, n_steps::Int)
-    # `floor` excludes mid if `n_steps` is odd, e.g. `<= floor(5 / 2)` => `<= 2` 
-    return i <= floor(Int, n_steps / 2) ? r * sqrt(lf.α) : r / sqrt(lf.α)
+function get_tempering_schedule(lf::TemperedLeapfrog, n_steps)
+    up(r) = r * sqrt(lf.α)
+    down(r) = r / sqrt(lf.α)
+    return (i == 0 ? r -> r : i <= n_steps ? up : down for i in 0:2n_steps)
 end
