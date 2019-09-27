@@ -21,7 +21,8 @@ n_adapts = 2_000
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         @testset "$lfsym" for (lfsym, lf) in Dict(
             :Leapfrog => Leapfrog(ϵ),
-            :JitteredLeapfrog => Leapfrog(ϵ, 1.0),
+            :JitteredLeapfrog => JitteredLeapfrog(ϵ, 1.0),
+            :TemperedLeapfrog => TemperedLeapfrog(ϵ, 1.05),
         )
             @testset "$τsym" for (τsym, τ) in Dict(
                 :HMC => StaticTrajectory(lf, n_steps),
@@ -34,6 +35,12 @@ n_adapts = 2_000
                 @testset  "NoAdaptation" begin
                     samples, stats = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
                     @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
+                end
+
+                # Skip adaptation tests for HMCDA with tempering
+                if τsym == :HMCDA && lfsym == :TemperedLeapfrog
+                    @info "Adaptation tests for $τsym with $lfsym on $metricsym are skipped"
+                    continue
                 end
 
                 @testset "$adaptorsym" for (adaptorsym, adaptor) in Dict(

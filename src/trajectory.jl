@@ -54,7 +54,7 @@ function transition(
     h::Hamiltonian,
     z::PhasePoint
 ) where {T<:Real}
-    z′ = step(τ.integrator, h, z, τ.n_steps)
+    z′ = step(rng, τ.integrator, h, z, τ.n_steps)
     # Accept via MH criteria
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
     if is_accept
@@ -374,7 +374,7 @@ function build_tree(
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
-        z′ = step(nt.integrator, h, z, v)
+        z′ = step(rng, nt.integrator, h, z, v)
         H′ = energy(z′)
         α′ = exp(min(0, H0 - H′))
         sampler′ = S(sampler, H0, z′)
@@ -460,7 +460,7 @@ A single Hamiltonian integration step.
 NOTE: this function is intended to be used in `find_good_eps` only.
 """
 function A(rng, h, z, ϵ)
-    z′ = step(Leapfrog(ϵ), h, z)
+    z′ = step(rng, Leapfrog(ϵ), h, z)
     H′ = energy(z′)
     return z′, H′
 end

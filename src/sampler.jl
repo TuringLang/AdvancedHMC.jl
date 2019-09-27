@@ -115,7 +115,7 @@ function sample(
     # Initial sampling
     h, t = sample_init(rng, h, θ)
     # Progress meter
-    pm = progress ? Progress(n_samples, desc="Sampling", barlen=31) : nothing
+    pm = progress ? ProgressMeter.Progress(n_samples, desc="Sampling", barlen=31) : nothing
     time = @elapsed for i = 1:n_samples
         # Make a step
         t = step(rng, h, τ, t.z)

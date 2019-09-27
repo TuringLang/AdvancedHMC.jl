@@ -13,10 +13,11 @@ using ArgCheck: @argcheck
 
 import StatsBase: sample
 
-# Notations
-# d - dimension of sampling sapce
-# π(θ) - target distribution
-# r - momentum variable
+# Notations	
+# ℓπ: log density of the target distribution
+# ∂ℓπ∂θ: gradient of the log density of the target distribution
+# θ: position variables / model parameters
+# r: momentum variables
 
 include("adaptation/Adaptation.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
@@ -27,7 +28,7 @@ import .Adaptation: adapt!
 include("hamiltonian.jl")
 export Hamiltonian
 include("integrator.jl")
-export Leapfrog
+export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 include("trajectory.jl")
 export StaticTrajectory, find_good_eps, HMCDA, NUTS, Slice, Multinomial, ClassicNoUTurn, GeneralisedNoUTurn
 
