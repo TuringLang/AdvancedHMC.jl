@@ -335,7 +335,7 @@ DenseEuclideanMetric(D::Int) = DenseEuclideanMetric(Float64, D)
 renew(ue::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
 
 Base.length(e::DenseEuclideanMetric) = size(e.M⁻¹, 1)
-Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DenseEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
+Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DenseEuclideanMetric(diag=$(_string_M⁻¹(dem.M⁻¹)))")
 
 function Base.getproperty(dem::DenseEuclideanMetric, d::Symbol)
     return d === :dim ? size(getfield(dem, :M⁻¹), 1) : getfield(dem, d)
