@@ -37,8 +37,8 @@ n_adapts = 2_000
                     @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
                 end
 
-                # Skip adaptation tests for HMCDA with tempering
-                if τsym == :HMCDA && lfsym == :TemperedLeapfrog
+                # Skip adaptation tests with tempering
+                if lfsym == :TemperedLeapfrog
                     @info "Adaptation tests for $τsym with $lfsym on $metricsym are skipped"
                     continue
                 end
