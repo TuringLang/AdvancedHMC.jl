@@ -72,10 +72,23 @@ sample(
     n_samples::Int,
     adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
+    drop_warmup=false,
     verbose::Bool=true,
     progress::Bool=false,
     (pm_next!)::Function=pm_next!
-) where {T<:Real} = sample(GLOBAL_RNG, h, τ, θ, n_samples, adaptor, n_adapts; verbose=verbose, progress=progress, (pm_next!)=pm_next!)
+) where {T<:Real} = sample(
+    GLOBAL_RNG, 
+    h, 
+    τ, 
+    θ, 
+    n_samples, 
+    adaptor, 
+    n_adapts; 
+    drop_warmup=drop_warmup,
+    verbose=verbose, 
+    progress=progress, 
+    (pm_next!)=pm_next!,
+)
 
 """
     sample(
@@ -106,12 +119,15 @@ function sample(
     n_samples::Int,
     adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
+    drop_warmup=false,
     verbose::Bool=true,
     progress::Bool=false,
     (pm_next!)::Function=pm_next!
 ) where {T<:Real}
+    @assert !(drop_warmup && (adaptor isa Adaptation.NoAdaptation)) "Cannot drop warmup samples if there is no adaptation phase."
     # Prepare containers to store sampling results
-    θs, stats = Vector{Vector{T}}(undef, n_samples), Vector{NamedTuple}(undef, n_samples)
+    n_keep = n_samples - drop_warmup * n_adapts
+    θs, stats = Vector{Vector{T}}(undef, n_keep), Vector{NamedTuple}(undef, n_keep)
     # Initial sampling
     h, t = sample_init(rng, h, θ)
     # Progress meter
@@ -129,7 +145,10 @@ function sample(
             @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
         end
         # Store sample
-        θs[i], stats[i] = t.z.θ, t.stat
+        if !drop_warmup || i > n_adapts
+            j = i - drop_warmup * n_adapts
+            θs[j], stats[j] = t.z.θ, t.stat
+        end
     end
     # Report end of sampling
     if verbose

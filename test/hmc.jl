@@ -59,10 +59,27 @@ n_adapts = 2_000
                     # For `Preconditioner`, we use the pre-defined step size as the method cannot adapt the step size.
                     # For other adapatation methods that are able to adpat the step size, we use `find_good_eps`.
                     τ_used = adaptorsym == :PreconditionerOnly ? τ : reconstruct(τ, integrator=reconstruct(lf, ϵ=find_good_eps(h, θ_init)))
-                    samples, stats = sample(h, τ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
-                    @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
+                    samples, stats = sample(h, τ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS, drop_warmup=true)
+                    @test mean(samples) ≈ zeros(D) atol=RNDATOL
                 end
             end
         end
     end
+end
+
+@testset "drop_warmup" begin
+    metric = DiagEuclideanMetric(D)
+    h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+    τ = NUTS(Leapfrog(ϵ))
+    adaptor = StanHMCAdaptor(
+        n_adapts,
+        Preconditioner(metric),
+        NesterovDualAveraging(0.8, τ.integrator.ϵ),
+    )
+    samples, stats = sample(h, τ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false, drop_warmup=true)
+    @test length(samples) == n_samples - n_adapts
+    @test length(stats) == n_samples - n_adapts
+    samples, stats = sample(h, τ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false, drop_warmup=false)
+    @test length(samples) == n_samples
+    @test length(stats) == n_samples
 end
