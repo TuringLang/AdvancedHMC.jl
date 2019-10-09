@@ -414,7 +414,7 @@ function transition(
     zcand = z0
 
     j = 0
-    while !isterminated(termination) && j <= τ.max_depth
+    while !isterminated(termination) && j < τ.max_depth
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
         if v == -1
