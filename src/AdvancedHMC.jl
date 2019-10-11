@@ -13,7 +13,7 @@ using ArgCheck: @argcheck
 
 import StatsBase: sample
 
-# Notations	
+# Notations
 # ℓπ: log density of the target distribution
 # ∂ℓπ∂θ: gradient of the log density of the target distribution
 # θ: position variables / model parameters
