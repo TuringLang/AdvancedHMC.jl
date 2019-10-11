@@ -26,82 +26,8 @@ Hamiltonian dynamics numerical simulation trajectories.
 """
 abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
-"""
-    transition(τ::AbstractTrajectory{I}, h::Hamiltonian, z::PhasePoint)
-
-Make a MCMC transition from phase point `z` using the trajectory `τ` under Hamiltonian `h`.
-
-NOTE: This is a RNG-implicit callback function for `transition(GLOBAL_RNG, τ, h, z)`
-"""
-transition(
-    τ::AbstractTrajectory{I},
-    h::Hamiltonian,
-    z::PhasePoint
-) where {I<:AbstractIntegrator} = transition(GLOBAL_RNG, τ, h, z)
-
-###
-### Standard HMC implementation with fixed leapfrog step numbers.
-###
-struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
-    integrator  ::  I
-    n_steps     ::  Int
-end
-Base.show(io::IO, τ::StaticTrajectory) = print(io, "StaticTrajectory(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
-
-function transition(
-    rng::AbstractRNG,
-    τ::StaticTrajectory,
-    h::Hamiltonian,
-    z::PhasePoint
-) where {T<:Real}
-    z′ = step(rng, τ.integrator, h, z, τ.n_steps)
-    # Accept via MH criteria
-    is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
-    if is_accept
-        # Reverse momentum variable to preserve reversibility
-        z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
-    end
-    stat = (
-        step_size=τ.integrator.ϵ,
-        n_steps=τ.n_steps,
-        is_accept=is_accept,
-        acceptance_rate=α,
-        log_density=z.ℓπ.value,
-        hamiltonian_energy=energy(z),
-       )
-    return Transition(z, stat)
-end
-
-abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
-
-###
-### Standard HMC implementation with fixed total trajectory length.
-###
-struct HMCDA{I<:AbstractIntegrator} <: DynamicTrajectory{I}
-    integrator  ::  I
-    λ           ::  AbstractFloat
-end
-Base.show(io::IO, τ::HMCDA) = print(io, "HMCDA(integrator=$(τ.integrator), λ=$(τ.λ)))")
-
-function transition(
-    rng::AbstractRNG,
-    τ::HMCDA,
-    h::Hamiltonian,
-    z::PhasePoint
-) where {T<:Real}
-    # Create the corresponding static τ
-    n_steps = max(1, floor(Int, τ.λ / τ.integrator.ϵ))
-    static_τ = StaticTrajectory(τ.integrator, n_steps)
-    return transition(rng, static_τ, h, z)
-end
-
-
-###
-### Advanced HMC implementation with (adaptive) dynamic trajectory length.
-###
-
 ##
-## Slice and multinomial sampling for trajectories.
+## Sampling methods for trajectories.
 ##
 
 """
@@ -194,6 +120,80 @@ mh_accept(
     s::MultinomialTS,
     s′::MultinomialTS
 ) = rand(rng) < min(1, exp(s′.ℓw - s.ℓw))
+
+"""
+    transition(τ::AbstractTrajectory{I}, h::Hamiltonian, z::PhasePoint)
+
+Make a MCMC transition from phase point `z` using the trajectory `τ` under Hamiltonian `h`.
+
+NOTE: This is a RNG-implicit callback function for `transition(GLOBAL_RNG, τ, h, z)`
+"""
+transition(
+    τ::AbstractTrajectory{I},
+    h::Hamiltonian,
+    z::PhasePoint
+) where {I<:AbstractIntegrator} = transition(GLOBAL_RNG, τ, h, z)
+
+###
+### Standard HMC implementation with fixed leapfrog step numbers.
+###
+struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
+    integrator  ::  I
+    n_steps     ::  Int
+end
+Base.show(io::IO, τ::StaticTrajectory) = print(io, "StaticTrajectory(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+
+function transition(
+    rng::AbstractRNG,
+    τ::StaticTrajectory,
+    h::Hamiltonian,
+    z::PhasePoint
+) where {T<:Real}
+    z′ = step(rng, τ.integrator, h, z, τ.n_steps)
+    # Accept via MH criteria
+    is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
+    if is_accept
+        # Reverse momentum variable to preserve reversibility
+        z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
+    end
+    stat = (
+        step_size=τ.integrator.ϵ,
+        n_steps=τ.n_steps,
+        is_accept=is_accept,
+        acceptance_rate=α,
+        log_density=z.ℓπ.value,
+        hamiltonian_energy=energy(z),
+       )
+    return Transition(z, stat)
+end
+
+abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
+
+###
+### Standard HMC implementation with fixed total trajectory length.
+###
+struct HMCDA{I<:AbstractIntegrator} <: DynamicTrajectory{I}
+    integrator  ::  I
+    λ           ::  AbstractFloat
+end
+Base.show(io::IO, τ::HMCDA) = print(io, "HMCDA(integrator=$(τ.integrator), λ=$(τ.λ)))")
+
+function transition(
+    rng::AbstractRNG,
+    τ::HMCDA,
+    h::Hamiltonian,
+    z::PhasePoint
+) where {T<:Real}
+    # Create the corresponding static τ
+    n_steps = max(1, floor(Int, τ.λ / τ.integrator.ϵ))
+    static_τ = StaticTrajectory(τ.integrator, n_steps)
+    return transition(rng, static_τ, h, z)
+end
+
+
+###
+### Advanced HMC implementation with (adaptive) dynamic trajectory length.
+###
 
 ##
 ## Variants of no-U-turn criteria
