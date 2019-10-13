@@ -706,3 +706,76 @@ function mh_accept_ratio(
     accept = rand(rng, T, length(Horiginal)) .< α
     return accept, α
 end
+
+##
+## Stochastic Gradient Hamilton Samplers
+##
+
+###
+### Stochastic Gradient Hamiltonian Monte Carlo sampler.
+###
+"""
+Stochastic Gradient HMC with fixed number of steps.
+"""
+struct SGHMC{
+    I<:AbstractIntegrator,
+    F<:AbstractFloat
+} <: AbstractTrajectory{I}
+    integrator      :: I
+    n_steps         :: Int  # number of samples
+    η               :: F    # learning rate
+    α               :: F    # momentum decay
+end
+
+function transition(
+    rng::AbstractRNG,
+    τ::SGHMC,
+    h::Hamiltonian,
+    z::PhasePoint
+) where {T<:Real}
+    z′ = step(rng, τ.integrator, h, z, τ.n_steps)
+    # no M-H step
+    z = PhasePoint(z′.θ, z′.r, z′.ℓπ, z′.ℓκ)
+    stat = (
+        step_size=τ.integrator.ϵ,
+        n_steps=τ.n_steps,
+        log_density=z.ℓπ.value,
+        hamiltonian_energy=energy(z),
+        )
+    return Transition(z, stat)
+end
+
+
+
+###
+### Stochastic Gradient Langevin Dynamics sampler.
+###
+"""
+Stochastic Gradient Langevin Dynamics with fixed number of steps.
+"""
+struct SGLD{
+    I<:AbstractIntegrator,
+    F<:AbstractFloat
+} <: AbstractTrajectory{I}
+    integrator      :: I
+    n_steps         :: Int  # number of samples
+    ϵ               :: F    # constant scale factor of the learning rate
+end
+
+function transition(
+    rng::AbstractRNG,
+    τ::SGLD,
+    h::Hamiltonian,
+    z::PhasePoint
+) where {T<:Real}
+    z′ = step(rng, τ.integrator, h, z, τ.n_steps)
+    # no M-H step
+    z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
+    stat = (
+        step_size=τ.integrator.ϵ,
+        n_steps=τ.n_steps,
+        log_density=z.ℓπ.value,
+        hamiltonian_energy=energy(z),
+        )
+    return Transition(z, stat)
+end
