@@ -2,9 +2,11 @@
 
 [![Build Status](https://travis-ci.org/TuringLang/AdvancedHMC.jl.svg?branch=master)](https://travis-ci.org/TuringLang/AdvancedHMC.jl) [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
 
-**The code from this repository is used to implement HMC samplers in [Turing.jl](https://github.com/yebai/Turing.jl).**
+**The code from this repository is used to implement HMC samplers in [Turing.jl](https://github.com/TuringLang/Turing.jl).**
 
-**UPDATE**: The gradient function passed in to `Hamiltonian` is supposed to return a value-gradient tuple now! 
+**NEWS**: We presented a poster for AdvancedHMC.jl at StanCon 2019. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
+
+**UPDATE**: The gradient function passed in to `Hamiltonian` is supposed to return a value-gradient tuple now.
 
 ## Minimal examples - sampling from a multivariate Gaussian using NUTS
 
