@@ -97,24 +97,17 @@ neg_energy(
     θ::T
 ) where {T<:AbstractMatrix} = -vec(sum(abs2, r; dims=1)) ./ 2
 
-function neg_energy(
+neg_energy(
     h::Hamiltonian{<:DiagEuclideanMetric},
     r::T,
     θ::T
-) where {T<:AbstractVector}
-    # TODO: use broadcast for below
-    _r = [abs2(r[i]) * h.metric.M⁻¹[i] for i in 1:length(r)]
-    return -sum(_r) / 2
-end
+) where {T<:AbstractVector} = -sum(abs2.(r) .* h.metric.M⁻¹) / 2
 
-function neg_energy(
+neg_energy(
     h::Hamiltonian{<:DiagEuclideanMetric},
     r::T,
     θ::T
-) where {T<:AbstractMatrix}
-    _r = abs2.(r) .* h.metric.M⁻¹
-    return -vec(sum(_r; dims=1) ) / 2
-end
+) where {T<:AbstractMatrix} = -vec(sum(abs2.(r) .* h.metric.M⁻¹; dims=1) ) / 2
 
 function neg_energy(
     h::Hamiltonian{<:DenseEuclideanMetric},
