@@ -32,7 +32,15 @@ include("common.jl")
             time_seperate[i] = t
         end
 
-        fig = lineplot(collect(1:n_chains_max), time_mat, title="Scalabiliry of multiple chains", name="matrix parallism", xlabel="Num of chains", ylabel="time (s)")
+        # Make plot
+        fig = lineplot(
+            collect(1:n_chains_max),
+            time_mat;
+            title="Scalabiliry of multiple chains",
+            name="matrix parallism",
+            xlabel="Num of chains",
+            ylabel="Time (s)"
+        )
         lineplot!(fig, collect(1:n_chains_max), time_seperate; color=:blue, name="seperate")
         show(fig); println()
     end
