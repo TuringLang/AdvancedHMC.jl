@@ -615,6 +615,7 @@ function update(
     τ::AbstractProposal,
     da::NesterovDualAveraging
 )
+    # TODO: this does not support change type of `ϵ` (e.g. Float to Vector)
     integrator = reconstruct(τ.integrator, ϵ=getϵ(da))
     τ = reconstruct(τ, integrator=integrator)
     return h, τ

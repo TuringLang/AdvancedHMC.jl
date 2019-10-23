@@ -7,6 +7,7 @@ include("common.jl")
     θ_init = [randn(D, n_chains) for n_chains in 1:n_chains_max]
     ϵ = 0.1
     lf = Leapfrog(ϵ)
+    lf5 = Leapfrog(fill(ϵ, 5))
     n_steps = 20
     n_samples = 10_000
     n_adapts = 2_000
@@ -16,7 +17,7 @@ include("common.jl")
         DiagEuclideanMetric,
         # DenseEuclideanMetric  # not supported at the moment
     ], τ in [
-        StaticTrajectory(lf, n_steps),
+        StaticTrajectory(lf5, n_steps),
         HMCDA(lf, ϵ * n_steps)
     ]
         metric = metricT((D, 5))
@@ -26,21 +27,23 @@ include("common.jl")
 
         for adaptor in [
             Preconditioner(metric),
-            # NesterovDualAveraging(0.8, lf.ϵ),
-            # NaiveHMCAdaptor(
-            #     Preconditioner(metric),
-            #     NesterovDualAveraging(0.8, lf.ϵ),
-            # ),
-            # StanHMCAdaptor(
-            #     n_adapts,
-            #     Preconditioner(metric),
-            #     NesterovDualAveraging(0.8, lf.ϵ),
-            # ),
+            NesterovDualAveraging(0.8, lf5.ϵ),
+            NaiveHMCAdaptor(
+                Preconditioner(metric),
+                NesterovDualAveraging(0.8, lf5.ϵ),
+            ),
+            StanHMCAdaptor(
+                n_adapts,
+                Preconditioner(metric),
+                NesterovDualAveraging(0.8, lf5.ϵ),
+            ),
         ]
+            τ isa HMCDA && continue
             samples, stats = sample(h, τ, θ_init[5], n_samples, adaptor, n_adapts; verbose=false, progress=false)
             @test mean(samples) ≈ zeros(D, 5) atol=RNDATOL
         end
     end
+    @info "Adaptation tests for HMCDA with NesterovDualAveraging are skipped"
 
     # Simple time benchmark
     let metricT=UnitEuclideanMetric

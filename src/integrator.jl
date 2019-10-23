@@ -17,10 +17,11 @@ function step(
     z::PhasePoint,
     n_steps::Int=1;
     fwd::Bool=n_steps > 0   # simulate hamiltonian backward when n_steps < 0,
-) where {T<:AbstractFloat}
+) where {T<:Union{AbstractFloat,AbstractVector{<:AbstractFloat}}}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
     ϵ = fwd ? lf.ϵ : -lf.ϵ
     ϵ = jitter(rng, lf, ϵ)
+    ϵ = ϵ'
 
     @unpack θ, r = z
     @unpack value, gradient = ∂H∂θ(h, θ)
@@ -28,13 +29,13 @@ function step(
         # Tempering
         r = temper(lf, r, (i=i, is_half=true), n_steps)
         # Take a half leapfrog step for momentum variable
-        r = r - ϵ / 2 * gradient
+        r = r - ϵ / 2 .* gradient
         # Take a full leapfrog step for position variable
         ∇r = ∂H∂r(h, r)
-        θ = θ + ϵ * ∇r
+        θ = θ + ϵ .* ∇r
         # Take a half leapfrog step for momentum variable
         @unpack value, gradient = ∂H∂θ(h, θ)
-        r = r - ϵ / 2 * gradient
+        r = r - ϵ / 2 .* gradient
         # Tempering
         r = temper(lf, r, (i=i, is_half=false), n_steps)
         # Create a new phase point by caching the logdensity and gradient
@@ -48,16 +49,16 @@ function step(lf::AbstractLeapfrog, h::Hamiltonian, z::PhasePoint, n_steps::Int=
     return step(GLOBAL_RNG, lf, h, z, n_steps; fwd=fwd)
 end
 
-struct Leapfrog{T<:AbstractFloat} <: AbstractLeapfrog{T}
+struct Leapfrog{T<:Union{AbstractFloat,AbstractVector{<:AbstractFloat}}} <: AbstractLeapfrog{T}
     ϵ       ::  T
 end
 Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round(l.ϵ; sigdigits=3)))")
 
 ### Jittering
 
-struct JitteredLeapfrog{T<:AbstractFloat} <: AbstractLeapfrog{T}
+struct JitteredLeapfrog{FT<:AbstractFloat,T<:Union{FT,AbstractVector{FT}}} <: AbstractLeapfrog{T}
     ϵ       ::  T
-    jitter  ::  T
+    jitter  ::  FT
 end
 
 function Base.show(io::IO, l::JitteredLeapfrog)
@@ -69,9 +70,9 @@ jitter(rng::AbstractRNG, lf::JitteredLeapfrog, ϵ) = ϵ * (1 + lf.jitter * (2 * 
 
 ### Tempering
 
-struct TemperedLeapfrog{T<:AbstractFloat} <: AbstractLeapfrog{T}
+struct TemperedLeapfrog{FT<:AbstractFloat,T<:Union{FT,AbstractVector{FT}}} <: AbstractLeapfrog{T}
     ϵ       ::  T
-    α       ::  T
+    α       ::  FT
 end
 
 function Base.show(io::IO, l::TemperedLeapfrog)
@@ -81,8 +82,8 @@ end
 """
     temper(lf::TemperedLeapfrog, r, step::NamedTuple{(:i, :is_half),Tuple{Int64,Bool}}, n_steps::Int)
 
-Tempering step. `step` is a named tuple with 
-- `i` being the current leapfrog iteration and 
+Tempering step. `step` is a named tuple with
+- `i` being the current leapfrog iteration and
 - `is_half` indicating whether or not it's (the first) half momentum/tempering step
 """
 function temper(lf::TemperedLeapfrog, r, step::NamedTuple{(:i, :is_half),Tuple{Int64,Bool}}, n_steps::Int)
