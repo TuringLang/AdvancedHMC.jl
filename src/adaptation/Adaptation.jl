@@ -29,6 +29,8 @@ struct NoAdaptation <: AbstractAdaptor end
 include("stepsize.jl")
 include("precond.jl")
 
+# TODO: implement consensus adaptor
+
 ##
 ## Compositional adaptor
 ## TODO: generalise this to a list of adaptors

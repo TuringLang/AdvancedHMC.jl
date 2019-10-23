@@ -6,6 +6,7 @@ include("common.jl")
     n_chains_max = 20
     θ_init = [randn(D, n_chains) for n_chains in 1:n_chains_max]
     ϵ = 0.1
+    lf = Leapfrog(ϵ)
     n_steps = 20
     n_samples = 10_000
     n_adapts = 2_000
@@ -14,8 +15,10 @@ include("common.jl")
         UnitEuclideanMetric,
         DiagEuclideanMetric,
         # DenseEuclideanMetric  # not supported at the moment
-    ], τ in [StaticTrajectory(Leapfrog(ϵ), n_steps)]
-
+    ], τ in [
+        StaticTrajectory(lf, n_steps),
+        HMCDA(lf, ϵ * n_steps)
+    ]
         h = Hamiltonian(metricT((D, 5)), ℓπ, ∂ℓπ∂θ)
         samples, stats = sample(h, τ, θ_init[5], n_samples; verbose=false)
         @test mean(samples) ≈ zeros(D, 5) atol=RNDATOL
@@ -23,7 +26,7 @@ include("common.jl")
 
     # Simple time benchmark
     let metricT=UnitEuclideanMetric
-        τ = StaticTrajectory(Leapfrog(ϵ), n_steps)
+        τ = StaticTrajectory(lf, n_steps)
 
         time_mat = Vector{Float64}(undef, n_chains_max)
         for (i, n_chains) in enumerate(1:n_chains_max)
