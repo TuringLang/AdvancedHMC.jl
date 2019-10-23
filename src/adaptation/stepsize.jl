@@ -75,11 +75,11 @@ Base.show(io::IO, a::ManualSSAdaptor) = print(io, "ManualSSAdaptor()")
 ManualSSAdaptor(initϵ::T) where {T<:AbstractFloat} = ManualSSAdaptor{T}(MSSState(initϵ))
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
-# Note: This function is not merged with `adapt!` to empahsize the fact that 
+# Note: This function is not merged with `adapt!` to empahsize the fact that
 #       step size adaptation is not dependent on `θ`.
-function adapt_stepsize!(da::NesterovDualAveraging{T}, α::T) where {T <: AbstractFloat}
+function adapt_stepsize!(da::NesterovDualAveraging{T}, α::T) where {T<:AbstractFloat}
     DEBUG && @debug "Adapting step size..." α
-    
+
     # Clip average MH acceptance probability
     α = α > 1 ? one(T) : α
 
@@ -102,13 +102,16 @@ function adapt_stepsize!(da::NesterovDualAveraging{T}, α::T) where {T <: Abstra
     if isnan(ϵ) || isinf(ϵ)
         @warn "Incorrect ϵ = $ϵ; ϵ_previous = $(da.state.ϵ) is used instead."
         @unpack m, ϵ, x_bar, H_bar = state
-
     end
 
     @pack! state = m, ϵ, x_bar, H_bar
 end
 
-adapt!(da::NesterovDualAveraging, θ::AbstractVector{<:AbstractFloat}, α::AbstractFloat) = adapt_stepsize!(da, α)
+adapt!(
+    da::NesterovDualAveraging,
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::Union{AbstractFloat,AbstractVector{<:AbstractFloat}}
+) = adapt_stepsize!(da, α)
 
 reset!(da::NesterovDualAveraging) = reset!(da.state)
 

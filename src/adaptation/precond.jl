@@ -143,8 +143,8 @@ reset!(::UnitPreconditioner) = nothing
 getM⁻¹(dpc::UnitPreconditioner{T}) where {T<:AbstractFloat} = UniformScaling{T}(one(T))
 adapt!(
     ::UnitPreconditioner,
-    ::AbstractVector{<:Real},
-    ::AbstractFloat,
+    ::AbstractVecOrMat{<:AbstractFloat},
+    ::Union{AbstractFloat,AbstractVector{<:AbstractFloat}},
     is_update::Bool=true
 ) = nothing
 
@@ -178,10 +178,10 @@ getM⁻¹(dpc::DiagPreconditioner) = dpc.var
 
 function adapt!(
     dpc::DiagPreconditioner,
-    θ::AbstractVector{T},
-    α::AbstractFloat,
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::Union{AbstractFloat,AbstractVector{<:AbstractFloat}},
     is_update::Bool=true
-) where {T<:Real}
+)
     resize!(dpc, θ)
     add_sample!(dpc.ve, θ)
     if dpc.ve.n >= dpc.n_min && is_update
@@ -220,10 +220,10 @@ getM⁻¹(dpc::DensePreconditioner) = dpc.covar
 
 function adapt!(
     dpc::DensePreconditioner,
-    θ::AbstractVector{T},
-    α::AbstractFloat,
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::Union{AbstractFloat,AbstractVector{<:AbstractFloat}},
     is_update::Bool=true
-) where {T<:AbstractFloat}
+)
     resize!(dpc, θ)
     add_sample!(dpc.ce, θ)
     if dpc.ce.n >= dpc.n_min && is_update

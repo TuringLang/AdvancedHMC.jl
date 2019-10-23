@@ -17,10 +17,9 @@ getM⁻¹(adaptor::T) where {T<:AbstractAdaptor} = error("`getM⁻¹(adaptor::$T
 getϵ(adaptor::T) where {T<:AbstractAdaptor} = error("`getϵ(adaptor::$T)` is not implemented.")
 adapt!(
     adaptor::T,
-    θ::AbstractVector,
-    α::AbstractFloat,
-    is_update::Bool=true
-) where {T<:AbstractAdaptor} = error("`adapt!(adaptor::$T, θ::AbstractVector, α::AbstractFloat, is_update::Bool)` is not implemented.")
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::Union{AbstractFloat,AbstractVector{<:AbstractFloat}}
+) where {T<:AbstractAdaptor} = error("`adapt!(adaptor::$T, θ::AbstractVector, α::AbstractFloat)` is not implemented.")
 reset!(adaptor::T) where {T<:AbstractAdaptor} = error("`reset!(adaptor::$T)` is not implemented.")
 finalize!(adaptor::T) where {T<:AbstractAdaptor} = error("`finalize!(adaptor::$T)` is not implemented.")
 
@@ -44,7 +43,11 @@ Base.show(io::IO, a::NaiveHMCAdaptor) = print(io, "NaiveHMCAdaptor(pc=$(a.pc), s
 
 getM⁻¹(aca::NaiveHMCAdaptor) = getM⁻¹(aca.pc)
 getϵ(aca::NaiveHMCAdaptor) = getϵ(aca.ssa)
-function adapt!(nca::NaiveHMCAdaptor, θ::AbstractVector{<:Real}, α::AbstractFloat)
+function adapt!(
+    nca::NaiveHMCAdaptor,
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::Union{AbstractFloat,AbstractVector{<:AbstractFloat}}
+)
     adapt!(nca.ssa, θ, α)
     adapt!(nca.pc, θ, α)
 end

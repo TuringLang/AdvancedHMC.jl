@@ -19,9 +19,27 @@ include("common.jl")
         StaticTrajectory(lf, n_steps),
         HMCDA(lf, ϵ * n_steps)
     ]
-        h = Hamiltonian(metricT((D, 5)), ℓπ, ∂ℓπ∂θ)
+        metric = metricT((D, 5))
+        h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         samples, stats = sample(h, τ, θ_init[5], n_samples; verbose=false)
         @test mean(samples) ≈ zeros(D, 5) atol=RNDATOL
+
+        for adaptor in [
+            Preconditioner(metric),
+            # NesterovDualAveraging(0.8, lf.ϵ),
+            # NaiveHMCAdaptor(
+            #     Preconditioner(metric),
+            #     NesterovDualAveraging(0.8, lf.ϵ),
+            # ),
+            # StanHMCAdaptor(
+            #     n_adapts,
+            #     Preconditioner(metric),
+            #     NesterovDualAveraging(0.8, lf.ϵ),
+            # ),
+        ]
+            samples, stats = sample(h, τ, θ_init[5], n_samples, adaptor, n_adapts; verbose=false, progress=false)
+            @test mean(samples) ≈ zeros(D, 5) atol=RNDATOL
+        end
     end
 
     # Simple time benchmark
@@ -58,13 +76,4 @@ include("common.jl")
         lineplot!(fig, collect(1:n_chains_max), time_seperate; color=:blue, name="seperate")
         println(); show(fig); println(); println()
     end
-
-    # adaptor = StanHMCAdaptor(
-    #     n_adapts,
-    #     Preconditioner(metric),
-    #     NesterovDualAveraging(0.8, τ.integrator.ϵ),
-    # )
-    # samples, stats = sample(h, τ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false)
-
-    # @test mean(samples) ≈ zeros(D) atol=RNDATOL
 end
