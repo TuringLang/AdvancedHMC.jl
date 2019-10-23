@@ -2,50 +2,59 @@
 #### Robust online (co-)variance estimators.
 ####
 
+## Variance estimator
+
 abstract type VarEstimator{T} end
 
 # NOTE: this naive variance estimator is used only in testing
-mutable struct NaiveVar{T} <: VarEstimator{T}
+mutable struct NaiveVar{T<:AbstractVector{<:AbstractVecOrMat{<:AbstractFloat}}} <: VarEstimator{T}
     n :: Int
-    S :: Vector{Vector{T}}
+    S :: T
 end
 
 NaiveVar(::Type{T}=Float64) where {T} = NaiveVar(0, Vector{Vector{T}}())
-NaiveVar(::Type{T}, ::Int) where {T} = NaiveVar(T)
-NaiveVar(::Int) = NaiveVar(Float64)
+NaiveVar(::Type{T}, sz::Tuple{Int}) where {T} = NaiveVar(0, Vector{Vector{T}}())
+NaiveVar(::Type{T}, sz::Tuple{Int,Int}) where {T} = NaiveVar(0, Vector{Matrix{T}}())
+NaiveVar(sz::Tuple{Vararg{Int}}) = NaiveVar(Float64, sz)
+NaiveVar(type::Type{T}, dim::Int) where {T} = NaiveVar(type, (dim,))
+NaiveVar(dim::Int) = NaiveVar((dim,))
 
-function add_sample!(nc::NaiveVar, s::AbstractVector)
+function add_sample!(nc::NaiveVar, s::AbstractVecOrMat)
     nc.n += 1
     push!(nc.S, s)
 end
 
-function reset!(nc::NaiveVar{T}) where {T<:AbstractFloat}
+function reset!(nc::NaiveVar{T}) where {T}
     nc.n = 0
-    nc.S = Vector{Vector{T}}()
+    nc.S = T()
 end
 
-function get_var(nc::NaiveVar{T}) where {T<:AbstractFloat}
+function get_var(nc::NaiveVar)
     @assert nc.n >= 2 "Cannot get variance with only one sample"
     return Statistics.var(nc.S)
 end
 
 # Ref： https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_var_estimator.hpp
-mutable struct WelfordVar{T<:AbstractFloat, AT<:AbstractVector{T}} <: VarEstimator{T}
+mutable struct WelfordVar{T<:AbstractVecOrMat{<:AbstractFloat}} <: VarEstimator{T}
     n :: Int
-    μ :: AT
-    M :: AT
+    μ :: T
+    M :: T
+    # TODO: implement temporary `δ` as `WelfordCov`
 end
 
-WelfordVar(::Type{T}, d::Int) where {T} = WelfordVar(0, zeros(T, d), zeros(T, d))
-WelfordVar(d::Int) = WelfordVar(Float64, d)
+WelfordVar(::Type{T}, sz::Tuple{Vararg{Int}}) where {T} = WelfordVar(0, zeros(T, sz), zeros(T, sz))
+WelfordVar(sz::Tuple{Vararg{Int}}) = WelfordVar(Float64, sz)
+WelfordVar(type::Type{T}, dim::Int) where {T} = WelfordVar(type, (dim,))
+WelfordVar(dim::Int) = WelfordVar((dim,))
 
-function reset!(wv::WelfordVar{T, AT}) where {T<:AbstractFloat, AT<:AbstractVector{T}}
+function reset!(wv::WelfordVar{VT}) where {VT}
+    T = VT |> eltype |> eltype
     wv.n = 0
     wv.μ .= zero(T)
     wv.M .= zero(T)
 end
 
-function add_sample!(wv::WelfordVar, s::AbstractVector)
+function add_sample!(wv::WelfordVar, s::AbstractVecOrMat)
     wv.n += 1
     @unpack μ, M, n = wv
     for i in eachindex(s)
@@ -56,34 +65,41 @@ function add_sample!(wv::WelfordVar, s::AbstractVector)
 end
 
 # https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
-function get_var(wv::WelfordVar{T, AT}) where {T<:AbstractFloat, AT<:AbstractVector{T}}
+function get_var(wv::WelfordVar{VT}) where {VT}
     n, M = wv.n, wv.M
     @assert n >= 2 "Cannot get covariance with only one sample"
-    return (n*one(T) / ((n + 5) * (n - 1))) .* M .+ T(1e-3) * (5*one(T) / (n + 5))
+    T = VT |> eltype |> eltype
+    return (n * one(T) / ((n + 5) * (n - 1))) .* M .+ T(1e-3) * (5 * one(T) / (n + 5))
 end
+
+## Covariance estimator
 
 abstract type CovEstimator{T} end
 
 # NOTE: This naive covariance estimator is used only in testing.
-mutable struct NaiveCov{T} <: CovEstimator{T}
+mutable struct NaiveCov{T<:AbstractVector{<:AbstractVector{<:AbstractFloat}}} <: CovEstimator{T}
     n :: Int
-    S :: Vector{Vector{T}}
+    S :: T
 end
 NaiveCov(::Type{T}=Float64) where {T} = NaiveCov(0, Vector{Vector{T}}())
+NaiveCov(::Type{T}, sz::Tuple{Int}) where {T} = NaiveCov(0, Vector{Vector{T}}())
+NaiveCov(sz::Tuple{Int}) = NaiveCov(Float64, sz)
+NaiveCov(type::Type{T}, dim::Int) where {T} = NaiveCov(type, (dim,))
+NaiveCov(dim::Int) = NaiveCov((dim,))
 
 function add_sample!(nc::NaiveCov, s::AbstractVector)
     nc.n += 1
     push!(nc.S, s)
 end
 
-function get_cov(nc::NaiveCov{T})::Matrix{T} where {T<:AbstractFloat}
+function get_cov(nc::NaiveCov)
     @assert nc.n >= 2 "Cannot get covariance with only one sample"
     return Statistics.cov(nc.S)
 end
 
-function reset!(nc::NaiveCov{T}) where {T<:AbstractFloat}
+function reset!(nc::NaiveCov{T}) where {T}
     nc.n = 0
-    nc.S = Vector{Vector{T}}()
+    nc.S = T()
 end
 
 # Ref: https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_covar_estimator.hpp
@@ -98,6 +114,7 @@ function WelfordCov(::Type{T}, d::Int) where {T}
     return WelfordCov(0, zeros(T, d), zeros(T, d, d), zeros(T, d))
 end
 WelfordCov(d::Int) = WelfordCov(Float64, d)
+WelfordCov(type::Type{T}, sz::Tuple{Int}) where {T} = WelfordCov(type, first(sz))
 
 function reset!(wc::WelfordCov{T}) where {T<:AbstractFloat}
     wc.n = 0
@@ -150,9 +167,8 @@ adapt!(
 
 
 mutable struct DiagPreconditioner{
-    T<:Real,
-    AT<:AbstractVector{T},
-    TEst<:VarEstimator{T}
+    AT<:AbstractVecOrMat{<:AbstractFloat},
+    TEst<:VarEstimator{AT}
 } <: AbstractPreconditioner
     n_min   :: Int
     ve      :: TEst
@@ -161,14 +177,14 @@ end
 Base.show(io::IO, ::DiagPreconditioner) = print(io, "DiagPreconditioner")
 
 # Diagonal
-DiagPreconditioner(d::Int, n_min::Int=10) = DiagPreconditioner(Float64, d, n_min)
+DiagPreconditioner(sz::Tuple{Vararg{Int}}, n_min::Int=10) = DiagPreconditioner(Float64, sz, n_min)
 function DiagPreconditioner(
     ::Type{T},
-    d::Int;
+    sz::Tuple{Vararg{Int}};
     n_min::Int=10,
-    var=Vector(ones(T, d))
+    var=ones(T, sz)
 ) where {T}
-    ve = WelfordVar(T, d)
+    ve = WelfordVar(T, sz)
     return DiagPreconditioner(n_min, ve, var)
 end
 
@@ -201,14 +217,14 @@ mutable struct DensePreconditioner{
 end
 Base.show(io::IO, ::DensePreconditioner) = print(io, "DensePreconditioner")
 
-DensePreconditioner(d::Int, n_min::Int=10) = DensePreconditioner(Float64, d, n_min)
+DensePreconditioner(sz::Tuple{Int}, n_min::Int=10) = DensePreconditioner(Float64, sz, n_min)
 function DensePreconditioner(
     ::Type{T},
-    d::Int;
+    sz::Tuple{Int};
     n_min::Int=10,
-    covar=LinearAlgebra.diagm(0 => ones(T, d))
+    covar=LinearAlgebra.diagm(0 => ones(T, sz))
 ) where {T}
-    ce = WelfordCov(T, d)
+    ce = WelfordCov(T, sz)
     # TODO: take use of the line below when we have an interface to set which covariance estimator to use
     # ce = NaiveCov(T)
     return DensePreconditioner(n_min, ce, covar)
@@ -235,22 +251,24 @@ end
 # Resize pre-conditioner if necessary.
 Base.resize!(
     pc::UnitPreconditioner,
-    θ::AbstractVector{T}
-) where {T<:Real} = nothing
+    θ::AbstractVecOrMat
+) = nothing
+
 function Base.resize!(
     dpc::DiagPreconditioner,
-    θ::AbstractVector{T}
-) where {T<:Real}
-    if length(θ) != length(dpc.var)
+    θ::AbstractVecOrMat{T}
+) where {T<:AbstractFloat}
+    if size(θ) != size(dpc.var)
         @assert dpc.ve.n == 0 "Cannot resize a var estimator when it contains samples."
-        dpc.ve = WelfordVar(T, length(θ))
-        dpc.var = ones(T, length(θ))
+        dpc.ve = WelfordVar(T, size(θ))
+        dpc.var = ones(T, size(θ))
     end
 end
+
 function Base.resize!(
     dpc::DensePreconditioner,
-    θ::AbstractVector{T}
-) where {T<:Real}
+    θ::AbstractVecOrMat{T}
+) where {T<:AbstractFloat}
     if length(θ) != size(dpc.covar,1)
         @assert dpc.ce.n == 0 "Cannot resize a var estimator when it contains samples."
         dpc.ce = WelfordCov(T, length(θ))
@@ -297,7 +315,7 @@ struct DiagEuclideanMetric{T,A<:AbstractVecOrMat{T}} <: AbstractMetric
     _temp   ::  A
 end
 
-function DiagEuclideanMetric(M⁻¹::AbstractVecOrMat{T}) where {T<:Real}
+function DiagEuclideanMetric(M⁻¹::AbstractVecOrMat{T}) where {T<:AbstractFloat}
     return DiagEuclideanMetric(M⁻¹, sqrt.(M⁻¹), similar(M⁻¹))
 end
 DiagEuclideanMetric(::Type{T}, sz) where {T} = DiagEuclideanMetric(ones(T, sz...))
@@ -309,11 +327,6 @@ renew(ue::DiagEuclideanMetric, M⁻¹) = DiagEuclideanMetric(M⁻¹)
 
 Base.size(e::DiagEuclideanMetric) = size(e.M⁻¹)
 Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
-
-function Base.getproperty(dem::DiagEuclideanMetric, d::Symbol)
-    return d === :dim ? size(getfield(dem, :M⁻¹), 1) : getfield(dem, d)
-end
-
 
 struct DenseEuclideanMetric{
     T,
@@ -329,7 +342,7 @@ struct DenseEuclideanMetric{
     _temp::AV
 end
 
-function DenseEuclideanMetric(M⁻¹::AbstractMatrix{T}) where {T<:Real}
+function DenseEuclideanMetric(M⁻¹::AbstractMatrix{T}) where {T<:AbstractFloat}
     _temp = Vector{T}(undef, size(M⁻¹, 1))
     return DenseEuclideanMetric(M⁻¹, cholesky(Symmetric(M⁻¹)).U, _temp)
 end
@@ -352,10 +365,6 @@ function Base.size(e::DenseEuclideanMetric)
     return sz
 end
 Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DenseEuclideanMetric(diag=$(_string_M⁻¹(dem.M⁻¹)))")
-
-function Base.getproperty(dem::DenseEuclideanMetric, d::Symbol)
-    return d === :dim ? size(getfield(dem, :M⁻¹), 1) : getfield(dem, d)
-end
 
 # `rand` functions for `metric` types.
 function Base.rand(
@@ -391,8 +400,8 @@ Base.rand(metric::AbstractMetric) = rand(GLOBAL_RNG, metric)
 ####
 
 Preconditioner(m::UnitEuclideanMetric{T}) where {T} = UnitPreconditioner(T)
-Preconditioner(m::DiagEuclideanMetric{T}) where {T} = DiagPreconditioner(T, m.dim; var=m.M⁻¹)
-Preconditioner(m::DenseEuclideanMetric{T}) where {T} = DensePreconditioner(T, m.dim; covar=m.M⁻¹)
+Preconditioner(m::DiagEuclideanMetric{T}) where {T} = DiagPreconditioner(T, size(m); var=m.M⁻¹)
+Preconditioner(m::DenseEuclideanMetric{T}) where {T} = DensePreconditioner(T, size(m); covar=m.M⁻¹)
 
-Preconditioner(m::Type{TM}, dim::Int=2) where {TM<:AbstractMetric} = Preconditioner(Float64, m, dim)
-Preconditioner(::Type{T}, ::Type{TM}, dim::Int=2) where {T<:AbstractFloat, TM<:AbstractMetric} = Preconditioner(TM(T, dim))
+Preconditioner(m::Type{TM}, sz::Tuple{Vararg{Int}}=(2,)) where {TM<:AbstractMetric} = Preconditioner(Float64, m, sz)
+Preconditioner(::Type{T}, ::Type{TM}, sz::Tuple{Vararg{Int}}=(2,)) where {T<:AbstractFloat, TM<:AbstractMetric} = Preconditioner(TM(T, sz))
