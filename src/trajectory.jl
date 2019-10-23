@@ -147,8 +147,8 @@ function transition(
     rng::AbstractRNG,
     τ::StaticTrajectory,
     h::Hamiltonian,
-    z::PhasePoint
-) where {T<:Real}
+    z::PhasePoint{T,V}
+) where {T<:AbstractVector{<:AbstractFloat}, V}
     z′ = step(rng, τ.integrator, h, z, τ.n_steps)
     # Accept via MH criteria
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
@@ -156,6 +156,37 @@ function transition(
         # Reverse momentum variable to preserve reversibility
         z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
     end
+    stat = (
+        step_size=τ.integrator.ϵ,
+        n_steps=τ.n_steps,
+        is_accept=is_accept,
+        acceptance_rate=α,
+        log_density=z.ℓπ.value,
+        hamiltonian_energy=energy(z),
+       )
+    return Transition(z, stat)
+end
+
+# TODO: merge two `transition` if broadcast doesn't have overhead
+function transition(
+    rng::AbstractRNG,
+    τ::StaticTrajectory,
+    h::Hamiltonian,
+    z::PhasePoint{T,V}
+) where {T<:AbstractMatrix{<:AbstractFloat}, V}
+    z′ = step(rng, τ.integrator, h, z, τ.n_steps)
+    # Accept via MH criteria
+    is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
+    # Copy not accepted proposals
+    # TODO: make these into functions
+    z′.θ[:,(!).(is_accept)] = z.θ[:,(!).(is_accept)]
+    z′.r[:,(!).(is_accept)] = z.r[:,(!).(is_accept)]
+    z′.ℓπ.value[(!).(is_accept)] = z.ℓπ.value[(!).(is_accept)]
+    z′.ℓπ.gradient[:,(!).(is_accept)] = z.ℓπ.gradient[:,(!).(is_accept)]
+    z′.ℓκ.value[(!).(is_accept)] = z.ℓκ.value[(!).(is_accept)]
+    z′.ℓκ.gradient[:,(!).(is_accept)] = z.ℓκ.gradient[:,(!).(is_accept)]
+    # Reverse momentum variable to preserve reversibility
+    z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
     stat = (
         step_size=τ.integrator.ϵ,
         n_steps=τ.n_steps,
@@ -183,7 +214,7 @@ function transition(
     τ::HMCDA,
     h::Hamiltonian,
     z::PhasePoint
-) where {T<:Real}
+)
     # Create the corresponding static τ
     n_steps = max(1, floor(Int, τ.λ / τ.integrator.ϵ))
     static_τ = StaticTrajectory(τ.integrator, n_steps)
@@ -539,7 +570,7 @@ find_good_eps(
     h::Hamiltonian,
     θ::AbstractVector{T};
     max_n_iters::Int=100
-) where {T<:Real} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
+) where {T<:AbstractFloat} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
 
 """
 Perform MH acceptance based on energy, i.e. negative log probability.
@@ -548,9 +579,20 @@ function mh_accept_ratio(
     rng::AbstractRNG,
     Horiginal::T,
     Hproposal::T
-) where {T<:Real}
+) where {T<:AbstractFloat}
     α = min(1.0, exp(Horiginal - Hproposal))
     accept = rand(rng) < α
+    return accept, α
+end
+
+# TODO: merge two `mh_accept_ratio` if broadcast doesn't have overhead
+function mh_accept_ratio(
+    rng::AbstractRNG,
+    Horiginal::T,
+    Hproposal::T
+) where {T<:AbstractVector{<:AbstractFloat}}
+    α = min.(1.0, exp.(Horiginal .- Hproposal))
+    accept = rand(rng) .< α
     return accept, α
 end
 
@@ -592,11 +634,11 @@ end
 
 function update(
     h::Hamiltonian,
-    θ::AbstractVector{T}
+    θ::AbstractVecOrMat{T}
 ) where {T<:Real}
     metric = h.metric
-    if length(metric) != length(θ)
-        metric = typeof(metric)(length(θ))
+    if size(metric) != size(θ)
+        metric = typeof(metric)(size(θ))
         h = reconstruct(h, metric=metric)
     end
     return h

@@ -150,8 +150,8 @@ adapt!(
 
 
 mutable struct DiagPreconditioner{
-    T<:Real, 
-    AT<:AbstractVector{T}, 
+    T<:Real,
+    AT<:AbstractVector{T},
     TEst<:VarEstimator{T}
 } <: AbstractPreconditioner
     n_min   :: Int
@@ -163,9 +163,9 @@ Base.show(io::IO, ::DiagPreconditioner) = print(io, "DiagPreconditioner")
 # Diagonal
 DiagPreconditioner(d::Int, n_min::Int=10) = DiagPreconditioner(Float64, d, n_min)
 function DiagPreconditioner(
-    ::Type{T}, 
-    d::Int; 
-    n_min::Int=10, 
+    ::Type{T},
+    d::Int;
+    n_min::Int=10,
     var=Vector(ones(T, d))
 ) where {T}
     ve = WelfordVar(T, d)
@@ -192,7 +192,7 @@ end
 
 # Dense
 mutable struct DensePreconditioner{
-    T<:AbstractFloat, 
+    T<:AbstractFloat,
     TEst<:CovEstimator{T}
 } <: AbstractPreconditioner
     n_min :: Int
@@ -203,9 +203,9 @@ Base.show(io::IO, ::DensePreconditioner) = print(io, "DensePreconditioner")
 
 DensePreconditioner(d::Int, n_min::Int=10) = DensePreconditioner(Float64, d, n_min)
 function DensePreconditioner(
-    ::Type{T}, 
-    d::Int; 
-    n_min::Int=10, 
+    ::Type{T},
+    d::Int;
+    n_min::Int=10,
     covar=LinearAlgebra.diagm(0 => ones(T, d))
 ) where {T}
     ce = WelfordCov(T, d)
@@ -273,18 +273,20 @@ function _string_M⁻¹(vec::AbstractVector, n_chars::Int=32)
     return s_vec[1:min(n_diag_chars,end)] * (l > n_diag_chars ? s_dots : "")
 end
 
-struct UnitEuclideanMetric{T} <: AbstractMetric
+struct UnitEuclideanMetric{T,A<:Union{Tuple{Int},Tuple{Int,Int}}} <: AbstractMetric
     M⁻¹::UniformScaling{T}
-    dim::Int
+    size::A
 end
 
-UnitEuclideanMetric(::Type{T}, dim::Int) where {T} = UnitEuclideanMetric{T}(UniformScaling{T}(one(T)), dim)
-UnitEuclideanMetric(dim::Int) = UnitEuclideanMetric(Float64, dim)
+UnitEuclideanMetric(::Type{T}, sz) where {T} = UnitEuclideanMetric(UniformScaling{T}(one(T)), sz)
+UnitEuclideanMetric(sz) = UnitEuclideanMetric(Float64, sz)
+UnitEuclideanMetric(::Type{T}, dim::Int) where {T} = UnitEuclideanMetric(UniformScaling{T}(one(T)), (dim,))
+UnitEuclideanMetric(dim::Int) = UnitEuclideanMetric(Float64, (dim,))
 
-renew(ue::UnitEuclideanMetric, M⁻¹) = UnitEuclideanMetric(M⁻¹, ue.dim)
+renew(ue::UnitEuclideanMetric, M⁻¹) = UnitEuclideanMetric(M⁻¹, ue.size)
 
-Base.length(e::UnitEuclideanMetric) = e.dim
-Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, "UnitEuclideanMetric($(_string_M⁻¹(ones(uem.dim))))")
+Base.size(e::UnitEuclideanMetric) = e.size
+Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, "UnitEuclideanMetric($(_string_M⁻¹(ones(uem.size))))")
 
 struct DiagEuclideanMetric{T,A<:AbstractVector{T}} <: AbstractMetric
     # Diagnal of the inverse of the mass matrix
@@ -300,10 +302,12 @@ function DiagEuclideanMetric(M⁻¹::AbstractVector{T}) where {T<:Real}
 end
 DiagEuclideanMetric(::Type{T}, D::Int) where {T} = DiagEuclideanMetric(ones(T, D))
 DiagEuclideanMetric(D::Int) = DiagEuclideanMetric(Float64, D)
+DiagEuclideanMetric(::Type{T}, sz::Tuple{Int}) where {T} = DiagEuclideanMetric(ones(T, first(sz)))
+DiagEuclideanMetric(sz::Tuple{Int}) = DiagEuclideanMetric(Float64, first(sz))
 
 renew(ue::DiagEuclideanMetric, M⁻¹) = DiagEuclideanMetric(M⁻¹)
 
-Base.length(e::DiagEuclideanMetric) = size(e.M⁻¹, 1)
+Base.size(e::DiagEuclideanMetric) = size(e.M⁻¹)
 Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
 
 function Base.getproperty(dem::DiagEuclideanMetric, d::Symbol)
@@ -331,10 +335,22 @@ function DenseEuclideanMetric(M⁻¹::AbstractMatrix{T}) where {T<:Real}
 end
 DenseEuclideanMetric(::Type{T}, D::Int) where {T} = DenseEuclideanMetric(Matrix{T}(I, D, D))
 DenseEuclideanMetric(D::Int) = DenseEuclideanMetric(Float64, D)
+DenseEuclideanMetric(::Type{T}, sz::Tuple{Int}) where {T} = DenseEuclideanMetric(Matrix{T}(I, first(sz), first(sz)))
+DenseEuclideanMetric(sz::Tuple{Int}) = DenseEuclideanMetric(Float64, D)
 
 renew(ue::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
 
-Base.length(e::DenseEuclideanMetric) = size(e.M⁻¹, 1)
+function Base.size(e::DenseEuclideanMetric)
+    sz = size(e.M⁻¹)
+    if length(sz) == 2
+        # If `M⁻¹` stores a D x D tensor, we would like to return only D
+        sz = (sz[2],)
+    elseif length(sz) == 3
+        # If `M⁻¹` stores a D x D x C tensor, we would like to return only D x C
+        sz = (sz[2], sz[3])
+    end
+    return sz
+end
 Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DenseEuclideanMetric(diag=$(_string_M⁻¹(dem.M⁻¹)))")
 
 function Base.getproperty(dem::DenseEuclideanMetric, d::Symbol)
@@ -346,7 +362,7 @@ function Base.rand(
     rng::AbstractRNG,
     metric::UnitEuclideanMetric{T}
 ) where {T}
-    r = randn(rng, T, metric.dim)
+    r = randn(rng, T, size(metric)...)
     return r
 end
 
@@ -354,7 +370,7 @@ function Base.rand(
     rng::AbstractRNG,
     metric::DiagEuclideanMetric{T}
 ) where {T}
-    r = randn(rng, T, metric.dim)
+    r = randn(rng, T, size(metric)...)
     r ./= metric.sqrtM⁻¹
     return r
 end
@@ -363,7 +379,7 @@ function Base.rand(
     rng::AbstractRNG,
     metric::DenseEuclideanMetric{T}
 ) where {T}
-    r = randn(rng, T, metric.dim)
+    r = randn(rng, T, size(metric)...)
     ldiv!(metric.cholM⁻¹, r)
     return r
 end
