@@ -8,6 +8,7 @@ using Distributed, Test
         "trajectory",
         "models",
         "hmc",
+        "hmc_matpara",
     ]
 
     res = map(tests) do t

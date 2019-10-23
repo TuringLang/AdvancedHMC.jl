@@ -24,6 +24,7 @@ Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
+UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"
 
 [targets]
-test = ["Test", "Distributions", "ForwardDiff", "Turing", "Distributed", "DiffResults"]
+test = ["Test", "Distributions", "ForwardDiff", "Turing", "Distributed", "DiffResults", "UnicodePlots"]
