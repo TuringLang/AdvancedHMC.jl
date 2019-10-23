@@ -2,7 +2,7 @@ using Test, AdvancedHMC, LinearAlgebra, UnicodePlots
 using Statistics: mean, var, cov
 include("common.jl")
 
-@testset "Matrix parallelisation" begin
+@testset "Matrix mode" begin
     n_chains_max = 20
     θ_init = [randn(D, n_chains) for n_chains in 1:n_chains_max]
     ϵ = 0.1
