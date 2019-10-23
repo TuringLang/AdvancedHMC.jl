@@ -9,19 +9,33 @@ const DETATOL = 1e-3 * D
 const RNDATOL = 5e-2 * D
 
 using Distributions: logpdf, MvNormal, InverseGamma, Normal
-using DiffResults: GradientResult, value, gradient
-using ForwardDiff: gradient!
+using DiffResults: GradientResult, JacobianResult, value, gradient, jacobian
+using ForwardDiff: gradient!, jacobian!
 
-ℓπ(θ) = logpdf(MvNormal(zeros(D), ones(D)), θ)
+const dm = zeros(D)
+const dσ = ones(D)
+const MVN = MvNormal(dm, dσ)
+ℓπ(θ) = logpdf(MVN, θ)
 
-function ∂ℓπ∂θ(θ::AbstractVector)
+# Manual implementation of gradient so that it support matrix mode
+function ∂ℓπ∂θ(θ::AbstractVecOrMat)
+    d = MVN
+    diff = θ .- dm
+    dims = θ isa AbstractVector ? (:) : 1
+    v = -(D * log(2π) + 2 * sum(log.(dσ)) .+ sum(abs2, diff ./ dσ; dims=dims)) / 2
+    v = θ isa AbstractMatrix ? vec(v) : v
+    g = -diff
+    return (v, g)
+end
+
+function ∂ℓπ∂θ_ad(θ::AbstractVector)
     res = GradientResult(θ)
     gradient!(res, ℓπ, θ)
     return (value(res), gradient(res))
 end
 
-function ∂ℓπ∂θ(θ::AbstractMatrix{T}) where {T<:AbstractFloat}
-    v = Vector{T}(undef, size(θ, 2))
+function ∂ℓπ∂θ_ad(θ::AbstractMatrix)
+    v = similar(θ, size(θ, 2))
     g = similar(θ)
     for i in 1:size(θ, 2)
         res = GradientResult(θ[:,i])
@@ -30,6 +44,18 @@ function ∂ℓπ∂θ(θ::AbstractMatrix{T}) where {T<:AbstractFloat}
         g[:,i] = gradient(res)
     end
     return (v, g)
+end
+
+function ∂ℓπ∂θ_viajacob(θ::AbstractMatrix)
+    jacob = similar(θ)
+    res = JacobianResult(similar(θ, size(θ, 2)), jacob)
+    jacobian!(res, ℓπ, θ)
+    jacob_full = jacobian(res)
+    d, n = size(jacob)
+    for i in 1:n
+        jacob[:,i] = jacob_full[i,1+(i-1)*d:i*d]
+    end
+    return (value(res), jacob)
 end
 
 function ℓπ_gdemo(θ)

@@ -10,36 +10,39 @@ include("common.jl")
     n_samples = 10_000
     n_adapts = 2_000
 
-    for metricT in [
-        UnitEuclideanMetric,
-        # DiagEuclideanMetric,
-        # DenseEuclideanMetric
-    ]
+    # Simple time benchmark
+    let metricT=UnitEuclideanMetric
         τ = StaticTrajectory(Leapfrog(ϵ), n_steps)
 
         time_mat = Vector{Float64}(undef, n_chains_max)
         for (i, n_chains) in enumerate(1:n_chains_max)
             h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∂ℓπ∂θ)
             t = @elapsed samples, stats = sample(h, τ, θ_init[i], n_samples; verbose=false)
-            @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL
             time_mat[i] = t
         end
-        fig = lineplot(collect(1:n_chains_max), time_mat, title="Scalabiliry of multiple chains", name="matpara", xlabel="Num of chains", ylabel="time (s)")
 
-        # Check time for multiple runs of single chain
+        # Time for multiple runs of single chain
         time_seperate = Vector{Float64}(undef, n_chains_max)
 
-        h_single = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
         for (i, n_chains) in enumerate(1:n_chains_max)
             t = @elapsed for j in 1:n_chains
-                samples, stats = sample(h_single, τ, θ_init[i][:,j], n_samples; verbose=false)
+                h = Hamiltonian(metricT(D), ℓπ, ∂ℓπ∂θ)
+                samples, stats = sample(h, τ, θ_init[i][:,j], n_samples; verbose=false)
             end
             time_seperate[i] = t
         end
-        lineplot!(fig, collect(1:n_chains_max), time_seperate; color=:blue, name="seperate")
 
+        fig = lineplot(collect(1:n_chains_max), time_mat, title="Scalabiliry of multiple chains", name="matrix parallism", xlabel="Num of chains", ylabel="time (s)")
+        lineplot!(fig, collect(1:n_chains_max), time_seperate; color=:blue, name="seperate")
         show(fig); println()
     end
+
+    # for metricT in [
+    #     UnitEuclideanMetric,
+    #     # DiagEuclideanMetric,
+    #     # DenseEuclideanMetric
+    # ]
+    # @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL
 
     # adaptor = StanHMCAdaptor(
     #     n_adapts,
