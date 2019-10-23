@@ -288,7 +288,7 @@ renew(ue::UnitEuclideanMetric, M⁻¹) = UnitEuclideanMetric(M⁻¹, ue.size)
 Base.size(e::UnitEuclideanMetric) = e.size
 Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, "UnitEuclideanMetric($(_string_M⁻¹(ones(uem.size))))")
 
-struct DiagEuclideanMetric{T,A<:AbstractVector{T}} <: AbstractMetric
+struct DiagEuclideanMetric{T,A<:AbstractVecOrMat{T}} <: AbstractMetric
     # Diagnal of the inverse of the mass matrix
     M⁻¹     ::  A
     # Sqare root of the inverse of the mass matrix
@@ -297,13 +297,13 @@ struct DiagEuclideanMetric{T,A<:AbstractVector{T}} <: AbstractMetric
     _temp   ::  A
 end
 
-function DiagEuclideanMetric(M⁻¹::AbstractVector{T}) where {T<:Real}
-    return DiagEuclideanMetric(M⁻¹, sqrt.(M⁻¹), Vector{T}(undef, size(M⁻¹, 1)))
+function DiagEuclideanMetric(M⁻¹::AbstractVecOrMat{T}) where {T<:Real}
+    return DiagEuclideanMetric(M⁻¹, sqrt.(M⁻¹), similar(M⁻¹))
 end
-DiagEuclideanMetric(::Type{T}, D::Int) where {T} = DiagEuclideanMetric(ones(T, D))
-DiagEuclideanMetric(D::Int) = DiagEuclideanMetric(Float64, D)
-DiagEuclideanMetric(::Type{T}, sz::Tuple{Int}) where {T} = DiagEuclideanMetric(ones(T, first(sz)))
-DiagEuclideanMetric(sz::Tuple{Int}) = DiagEuclideanMetric(Float64, first(sz))
+DiagEuclideanMetric(::Type{T}, sz) where {T} = DiagEuclideanMetric(ones(T, sz...))
+DiagEuclideanMetric(sz) = DiagEuclideanMetric(Float64, sz)
+DiagEuclideanMetric(::Type{T}, dim::Int) where {T} = DiagEuclideanMetric(ones(T, dim))
+DiagEuclideanMetric(dim::Int) = DiagEuclideanMetric(Float64, dim)
 
 renew(ue::DiagEuclideanMetric, M⁻¹) = DiagEuclideanMetric(M⁻¹)
 

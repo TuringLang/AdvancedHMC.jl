@@ -10,6 +10,17 @@ include("common.jl")
     n_samples = 10_000
     n_adapts = 2_000
 
+    for metricT in [
+        UnitEuclideanMetric,
+        DiagEuclideanMetric,
+        # DenseEuclideanMetric  # not supported at the moment
+    ], τ in [StaticTrajectory(Leapfrog(ϵ), n_steps)]
+
+        h = Hamiltonian(metricT((D, 5)), ℓπ, ∂ℓπ∂θ)
+        samples, stats = sample(h, τ, θ_init[5], n_samples; verbose=false)
+        @test mean(samples) ≈ zeros(D, 5) atol=RNDATOL
+    end
+
     # Simple time benchmark
     let metricT=UnitEuclideanMetric
         τ = StaticTrajectory(Leapfrog(ϵ), n_steps)
@@ -42,15 +53,8 @@ include("common.jl")
             ylabel="Time (s)"
         )
         lineplot!(fig, collect(1:n_chains_max), time_seperate; color=:blue, name="seperate")
-        show(fig); println()
+        println(); show(fig); println(); println()
     end
-
-    # for metricT in [
-    #     UnitEuclideanMetric,
-    #     # DiagEuclideanMetric,
-    #     # DenseEuclideanMetric
-    # ]
-    # @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL
 
     # adaptor = StanHMCAdaptor(
     #     n_adapts,
