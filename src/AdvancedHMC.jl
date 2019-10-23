@@ -13,7 +13,7 @@ using ArgCheck: @argcheck
 
 import StatsBase: sample
 
-# Notations	
+# Notations
 # ℓπ: log density of the target distribution
 # ∂ℓπ∂θ: gradient of the log density of the target distribution
 # θ: position variables / model parameters
@@ -30,7 +30,7 @@ export Hamiltonian
 include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 include("trajectory.jl")
-export StaticTrajectory, find_good_eps, HMCDA, NUTS, Slice, Multinomial, ClassicNoUTurn, GeneralisedNoUTurn
+export StaticTrajectory, find_good_eps, HMCDA, NUTS, SliceTS, MultinomialTS, ClassicNoUTurn, GeneralisedNoUTurn
 
 include("diagnosis.jl")
 include("sampler.jl")

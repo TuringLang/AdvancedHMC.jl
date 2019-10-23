@@ -37,9 +37,9 @@ end
 
     ℓu = rand()
     n1 = 2
-    s1 = AdvancedHMC.Slice(z1, ℓu, n1) 
+    s1 = AdvancedHMC.SliceTS(z1, ℓu, n1) 
     n2 = 1
-    s2 = AdvancedHMC.Slice(z2, ℓu, n2) 
+    s2 = AdvancedHMC.SliceTS(z2, ℓu, n2) 
     s3 = AdvancedHMC.combine(rng, s1, s2)
     @test s3.ℓu == ℓu
     @test s3.n == n1 + n2
@@ -52,9 +52,9 @@ end
     @test mean(s3_θ) ≈ ones(D) * n2 / (n1 + n2) rtol=0.01
 
     w1 = 100
-    s1 = AdvancedHMC.Multinomial(z1, log(w1))
+    s1 = AdvancedHMC.MultinomialTS(z1, log(w1))
     w2 = 150
-    s2 = AdvancedHMC.Multinomial(z2, log(w2))
+    s2 = AdvancedHMC.MultinomialTS(z2, log(w2))
     s3 = AdvancedHMC.combine(rng, s1, s2)
     @test s3.ℓw ≈ log(w1 + w2)
 
