@@ -98,44 +98,15 @@ ManualSSAdaptor(initϵ::T) where {T<:AbstractScalarOrVec{<:AbstractFloat}} = Man
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
 # Note: This function is not merged with `adapt!` to empahsize the fact that
 #       step size adaptation is not dependent on `θ`.
-function adapt_stepsize!(da::NesterovDualAveraging{T}, α::T) where {T<:AbstractFloat}
+function adapt_stepsize!(da::NesterovDualAveraging{T}, α::AbstractScalarOrVec{<:T}) where {T<:AbstractFloat}
     DEBUG && @debug "Adapting step size..." α
 
     # Clip average MH acceptance probability
-    α = α > 1 ? one(T) : α
-
-    @unpack state, γ, t_0, κ, δ = da
-    @unpack μ, m, x_bar, H_bar = state
-
-    m = m + 1
-
-    η_H = one(T) / (m + t_0)
-    H_bar = (one(T) - η_H) * H_bar + η_H * (δ - α)
-
-    x = μ - H_bar * sqrt(m) / γ     # x ≡ logϵ
-    η_x = m^(-κ)
-    x_bar = (one(T) - η_x) * x_bar + η_x * x
-
-    ϵ = exp(x)
-    DEBUG && @debug "Adapting step size..." "new ϵ = $ϵ" "old ϵ = $(da.state.ϵ)"
-
-    # TODO: we might want to remove this when all other numerical issues are correctly handelled
-    if isnan(ϵ) || isinf(ϵ)
-        @warn "Incorrect ϵ = $ϵ; ϵ_previous = $(da.state.ϵ) is used instead."
-        @unpack m, ϵ, x_bar, H_bar = state
+    if α isa AbstractVector
+        α[α .> 1] .= one(T)
+    else
+        α = α > 1 ? one(T) : α
     end
-
-    @pack! state = m, ϵ, x_bar, H_bar
-end
-
-# TODO: merge two `adapt_stepsize!` if broadcast doesn't have overhead
-function adapt_stepsize!(da::NesterovDualAveraging{T}, α::VT) where {T,VT<:AbstractVector{<:AbstractFloat}}
-    DEBUG && @debug "Adapting step size..." α
-    @assert T == eltype(VT) "Types of `NesterovDualAveraging` and `α` are not matached."
-
-    # Clip average MH acceptance probability
-    idx = α .> 1
-    α[idx] .= one(T)
 
     @unpack state, γ, t_0, κ, δ = da
     @unpack μ, m, x_bar, H_bar = state
