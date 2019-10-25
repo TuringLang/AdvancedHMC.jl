@@ -577,20 +577,9 @@ Perform MH acceptance based on energy, i.e. negative log probability.
 """
 function mh_accept_ratio(
     rng::AbstractRNG,
-    Horiginal::T,
-    Hproposal::T
+    Horiginal::AbstractScalarOrVec{<:T},
+    Hproposal::AbstractScalarOrVec{<:T}
 ) where {T<:AbstractFloat}
-    α = min(1.0, exp(Horiginal - Hproposal))
-    accept = rand(rng) < α
-    return accept, α
-end
-
-# TODO: merge two `mh_accept_ratio` if broadcast doesn't have overhead
-function mh_accept_ratio(
-    rng::AbstractRNG,
-    Horiginal::T,
-    Hproposal::T
-) where {T<:AbstractVector{<:AbstractFloat}}
     α = min.(1.0, exp.(Horiginal .- Hproposal))
     accept = rand(rng) .< α
     return accept, α
