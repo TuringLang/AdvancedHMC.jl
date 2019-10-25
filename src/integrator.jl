@@ -17,7 +17,7 @@ function step(
     z::PhasePoint,
     n_steps::Int=1;
     fwd::Bool=n_steps > 0   # simulate hamiltonian backward when n_steps < 0,
-) where {T<:Union{AbstractFloat,AbstractVector{<:AbstractFloat}}}
+) where {T<:AbstractScalarOrVec{<:AbstractFloat}}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
     ϵ = fwd ? lf.ϵ : -lf.ϵ
     ϵ = jitter(rng, lf, ϵ)
@@ -49,7 +49,7 @@ function step(lf::AbstractLeapfrog, h::Hamiltonian, z::PhasePoint, n_steps::Int=
     return step(GLOBAL_RNG, lf, h, z, n_steps; fwd=fwd)
 end
 
-struct Leapfrog{T<:Union{AbstractFloat,AbstractVector{<:AbstractFloat}}} <: AbstractLeapfrog{T}
+struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     ϵ       ::  T
 end
 Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round(l.ϵ; sigdigits=3)))")

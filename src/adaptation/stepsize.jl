@@ -2,7 +2,7 @@
 ### Mutable states ###
 ######################
 
-mutable struct DAState{T<:Union{AbstractFloat,AbstractVector{<:AbstractFloat}}}
+mutable struct DAState{T<:AbstractScalarOrVec{<:AbstractFloat}}
     m     :: Int
     ϵ     :: T
     μ     :: T
@@ -10,7 +10,7 @@ mutable struct DAState{T<:Union{AbstractFloat,AbstractVector{<:AbstractFloat}}}
     H_bar :: T
 end
 
-computeμ(ϵ::Union{AbstractFloat,AbstractVector{<:AbstractFloat}}) = log.(10 * ϵ)
+computeμ(ϵ::AbstractScalarOrVec{<:AbstractFloat}) = log.(10 * ϵ)
 
 function DAState(ϵ::AbstractFloat)
     μ = computeμ(ϵ)
@@ -38,7 +38,7 @@ function reset!(dastate::DAState{VT}) where {VT<:AbstractVector{<:AbstractFloat}
     dastate.H_bar .= zero(T)
 end
 
-mutable struct MSSState{T<:Union{AbstractFloat,AbstractVector{<:AbstractFloat}}}
+mutable struct MSSState{T<:AbstractScalarOrVec{<:AbstractFloat}}
     ϵ :: T
 end
 
@@ -52,7 +52,7 @@ abstract type StepSizeAdaptor <: AbstractAdaptor end
 
 getϵ(ss::StepSizeAdaptor) = ss.state.ϵ
 
-struct FixedStepSize{T<:Union{AbstractFloat,AbstractVector{<:AbstractFloat}}} <: StepSizeAdaptor
+struct FixedStepSize{T<:AbstractScalarOrVec{<:AbstractFloat}} <: StepSizeAdaptor
     ϵ :: T
 end
 Base.show(io::IO, a::FixedStepSize) = print(io, "FixedStepSize($(a.ϵ))")
@@ -72,7 +72,7 @@ struct NesterovDualAveraging{T<:AbstractFloat} <: StepSizeAdaptor
   t_0   :: T
   κ     :: T
   δ     :: T
-  state :: DAState{<:Union{AbstractFloat,AbstractVector{<:AbstractFloat}}}
+  state :: DAState{<:AbstractScalarOrVec{<:AbstractFloat}}
 end
 Base.show(io::IO, a::NesterovDualAveraging) = print(io, "NesterovDualAveraging(γ=$(a.γ), t_0=$(a.t_0), κ=$(a.κ), δ=$(a.δ), state.ϵ=$(getϵ(a)))")
 
@@ -82,18 +82,18 @@ NesterovDualAveraging(
     κ::T,
     δ::T,
     ϵ::VT
-) where {T<:AbstractFloat, VT<:Union{AbstractFloat,AbstractVector{<:AbstractFloat}}} = NesterovDualAveraging(γ, t_0, κ, δ, DAState(ϵ))
+) where {T<:AbstractFloat, VT<:AbstractScalarOrVec{<:AbstractFloat}} = NesterovDualAveraging(γ, t_0, κ, δ, DAState(ϵ))
 NesterovDualAveraging(
     δ::T,
     ϵ::VT
-) where {T<:AbstractFloat, VT<:Union{AbstractFloat,AbstractVector{<:AbstractFloat}}} = NesterovDualAveraging(0.05, 10.0, 0.75, δ, ϵ)
+) where {T<:AbstractFloat, VT<:AbstractScalarOrVec{<:AbstractFloat}} = NesterovDualAveraging(0.05, 10.0, 0.75, δ, ϵ)
 
-struct ManualSSAdaptor{T<:Union{AbstractFloat,AbstractVector{<:AbstractFloat}}} <:StepSizeAdaptor
+struct ManualSSAdaptor{T<:AbstractScalarOrVec{<:AbstractFloat}} <:StepSizeAdaptor
     state :: MSSState{T}
 end
 Base.show(io::IO, a::ManualSSAdaptor) = print(io, "ManualSSAdaptor()")
 
-ManualSSAdaptor(initϵ::T) where {T<:Union{AbstractFloat,AbstractVector{<:AbstractFloat}}} = ManualSSAdaptor{T}(MSSState(initϵ))
+ManualSSAdaptor(initϵ::T) where {T<:AbstractScalarOrVec{<:AbstractFloat}} = ManualSSAdaptor{T}(MSSState(initϵ))
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
 # Note: This function is not merged with `adapt!` to empahsize the fact that
@@ -165,7 +165,7 @@ end
 adapt!(
     da::NesterovDualAveraging,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::Union{AbstractFloat,AbstractVector{<:AbstractFloat}}
+    α::AbstractScalarOrVec{<:AbstractFloat}
 ) = adapt_stepsize!(da, α)
 
 reset!(da::NesterovDualAveraging) = reset!(da.state)

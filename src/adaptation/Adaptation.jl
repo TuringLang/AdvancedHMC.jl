@@ -7,6 +7,8 @@ import LinearAlgebra, Statistics
 using ..AdvancedHMC: DEBUG
 using Parameters: @unpack, @pack!
 
+const AbstractScalarOrVec{T} = Union{T,AbstractVector{T}}
+
 abstract type AbstractAdaptor end
 
 ##
@@ -18,8 +20,8 @@ getϵ(adaptor::T) where {T<:AbstractAdaptor} = error("`getϵ(adaptor::$T)` is no
 adapt!(
     adaptor::T,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::Union{AbstractFloat,AbstractVector{<:AbstractFloat}}
-) where {T<:AbstractAdaptor} = error("`adapt!(adaptor::$T, θ::AbstractVector, α::AbstractFloat)` is not implemented.")
+    α::AbstractScalarOrVec{<:AbstractFloat}
+) where {T<:AbstractAdaptor} = error("`adapt!(adaptor::$T, θ::AbstractVecOrMat{<:AbstractFloat}, α::AbstractScalarOrVec{<:AbstractFloat})` is not implemented.")
 reset!(adaptor::T) where {T<:AbstractAdaptor} = error("`reset!(adaptor::$T)` is not implemented.")
 finalize!(adaptor::T) where {T<:AbstractAdaptor} = error("`finalize!(adaptor::$T)` is not implemented.")
 
@@ -46,7 +48,7 @@ getϵ(aca::NaiveHMCAdaptor) = getϵ(aca.ssa)
 function adapt!(
     nca::NaiveHMCAdaptor,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::Union{AbstractFloat,AbstractVector{<:AbstractFloat}}
+    α::AbstractScalarOrVec{<:AbstractFloat}
 )
     adapt!(nca.ssa, θ, α)
     adapt!(nca.pc, θ, α)

@@ -8,7 +8,7 @@ struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
 end
 Base.show(io::IO, h::Hamiltonian) = print(io, "Hamiltonian(metric=$(h.metric))")
 
-struct DualValue{V<:Union{AbstractFloat,AbstractVector{<:AbstractFloat}}, G<:AbstractVecOrMat{<:AbstractFloat}}
+struct DualValue{V<:AbstractScalarOrVec{<:AbstractFloat}, G<:AbstractVecOrMat{<:AbstractFloat}}
     value::V    # cached value, e.g. logπ(θ)
     gradient::G # cached gradient, e.g. ∇logπ(θ)
     function DualValue(value::V, gradient::G) where {V, G}

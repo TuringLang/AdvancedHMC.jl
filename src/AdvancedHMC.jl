@@ -23,6 +23,7 @@ include("adaptation/Adaptation.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
 export NesterovDualAveraging, Preconditioner, NaiveHMCAdaptor, StanHMCAdaptor
 using .Adaptation
+using .Adaptation: AbstractScalarOrVec
 import .Adaptation: adapt!
 
 include("hamiltonian.jl")

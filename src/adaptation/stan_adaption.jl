@@ -70,7 +70,7 @@ finalize!(adaptor::StanHMCAdaptor) = finalize!(adaptor.ssa)
 function adapt!(
     tp::StanHMCAdaptor,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::Union{AbstractFloat,AbstractVector{<:AbstractFloat}}
+    α::AbstractScalarOrVec{<:AbstractFloat}
 )
     tp.state.i += 1
 

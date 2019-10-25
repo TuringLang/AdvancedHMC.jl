@@ -161,7 +161,7 @@ getM⁻¹(dpc::UnitPreconditioner{T}) where {T<:AbstractFloat} = UniformScaling{
 adapt!(
     ::UnitPreconditioner,
     ::AbstractVecOrMat{<:AbstractFloat},
-    ::Union{AbstractFloat,AbstractVector{<:AbstractFloat}},
+    ::AbstractScalarOrVec{<:AbstractFloat},
     is_update::Bool=true
 ) = nothing
 
@@ -195,7 +195,7 @@ getM⁻¹(dpc::DiagPreconditioner) = dpc.var
 function adapt!(
     dpc::DiagPreconditioner,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::Union{AbstractFloat,AbstractVector{<:AbstractFloat}},
+    α::AbstractScalarOrVec{<:AbstractFloat},
     is_update::Bool=true
 )
     resize!(dpc, θ)
@@ -237,7 +237,7 @@ getM⁻¹(dpc::DensePreconditioner) = dpc.covar
 function adapt!(
     dpc::DensePreconditioner,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::Union{AbstractFloat,AbstractVector{<:AbstractFloat}},
+    α::AbstractScalarOrVec{<:AbstractFloat},
     is_update::Bool=true
 )
     resize!(dpc, θ)

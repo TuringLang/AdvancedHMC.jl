@@ -25,7 +25,7 @@ adapt!(
     i::Int,
     n_adapts::Int,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::Union{AbstractFloat,AbstractVector{<:AbstractFloat}}
+    α::AbstractScalarOrVec{<:AbstractFloat}
 ) = h, τ, false
 
 function adapt!(
@@ -35,7 +35,7 @@ function adapt!(
     i::Int,
     n_adapts::Int,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::Union{AbstractFloat,AbstractVector{<:AbstractFloat}}
+    α::AbstractScalarOrVec{<:AbstractFloat}
 )
     isadapted = false
     if i <= n_adapts
@@ -68,7 +68,7 @@ simple_pm_next!(pm, stat::NamedTuple, ::Int, ::AbstractMetric) = ProgressMeter.n
 sample(
     h::Hamiltonian,
     τ::AbstractProposal,
-    θ::AbstractVecOrMat{T},
+    θ::AbstractVecOrMat{<:AbstractFloat},
     n_samples::Int,
     adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
@@ -76,7 +76,7 @@ sample(
     verbose::Bool=true,
     progress::Bool=false,
     (pm_next!)::Function=pm_next!
-) where {T<:Real} = sample(
+) = sample(
     GLOBAL_RNG,
     h,
     τ,
@@ -115,7 +115,7 @@ function sample(
     rng::AbstractRNG,
     h::Hamiltonian,
     τ::AbstractProposal,
-    θ::AbstractVecOrMat{T},
+    θ::AbstractVecOrMat{<:AbstractFloat},
     n_samples::Int,
     adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
@@ -123,7 +123,7 @@ function sample(
     verbose::Bool=true,
     progress::Bool=false,
     (pm_next!)::Function=pm_next!
-) where {T<:Real}
+)
     @assert !(drop_warmup && (adaptor isa Adaptation.NoAdaptation)) "Cannot drop warmup samples if there is no adaptation phase."
     # Prepare containers to store sampling results
     n_keep = n_samples - drop_warmup * n_adapts
