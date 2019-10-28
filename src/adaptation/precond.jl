@@ -7,7 +7,7 @@
 abstract type VarEstimator{T} end
 
 # NOTE: this naive variance estimator is used only in testing
-mutable struct NaiveVar{T<:AbstractVector{<:AbstractVecOrMat{<:AbstractFloat}}} <: VarEstimator{T}
+mutable struct NaiveVar{T<:AbstractVector{E}} where {E<:AbstractVecOrMat{<:AbstractFloat}} <: VarEstimator{T}
     n :: Int
     S :: T
 end
