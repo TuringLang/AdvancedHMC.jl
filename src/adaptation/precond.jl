@@ -15,6 +15,8 @@ end
 NaiveVar(::Type{T}=Float64) where {T} = NaiveVar(0, Vector{Vector{T}}())
 NaiveVar(::Type{T}, sz::Tuple{Int}) where {T} = NaiveVar(0, Vector{Vector{T}}())
 NaiveVar(::Type{T}, sz::Tuple{Int,Int}) where {T} = NaiveVar(0, Vector{Matrix{T}}())
+# If `sz` are a tuple of two integers, e.g. (10, 2),
+# the adaptor will estimate variance for each column (2 in this case).
 NaiveVar(sz::Tuple{Vararg{Int}}) = NaiveVar(Float64, sz)
 NaiveVar(type::Type{T}, dim::Int) where {T} = NaiveVar(type, (dim,))
 NaiveVar(dim::Int) = NaiveVar((dim,))
