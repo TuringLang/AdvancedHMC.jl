@@ -7,7 +7,7 @@ import LinearAlgebra, Statistics
 using ..AdvancedHMC: DEBUG
 using Parameters: @unpack, @pack!
 
-const AbstractScalarOrVec{T} = Union{T,AbstractVector{T}}
+const AbstractScalarOrVec{T} = Union{T,AbstractVector{T}} where {T<:AbstractFloat}
 
 abstract type AbstractAdaptor end
 
