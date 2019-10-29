@@ -72,7 +72,7 @@ struct NesterovDualAveraging{T<:AbstractFloat} <: StepSizeAdaptor
   t_0   :: T
   κ     :: T
   δ     :: T
-  state :: DAState{<:AbstractScalarOrVec{<:AbstractFloat}}
+  state :: DAState{<:AbstractScalarOrVec{T}}
 end
 Base.show(io::IO, a::NesterovDualAveraging) = print(io, "NesterovDualAveraging(γ=$(a.γ), t_0=$(a.t_0), κ=$(a.κ), δ=$(a.δ), state.ϵ=$(getϵ(a)))")
 
@@ -82,11 +82,11 @@ NesterovDualAveraging(
     κ::T,
     δ::T,
     ϵ::VT
-) where {T<:AbstractFloat, VT<:AbstractScalarOrVec{<:AbstractFloat}} = NesterovDualAveraging(γ, t_0, κ, δ, DAState(ϵ))
+) where {T<:AbstractFloat, VT<:AbstractScalarOrVec{T}} = NesterovDualAveraging(γ, t_0, κ, δ, DAState(ϵ))
 NesterovDualAveraging(
     δ::T,
     ϵ::VT
-) where {T<:AbstractFloat, VT<:AbstractScalarOrVec{<:AbstractFloat}} = NesterovDualAveraging(0.05, 10.0, 0.75, δ, ϵ)
+) where {T<:AbstractFloat, VT<:AbstractScalarOrVec{T}} = NesterovDualAveraging(0.05, 10.0, 0.75, δ, ϵ)
 
 struct ManualSSAdaptor{T<:AbstractScalarOrVec{<:AbstractFloat}} <:StepSizeAdaptor
     state :: MSSState{T}

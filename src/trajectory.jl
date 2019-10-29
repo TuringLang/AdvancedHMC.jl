@@ -625,7 +625,7 @@ end
 function update(
     h::Hamiltonian,
     θ::AbstractVecOrMat{T}
-) where {T<:Real}
+) where {T<:AbstractFloat}
     metric = h.metric
     if size(metric) != size(θ)
         metric = typeof(metric)(size(θ))

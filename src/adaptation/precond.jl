@@ -12,14 +12,12 @@ mutable struct NaiveVar{E<:AbstractVecOrMat{<:AbstractFloat},T<:AbstractVector{E
     S :: T
 end
 
-NaiveVar(::Type{T}=Float64) where {T<:AbstractFloat} = NaiveVar(0, Vector{Vector{T}}())
-NaiveVar(::Type{T}, sz::Tuple{Int}) where {T} = NaiveVar(0, Vector{Vector{T}}())
-NaiveVar(::Type{T}, sz::Tuple{Int,Int}) where {T} = NaiveVar(0, Vector{Matrix{T}}())
+NaiveVar(::Type{T}, ::Union{Int,Tuple{Int}}) where {T<:AbstractFloat} = NaiveVar(0, Vector{Vector{T}}())
+NaiveVar(::Type{T}, sz::Tuple{Int,Int}) where {T<:AbstractFloat} = NaiveVar(0, Vector{Matrix{T}}())
 # If `sz` are a tuple of two integers, e.g. (10, 2),
 # the adaptor will estimate variance for each column (2 in this case).
-NaiveVar(sz::Tuple{Vararg{Int}}) = NaiveVar(Float64, sz)
-NaiveVar(type::Type{T}, dim::Int) where {T} = NaiveVar(type, (dim,))
-NaiveVar(dim::Int) = NaiveVar((dim,))
+NaiveVar(sz::Union{Tuple{Vararg{Int}}, Int}) = NaiveVar(Float64, sz)
+NaiveVar() = NaiveVar(Float64, 0)
 
 function add_sample!(nc::NaiveVar, s::AbstractVecOrMat)
     nc.n += 1
@@ -44,13 +42,11 @@ mutable struct WelfordVar{T<:AbstractVecOrMat{<:AbstractFloat}} <: VarEstimator{
     # TODO: implement temporary `δ` as `WelfordCov`
 end
 
-WelfordVar(::Type{T}, sz::Tuple{Vararg{Int}}) where {T} = WelfordVar(0, zeros(T, sz), zeros(T, sz))
-WelfordVar(sz::Tuple{Vararg{Int}}) = WelfordVar(Float64, sz)
-WelfordVar(type::Type{T}, dim::Int) where {T} = WelfordVar(type, (dim,))
-WelfordVar(dim::Int) = WelfordVar((dim,))
+WelfordVar(::Type{T}, sz::Union{Int,Tuple{Int},Tuple{Int,Int}}) where {T} = WelfordVar(0, zeros(T, sz), zeros(T, sz))
+WelfordVar(sz::Union{Int,Tuple{Int},Tuple{Int,Int}}) = WelfordVar(Float64, sz)
 
 function reset!(wv::WelfordVar{VT}) where {VT}
-    T = VT |> eltype |> eltype
+    T = VT |> eltype
     wv.n = 0
     wv.μ .= zero(T)
     wv.M .= zero(T)
@@ -70,7 +66,7 @@ end
 function get_var(wv::WelfordVar{VT}) where {VT}
     n, M = wv.n, wv.M
     @assert n >= 2 "Cannot get covariance with only one sample"
-    T = VT |> eltype |> eltype
+    T = VT |> eltype
     return (n * one(T) / ((n + 5) * (n - 1))) .* M .+ T(1e-3) * (5 * one(T) / (n + 5))
 end
 
@@ -83,11 +79,10 @@ mutable struct NaiveCov{T<:AbstractVector{<:AbstractVector{<:AbstractFloat}}} <:
     n :: Int
     S :: T
 end
-NaiveCov(::Type{T}=Float64) where {T} = NaiveCov(0, Vector{Vector{T}}())
-NaiveCov(::Type{T}, sz::Tuple{Int}) where {T} = NaiveCov(0, Vector{Vector{T}}())
-NaiveCov(sz::Tuple{Int}) = NaiveCov(Float64, sz)
-NaiveCov(type::Type{T}, dim::Int) where {T} = NaiveCov(type, (dim,))
-NaiveCov(dim::Int) = NaiveCov((dim,))
+
+NaiveCov(::Type{T}, sz::Union{Int,Tuple{Int}}) where {T} = NaiveCov(0, Vector{Vector{T}}())
+NaiveCov(sz::Union{Int,Tuple{Int}}) = NaiveCov(Float64, sz)
+NaiveCov() = NaiveCov(Float64, 0)
 
 function add_sample!(nc::NaiveCov, s::AbstractVector)
     nc.n += 1

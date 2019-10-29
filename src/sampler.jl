@@ -2,7 +2,7 @@
 ## Interface functions
 ##
 
-function sample_init(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVecOrMat{T}) where {T<:Real}
+function sample_init(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVecOrMat{<:AbstractFloat})
     # Ensure h.metric has the same dim as θ.
     h = update(h, θ)
     # Initial transition
@@ -115,7 +115,7 @@ function sample(
     rng::AbstractRNG,
     h::Hamiltonian,
     τ::AbstractProposal,
-    θ::AbstractVecOrMat{<:AbstractFloat},
+    θ::T,
     n_samples::Int,
     adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
@@ -123,11 +123,11 @@ function sample(
     verbose::Bool=true,
     progress::Bool=false,
     (pm_next!)::Function=pm_next!
-)
+) where {T<:AbstractVecOrMat{<:AbstractFloat}}
     @assert !(drop_warmup && (adaptor isa Adaptation.NoAdaptation)) "Cannot drop warmup samples if there is no adaptation phase."
     # Prepare containers to store sampling results
     n_keep = n_samples - drop_warmup * n_adapts
-    θs, stats = Vector{typeof(θ)}(undef, n_keep), Vector{NamedTuple}(undef, n_keep)
+    θs, stats = Vector{T}(undef, n_keep), Vector{NamedTuple}(undef, n_keep)
     # Initial sampling
     h, t = sample_init(rng, h, θ)
     # Progress meter

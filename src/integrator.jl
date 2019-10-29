@@ -56,7 +56,7 @@ Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round(l.ϵ; sigdigits=
 
 ### Jittering
 
-struct JitteredLeapfrog{FT<:AbstractFloat,T<:Union{FT,AbstractVector{FT}}} <: AbstractLeapfrog{T}
+struct JitteredLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractLeapfrog{T}
     ϵ       ::  T
     jitter  ::  FT
 end
@@ -70,7 +70,7 @@ jitter(rng::AbstractRNG, lf::JitteredLeapfrog, ϵ) = ϵ * (1 + lf.jitter * (2 * 
 
 ### Tempering
 
-struct TemperedLeapfrog{FT<:AbstractFloat,T<:Union{FT,AbstractVector{FT}}} <: AbstractLeapfrog{T}
+struct TemperedLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractLeapfrog{T}
     ϵ       ::  T
     α       ::  FT
 end
