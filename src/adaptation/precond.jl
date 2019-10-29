@@ -12,7 +12,7 @@ mutable struct NaiveVar{E<:AbstractVecOrMat{<:AbstractFloat},T<:AbstractVector{E
     S :: T
 end
 
-NaiveVar(::Type{T}=Float64) where {T} = NaiveVar(0, Vector{Vector{T}}())
+NaiveVar(::Type{T}=Float64) where {T<:AbstractFloat} = NaiveVar(0, Vector{Vector{T}}())
 NaiveVar(::Type{T}, sz::Tuple{Int}) where {T} = NaiveVar(0, Vector{Vector{T}}())
 NaiveVar(::Type{T}, sz::Tuple{Int,Int}) where {T} = NaiveVar(0, Vector{Matrix{T}}())
 # If `sz` are a tuple of two integers, e.g. (10, 2),
