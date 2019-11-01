@@ -15,14 +15,14 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsFuns = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 
 [compat]
-julia = "1"
-ArgCheck = "1"
-InplaceOps = "0.3"
-LazyArrays = "0.9,1"
-Parameters = "0.10"
-ProgressMeter = "1"
-StatsBase = "0.31"
-StatsFuns = "0.8"
+julia = ">= 1.0.0"
+ArgCheck = ">= 1.0.1"
+InplaceOps = ">= 0.3.0"
+LazyArrays = ">= 0.9.0"
+Parameters = ">= 0.10.3"
+ProgressMeter = ">= 1.0.0"
+StatsBase = ">= 0.31.0"
+StatsFuns = ">= 0.8.0"
 
 [extras]
 DiffResults = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
