@@ -57,9 +57,9 @@ end
 
 # https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
 function get_var(wv::WelfordVar{T, AT}) where {T<:AbstractFloat, AT<:AbstractVector{T}}
-    n, M = wv.n, wv.M
+    n, M = T(wv.n), wv.M
     @assert n >= 2 "Cannot get covariance with only one sample"
-    return (n*one(T) / ((n + 5) * (n - 1))) .* M .+ T(1e-3) * (5*one(T) / (n + 5))
+    return (n / ((n + 5) * (n - 1))) .* M .+ T(1e-3) * (5 / (n + 5))
 end
 
 abstract type CovEstimator{T} end
@@ -115,9 +115,9 @@ end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/covar_adaptation.hpp
 function get_cov(wc::WelfordCov{T}) where {T<:AbstractFloat}
-    n, M = wc.n, wc.M
+    n, M = T(wc.n), wc.M
     @assert n >= 2 "Cannot get variance with only one sample"
-    return (n*one(T) / ((n + 5) * (n - 1))) .* M + T(1e-3) * (5*one(T) / (n + 5)) * LinearAlgebra.I
+    return (n / ((n + 5) * (n - 1))) .* M + T(1e-3) * (5 / (n + 5)) * LinearAlgebra.I
 end
 
 ###
