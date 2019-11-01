@@ -17,6 +17,11 @@ matrix:
     - julia: nightly
     - os: osx
   fast_finish: true
+  include:
+    - os: linux
+      arch: x64
+    - os: linux
+      arch: x86
 
 after_success:
   - julia -e 'Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'

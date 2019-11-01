@@ -4,9 +4,12 @@
 
 **The code from this repository is used to implement HMC samplers in [Turing.jl](https://github.com/TuringLang/Turing.jl).**
 
-**NEWS**: We presented a poster for AdvancedHMC.jl at StanCon 2019. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
+**NEWS**
+- We presented a poster for AdvancedHMC.jl at StanCon 2019. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
-**UPDATE**: The gradient function passed in to `Hamiltonian` is supposed to return a value-gradient tuple now.
+**API CHANGE**
+- [v0.2.8] Two exported types are renamed: `Multinomial` -> `MultinomialTS` and `Slice` -> `SliceTS`.
+- [v0.2.0] The gradient function passed to `Hamiltonian` is supposed to return a value-gradient tuple now.
 
 ## Minimal examples - sampling from a multivariate Gaussian using NUTS
 
