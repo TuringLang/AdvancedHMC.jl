@@ -27,7 +27,7 @@ end
         r_init = randn(D)
 
         h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
-        @test -AdvancedHMC.neg_energy(h, r_init, θ_init) == dot(r_init, r_init) / 2
+        @test -AdvancedHMC.neg_energy(h, r_init, θ_init) == sum(abs2, r_init) / 2
         @test AdvancedHMC.∂H∂r(h, r_init) == r_init
 
         M⁻¹ = ones(D) + abs.(randn(D))
