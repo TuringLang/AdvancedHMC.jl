@@ -40,8 +40,7 @@ end
 
 WelfordVar(::Type{T}, sz::Union{Tuple{Int},Tuple{Int,Int}}) where {T<:AbstractFloat} = WelfordVar(0, zeros(T, sz), zeros(T, sz))
 
-function reset!(wv::WelfordVar{VT}) where {VT}
-    T = VT |> eltype
+function reset!(wv::WelfordVar{<:AbstractVecOrMat{T}}) where {T<:AbstractFloat}
     wv.n = 0
     wv.μ .= zero(T)
     wv.M .= zero(T)
@@ -58,8 +57,7 @@ function add_sample!(wv::WelfordVar, s::AbstractVecOrMat)
 end
 
 # https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
-function get_var(wv::WelfordVar{VT}) where {VT}
-    T = VT |> eltype
+function get_var(wv::WelfordVar{<:AbstractVecOrMat{T}}) where {T<:AbstractFloat}
     n, M = T(wv.n), wv.M
     @assert n >= 2 "Cannot get covariance with only one sample"
     return (n / ((n + 5) * (n - 1))) .* M .+ T(1e-3) * (5 / (n + 5))
@@ -319,8 +317,8 @@ Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, "DiagEuclideanMetric($(_
 
 struct DenseEuclideanMetric{
     T,
-    AV<:AbstractVector{T},
-    AM<:AbstractMatrix{T},
+    AV<:AbstractVecOrMat{T},
+    AM<:Union{AbstractMatrix{T},AbstractArray{T,3}},
     TcholM⁻¹<:UpperTriangular{T},
 } <: AbstractMetric
     # Inverse of the mass matrix
@@ -331,8 +329,9 @@ struct DenseEuclideanMetric{
     _temp::AV
 end
 
-function DenseEuclideanMetric(M⁻¹::AbstractMatrix{T}) where {T<:AbstractFloat}
-    _temp = Vector{T}(undef, size(M⁻¹, 1))
+# TODO: make dense mass matrix support matrix-mode parallel
+function DenseEuclideanMetric(M⁻¹::Union{AbstractMatrix{T},AbstractArray{T,3}}) where {T<:AbstractFloat}
+    _temp = Vector{T}(undef, Base.front(size(M⁻¹)))
     return DenseEuclideanMetric(M⁻¹, cholesky(Symmetric(M⁻¹)).U, _temp)
 end
 DenseEuclideanMetric(::Type{T}, D::Int) where {T} = DenseEuclideanMetric(Matrix{T}(I, D, D))
@@ -342,17 +341,7 @@ DenseEuclideanMetric(sz::Tuple{Int}) = DenseEuclideanMetric(Float64, D)
 
 renew(ue::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
 
-function Base.size(e::DenseEuclideanMetric)
-    sz = size(e.M⁻¹)
-    if length(sz) == 2
-        # If `M⁻¹` stores a D x D tensor, we would like to return only D
-        sz = (sz[2],)
-    elseif length(sz) == 3
-        # If `M⁻¹` stores a D x D x C tensor, we would like to return only D x C
-        sz = (sz[2], sz[3])
-    end
-    return sz
-end
+Base.size(e::DenseEuclideanMetric) = size(e._temp)
 Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DenseEuclideanMetric(diag=$(_string_M⁻¹(dem.M⁻¹)))")
 
 # `rand` functions for `metric` types.

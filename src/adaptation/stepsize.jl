@@ -30,8 +30,7 @@ function reset!(dastate::DAState{T}) where {T<:AbstractFloat}
     dastate.H_bar = zero(T)
 end
 
-function reset!(dastate::DAState{VT}) where {VT<:AbstractVector{<:AbstractFloat}}
-    T = eltype(VT)
+function reset!(dastate::DAState{<:AbstractVector{T}}) where {T<:AbstractFloat}
     dastate.m = 0
     dastate.μ .= computeμ(dastate.ϵ)
     dastate.x_bar .= zero(T)
