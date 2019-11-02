@@ -12,12 +12,8 @@ mutable struct NaiveVar{E<:AbstractVecOrMat{<:AbstractFloat},T<:AbstractVector{E
     S :: T
 end
 
-NaiveVar(::Type{T}, ::Union{Int,Tuple{Int}}) where {T<:AbstractFloat} = NaiveVar(0, Vector{Vector{T}}())
-NaiveVar(::Type{T}, sz::Tuple{Int,Int}) where {T<:AbstractFloat} = NaiveVar(0, Vector{Matrix{T}}())
-# If `sz` are a tuple of two integers, e.g. (10, 2),
-# the adaptor will estimate variance for each column (2 in this case).
-NaiveVar(sz::Union{Tuple{Vararg{Int}}, Int}) = NaiveVar(Float64, sz)
-NaiveVar() = NaiveVar(Float64, 0)
+NaiveVar(::Type{T}, ::Tuple{Int}) where {T<:AbstractFloat} = NaiveVar(0, Vector{Vector{T}}())
+NaiveVar(::Type{T}, ::Tuple{Int,Int}) where {T<:AbstractFloat} = NaiveVar(0, Vector{Matrix{T}}())
 
 function add_sample!(nc::NaiveVar, s::AbstractVecOrMat)
     nc.n += 1
@@ -42,8 +38,7 @@ mutable struct WelfordVar{T<:AbstractVecOrMat{<:AbstractFloat}} <: VarEstimator{
     # TODO: implement temporary `δ` as `WelfordCov`
 end
 
-WelfordVar(::Type{T}, sz::Union{Int,Tuple{Int},Tuple{Int,Int}}) where {T} = WelfordVar(0, zeros(T, sz), zeros(T, sz))
-WelfordVar(sz::Union{Int,Tuple{Int},Tuple{Int,Int}}) = WelfordVar(Float64, sz)
+WelfordVar(::Type{T}, sz::Union{Tuple{Int},Tuple{Int,Int}}) where {T<:AbstractFloat} = WelfordVar(0, zeros(T, sz), zeros(T, sz))
 
 function reset!(wv::WelfordVar{VT}) where {VT}
     T = VT |> eltype
@@ -80,9 +75,7 @@ mutable struct NaiveCov{T<:AbstractVector{<:AbstractVector{<:AbstractFloat}}} <:
     S :: T
 end
 
-NaiveCov(::Type{T}, sz::Union{Int,Tuple{Int}}) where {T} = NaiveCov(0, Vector{Vector{T}}())
-NaiveCov(sz::Union{Int,Tuple{Int}}) = NaiveCov(Float64, sz)
-NaiveCov() = NaiveCov(Float64, 0)
+NaiveCov(::Type{T}, sz::Union{Tuple{Int}}) where {T<:AbstractFloat} = NaiveCov(0, Vector{Vector{T}}())
 
 function add_sample!(nc::NaiveCov, s::AbstractVector)
     nc.n += 1
@@ -107,11 +100,10 @@ mutable struct WelfordCov{T<:AbstractFloat} <: CovEstimator{T}
     δ :: Vector{T} # temporary
 end
 
-function WelfordCov(::Type{T}, d::Int) where {T}
-    return WelfordCov(0, zeros(T, d), zeros(T, d, d), zeros(T, d))
+function WelfordCov(::Type{T}, sz::Tuple{Int}) where {T<:AbstractFloat}
+    d, = sz
+    WelfordCov(0, zeros(T, d), zeros(T, d, d), zeros(T, d))
 end
-WelfordCov(d::Int) = WelfordCov(Float64, d)
-WelfordCov(type::Type{T}, sz::Tuple{Int}) where {T} = WelfordCov(type, first(sz))
 
 function reset!(wc::WelfordCov{T}) where {T<:AbstractFloat}
     wc.n = 0
@@ -268,7 +260,7 @@ function Base.resize!(
 ) where {T<:AbstractFloat}
     if length(θ) != size(dpc.covar,1)
         @assert dpc.ce.n == 0 "Cannot resize a var estimator when it contains samples."
-        dpc.ce = WelfordCov(T, length(θ))
+        dpc.ce = WelfordCov(T, size(θ))
         dpc.covar = LinearAlgebra.diagm(0 => ones(T, length(θ)))
     end
 end
