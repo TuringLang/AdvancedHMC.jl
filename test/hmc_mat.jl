@@ -11,7 +11,7 @@ include("common.jl")
     i_test = 5
     lfi = Leapfrog(fill(ϵ, i_test))
     n_steps = 20
-    n_samples = 10_000
+    n_samples = 12_000
     n_adapts = 2_000
 
     for metricT in [

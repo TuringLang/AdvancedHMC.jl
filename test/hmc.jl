@@ -9,7 +9,7 @@ include("common.jl")
 θ_init = randn(D)
 ϵ = 0.1
 n_steps = 20
-n_samples = 10_000
+n_samples = 12_000
 n_adapts = 2_000
 
 @testset "HMC and NUTS" begin
