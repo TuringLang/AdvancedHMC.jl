@@ -64,6 +64,7 @@ end
 
 # https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
 function get_var(wv::WelfordVar{VT}) where {VT}
+    T = VT |> eltype
     n, M = T(wv.n), wv.M
     @assert n >= 2 "Cannot get covariance with only one sample"
     return (n / ((n + 5) * (n - 1))) .* M .+ T(1e-3) * (5 / (n + 5))
