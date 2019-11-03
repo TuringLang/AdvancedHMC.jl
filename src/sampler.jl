@@ -137,7 +137,7 @@ function sample(
         t = step(rng, h, τ, t.z)
         # Adapt h and τ; what mutable is the adaptor
         h, τ, isadapted = adapt!(h, τ, adaptor, i, n_adapts, t.z.θ, t.stat.acceptance_rate)
-        stat = merge(t.stat, (is_adapt=!isadapted,))
+        stat = merge(t.stat, (is_adapt=isadapted,))
         # Update progress meter
         if progress
             pm_next!(pm, stat, i, h.metric)
