@@ -149,20 +149,23 @@ function transition(
     h::Hamiltonian,
     z::PhasePoint
 ) where {T<:Real}
+    H0 = energy(z)
     z′ = step(rng, τ.integrator, h, z, τ.n_steps)
     # Accept via MH criteria
-    is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
+    is_accept, α = mh_accept_ratio(rng, H0, energy(z′))
     if is_accept
         # Reverse momentum variable to preserve reversibility
         z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
     end
+    H = energy(z)
     stat = (
         step_size=τ.integrator.ϵ,
         n_steps=τ.n_steps,
         is_accept=is_accept,
         acceptance_rate=α,
         log_density=z.ℓπ.value,
-        hamiltonian_energy=energy(z),
+        hamiltonian_energy=H,
+        hamiltonian_energy_error=H - H0,
        )
     return Transition(z, stat)
 end
@@ -441,13 +444,16 @@ function transition(
         termination = termination * termination′ * isterminated(h, tree)
     end
 
+    H = energy(zcand)
+
     stat = (
         step_size=τ.integrator.ϵ,
         n_steps=tree.nα,
         is_accept=true,
         acceptance_rate=tree.sum_α / tree.nα,
         log_density=zcand.ℓπ.value,
-        hamiltonian_energy=energy(zcand),
+        hamiltonian_energy=H,
+        hamiltonian_energy_error=H - H0,
         tree_depth=j,
         numerical_error=termination.numerical,
        )
