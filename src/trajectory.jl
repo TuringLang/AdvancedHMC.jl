@@ -323,7 +323,15 @@ struct BinaryTree{C<:AbstractTerminationCriterion}
     c::C    # termination criterion
     sum_α   # MH stats, i.e. sum of MH accept prob for all leapfrog steps
     nα      # total # of leap frog steps, i.e. phase points in a trajectory
+    ΔH_max  # energy in tree with largest absolute different from initial energy
 end
+
+"""
+    maxabs(a, b)
+
+Return the value with the largest absolute value.
+"""
+@inline maxabs(a, b) = abs(a) > abs(b) ? a : b
 
 """
     combine(treeleft::BinaryTree, treeright::BinaryTree)
@@ -332,7 +340,7 @@ Merge a left tree `treeleft` and a right tree `treeright` under given Hamiltonia
 then draw a new candidate sample and update related statistics for the resulting tree.
 """
 combine(treeleft::BinaryTree, treeright::BinaryTree) =
-    BinaryTree(treeleft.zleft, treeright.zright, combine(treeleft.c, treeright.c), treeleft.sum_α + treeright.sum_α, treeleft.nα + treeright.nα)
+    BinaryTree(treeleft.zleft, treeright.zright, combine(treeleft.c, treeright.c), treeleft.sum_α + treeright.sum_α, treeleft.nα + treeright.nα, maxabs(treeleft.ΔH_max, treeright.ΔH_max))
 
 """
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
@@ -379,9 +387,10 @@ function build_tree(
         # Base case - take one leapfrog step in the direction v.
         z′ = step(rng, nt.integrator, h, z, v)
         H′ = energy(z′)
-        α′ = exp(min(0, H0 - H′))
+        ΔH = H′ - H0
+        α′ = exp(min(0, -ΔH))
         sampler′ = S(sampler, H0, z′)
-        return BinaryTree(z′, z′, C(z′), α′, 1), sampler′, Termination(sampler′, nt, H0, H′)
+        return BinaryTree(z′, z′, C(z′), α′, 1, ΔH), sampler′, Termination(sampler′, nt, H0, H′)
     else
         # Recursion - build the left and right subtrees.
         tree′, sampler′, termination′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
@@ -411,7 +420,7 @@ function transition(
     z0::PhasePoint
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
     H0 = energy(z0)
-    tree = BinaryTree(z0, z0, C(z0), zero(F), zero(Int))
+    tree = BinaryTree(z0, z0, C(z0), zero(F), zero(Int), zero(H0))
     sampler = S(rng, z0)
     termination = Termination(false, false)
     zcand = z0
@@ -454,6 +463,7 @@ function transition(
         log_density=zcand.ℓπ.value,
         hamiltonian_energy=H,
         hamiltonian_energy_error=H - H0,
+        max_hamiltonian_energy_error=tree.ΔH_max,
         tree_depth=j,
         numerical_error=termination.numerical,
        )
