@@ -34,7 +34,7 @@ end
 ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVecOrMat) = h.metric.M⁻¹ .* r
 ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVecOrMat) = h.metric.M⁻¹ * r
 
-struct PhasePoint{T<:AbstractVecOrMat, V<:DualValue}
+struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
     θ::T  # Position variables / model parameters.
     r::T  # Momentum variables
     ℓπ::V # Cached neg potential energy for the current θ.
