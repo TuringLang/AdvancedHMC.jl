@@ -145,9 +145,10 @@ function sample(
             @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
         end
         # Store sample
-        if !drop_warmup || i > n_adapts
+        is_adapt = i <= n_adapts
+        if !drop_warmup || !is_adapt
             j = i - drop_warmup * n_adapts
-            θs[j], stats[j] = t.z.θ, t.stat
+            θs[j], stats[j] = t.z.θ, merge(t.stat, (is_adapt=is_adapt,))
         end
     end
     # Report end of sampling
