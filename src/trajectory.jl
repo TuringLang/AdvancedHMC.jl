@@ -159,7 +159,7 @@ function transition(
     end
     H = energy(z)
     stat = (
-        step_size=τ.integrator.ϵ,
+        step_size_bar=τ.integrator.ϵ,
         n_steps=τ.n_steps,
         is_accept=is_accept,
         acceptance_rate=α,
@@ -456,7 +456,7 @@ function transition(
     H = energy(zcand)
 
     stat = (
-        step_size=τ.integrator.ϵ,
+        step_size_bar=τ.integrator.ϵ,
         n_steps=tree.nα,
         is_accept=true,
         acceptance_rate=tree.sum_α / tree.nα,
