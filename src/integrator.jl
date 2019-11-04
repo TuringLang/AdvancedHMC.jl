@@ -7,7 +7,7 @@ abstract type AbstractIntegrator end
 
 abstract type AbstractLeapfrog{T} <: AbstractIntegrator end
 
-jitter(::AbstractRNG, ::AbstractLeapfrog, ϵ) = ϵ
+jitter!(::AbstractRNG, lf::AbstractLeapfrog) = lf
 temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),Tuple{Int,Bool}}, ::Int) = r
 
 function step(
@@ -19,8 +19,8 @@ function step(
     fwd::Bool=n_steps > 0   # simulate hamiltonian backward when n_steps < 0,
 ) where {T<:AbstractFloat}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
+    jitter!(rng, lf)
     ϵ = fwd ? lf.ϵ : -lf.ϵ
-    ϵ = jitter(rng, lf, ϵ)
 
     @unpack θ, r = z
     @unpack value, gradient = ∂H∂θ(h, θ)
@@ -55,17 +55,23 @@ Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round(l.ϵ; sigdigits=
 
 ### Jittering
 
-struct JitteredLeapfrog{T<:AbstractFloat} <: AbstractLeapfrog{T}
-    ϵ       ::  T
+mutable struct JitteredLeapfrog{T<:AbstractFloat} <: AbstractLeapfrog{T}
+    ϵ0      ::  T
     jitter  ::  T
+    ϵ       ::  T
 end
 
+JitteredLeapfrog(ϵ0, jitter) = JitteredLeapfrog(ϵ0, jitter, ϵ0)
+
 function Base.show(io::IO, l::JitteredLeapfrog)
-    print(io, "JitteredLeapfrog(ϵ=$(round(l.ϵ; sigdigits=3)), jitter=$(round(l.jitter; sigdigits=3)))")
+    print(io, "JitteredLeapfrog(ϵ0=$(round(l.ϵ0; sigdigits=3)), jitter=$(round(l.jitter; sigdigits=3)), ϵ=$(round(l.ϵ; sigdigits=3)))")
 end
 
 # Jitter step size; ref: https://github.com/stan-dev/stan/blob/1bb054027b01326e66ec610e95ef9b2a60aa6bec/src/stan/mcmc/hmc/base_hmc.hpp#L177-L178
-jitter(rng::AbstractRNG, lf::JitteredLeapfrog, ϵ) = ϵ * (1 + lf.jitter * (2 * rand(rng) - 1))
+function jitter!(rng::AbstractRNG, lf::JitteredLeapfrog)
+    lf.ϵ = lf.ϵ0 * (1 + lf.jitter * (2 * rand(rng) - 1))
+    return lf
+end
 
 ### Tempering
 
