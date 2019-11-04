@@ -16,6 +16,8 @@ struct Transition{P<:PhasePoint, NT<:NamedTuple}
     stat    ::  NT
 end
 
+stat(t::Transition) = t.stat
+
 """
 Abstract Markov chain Monte Carlo proposal.
 """
@@ -158,16 +160,17 @@ function transition(
         z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
     end
     H = energy(z)
-    stat = (
-        step_size_bar=τ.integrator.ϵ,
-        n_steps=τ.n_steps,
-        is_accept=is_accept,
-        acceptance_rate=α,
-        log_density=z.ℓπ.value,
-        hamiltonian_energy=H,
-        hamiltonian_energy_error=H - H0,
-       )
-    return Transition(z, stat)
+    istat = stat(τ.integrator)
+    tstat = merge(
+        (n_steps=τ.n_steps,
+         is_accept=is_accept,
+         acceptance_rate=α,
+         log_density=z.ℓπ.value,
+         hamiltonian_energy=H,
+         hamiltonian_energy_error=H - H0),
+        istat
+    )
+    return Transition(z, tstat)
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
@@ -454,20 +457,21 @@ function transition(
     end
 
     H = energy(zcand)
+    istat = stat(τ.integrator)
+    tstat = merge(
+        (n_steps=tree.nα,
+         is_accept=true,
+         acceptance_rate=tree.sum_α / tree.nα,
+         log_density=zcand.ℓπ.value,
+         hamiltonian_energy=H,
+         hamiltonian_energy_error=H - H0,
+         max_hamiltonian_energy_error=tree.ΔH_max,
+         tree_depth=j,
+         numerical_error=termination.numerical),
+         istat
+    )
 
-    stat = (
-        step_size_bar=τ.integrator.ϵ,
-        n_steps=tree.nα,
-        is_accept=true,
-        acceptance_rate=tree.sum_α / tree.nα,
-        log_density=zcand.ℓπ.value,
-        hamiltonian_energy=H,
-        hamiltonian_energy_error=H - H0,
-        max_hamiltonian_energy_error=tree.ΔH_max,
-        tree_depth=j,
-        numerical_error=termination.numerical,
-       )
-    return Transition(zcand, stat)
+    return Transition(zcand, tstat)
 end
 
 """
