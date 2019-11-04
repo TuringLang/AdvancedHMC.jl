@@ -147,15 +147,15 @@ function transition(
     rng::AbstractRNG,
     τ::StaticTrajectory,
     h::Hamiltonian,
-    z::PhasePoint{T,V}
-) where {T<:AbstractVector{<:AbstractFloat}, V}
+    z::PhasePoint
+)
     z′ = step(rng, τ.integrator, h, z, τ.n_steps)
-    # Accept via MH criteria
+    # Are we going to accept the `z′` via MH criteria?
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
-    if is_accept
-        # Reverse momentum variable to preserve reversibility
-        z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
-    end
+    # Do the actual accept / reject
+    z = accept_phasepoint!(z, z′, is_accept)    # NOTE: this function changes `z′` in place in matrix-parallel mode
+    # Reverse momentum variable to preserve reversibility
+    z = PhasePoint(z.θ, -z.r, z.ℓπ, z.ℓκ)
     stat = (
         step_size=τ.integrator.ϵ,
         n_steps=τ.n_steps,
@@ -167,35 +167,29 @@ function transition(
     return Transition(z, stat)
 end
 
-# TODO: merge two `transition` if broadcast doesn't have overhead
-function transition(
-    rng::AbstractRNG,
-    τ::StaticTrajectory,
-    h::Hamiltonian,
-    z::PhasePoint{T,V}
-) where {T<:AbstractMatrix{<:AbstractFloat}, V}
-    z′ = step(rng, τ.integrator, h, z, τ.n_steps)
-    # Accept via MH criteria
-    is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
-    # Copy not accepted proposals
-    # TODO: make these into functions
-    z′.θ[:,(!).(is_accept)] = z.θ[:,(!).(is_accept)]
-    z′.r[:,(!).(is_accept)] = z.r[:,(!).(is_accept)]
-    z′.ℓπ.value[(!).(is_accept)] = z.ℓπ.value[(!).(is_accept)]
-    z′.ℓπ.gradient[:,(!).(is_accept)] = z.ℓπ.gradient[:,(!).(is_accept)]
-    z′.ℓκ.value[(!).(is_accept)] = z.ℓκ.value[(!).(is_accept)]
-    z′.ℓκ.gradient[:,(!).(is_accept)] = z.ℓκ.gradient[:,(!).(is_accept)]
-    # Reverse momentum variable to preserve reversibility
-    z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
-    stat = (
-        step_size=τ.integrator.ϵ,
-        n_steps=τ.n_steps,
-        is_accept=is_accept,
-        acceptance_rate=α,
-        log_density=z.ℓπ.value,
-        hamiltonian_energy=energy(z),
-       )
-    return Transition(z, stat)
+# Return the accepted phase point
+function accept_phasepoint!(z::T, z′::T, is_accept::Bool) where {T<:PhasePoint{<:AbstractVector}}
+    if is_accept
+        return z′
+    else
+        return z
+    end
+end
+function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:AbstractMatrix}}
+    # Revert unaccepted proposals in `z′`
+    if any((!).(is_accept))
+        z′.θ[:,(!).(is_accept)] = z.θ[:,(!).(is_accept)]
+        z′.r[:,(!).(is_accept)] = z.r[:,(!).(is_accept)]
+        z′.ℓπ.value[(!).(is_accept)] = z.ℓπ.value[(!).(is_accept)]
+        z′.ℓπ.gradient[:,(!).(is_accept)] = z.ℓπ.gradient[:,(!).(is_accept)]
+        z′.ℓκ.value[(!).(is_accept)] = z.ℓκ.value[(!).(is_accept)]
+        z′.ℓκ.gradient[:,(!).(is_accept)] = z.ℓκ.gradient[:,(!).(is_accept)]
+    end
+    # Always return `z′` as any unaccepted proposal is already reverted
+    # NOTE: This in place treatment of `z′` is for memory efficient consideration.
+    #       We can also copy `z′ and avoid mutating the original `z′`. But this is
+    #       not efficient and immutability of `z′` is not important in this local scope.
+    return z′
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
