@@ -2,6 +2,10 @@
 #### Numerical methods for simulating Hamiltonian trajectory.
 ####
 
+# TODO: The type `<:Tuple{Integer,Bool}` is introduced to address
+# https://github.com/TuringLang/Turing.jl/pull/941#issuecomment-549191813
+# We might want to simplify it to `Tuple{Int,Bool}` when we figured out
+# why the it behaves unexpected on Windos 32.
 
 abstract type AbstractIntegrator end
 
@@ -10,7 +14,7 @@ stat(::AbstractIntegrator) = NamedTuple()
 abstract type AbstractLeapfrog{T} <: AbstractIntegrator end
 
 jitter!(::AbstractRNG, lf::AbstractLeapfrog) = lf
-temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),Tuple{Int,Bool}}, ::Int) = r
+temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int) = r
 stat(lf::AbstractLeapfrog) = (step_size_bar=lf.ϵ, step_size=lf.ϵ)
 
 function step(
@@ -90,13 +94,13 @@ function Base.show(io::IO, l::TemperedLeapfrog)
 end
 
 """
-    temper(lf::TemperedLeapfrog, r, step::NamedTuple{(:i, :is_half),Tuple{Int,Bool}}, n_steps::Int)
+    temper(lf::TemperedLeapfrog, r, step::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, n_steps::Int)
 
 Tempering step. `step` is a named tuple with
 - `i` being the current leapfrog iteration and
 - `is_half` indicating whether or not it's (the first) half momentum/tempering step
 """
-function temper(lf::TemperedLeapfrog, r, step::NamedTuple{(:i, :is_half),Tuple{Int,Bool}}, n_steps::Int)
+function temper(lf::TemperedLeapfrog, r, step::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, n_steps::Int)
     i_temper = 2(step.i - 1) + 1 + step.is_half    # counter for half temper steps
     return i_temper <= n_steps ? r * sqrt(lf.α) : r / sqrt(lf.α)
 end
