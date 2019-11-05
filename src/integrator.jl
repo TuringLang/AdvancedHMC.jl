@@ -15,7 +15,7 @@ abstract type AbstractLeapfrog{T} <: AbstractIntegrator end
 
 jitter!(::AbstractRNG, lf::AbstractLeapfrog) = lf
 temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int) = r
-stat(lf::AbstractLeapfrog) = (step_size_bar=lf.ϵ, step_size=lf.ϵ)
+stat(lf::AbstractLeapfrog) = (step_size_bar=lf.ϵ, step_size=lf.ϵ) 
 
 function step(
     rng::AbstractRNG,
