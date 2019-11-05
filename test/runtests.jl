@@ -2,12 +2,12 @@ using Distributed, Test
 
 @testset "AdvancedHMC" begin
     tests = [
+        "Transition/trajectory",
         "Adaptation/precond",
         "hamiltonian",
         "integrator",
-        "trajectory",
+        "sampler",
         "models",
-        "hmc",
     ]
 
     res = map(tests) do t

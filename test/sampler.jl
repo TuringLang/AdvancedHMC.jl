@@ -25,7 +25,7 @@ n_adapts = 2_000
             :TemperedLeapfrog => TemperedLeapfrog(ϵ, 1.05),
         )
             @testset "$τsym" for (τsym, τ) in Dict(
-                :HMC => StaticTrajectory(lf, n_steps),
+                :HMC => HMC(lf, n_steps),
                 :HMCDA => HMCDA(lf, ϵ * n_steps),
                 :(NUTS{SliceTS,Original}) => NUTS{SliceTS,ClassicNoUTurn}(lf),
                 :(NUTS{SliceTS,Generalised}) => NUTS{SliceTS,GeneralisedNoUTurn}(lf),

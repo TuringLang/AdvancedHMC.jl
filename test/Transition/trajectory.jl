@@ -1,7 +1,7 @@
 using Test, AdvancedHMC, Random
 using Statistics: mean
 using LinearAlgebra: dot
-include("common.jl")
+include("../common.jl")
 
 ϵ = 0.01
 lf = Leapfrog(ϵ)
@@ -37,14 +37,14 @@ end
 
     ℓu = rand()
     n1 = 2
-    s1 = AdvancedHMC.SliceTS(z1, ℓu, n1) 
+    s1 = AdvancedHMC.SliceTS(z1, ℓu, n1)
     n2 = 1
-    s2 = AdvancedHMC.SliceTS(z2, ℓu, n2) 
+    s2 = AdvancedHMC.SliceTS(z2, ℓu, n2)
     s3 = AdvancedHMC.combine(rng, s1, s2)
     @test s3.ℓu == ℓu
     @test s3.n == n1 + n2
 
-    
+
     s3_θ = Vector(undef, n_samples)
     for i = 1:n_samples
         s3_θ[i] = AdvancedHMC.combine(rng, s1, s2).zcand.θ
@@ -75,10 +75,10 @@ end
 
     r1 = randn(D)
     z1 = AdvancedHMC.phasepoint(h, θ_init, r1)
-    c1 = AdvancedHMC.GeneralisedNoUTurn(z1) 
+    c1 = AdvancedHMC.GeneralisedNoUTurn(z1)
     r2 = randn(D)
     z2 = AdvancedHMC.phasepoint(h, θ_init, r2)
-    c2 = AdvancedHMC.GeneralisedNoUTurn(z2) 
+    c2 = AdvancedHMC.GeneralisedNoUTurn(z2)
     c3 = AdvancedHMC.combine(c1, c2)
     @test c3.rho == r1 + r2
 end
@@ -166,7 +166,7 @@ end
 
 function gettraj(rng, ϵ=0.1, n_steps=50)
     lf = Leapfrog(ϵ)
-    
+
     q_init = randn(rng, D)
     p_init = AdvancedHMC.rand(rng, h.metric)
     z = AdvancedHMC.phasepoint(h, q_init, p_init)
@@ -176,7 +176,7 @@ function gettraj(rng, ϵ=0.1, n_steps=50)
     for i = 2:n_steps
         traj_z[i] = AdvancedHMC.step(lf, h, traj_z[i-1])
     end
-    
+
     return traj_z
 end
 
@@ -186,7 +186,7 @@ function hand_isturn(z0, z1, rho, v=1)
     return s
 end
 
-ahmc_isturn(z0, z1, rho, v=1) = 
+ahmc_isturn(z0, z1, rho, v=1) =
     AdvancedHMC.isterminated(h, AdvancedHMC.BinaryTree(z0, z1, ClassicNoUTurn(), 0, 0)).dynamic
 
 function hand_isturn_generalised(z0, z1, rho, v=1)
@@ -194,7 +194,7 @@ function hand_isturn_generalised(z0, z1, rho, v=1)
     return s
 end
 
-ahmc_isturn_generalised(z0, z1, rho, v=1) = 
+ahmc_isturn_generalised(z0, z1, rho, v=1) =
     AdvancedHMC.isterminated(h, AdvancedHMC.BinaryTree(z0, z1, GeneralisedNoUTurn(rho), 0, 0)).dynamic
 
 @testset "ClassicNoUTurn" begin
@@ -207,7 +207,7 @@ ahmc_isturn_generalised(z0, z1, rho, v=1) =
             traj_θ = hcat(map(z -> z.θ, traj_z)...)
             traj_r = hcat(map(z -> z.r, traj_z)...)
             rho = cumsum(traj_r, dims=2)
-            
+
             ts_hand_isturn_fwd = hand_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
             ts_ahmc_isturn_fwd = ahmc_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
@@ -215,15 +215,15 @@ ahmc_isturn_generalised(z0, z1, rho, v=1) =
             ts_ahmc_isturn_generalised_fwd = ahmc_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
             @test ts_hand_isturn_fwd[2:end] == ts_ahmc_isturn_fwd[2:end] == ts_hand_isturn_generalised_fwd[2:end] == ts_ahmc_isturn_generalised_fwd[2:end]
-            
+
             if length(ARGS) > 0 && ARGS[1] == "--plot"
                 import PyPlot
                 fig = makeplot(
                     PyPlot,
                     traj_θ,
-                    ts_hand_isturn_fwd, 
+                    ts_hand_isturn_fwd,
                     ts_ahmc_isturn_fwd,
-                    ts_hand_isturn_generalised_fwd, 
+                    ts_hand_isturn_generalised_fwd,
                     ts_ahmc_isturn_generalised_fwd
                 )
                 fig.savefig("seed=$seed.png")
