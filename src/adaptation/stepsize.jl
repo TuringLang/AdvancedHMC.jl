@@ -66,6 +66,7 @@ Base.show(io::IO, a::NesterovDualAveraging) = print(io, "NesterovDualAveraging(�
 
 NesterovDualAveraging(γ::T, t_0::T, κ::T, δ::T, ϵ::T) where {T<:AbstractFloat} = NesterovDualAveraging(γ, t_0, κ, δ, DAState(ϵ))
 NesterovDualAveraging(δ::T, ϵ::T) where {T<:AbstractFloat} = NesterovDualAveraging(0.05, 10.0, 0.75, δ, ϵ)
+NesterovDualAveraging(δ::AbstractFloat, i::AbstractIntegrator) = NesterovDualAveraging(δ, nom_step_size(i))
 
 struct ManualSSAdaptor{T<:AbstractFloat} <:StepSizeAdaptor
     state :: MSSState{T}
