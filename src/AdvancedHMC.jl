@@ -31,6 +31,7 @@ include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 include("Transition/Transition.jl")
 export HMC, HMCDA, NUTS, SliceTS, MultinomialTS, ClassicNoUTurn, GeneralisedNoUTurn, find_good_eps
+export SpiralHMC
 
 include("diagnosis.jl")
 include("sampler.jl")
