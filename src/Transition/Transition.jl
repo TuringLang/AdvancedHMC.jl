@@ -35,6 +35,8 @@ Sampler carried during the building of the tree.
 """
 abstract type AbstractTrajectorySampler end
 
+struct LastTS <: AbstractTrajectorySampler end
+
 """
 Slice sampler carried during the building of the tree.
 It contains the slice variable and the number of acceptable condidates in the tree.

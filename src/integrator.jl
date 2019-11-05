@@ -14,13 +14,29 @@ abstract type AbstractLeapfrog{T} <: AbstractIntegrator end
 jitter(::AbstractRNG, ::AbstractLeapfrog, ϵ) = ϵ
 temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int) = r
 
+function step(lf::AbstractLeapfrog, ϵ, h::Hamiltonian, θ, r, value, gradient, n_steps::Int, i::Int)
+    # Tempering
+    r = temper(lf, r, (i=i, is_half=true), n_steps)
+    # Take a half leapfrog step for momentum variable
+    r = r - ϵ / 2 * gradient
+    # Take a full leapfrog step for position variable
+    ∇r = ∂H∂r(h, r)
+    θ = θ + ϵ * ∇r
+    # Take a half leapfrog step for momentum variable
+    @unpack value, gradient = ∂H∂θ(h, θ)
+    r = r - ϵ / 2 * gradient
+    # Tempering
+    r = temper(lf, r, (i=i, is_half=false), n_steps)
+    return θ, r, value, gradient
+end
+
 function step(
     rng::AbstractRNG,
     lf::AbstractLeapfrog{T},
     h::Hamiltonian,
     z::PhasePoint,
     n_steps::Int=1;
-    fwd::Bool=n_steps > 0   # simulate hamiltonian backward when n_steps < 0,
+    fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
 ) where {T<:AbstractFloat}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
     ϵ = fwd ? lf.ϵ : -lf.ϵ
@@ -29,18 +45,7 @@ function step(
     @unpack θ, r = z
     @unpack value, gradient = ∂H∂θ(h, θ)
     for i = 1:n_steps
-        # Tempering
-        r = temper(lf, r, (i=i, is_half=true), n_steps)
-        # Take a half leapfrog step for momentum variable
-        r = r - ϵ / 2 * gradient
-        # Take a full leapfrog step for position variable
-        ∇r = ∂H∂r(h, r)
-        θ = θ + ϵ * ∇r
-        # Take a half leapfrog step for momentum variable
-        @unpack value, gradient = ∂H∂θ(h, θ)
-        r = r - ϵ / 2 * gradient
-        # Tempering
-        r = temper(lf, r, (i=i, is_half=false), n_steps)
+        θ, r, value, gradient = step(lf, ϵ, h, θ, r, value, gradient, n_steps, i)
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
         !isfinite(z) && break
@@ -50,6 +55,35 @@ end
 
 function step(lf::AbstractLeapfrog, h::Hamiltonian, z::PhasePoint, n_steps::Int=1; fwd::Bool=n_steps > 0)
     return step(GLOBAL_RNG, lf, h, z, n_steps; fwd=fwd)
+end
+
+# TODO; merge some common codes
+function steps(
+    rng::AbstractRNG,
+    lf::AbstractLeapfrog{T},
+    h::Hamiltonian,
+    z::PhasePoint,
+    n_steps::Int=1;
+    fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
+) where {T<:AbstractFloat}
+    n_steps = abs(n_steps)  # to support `n_steps < 0` cases
+    ϵ = fwd ? lf.ϵ : -lf.ϵ
+    ϵ = jitter(rng, lf, ϵ)
+
+    @unpack θ, r = z
+    @unpack value, gradient = ∂H∂θ(h, θ)
+    zs = []
+    for i = 1:n_steps
+        θ, r, value, gradient = step(lf, ϵ, h, θ, r, value, gradient, n_steps, i)
+        # Create a new phase point by caching the logdensity and gradient
+        push!(zs, phasepoint(h, θ, r; ℓπ=DualValue(value, gradient)))
+        !isfinite(zs[end]) && break
+    end
+    return zs
+end
+
+function steps(lf::AbstractLeapfrog, h::Hamiltonian, z::PhasePoint, n_steps::Int=1; fwd::Bool=n_steps > 0)
+    return steps(GLOBAL_RNG, lf, h, z, n_steps; fwd=fwd)
 end
 
 struct Leapfrog{T<:AbstractFloat} <: AbstractLeapfrog{T}

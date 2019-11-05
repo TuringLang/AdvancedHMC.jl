@@ -25,7 +25,8 @@ n_adapts = 2_000
             :TemperedLeapfrog => TemperedLeapfrog(ϵ, 1.05),
         )
             @testset "$τsym" for (τsym, τ) in Dict(
-                :HMC => HMC(lf, n_steps),
+                :(HMC{LastTS}) => HMC{LastTS}(lf, n_steps),
+                :(HMC{MultinomialTS}) => HMC{MultinomialTS}(lf, n_steps),
                 :HMCDA => HMCDA(lf, ϵ * n_steps),
                 :(NUTS{SliceTS,Original}) => NUTS{SliceTS,ClassicNoUTurn}(lf),
                 :(NUTS{SliceTS,Generalised}) => NUTS{SliceTS,GeneralisedNoUTurn}(lf),
@@ -38,7 +39,7 @@ n_adapts = 2_000
                 end
 
                 # Skip adaptation tests with tempering
-                if lfsym == :TemperedLeapfrog
+                if lf isa TemperedLeapfrog
                     @info "Adaptation tests for $τsym with $lfsym on $metricsym are skipped"
                     continue
                 end
