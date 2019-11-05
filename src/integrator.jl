@@ -10,12 +10,14 @@
 abstract type AbstractIntegrator end
 
 stat(::AbstractIntegrator) = NamedTuple()
+nom_step_size(i::AbstractIntegrator) = step_size(i)
 
 abstract type AbstractLeapfrog{T} <: AbstractIntegrator end
 
+step_size(lf::AbstractLeapfrog) = lf.ϵ
 jitter!(::AbstractRNG, lf::AbstractLeapfrog) = lf
 temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int) = r
-stat(lf::AbstractLeapfrog) = (step_size_bar=lf.ϵ, step_size=lf.ϵ) 
+stat(lf::AbstractLeapfrog) = (step_size=step_size(lf), nom_step_size=nom_step_size(lf))
 
 function step(
     rng::AbstractRNG,
@@ -74,13 +76,13 @@ function Base.show(io::IO, l::JitteredLeapfrog)
     print(io, "JitteredLeapfrog(ϵ0=$(round(l.ϵ0; sigdigits=3)), jitter=$(round(l.jitter; sigdigits=3)), ϵ=$(round(l.ϵ; sigdigits=3)))")
 end
 
+nom_step_size(lf::JitteredLeapfrog) = lf.ϵ0
+
 # Jitter step size; ref: https://github.com/stan-dev/stan/blob/1bb054027b01326e66ec610e95ef9b2a60aa6bec/src/stan/mcmc/hmc/base_hmc.hpp#L177-L178
 function jitter!(rng::AbstractRNG, lf::JitteredLeapfrog)
     lf.ϵ = lf.ϵ0 * (1 + lf.jitter * (2 * rand(rng) - 1))
     return lf
 end
-
-stat(lf::JitteredLeapfrog) = (step_size_bar=lf.ϵ0, step_size=lf.ϵ)
 
 ### Tempering
 

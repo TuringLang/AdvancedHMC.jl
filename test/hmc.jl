@@ -13,7 +13,7 @@ n_samples = 12_000
 n_adapts = 2_000
 
 function test_stats(::Union{StaticTrajectory,HMCDA}, stats, n_adapts)
-    for name in (:step_size, :step_size_bar, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :hamiltonian_energy_error, :is_adapt)
+    for name in (:step_size, :nom_step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :hamiltonian_energy_error, :is_adapt)
         @test all(map(s -> in(name, propertynames(s)), stats))
     end
     is_adapts = getproperty.(stats, :is_adapt)
@@ -22,7 +22,7 @@ function test_stats(::Union{StaticTrajectory,HMCDA}, stats, n_adapts)
 end
 
 function test_stats(::NUTS, stats, n_adapts)
-    for name in (:step_size, :step_size_bar, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :hamiltonian_energy_error, :is_adapt, :max_hamiltonian_energy_error, :tree_depth, :numerical_error)
+    for name in (:step_size, :nom_step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :hamiltonian_energy_error, :is_adapt, :max_hamiltonian_energy_error, :tree_depth, :numerical_error)
         @test all(map(s -> in(name, propertynames(s)), stats))
     end
     is_adapts = getproperty.(stats, :is_adapt)
