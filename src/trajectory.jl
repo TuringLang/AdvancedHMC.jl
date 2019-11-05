@@ -160,7 +160,6 @@ function transition(
         z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
     end
     H = energy(z)
-    istat = stat(τ.integrator)
     tstat = merge(
         (n_steps=τ.n_steps,
          is_accept=is_accept,
@@ -168,7 +167,7 @@ function transition(
          log_density=z.ℓπ.value,
          hamiltonian_energy=H,
          hamiltonian_energy_error=H - H0),
-        istat
+        stat(τ.integrator)
     )
     return Transition(z, tstat)
 end
@@ -457,7 +456,6 @@ function transition(
     end
 
     H = energy(zcand)
-    istat = stat(τ.integrator)
     tstat = merge(
         (n_steps=tree.nα,
          is_accept=true,
@@ -468,7 +466,7 @@ function transition(
          max_hamiltonian_energy_error=tree.ΔH_max,
          tree_depth=j,
          numerical_error=termination.numerical),
-         istat
+         stat(τ.integrator)
     )
 
     return Transition(zcand, tstat)
