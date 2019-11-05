@@ -29,7 +29,7 @@ function step(
 ) where {T<:AbstractFloat}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
     jitter!(rng, lf)
-    ϵ = fwd ? lf.ϵ : -lf.ϵ
+    ϵ = fwd ? step_size(lf) : -step_size(lf)
 
     @unpack θ, r = z
     @unpack value, gradient = ∂H∂θ(h, θ)

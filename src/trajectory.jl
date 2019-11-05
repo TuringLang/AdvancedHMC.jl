@@ -190,7 +190,7 @@ function transition(
     z::PhasePoint
 ) where {T<:Real}
     # Create the corresponding static τ
-    n_steps = max(1, floor(Int, τ.λ / τ.integrator.ϵ))
+    n_steps = max(1, floor(Int, τ.λ / nom_step_size(τ.integrator)))
     static_τ = StaticTrajectory(τ.integrator, n_steps)
     return transition(rng, static_τ, h, z)
 end
