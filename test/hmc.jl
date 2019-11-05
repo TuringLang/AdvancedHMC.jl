@@ -63,15 +63,15 @@ end
 
                 @testset "$adaptorsym" for (adaptorsym, adaptor) in Dict(
                     :PreconditionerOnly => Preconditioner(metric),
-                    :NesterovDualAveragingOnly => NesterovDualAveraging(0.8, τ.integrator.ϵ),
+                    :NesterovDualAveragingOnly => NesterovDualAveraging(0.8, τ.integrator),
                     :NaiveHMCAdaptor => NaiveHMCAdaptor(
                         Preconditioner(metric),
-                        NesterovDualAveraging(0.8, τ.integrator.ϵ),
+                        NesterovDualAveraging(0.8, τ.integrator),
                     ),
                     :StanHMCAdaptor => StanHMCAdaptor(
                         n_adapts,
                         Preconditioner(metric),
-                        NesterovDualAveraging(0.8, τ.integrator.ϵ),
+                        NesterovDualAveraging(0.8, τ.integrator),
                     ),
                 )
                     # For `Preconditioner`, we use the pre-defined step size as the method cannot adapt the step size.
@@ -93,7 +93,7 @@ end
     adaptor = StanHMCAdaptor(
         n_adapts,
         Preconditioner(metric),
-        NesterovDualAveraging(0.8, τ.integrator.ϵ),
+        NesterovDualAveraging(0.8, τ.integrator),
     )
     samples, stats = sample(h, τ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false, drop_warmup=true)
     @test length(samples) == n_samples - n_adapts
