@@ -2,7 +2,7 @@ using Distributed, Test
 
 @testset "AdvancedHMC" begin
     tests = [
-        "adaptation/precond",
+        "Adaptation/precond",
         "hamiltonian",
         "integrator",
         "trajectory",

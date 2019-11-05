@@ -19,7 +19,7 @@ import StatsBase: sample
 # θ: position variables / model parameters
 # r: momentum variables
 
-include("adaptation/Adaptation.jl")
+include("Adaptation/Adaptation.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
 export NesterovDualAveraging, Preconditioner, NaiveHMCAdaptor, StanHMCAdaptor
 using .Adaptation
