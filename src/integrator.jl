@@ -12,7 +12,22 @@ abstract type AbstractIntegrator end
 NesterovDualAveraging(δ::AbstractFloat, i::AbstractIntegrator) = NesterovDualAveraging(δ, nom_step_size(i))
 
 stat(::AbstractIntegrator) = NamedTuple()
+
+"""
+    nom_step_size(::AbstractIntegrator)
+
+Get the nominal integration step size. The current integration step size may
+differ from this, for example if the step size is jittered. Nominal step size is
+usually used in adaptation.
+"""
 nom_step_size(i::AbstractIntegrator) = step_size(i)
+
+"""
+    step_size(::AbstractIntegrator)
+
+Get the current integration step size.
+"""
+function step_size end
 
 abstract type AbstractLeapfrog{T} <: AbstractIntegrator end
 
