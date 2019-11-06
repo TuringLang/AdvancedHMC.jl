@@ -67,9 +67,9 @@ Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round(l.ϵ; sigdigits=
 ### Jittering
 
 mutable struct JitteredLeapfrog{T<:AbstractFloat} <: AbstractLeapfrog{T}
-    ϵ0      ::  T
+    ϵ0      ::  T  # nominal (unjittered) step size
     jitter  ::  T
-    ϵ       ::  T
+    ϵ       ::  T  # current (jittered) step size
 end
 
 JitteredLeapfrog(ϵ0, jitter) = JitteredLeapfrog(ϵ0, jitter, ϵ0)
