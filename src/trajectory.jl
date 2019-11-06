@@ -194,8 +194,7 @@ function transition(
 ) where {T<:Real}
     # Create the corresponding static τ
     n_steps = max(1, floor(Int, τ.λ / nom_step_size(τ.integrator)))
-    integrator = jitter(rng, τ.integrator)
-    static_τ = StaticTrajectory(integrator, n_steps)
+    static_τ = StaticTrajectory(τ.integrator, n_steps)
     return transition(rng, static_τ, h, z)
 end
 
