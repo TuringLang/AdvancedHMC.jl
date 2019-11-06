@@ -54,7 +54,8 @@ end
 
 function samplecand(rng, τ::HMC{MultinomialTS}, h, z)
     zs = steps(rng, τ.integrator, h, z, τ.n_steps)
-    ℓws = energy.(zs)
+    ℓws = -energy.(zs)
     ℓws = ℓws .= maximum(ℓws)
-    return randcat(rng, zs, exp.(ℓws))
+    p_unorm = exp.(ℓws)
+    return randcat(rng, zs, p_unorm / sum(p_unorm))
 end
