@@ -152,7 +152,8 @@ function transition(
     z::PhasePoint
 ) where {T<:Real}
     H0 = energy(z)
-    z′ = step(rng, τ.integrator, h, z, τ.n_steps)
+    integrator = jitter(rng, τ.integrator)
+    z′ = step(rng, integrator, h, z, τ.n_steps)
     # Accept via MH criteria
     is_accept, α = mh_accept_ratio(rng, H0, energy(z′))
     if is_accept
@@ -169,7 +170,7 @@ function transition(
          hamiltonian_energy=H,
          hamiltonian_energy_error=H - H0
         ),
-        stat(τ.integrator)
+        stat(integrator)
     )
     return Transition(z, tstat)
 end
@@ -193,7 +194,8 @@ function transition(
 ) where {T<:Real}
     # Create the corresponding static τ
     n_steps = max(1, floor(Int, τ.λ / nom_step_size(τ.integrator)))
-    static_τ = StaticTrajectory(τ.integrator, n_steps)
+    integrator = jitter(rng, τ.integrator)
+    static_τ = StaticTrajectory(integrator, n_steps)
     return transition(rng, static_τ, h, z)
 end
 
@@ -428,6 +430,9 @@ function transition(
     sampler = S(rng, z0)
     termination = Termination(false, false)
     zcand = z0
+
+    integrator = jitter(rng, τ.integrator)
+    τ = reconstruct(τ, integrator=integrator)
 
     j = 0
     while !isterminated(termination) && j < τ.max_depth

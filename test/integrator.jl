@@ -1,4 +1,4 @@
-using Test, AdvancedHMC
+using Test, Random, AdvancedHMC
 include("common.jl")
 
 ϵ = 0.01
@@ -36,6 +36,17 @@ end
 #     @test θ_Turing ≈ z_AHMC.θ atol=DETATOL
 #     @test r_Turing ≈ z_AHMC.r atol=DETATOL
 # end
+
+@testset "jitter" begin
+    ϵ0 = 0.1
+    lf = JitteredLeapfrog(ϵ0, 0.5)
+    @test lf.ϵ0 == ϵ0
+    @test lf.ϵ == ϵ0
+    
+    lf2 = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
+    @test lf2.ϵ0 == ϵ0
+    @test lf2.ϵ != ϵ0
+end
 
 using LinearAlgebra: dot
 using Statistics: mean
