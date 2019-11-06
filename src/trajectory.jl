@@ -161,12 +161,14 @@ function transition(
     end
     H = energy(z)
     tstat = merge(
-        (n_steps=τ.n_steps,
+        (
+         n_steps=τ.n_steps,
          is_accept=is_accept,
          acceptance_rate=α,
          log_density=z.ℓπ.value,
          hamiltonian_energy=H,
-         hamiltonian_energy_error=H - H0),
+         hamiltonian_energy_error=H - H0
+        ),
         stat(τ.integrator)
     )
     return Transition(z, tstat)
@@ -457,7 +459,8 @@ function transition(
 
     H = energy(zcand)
     tstat = merge(
-        (n_steps=tree.nα,
+        (
+         n_steps=tree.nα,
          is_accept=true,
          acceptance_rate=tree.sum_α / tree.nα,
          log_density=zcand.ℓπ.value,
@@ -465,8 +468,9 @@ function transition(
          hamiltonian_energy_error=H - H0,
          max_hamiltonian_energy_error=tree.ΔH_max,
          tree_depth=j,
-         numerical_error=termination.numerical),
-         stat(τ.integrator)
+         numerical_error=termination.numerical,
+        ),
+        stat(τ.integrator)
     )
 
     return Transition(zcand, tstat)
