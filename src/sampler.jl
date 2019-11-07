@@ -136,10 +136,12 @@ function sample(
         # Make a step
         t = step(rng, h, τ, t.z)
         # Adapt h and τ; what mutable is the adaptor
-        h, τ, isadapted = adapt!(h, τ, adaptor, i, n_adapts, t.z.θ, t.stat.acceptance_rate)
+        tstat = stat(t)
+        h, τ, isadapted = adapt!(h, τ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
+        tstat = merge(tstat, (is_adapt=isadapted,))
         # Update progress meter
         if progress
-            pm_next!(pm, t.stat, i, h.metric)
+            pm_next!(pm, tstat, i, h.metric)
         # Report finish of adapation
         elseif verbose && isadapted && i == n_adapts
             @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
@@ -147,7 +149,7 @@ function sample(
         # Store sample
         if !drop_warmup || i > n_adapts
             j = i - drop_warmup * n_adapts
-            θs[j], stats[j] = t.z.θ, t.stat
+            θs[j], stats[j] = t.z.θ, tstat
         end
     end
     # Report end of sampling

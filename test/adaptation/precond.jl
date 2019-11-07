@@ -103,7 +103,7 @@ let D=10
         adaptor = StanHMCAdaptor(
             n_adapts, 
             Preconditioner(metric), 
-            NesterovDualAveraging(0.8, prop.integrator.ϵ)
+            NesterovDualAveraging(0.8, prop.integrator)
         )
         samples, stats = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; verbose=false)
         return (samples=samples, stats=stats, adaptor=adaptor)
