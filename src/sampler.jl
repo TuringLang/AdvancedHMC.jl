@@ -6,14 +6,14 @@ function sample_init(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}) wh
     # Ensure h.metric has the same dim as θ.
     h = update(h, θ)
     # Initial transition
-    t = Transition(phasepoint(rng, θ, h), NamedTuple())
+    t = Transition(phasepoint(h, θ, rand(rng, h.metric)), NamedTuple())
     return h, t
 end
 
 # A step is a momentum refreshment plus a transition
-function step(rng::AbstractRNG, h::Hamiltonian, τ::AbstractProposal, z::PhasePoint)
+function step(rng::AbstractRNG, h::Hamiltonian, τ::AbstractProposal, z::PhasePoint, α::AbstractFloat)
     # Refresh momentum
-    z = refresh(rng, z, h)
+    z = refresh(rng, z, h, α)
     # Make transition
     return transition(rng, τ, h, z)
 end
@@ -72,21 +72,22 @@ sample(
     n_samples::Int,
     adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
+    α::AbstractFloat=zero(T),
     drop_warmup=false,
     verbose::Bool=true,
     progress::Bool=false,
     (pm_next!)::Function=pm_next!
 ) where {T<:Real} = sample(
-    GLOBAL_RNG, 
-    h, 
-    τ, 
-    θ, 
-    n_samples, 
-    adaptor, 
-    n_adapts; 
+    GLOBAL_RNG,
+    h,
+    τ,
+    θ,
+    n_samples,
+    adaptor,
+    n_adapts;
     drop_warmup=drop_warmup,
-    verbose=verbose, 
-    progress=progress, 
+    verbose=verbose,
+    progress=progress,
     (pm_next!)=pm_next!,
 )
 
@@ -119,6 +120,7 @@ function sample(
     n_samples::Int,
     adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
+    α::AbstractFloat=zero(T),
     drop_warmup=false,
     verbose::Bool=true,
     progress::Bool=false,
@@ -134,7 +136,7 @@ function sample(
     pm = progress ? ProgressMeter.Progress(n_samples, desc="Sampling", barlen=31) : nothing
     time = @elapsed for i = 1:n_samples
         # Make a step
-        t = step(rng, h, τ, t.z)
+        t = step(rng, h, τ, t.z, α)
         # Adapt h and τ; what mutable is the adaptor
         h, τ, isadapted = adapt!(h, τ, adaptor, i, n_adapts, t.z.θ, t.stat.acceptance_rate)
         # Update progress meter
@@ -152,7 +154,7 @@ function sample(
     end
     # Report end of sampling
     if verbose
-        EBFMI_est = EBFMI(map(s -> s.hamiltonian_energy, stats)) 
+        EBFMI_est = EBFMI(map(s -> s.hamiltonian_energy, stats))
         average_acceptance_rate = mean(map(s -> s.acceptance_rate, stats))
         @info "Finished $n_samples sampling steps in $time (s)" h τ EBFMI_est average_acceptance_rate
     end

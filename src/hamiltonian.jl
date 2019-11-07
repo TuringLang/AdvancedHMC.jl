@@ -33,7 +33,7 @@ struct PhasePoint{T<:AbstractVector, V<:DualValue}
         @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
         isfiniteθ, isfiniter, isfiniteℓπ, isfiniteℓκ = isfinite(θ), isfinite(r), isfinite(ℓπ), isfinite(ℓκ)
         if !(isfiniteθ && isfiniter && isfiniteℓπ && isfiniteℓκ)
-            @warn "The current proposal will be rejected due to numerical error(s)." isfiniteθ isfiniter isfiniteℓπ isfiniteℓκ
+            @debug "The current proposal will be rejected due to numerical error(s)." isfiniteθ isfiniter isfiniteℓπ isfiniteℓκ
             ℓπ = DualValue(-Inf, ℓπ.gradient)
             ℓκ = DualValue(-Inf, ℓκ.gradient)
         end
@@ -104,14 +104,9 @@ energy(args...) = -neg_energy(args...)
 #### Momentum refreshment
 ####
 
-phasepoint(
-    rng::AbstractRNG, 
-    θ::AbstractVector{T},
-    h::Hamiltonian
-) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric))
-
 refresh(
     rng::AbstractRNG,
     z::PhasePoint,
-    h::Hamiltonian
-) = phasepoint(h, z.θ, rand(rng, h.metric))
+    h::Hamiltonian,
+    α::AbstractFloat
+) = phasepoint(h, z.θ, α * z.r + (1 - α^2) * rand(rng, h.metric))
