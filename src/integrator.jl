@@ -119,6 +119,6 @@ Tempering step. `step` is a named tuple with
 - `is_half` indicating whether or not it's (the first) half momentum/tempering step
 """
 function temper(lf::TemperedLeapfrog, r, step::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, n_steps::Int)
-    i_temper = 2(step.i - 1) + 1 + step.is_half    # counter for half temper steps
+    i_temper = 2(step.i - 1) + 1 + !step.is_half    # counter for half temper steps
     return i_temper <= n_steps ? r * sqrt(lf.α) : r / sqrt(lf.α)
 end
