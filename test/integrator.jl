@@ -42,10 +42,28 @@ end
     lf = JitteredLeapfrog(ϵ0, 0.5)
     @test lf.ϵ0 == ϵ0
     @test lf.ϵ == ϵ0
-    
+
     lf2 = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
     @test lf2.ϵ0 == ϵ0
     @test lf2.ϵ != ϵ0
+end
+
+@testset "temper" begin
+    αsqrt = 2.0
+    lf = TemperedLeapfrog(ϵ, αsqrt ^ 2)
+    r = ones(5)
+    r1 = AdvancedHMC.temper(lf, r, (i=1, is_half=true), 3)
+    r2 = AdvancedHMC.temper(lf, r, (i=1, is_half=false), 3)
+    r3 = AdvancedHMC.temper(lf, r, (i=2, is_half=true), 3)
+    r4 = AdvancedHMC.temper(lf, r, (i=2, is_half=false), 3)
+    r5 = AdvancedHMC.temper(lf, r, (i=3, is_half=true), 3)
+    r6 = AdvancedHMC.temper(lf, r, (i=4, is_half=false), 3)
+    @test r1 == αsqrt * ones(5)
+    @test r2 == αsqrt * ones(5)
+    @test r3 == αsqrt * ones(5)
+    @test r4 == inv(αsqrt) * ones(5)
+    @test r5 == inv(αsqrt) * ones(5)
+    @test r6 == inv(αsqrt) * ones(5)
 end
 
 using LinearAlgebra: dot
