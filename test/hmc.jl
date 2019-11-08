@@ -6,7 +6,7 @@ using Parameters: reconstruct
 using Statistics: mean, var, cov
 include("common.jl")
 
-θ_init = randn(D)
+θ_init = rand(D)
 ϵ = 0.1
 n_steps = 20
 n_samples = 12_000
