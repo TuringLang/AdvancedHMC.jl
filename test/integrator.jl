@@ -57,13 +57,15 @@ end
     r3 = AdvancedHMC.temper(lf, r, (i=2, is_half=true), 3)
     r4 = AdvancedHMC.temper(lf, r, (i=2, is_half=false), 3)
     r5 = AdvancedHMC.temper(lf, r, (i=3, is_half=true), 3)
-    r6 = AdvancedHMC.temper(lf, r, (i=4, is_half=false), 3)
+    r6 = AdvancedHMC.temper(lf, r, (i=3, is_half=false), 3)
     @test r1 == αsqrt * ones(5)
     @test r2 == αsqrt * ones(5)
     @test r3 == αsqrt * ones(5)
     @test r4 == inv(αsqrt) * ones(5)
     @test r5 == inv(αsqrt) * ones(5)
     @test r6 == inv(αsqrt) * ones(5)
+    @test_throws BoundsError AdvancedHMC.temper(lf, r, (i=4, is_half=false), 3)
+
 end
 
 using LinearAlgebra: dot
