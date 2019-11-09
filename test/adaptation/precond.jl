@@ -1,4 +1,4 @@
-using Test, LinearAlgebra, Distributions, AdvancedHMC
+using Test, LinearAlgebra, Distributions, AdvancedHMC, Random
 using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, add_sample!, get_var, get_cov, reset!
 using DiffResults: GradientResult, value, gradient
 using ForwardDiff: gradient!
@@ -110,6 +110,7 @@ let D=10
     end
 
     @testset "Adapted mass v.s. true variance" begin
+        Random.seed!(123)
         n_tests = 5
 
         @testset "DiagEuclideanMetric" begin
