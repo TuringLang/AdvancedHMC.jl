@@ -1,6 +1,6 @@
 name = "AdvancedHMC"
 uuid = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
-version = "0.2.12"
+version = "0.2.13"
 
 [deps]
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
@@ -15,14 +15,14 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsFuns = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 
 [compat]
-julia = "1"
 ArgCheck = "1"
 InplaceOps = "0.3"
 LazyArrays = "0.9, 0.10, 0.11, 0.12, 0.13"
 Parameters = "0.10, 0.11, 0.12"
 ProgressMeter = "1"
 StatsBase = "0.31, 0.32"
-StatsFuns = "0.8"
+StatsFuns = "0.8, 0.9"
+julia = "1"
 
 [extras]
 DiffResults = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
