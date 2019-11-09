@@ -1,4 +1,4 @@
-using Test, LinearAlgebra, Distributions, AdvancedHMC
+using Test, LinearAlgebra, Distributions, AdvancedHMC, Random
 using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, add_sample!, get_var, get_cov, reset!
 using DiffResults: GradientResult, value, gradient
 using ForwardDiff: gradient!
@@ -103,15 +103,16 @@ let D=10
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
         adaptor = StanHMCAdaptor(
-            n_adapts,
+            n_adapts, 
             Preconditioner(metric),
-            NesterovDualAveraging(0.8, prop.integrator.ϵ)
+            NesterovDualAveraging(0.8, prop.integrator)
         )
         samples, stats = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; verbose=false)
         return (samples=samples, stats=stats, adaptor=adaptor)
     end
 
     @testset "Adapted mass v.s. true variance" begin
+        Random.seed!(123)
         n_tests = 5
 
         @testset "DiagEuclideanMetric" begin
