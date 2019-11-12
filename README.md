@@ -1,17 +1,21 @@
-# Efficient HMC implementations in Julia
+# AdvancedHMC.jl: a robust, modular and efficient implementation of advanced HMC algorithms
 
-[![Build Status](https://travis-ci.org/TuringLang/AdvancedHMC.jl.svg?branch=master)](https://travis-ci.org/TuringLang/AdvancedHMC.jl) [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
+[![Build Status](https://travis-ci.org/TuringLang/AdvancedHMC.jl.svg?branch=master)](https://travis-ci.org/TuringLang/AdvancedHMC.jl)
+[![DOI](https://zenodo.org/badge/72657907.svg)](https://zenodo.org/badge/latestdoi/72657907)
+[![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
 
-**The code from this repository is used to implement HMC samplers in [Turing.jl](https://github.com/TuringLang/Turing.jl).**
+AdvancedHMC.jl is originally designed to implement HMC samplers in [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming language (PPL) in Julia. 
+If you are more interested in using AdvancedHMC.jl via a PPL, please check it!
 
 **NEWS**
-- We presented a poster for AdvancedHMC.jl at StanCon 2019. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
+- We will present AdvancedHMC.jl in AABC 2019 (Vancouver, Canada).
+- We presented a poster for AdvancedHMC.jl in StanCon 2019 (Cambridge, UK). ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
-**API CHANGE**
-- [v0.2.8] Two exported types are renamed: `Multinomial` -> `MultinomialTS` and `Slice` -> `SliceTS`.
-- [v0.2.0] The gradient function passed to `Hamiltonian` is supposed to return a value-gradient tuple now.
+**API CHANGES**
+- Two exported types are renamed: `Multinomial` -> `MultinomialTS` and `Slice` -> `SliceTS`. (v0.2.8)
+- The gradient function passed to `Hamiltonian` is supposed to return a value-gradient tuple now. (v0.2.0)
 
-## Minimal examples - sampling from a multivariate Gaussian using NUTS
+## A minimal example - sampling from a multivariate Gaussian using NUTS
 
 ```julia
 ### Define the target distribution and its gradient
@@ -36,14 +40,18 @@ using AdvancedHMC
 n_samples, n_adapts = 10_000, 2_000
 
 # Draw a random starting points
-θ_init = randn(D)
+θ_init = rand(D)
 
 # Define metric space, Hamiltonian, sampling method and adaptor
 metric = DiagEuclideanMetric(D)
 h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
 int = Leapfrog(find_good_eps(h, θ_init))
 prop = NUTS{MultinomialTS,GeneralisedNoUTurn}(int)
-adaptor = StanHMCAdaptor(n_adapts, Preconditioner(metric), NesterovDualAveraging(0.8, int))
+adaptor = StanHMCAdaptor(
+    n_adapts, 
+    Preconditioner(metric), 
+    NesterovDualAveraging(0.8, int)
+)
 
 # Draw samples via simulating Hamiltonian dynamics
 # - `samples` will store the samples
@@ -51,19 +59,84 @@ adaptor = StanHMCAdaptor(n_adapts, Preconditioner(metric), NesterovDualAveraging
 samples, stats = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; progress=true)
 ```
 
-## Reference
+## Supported HMC components
 
-1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([pdf](https://arxiv.org/pdf/1206.1901))
+AdvancedHMC.jl supports various types of metric space, leapfrog integrators, proposal methods and adaptors beyond the minimal example above. The minimal example above is expected to work with those components chosen from the supported list below.
+
+Metric space (`metric`)
+
+- Unit metric: `UnitEuclideanMetric(dim)` 
+- Diagonal metric: `DiagEuclideanMetric(dim)`
+- Dense metric: `DenseEuclideanMetric(dim)` 
+
+where `dim` is the dimension.
+
+Integrator (`int`)
+
+- Ordinary leapfrog integrator: `Leapfrog(ϵ)`
+- Jittered leapfrog integrator with jitter rate `n`: `JitteredLeapfrog(ϵ, n)`
+- Tempered leapfrog integrator with tempering rate `a`: `TemperedLeapfrog(ϵ, a)`
+
+where `ϵ` is the step size.
+
+Proposal (`prop`)
+
+- Static HMC with a fixed number of steps (`n_steps`): `HMC(int, n_steps)`
+- HMC with a fixed total trajectory length (`len_traj`): `HMCDA(int, len_traj)` 
+- Original NUTS with slice sampling: `NUTS{SliceTS,ClassicNoUTurn}(int)`
+- Generalised NUTS with slice sampling: `NUTS{SliceTS,GeneralisedNoUTurn}(int)`
+- Original NUTS with multinomial sampling: `NUTS{MultinomialTS,ClassicNoUTurn}(int)`
+- Generalised NUTS with multinomial sampling: `NUTS{MultinomialTS,GeneralisedNoUTurn}(int)`
+
+where `int` is the integrator used.
+
+Adaptor (`adaptor`)
+
+- Preconditioning on metric space `metric`: `pc = Preconditioner(metric)`
+- Nesterov's dual averaging with target acceptance rate `δ` on integrator `int`: `da = NesterovDualAveraging(δ, int)`
+- Combine the two above *naively*: `NaiveHMCAdaptor(pc, da)`
+- Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(n_adapats, pc, da)` where `n_adapats` is the total number of adaptation steps will be used.
+
+All the combinations are tested in [this file](https://github.com/TuringLang/AdvancedHMC.jl/blob/master/test/hmc.jl) except from using tempered leapfrog integrator together with adaptation, which we found unstable empirically.
+
+## The `sample` function signature in detail
+
+```julia
+sample(
+    rng::AbstractRNG,
+    h::Hamiltonian,
+    τ::AbstractProposal,
+    θ::AbstractVector{<:AbstractFloat},
+    n_samples::Int,
+    adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
+    n_adapts::Int=min(div(n_samples, 10), 1_000);
+    drop_warmup::Bool=false,
+    verbose::Bool=true,
+    progress::Bool=false
+)
+```
+
+Sample `n_samples` samples using the proposal `τ` under Hamiltonian `h`
+
+- The randomness is controlled by `rng`. 
+    - If `rng` is not provided, `GLOBAL_RNG` will be used.
+- The initial point is given by `θ`.
+- The adaptor is set by `adaptor`, for which the default is no adaptation.
+    - It will perform `n_adapts` steps of adaptation, for which the default is the minimum of `1_000` and 10% of `n_samples`.
+- `drop_warmup` controls to drop the samples during adaptation phase or not.
+- `verbose` controls the verbosity.
+- `progress` controls whether to show the progress meter or not.
+
+## References
+
+1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
 
 2. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
 
-3. Girolami, M., & Calderhead, B. (2011). Riemann manifold Langevin and Hamiltonian Monte Carlo methods. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 73(2), 123-214. ([link](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2010.00765.x))
+3. Girolami, M., & Calderhead, B. (2011). Riemann manifold Langevin and Hamiltonian Monte Carlo methods. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 73(2), 123-214. ([arXiv](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2010.00765.x))
 
 4. Betancourt, M. J., Byrne, S., & Girolami, M. (2014). Optimizing the integrator step size for Hamiltonian Monte Carlo. [arXiv preprint arXiv:1411.6669](https://arxiv.org/pdf/1411.6669).
 
 5. Betancourt, M. (2016). Identifying the optimal integration time in Hamiltonian Monte Carlo. [arXiv preprint arXiv:1601.00225](https://arxiv.org/abs/1601.00225).
 
-6. Hoffman, M. D., & Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623. ([link][1])
-
-
-[1]: http://arxiv.org/abs/1111.4246
+6. Hoffman, M. D., & Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623. ([arXiv](http://arxiv.org/abs/1111.4246))
