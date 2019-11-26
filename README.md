@@ -130,6 +130,9 @@ Sample `n_samples` samples using the proposal `τ` under Hamiltonian `h`
 - `verbose` controls the verbosity.
 - `progress` controls whether to show the progress meter or not.
 
+## Citing AdvancedHMC.jl ##
+If you use **AdvancedHMC.j** for your own research, please consider citing the following publication: Hong Ge, Kai Xu, and Zoubin Ghahramani: **Turing: a language for flexible probabilistic inference.** AISTATS 2018 [pdf](http://proceedings.mlr.press/v84/ge18b.html) [bibtex](https://github.com/TuringLang/Turing.jl/blob/master/CITATION.bib)
+
 ## References
 
 1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
