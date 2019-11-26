@@ -4,11 +4,12 @@
 [![DOI](https://zenodo.org/badge/72657907.svg)](https://zenodo.org/badge/latestdoi/72657907)
 [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
 
-AdvancedHMC.jl is originally designed to implement HMC samplers in [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming language (PPL) in Julia. 
-If you are more interested in using AdvancedHMC.jl via a PPL, please check it!
+`AdvancedHMC.jl` is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia. 
+If you are interested in using `AdvancedHMC.jl` through a probabilistic programming language, please check it out!
+
 
 **NEWS**
-- We will present AdvancedHMC.jl in AABC 2019 (Vancouver, Canada).
+- We will present AdvancedHMC.jl in [AABI](http://approximateinference.org/) 2019 (Vancouver, Canada).
 - We presented a poster for AdvancedHMC.jl in StanCon 2019 (Cambridge, UK). ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
 **API CHANGES**
@@ -59,27 +60,29 @@ adaptor = StanHMCAdaptor(
 samples, stats = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; progress=true)
 ```
 
-## Supported HMC components
+## API and supported HMC algorithms
 
-AdvancedHMC.jl supports various types of metric space, leapfrog integrators, proposal methods and adaptors beyond the minimal example above. The minimal example above is expected to work with those components chosen from the supported list below.
+An important design goal of `AdvancedHMC.jl` is to be modular, and support algorithmic research on HMC. 
+This modularity means that different HMC variants can be easily constructed by composing various components, such as preconditioning metric (i.e. mass matrix), leapfrog integrators,  trajectories (static or dynamic), and adaption schemes etc. 
+The minimal example above can be modified to suit particular inference problems by picking components from the list below.
 
-Metric space (`metric`)
+### Preconditioning matrix (`metric`)
 
 - Unit metric: `UnitEuclideanMetric(dim)` 
 - Diagonal metric: `DiagEuclideanMetric(dim)`
 - Dense metric: `DenseEuclideanMetric(dim)` 
 
-where `dim` is the dimension.
+where `dim` is the dimensionality of the sampling space.
 
-Integrator (`int`)
+### Integrator (`int`)
 
 - Ordinary leapfrog integrator: `Leapfrog(ϵ)`
 - Jittered leapfrog integrator with jitter rate `n`: `JitteredLeapfrog(ϵ, n)`
 - Tempered leapfrog integrator with tempering rate `a`: `TemperedLeapfrog(ϵ, a)`
 
-where `ϵ` is the step size.
+where `ϵ` is the step size of leapfrog integration.
 
-Proposal (`prop`)
+### Proposal (`prop`)
 
 - Static HMC with a fixed number of steps (`n_steps`): `HMC(int, n_steps)`
 - HMC with a fixed total trajectory length (`len_traj`): `HMCDA(int, len_traj)` 
@@ -90,12 +93,12 @@ Proposal (`prop`)
 
 where `int` is the integrator used.
 
-Adaptor (`adaptor`)
+### Adaptor (`adaptor`)
 
 - Preconditioning on metric space `metric`: `pc = Preconditioner(metric)`
 - Nesterov's dual averaging with target acceptance rate `δ` on integrator `int`: `da = NesterovDualAveraging(δ, int)`
 - Combine the two above *naively*: `NaiveHMCAdaptor(pc, da)`
-- Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(n_adapats, pc, da)` where `n_adapats` is the total number of adaptation steps will be used.
+- Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(n_adapts, pc, da)` where `n_adapts` is the total number of adaptation steps will be used.
 
 All the combinations are tested in [this file](https://github.com/TuringLang/AdvancedHMC.jl/blob/master/test/hmc.jl) except from using tempered leapfrog integrator together with adaptation, which we found unstable empirically.
 
@@ -123,7 +126,7 @@ Sample `n_samples` samples using the proposal `τ` under Hamiltonian `h`
 - The initial point is given by `θ`.
 - The adaptor is set by `adaptor`, for which the default is no adaptation.
     - It will perform `n_adapts` steps of adaptation, for which the default is the minimum of `1_000` and 10% of `n_samples`.
-- `drop_warmup` controls to drop the samples during adaptation phase or not.
+- `drop_warmup` specifies whether to drop samples.
 - `verbose` controls the verbosity.
 - `progress` controls whether to show the progress meter or not.
 
