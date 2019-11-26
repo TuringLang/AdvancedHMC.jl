@@ -20,14 +20,18 @@ using AdvancedHMC
 n_samples, n_adapts = 10_000, 2_000
 
 # Draw a random starting points
-θ_init = randn(D)
+θ_init = rand(D)
 
 # Define metric space, Hamiltonian, sampling method and adaptor
 metric = DiagEuclideanMetric(D)
 h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
 int = Leapfrog(find_good_eps(h, θ_init))
 prop = NUTS{MultinomialTS,GeneralisedNoUTurn}(int)
-adaptor = StanHMCAdaptor(n_adapts, Preconditioner(metric), NesterovDualAveraging(0.8, int))
+adaptor = StanHMCAdaptor(
+    n_adapts, 
+    Preconditioner(metric), 
+    NesterovDualAveraging(0.8, int)
+)
 
 # Draw samples via simulating Hamiltonian dynamics
 # - `samples` will store the samples
