@@ -9,12 +9,12 @@ If you are interested in using `AdvancedHMC.jl` through a probabilistic programm
 
 
 **NEWS**
-- We will present AdvancedHMC.jl in [AABI](http://approximateinference.org/) 2019 (Vancouver, Canada).
-- We presented a poster for AdvancedHMC.jl in StanCon 2019 (Cambridge, UK). ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
+- We will present AdvancedHMC.jl at [AABI](http://approximateinference.org/) 2019 in Vancouver, Canada.
+- We presented a poster for AdvancedHMC.jl at StanCon 2019 in Cambridge, UK. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
 **API CHANGES**
-- Two exported types are renamed: `Multinomial` -> `MultinomialTS` and `Slice` -> `SliceTS`. (v0.2.8)
-- The gradient function passed to `Hamiltonian` is supposed to return a value-gradient tuple now. (v0.2.0)
+- v0.2.8: Two exported types are renamed: `Multinomial` -> `MultinomialTS` and `Slice` -> `SliceTS`.
+- v0.2.0: The gradient function passed to `Hamiltonian` is supposed to return a value-gradient tuple now.
 
 ## A minimal example - sampling from a multivariate Gaussian using NUTS
 
