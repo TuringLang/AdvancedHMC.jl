@@ -99,17 +99,20 @@ sample(
         n_samples::Int,
         adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
         n_adapts::Int=min(div(n_samples, 10), 1_000);
+        drop_warmup::Bool=false,
         verbose::Bool=true,
         progress::Bool=false
     )
 
 Sample `n_samples` samples using the proposal `τ` under Hamiltonian `h`.
-- the initial point is given by `θ`
-- the randomness is controlled by `rng`
-- the adaptor is set by `adaptor`, for which the default is no adapation
-    - it will perform `n_adapts` steps of adapations, for which the default is the minimum of `1_000` and 10% of `n_samples`
-- the verbosity is controlled by the boolean variable `verbose` and
-- the visibility of the progress meter is controlled by the bollean variable `progress`
+- The randomness is controlled by `rng`. 
+    - If `rng` is not provided, `GLOBAL_RNG` will be used.
+- The initial point is given by `θ`.
+- The adaptor is set by `adaptor`, for which the default is no adaptation.
+    - It will perform `n_adapts` steps of adaptation, for which the default is the minimum of `1_000` and 10% of `n_samples`
+- `drop_warmup` controls to drop the samples during adaptation phase or not
+- `verbose` controls the verbosity
+- `progress` controls whether to show the progress meter or not
 """
 function sample(
     rng::AbstractRNG,
