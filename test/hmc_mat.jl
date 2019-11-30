@@ -1,11 +1,11 @@
-using Test, AdvancedHMC, LinearAlgebra, UnicodePlots
+using Test, AdvancedHMC, LinearAlgebra, UnicodePlots, Random
 using Statistics: mean, var, cov
 include("common.jl")
 
 @testset "Matrix mode" begin
     n_chains_max = 20
     n_chains_list = collect(1:n_chains_max)
-    θ_init_list = [randn(D, n_chains) for n_chains in n_chains_list]
+    θ_init_list = [rand(D, n_chains) for n_chains in n_chains_list]
     ϵ = 0.1
     lf = Leapfrog(ϵ)
     i_test = 5
@@ -22,13 +22,13 @@ include("common.jl")
         StaticTrajectory(lfi, n_steps),
         HMCDA(lf, ϵ * n_steps)
     ]
-
         n_chains = n_chains_list[i_test]
         metric = metricT((D, n_chains))
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+        # NoAdaptation
         samples, stats = sample(h, τ, θ_init_list[i_test], n_samples; verbose=false)
         @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL * n_chains
-
+        # Adaptation
         for adaptor in [
             Preconditioner(metric),
             NesterovDualAveraging(0.8, lfi.ϵ),
@@ -46,6 +46,18 @@ include("common.jl")
             samples, stats = sample(h, τ, θ_init_list[i_test], n_samples, adaptor, n_adapts; verbose=false, progress=false)
             @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL * n_chains
         end
+        # Passing a vector of same RNGs
+        rng = [MersenneTwister(1) for _ in 1:n_chains]
+        h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∂ℓπ∂θ)
+        θ_init = repeat(rand(D), 1, n_chains)
+        samples, stats = sample(rng, h, τ, θ_init, n_samples; verbose=false)
+        all_same = true
+        for i_sample in 2:10
+            for j in 2:n_chains
+                all_same = all_same && samples[i_sample][:,j] == samples[i_sample][:,1]
+            end
+        end
+        @test all_same
     end
     @info "Adaptation tests for HMCDA with NesterovDualAveraging are skipped"
 

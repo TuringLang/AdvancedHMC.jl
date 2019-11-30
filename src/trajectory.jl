@@ -146,7 +146,7 @@ end
 Base.show(io::IO, τ::StaticTrajectory) = print(io, "StaticTrajectory(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
 
 function transition(
-    rng::AbstractRNG,
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     τ::StaticTrajectory,
     h::Hamiltonian,
     z::PhasePoint
@@ -212,7 +212,7 @@ end
 Base.show(io::IO, τ::HMCDA) = print(io, "HMCDA(integrator=$(τ.integrator), λ=$(τ.λ)))")
 
 function transition(
-    rng::AbstractRNG,
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     τ::HMCDA,
     h::Hamiltonian,
     z::PhasePoint
@@ -592,16 +592,19 @@ find_good_eps(
     max_n_iters::Int=100
 ) where {T<:AbstractFloat} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
 
+_rand(rng::AbstractRNG) = rand(rng)
+_rand(rng::AbstractVector{<:AbstractRNG}) = rand.(rng)
+
 """
 Perform MH acceptance based on energy, i.e. negative log probability.
 """
 function mh_accept_ratio(
-    rng::AbstractRNG,
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     Horiginal::AbstractScalarOrVec{<:T},
     Hproposal::AbstractScalarOrVec{<:T}
 ) where {T<:AbstractFloat}
     α = min.(1.0, exp.(Horiginal .- Hproposal))
-    accept = rand(rng) .< α
+    accept = _rand(rng) .< α
     return accept, α
 end
 

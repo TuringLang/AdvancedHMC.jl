@@ -125,13 +125,13 @@ energy(args...) = -neg_energy(args...)
 ####
 
 phasepoint(
-    rng::AbstractRNG,
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     θ::AbstractVecOrMat{T},
     h::Hamiltonian
 ) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric))
 
 refresh(
-    rng::AbstractRNG,
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     z::PhasePoint,
     h::Hamiltonian
 ) = phasepoint(h, z.θ, rand(rng, h.metric))

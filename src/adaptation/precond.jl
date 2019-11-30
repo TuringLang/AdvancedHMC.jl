@@ -291,6 +291,7 @@ UnitEuclideanMetric(dim::Int) = UnitEuclideanMetric(Float64, (dim,))
 renew(ue::UnitEuclideanMetric, M⁻¹) = UnitEuclideanMetric(M⁻¹, ue.size)
 
 Base.size(e::UnitEuclideanMetric) = e.size
+Base.size(e::UnitEuclideanMetric, dim::Int) = e.size[dim]
 Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, "UnitEuclideanMetric($(_string_M⁻¹(ones(uem.size))))")
 
 struct DiagEuclideanMetric{T,A<:AbstractVecOrMat{T}} <: AbstractMetric
@@ -312,7 +313,7 @@ DiagEuclideanMetric(dim::Int) = DiagEuclideanMetric(Float64, dim)
 
 renew(ue::DiagEuclideanMetric, M⁻¹) = DiagEuclideanMetric(M⁻¹)
 
-Base.size(e::DiagEuclideanMetric) = size(e.M⁻¹)
+Base.size(e::DiagEuclideanMetric, dim...) = size(e.M⁻¹, dim...)
 Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
 
 struct DenseEuclideanMetric{
@@ -341,36 +342,53 @@ DenseEuclideanMetric(sz::Tuple{Int}) = DenseEuclideanMetric(Float64, D)
 
 renew(ue::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
 
-Base.size(e::DenseEuclideanMetric) = size(e._temp)
+Base.size(e::DenseEuclideanMetric, dim...) = size(e._temp, dim...)
 Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DenseEuclideanMetric(diag=$(_string_M⁻¹(dem.M⁻¹)))")
 
 # `rand` functions for `metric` types.
-function Base.rand(
-    rng::AbstractRNG,
+
+function _randn(
+    rng::AbstractRNG, 
+    T, 
+    sz::Int...)
+    randn(rng, T, sz...)
+end
+
+function _randn(
+    rng::AbstractVector{<:AbstractRNG},
+    T,
+    sz::Int...)
+    return cat(randn.(rng, T, first(sz))...; dims=2)
+end
+
+function _rand(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::UnitEuclideanMetric{T}
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    r = _randn(rng, T, size(metric)...)
     return r
 end
 
-function Base.rand(
-    rng::AbstractRNG,
+function _rand(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::DiagEuclideanMetric{T}
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    r = _randn(rng, T, size(metric)...)
     r ./= metric.sqrtM⁻¹
     return r
 end
 
-function Base.rand(
-    rng::AbstractRNG,
+function _rand(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::DenseEuclideanMetric{T}
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    r = _randn(rng, T, size(metric)...)
     ldiv!(metric.cholM⁻¹, r)
     return r
 end
 
+Base.rand(rng::AbstractRNG, metric::AbstractMetric) = _rand(rng, metric)    # this disambiguity is required by Random.rand
+Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractMetric) = _rand(rng, metric)
 Base.rand(metric::AbstractMetric) = rand(GLOBAL_RNG, metric)
 
 ####

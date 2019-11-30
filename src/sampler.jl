@@ -2,7 +2,11 @@
 ## Interface functions
 ##
 
-function sample_init(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVecOrMat{<:AbstractFloat})
+function sample_init(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, 
+    h::Hamiltonian, 
+    θ::AbstractVecOrMat{<:AbstractFloat}
+)
     # Ensure h.metric has the same dim as θ.
     h = update(h, θ)
     # Initial transition
@@ -11,7 +15,12 @@ function sample_init(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVecOrMat{<:Ab
 end
 
 # A step is a momentum refreshment plus a transition
-function step(rng::AbstractRNG, h::Hamiltonian, τ::AbstractProposal, z::PhasePoint)
+function step(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, 
+    h::Hamiltonian, 
+    τ::AbstractProposal, 
+    z::PhasePoint
+)
     # Refresh momentum
     z = refresh(rng, z, h)
     # Make transition
@@ -115,7 +124,7 @@ Sample `n_samples` samples using the proposal `τ` under Hamiltonian `h`.
 - `progress` controls whether to show the progress meter or not
 """
 function sample(
-    rng::AbstractRNG,
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
     τ::AbstractProposal,
     θ::T,

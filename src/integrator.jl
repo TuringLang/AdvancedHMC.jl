@@ -32,12 +32,13 @@ function step_size end
 abstract type AbstractLeapfrog{T} <: AbstractIntegrator end
 
 step_size(lf::AbstractLeapfrog) = lf.ϵ
-jitter(::AbstractRNG, lf::AbstractLeapfrog) = lf
+jitter(::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, lf::AbstractLeapfrog) = lf
 temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int) = r
 stat(lf::AbstractLeapfrog) = (step_size=step_size(lf), nom_step_size=nom_step_size(lf))
 
+# TODO: remove rng
 function step(
-    rng::AbstractRNG,
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     lf::AbstractLeapfrog{T},
     h::Hamiltonian,
     z::PhasePoint,
@@ -100,6 +101,10 @@ nom_step_size(lf::JitteredLeapfrog) = lf.ϵ0
 function jitter(rng::AbstractRNG, lf::JitteredLeapfrog)
     ϵ = lf.ϵ0 * (1 + lf.jitter * (2 * rand(rng) - 1))
     return reconstruct(lf, ϵ=ϵ)
+end
+
+function jitter(rng::AbstractVector{<:AbstractRNG}, lf::JitteredLeapfrog)
+    throw(MethodError("Not supported"))
 end
 
 ### Tempering
