@@ -153,7 +153,7 @@ function transition(
 ) where {T<:Real}
     H0 = energy(z)
     integrator = jitter(rng, τ.integrator)
-    z′ = step(rng, τ.integrator, h, z, τ.n_steps)
+    z′ = step(τ.integrator, h, z, τ.n_steps)
     # Are we going to accept the `z′` via MH criteria?
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
     # Do the actual accept / reject
@@ -415,7 +415,7 @@ function build_tree(
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
-        z′ = step(rng, nt.integrator, h, z, v)
+        z′ = step(nt.integrator, h, z, v)
         H′ = energy(z′)
         ΔH = H′ - H0
         α′ = exp(min(0, -ΔH))
@@ -510,8 +510,8 @@ A single Hamiltonian integration step.
 
 NOTE: this function is intended to be used in `find_good_eps` only.
 """
-function A(rng, h, z, ϵ)
-    z′ = step(rng, Leapfrog(ϵ), h, z)
+function A(h, z, ϵ)
+    z′ = step(Leapfrog(ϵ), h, z)
     H′ = energy(z′)
     return z′, H′
 end
@@ -535,7 +535,7 @@ function find_good_eps(
     H = energy(z)
 
     # Make a proposal phase point to decide direction
-    z′, H′ = A(rng, h, z, ϵ)
+    z′, H′ = A(h, z, ϵ)
     ΔH = H - H′ # compute the energy difference; `exp(ΔH)` is the MH accept ratio
     direction = ΔH > log(a_cross) ? 1 : -1
 
@@ -546,7 +546,7 @@ function find_good_eps(
         # `direction` being `-1` means MH ratio too small
         #     - this means our step szie is too large, thus we decrease
         ϵ′ = direction == 1 ? d * ϵ : 1 / d * ϵ
-        z′, H′ = A(rng, h, z, ϵ)
+        z′, H′ = A(h, z, ϵ)
         ΔH = H - H′
         DEBUG && @debug "Crossing step" direction H′ ϵ "α = $(min(1, exp(ΔH)))"
         if (direction == 1) && !(ΔH > log(a_cross))
@@ -570,7 +570,7 @@ function find_good_eps(
     # the middle value of `ϵ` and `ϵ′` is too extreme.
     for _ = 1:max_n_iters
         ϵ_mid = middle(ϵ, ϵ′)
-        z′, H′ = A(rng, h, z, ϵ_mid)
+        z′, H′ = A(h, z, ϵ_mid)
         ΔH = H - H′
         DEBUG && @debug "Bisection step" H′ ϵ_mid "α = $(min(1, exp(ΔH)))"
         if (exp(ΔH) > a_max)
