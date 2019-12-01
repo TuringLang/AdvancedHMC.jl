@@ -2,11 +2,12 @@
 
 # Dimension of testing distribution
 const D = 5
-
+# Tolerance ratio
+const TRATIO = Int == Int64 ? 1 : 2
 # Deterministic tolerance
-const DETATOL = 1e-3 * D
+const DETATOL = 1e-3 * D * TRATIO
 # Random tolerance
-const RNDATOL = 5e-2 * D
+const RNDATOL = 5e-2 * D * TRATIO
 
 using Distributions: logpdf, MvNormal, InverseGamma, Normal
 using DiffResults: GradientResult, JacobianResult, value, gradient, jacobian
