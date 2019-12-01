@@ -92,14 +92,20 @@ end
 nom_step_size(lf::JitteredLeapfrog) = lf.ϵ0
 
 # Jitter step size; ref: https://github.com/stan-dev/stan/blob/1bb054027b01326e66ec610e95ef9b2a60aa6bec/src/stan/mcmc/hmc/base_hmc.hpp#L177-L178
-function jitter(rng::AbstractRNG, lf::JitteredLeapfrog)
-    ϵ = lf.ϵ0 * (1 + lf.jitter * (2 * rand(rng) - 1))
+function _jitter(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    lf::JitteredLeapfrog{FT,T}
+) where {FT<:AbstractFloat,T<:AbstractVector{FT}}
+    ϵ = lf.ϵ0 .* (1 .+ lf.jitter .* (2 .* rand(rng) .- 1))
     return reconstruct(lf, ϵ=ϵ)
 end
 
-function jitter(rng::AbstractVector{<:AbstractRNG}, lf::JitteredLeapfrog)
-    throw(MethodError("Not supported"))
-end
+jitter(rng::AbstractRNG, lf::JitteredLeapfrog) = _jitter(rng, lf)
+
+jitter(
+    rng::AbstractVector{<:AbstractRNG}, 
+    lf::JitteredLeapfrog{FT,T}
+) where {FT<:AbstractFloat,T<:AbstractVector{FT}} = _jitter(rng, lf)
 
 ### Tempering
 

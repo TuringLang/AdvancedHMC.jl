@@ -10,6 +10,7 @@ include("common.jl")
     lf = Leapfrog(ϵ)
     i_test = 5
     lfi = Leapfrog(fill(ϵ, i_test))
+    lfi_jittered = JitteredLeapfrog(fill(ϵ, i_test), 1.0)
     n_steps = 20
     n_samples = 12_000
     n_adapts = 2_000
@@ -20,6 +21,7 @@ include("common.jl")
         # DenseEuclideanMetric  # not supported at the moment
     ], τ in [
         StaticTrajectory(lfi, n_steps),
+        StaticTrajectory(lfi_jittered, n_steps),
         HMCDA(lf, ϵ * n_steps)
     ]
         n_chains = n_chains_list[i_test]
