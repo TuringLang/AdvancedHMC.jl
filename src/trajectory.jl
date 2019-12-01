@@ -244,7 +244,7 @@ end
 
 GeneralisedNoUTurn(z::PhasePoint) = GeneralisedNoUTurn(z.r)
 
-combine(cleft::T, cright::T) where {T<:ClassicNoUTurn} = T()
+combine(::ClassicNoUTurn, ::ClassicNoUTurn) = ClassicNoUTurn()
 combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rho + cright.rho)
 
 
