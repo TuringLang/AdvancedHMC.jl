@@ -95,7 +95,7 @@ nom_step_size(lf::JitteredLeapfrog) = lf.ϵ0
 function _jitter(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     lf::JitteredLeapfrog{FT,T}
-) where {FT<:AbstractFloat,T<:AbstractVector{FT}}
+) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}}
     ϵ = lf.ϵ0 .* (1 .+ lf.jitter .* (2 .* rand(rng) .- 1))
     return reconstruct(lf, ϵ=ϵ)
 end
@@ -105,7 +105,7 @@ jitter(rng::AbstractRNG, lf::JitteredLeapfrog) = _jitter(rng, lf)
 jitter(
     rng::AbstractVector{<:AbstractRNG}, 
     lf::JitteredLeapfrog{FT,T}
-) where {FT<:AbstractFloat,T<:AbstractVector{FT}} = _jitter(rng, lf)
+) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} = _jitter(rng, lf)
 
 ### Tempering
 
