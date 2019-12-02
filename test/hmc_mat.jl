@@ -39,7 +39,6 @@ include("common.jl")
                 NesterovDualAveraging(0.8, lfi.ϵ),
             ),
             StanHMCAdaptor(
-                n_adapts,
                 Preconditioner(metric),
                 NesterovDualAveraging(0.8, lfi.ϵ),
             ),

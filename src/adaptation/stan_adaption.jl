@@ -4,6 +4,7 @@
 
 mutable struct StanHMCAdaptorState
     i           :: Int
+    n_adapts    :: Int
     window_size :: Int
     next_window :: Int
 end
@@ -15,7 +16,6 @@ end
 # TODO: currently only StanHMCAdaptor has the filed `n_adapts`. maybe we could unify all
 # Acknowledgement: this adaption settings is mimicing Stan's 3-phase adaptation.
 struct StanHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
-    n_adapts    :: Int
     pc          :: M
     ssa         :: Tssa
     init_buffer :: Int
@@ -23,10 +23,9 @@ struct StanHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: Abstr
     state       :: StanHMCAdaptorState
 end
 Base.show(io::IO, a::StanHMCAdaptor) =
-    print(io, "StanHMCAdaptor(n_adapts=$(a.n_adapts), pc=$(a.pc), ssa=$(a.ssa), init_buffer=$(a.init_buffer), term_buffer=$(a.term_buffer))")
+    print(io, "StanHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa), init_buffer=$(a.init_buffer), term_buffer=$(a.term_buffer))")
 
 function StanHMCAdaptor(
-    n_adapts::Int,
     pc::M,
     ssa::StepSizeAdaptor,
     init_buffer::Int=75,
@@ -34,29 +33,29 @@ function StanHMCAdaptor(
     window_size::Int=25
 ) where {M<:AbstractPreconditioner}
     next_window = init_buffer + window_size - 1
-    return StanHMCAdaptor(n_adapts, pc, ssa, init_buffer, term_buffer, StanHMCAdaptorState(0, window_size, next_window))
+    return StanHMCAdaptor(pc, ssa, init_buffer, term_buffer, StanHMCAdaptorState(0, 0, window_size, next_window))
 end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/windowed_adaptation.hpp
 function is_in_window(tp::StanHMCAdaptor)
     return (tp.state.i >= tp.init_buffer) &&
-           (tp.state.i < tp.n_adapts - tp.term_buffer) &&
-           (tp.state.i != tp.n_adapts)
+           (tp.state.i < tp.state.n_adapts - tp.term_buffer) &&
+           (tp.state.i != tp.state.n_adapts)
 end
 
 function is_window_end(tp::StanHMCAdaptor)
     return (tp.state.i == tp.state.next_window) &&
-           (tp.state.i != tp.n_adapts)
+           (tp.state.i != tp.state.n_adapts)
 end
 
 function compute_next_window!(tp::StanHMCAdaptor)
-    if ~(tp.state.next_window == tp.n_adapts - tp.term_buffer - 1)
+    if ~(tp.state.next_window == tp.state.n_adapts - tp.term_buffer - 1)
         tp.state.window_size *= 2
         tp.state.next_window = tp.state.i + tp.state.window_size
-        if ~(tp.state.next_window == tp.n_adapts - tp.term_buffer - 1)
+        if ~(tp.state.next_window == tp.state.n_adapts - tp.term_buffer - 1)
             next_window_boundary = tp.state.next_window + 2 * tp.state.window_size
-            if (next_window_boundary >= tp.n_adapts - tp.term_buffer)
-                tp.state.next_window = tp.n_adapts - tp.term_buffer - 1
+            if (next_window_boundary >= tp.state.n_adapts - tp.term_buffer)
+                tp.state.next_window = tp.state.n_adapts - tp.term_buffer - 1
             end
         end
     end
@@ -64,6 +63,9 @@ end
 
 getM⁻¹(adaptor::StanHMCAdaptor) = getM⁻¹(adaptor.pc)
 getϵ(adaptor::StanHMCAdaptor)   = getϵ(adaptor.ssa)
+function init!(adaptor::StanHMCAdaptor, n_adapts::Int)
+    adaptor.state.n_adapts = n_adapts
+end
 finalize!(adaptor::StanHMCAdaptor) = finalize!(adaptor.ssa)
 # reset!(adaptor::StanHMCAdaptor) # Not used.
 

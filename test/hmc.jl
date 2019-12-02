@@ -71,7 +71,6 @@ end
                         NesterovDualAveraging(0.8, τ.integrator),
                     ),
                     :StanHMCAdaptor => StanHMCAdaptor(
-                        n_adapts,
                         Preconditioner(metric),
                         NesterovDualAveraging(0.8, τ.integrator),
                     ),
@@ -93,7 +92,6 @@ end
     h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
     τ = NUTS(Leapfrog(ϵ))
     adaptor = StanHMCAdaptor(
-        n_adapts,
         Preconditioner(metric),
         NesterovDualAveraging(0.8, τ.integrator),
     )

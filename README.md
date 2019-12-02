@@ -49,7 +49,6 @@ h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
 int = Leapfrog(find_good_eps(h, θ_init))
 prop = NUTS{MultinomialTS,GeneralisedNoUTurn}(int)
 adaptor = StanHMCAdaptor(
-    n_adapts, 
     Preconditioner(metric), 
     NesterovDualAveraging(0.8, int)
 )
@@ -98,7 +97,7 @@ where `int` is the integrator used.
 - Preconditioning on metric space `metric`: `pc = Preconditioner(metric)`
 - Nesterov's dual averaging with target acceptance rate `δ` on integrator `int`: `da = NesterovDualAveraging(δ, int)`
 - Combine the two above *naively*: `NaiveHMCAdaptor(pc, da)`
-- Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(n_adapts, pc, da)` where `n_adapts` is the total number of adaptation steps will be used.
+- Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(pc, da)` where `n_adapts` is the total number of adaptation steps will be used.
 
 All the combinations are tested in [this file](https://github.com/TuringLang/AdvancedHMC.jl/blob/master/test/hmc.jl) except from using tempered leapfrog integrator together with adaptation, which we found unstable empirically.
 

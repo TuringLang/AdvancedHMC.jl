@@ -60,24 +60,21 @@ end
     θ = [0.0, 0.0, 0.0, 0.0]
 
     adaptor1 = StanHMCAdaptor(
-        1000,
         Preconditioner(UnitEuclideanMetric),
         NesterovDualAveraging(0.8, 0.5)
     )
     adaptor2 = StanHMCAdaptor(
-        1000,
         Preconditioner(DiagEuclideanMetric),
         NesterovDualAveraging(0.8, 0.5)
     )
     adaptor3 = StanHMCAdaptor(
-        1000,
         Preconditioner(DenseEuclideanMetric),
         NesterovDualAveraging(0.8, 0.5)
     )
-
-    AdvancedHMC.adapt!(adaptor1, θ, 1.)
-    AdvancedHMC.adapt!(adaptor2, θ, 1.)
-    AdvancedHMC.adapt!(adaptor3, θ, 1.)
+    for a in [adaptor1, adaptor2, adaptor3]
+        AdvancedHMC.init!(a, 1_000)
+        AdvancedHMC.adapt!(a, θ, 1.)
+    end
     @test AdvancedHMC.Adaptation.getM⁻¹(adaptor2) == ones(length(θ))
     @test AdvancedHMC.Adaptation.getM⁻¹(adaptor3) == LinearAlgebra.diagm(0 => ones(length(θ)))
 end
@@ -103,7 +100,6 @@ let D=10
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
         adaptor = StanHMCAdaptor(
-            n_adapts, 
             Preconditioner(metric),
             NesterovDualAveraging(0.8, prop.integrator)
         )

@@ -28,7 +28,6 @@ h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
 int = Leapfrog(find_good_eps(h, θ_init))
 prop = NUTS{MultinomialTS,GeneralisedNoUTurn}(int)
 adaptor = StanHMCAdaptor(
-    n_adapts, 
     Preconditioner(metric), 
     NesterovDualAveraging(0.8, int)
 )
