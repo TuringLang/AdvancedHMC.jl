@@ -42,26 +42,18 @@ function init!(state::StanHMCAdaptorState, init_buffer::Int, term_buffer::Int, w
     state.window = window
 end
 
-function get_win_starts_ends(window)
-    winstarts, winends = [], []
-    for i in 1:length(window)-1
-        if window[i] != winin && is_in_window(window[i+1])
-            push!(winstarts, i)
-        end
-        if is_window_end(window[i])
-            push!(winends, i)
-        end
-    end
-    return winstarts, winends
-end
-
-function Base.show(io::IO, state::StanHMCAdaptorState)
+function getwindows(state)
     window = state.window
     windows = length(window) > 0 ? (
         findfirst(ws -> ws == winin, window) - 1, 
         findall(ws -> ws == winend, state.window)...,
         (state.window[end] == winin ? tuple(length(state.window)) : tuple())...
     ) : tuple()
+    return windows
+end
+
+function Base.show(io::IO, state::StanHMCAdaptorState)
+    windows = getwindows(state)
     print(io, "windows(" * string(join(windows, ", ")) * ")")
 end
 
