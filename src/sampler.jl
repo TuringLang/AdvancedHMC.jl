@@ -138,7 +138,7 @@ function sample(
 ) where {T<:AbstractVecOrMat{<:AbstractFloat}}
     @assert !(drop_warmup && (adaptor isa Adaptation.NoAdaptation)) "Cannot drop warmup samples if there is no adaptation phase."
     # Prepare containers to store sampling results
-    n_keep = n_samples - drop_warmup * n_adapts
+    n_keep = n_samples - drop_warmup ? n_adapts : 0
     θs, stats = Vector{T}(undef, n_keep), Vector{NamedTuple}(undef, n_keep)
     # Initial sampling
     h, t = sample_init(rng, h, θ)
