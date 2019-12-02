@@ -7,6 +7,8 @@ import LinearAlgebra, Statistics
 using ..AdvancedHMC: DEBUG
 using Parameters: @unpack, @pack!
 
+const AbstractScalarOrVec{T} = Union{T,AbstractVector{T}} where {T<:AbstractFloat}
+
 abstract type AbstractAdaptor end
 
 ##
@@ -17,10 +19,9 @@ getM⁻¹(adaptor::T) where {T<:AbstractAdaptor} = error("`getM⁻¹(adaptor::$T
 getϵ(adaptor::T) where {T<:AbstractAdaptor} = error("`getϵ(adaptor::$T)` is not implemented.")
 adapt!(
     adaptor::T,
-    θ::AbstractVector,
-    α::AbstractFloat,
-    is_update::Bool=true
-) where {T<:AbstractAdaptor} = error("`adapt!(adaptor::$T, θ::AbstractVector, α::AbstractFloat, is_update::Bool)` is not implemented.")
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::AbstractScalarOrVec{<:AbstractFloat}
+) where {T<:AbstractAdaptor} = error("`adapt!(adaptor::$T, θ::AbstractVecOrMat{<:AbstractFloat}, α::AbstractScalarOrVec{<:AbstractFloat})` is not implemented.")
 reset!(adaptor::T) where {T<:AbstractAdaptor} = error("`reset!(adaptor::$T)` is not implemented.")
 finalize!(adaptor::T) where {T<:AbstractAdaptor} = error("`finalize!(adaptor::$T)` is not implemented.")
 
@@ -28,6 +29,8 @@ struct NoAdaptation <: AbstractAdaptor end
 
 include("stepsize.jl")
 include("precond.jl")
+
+# TODO: implement consensus adaptor
 
 ##
 ## Compositional adaptor
@@ -42,7 +45,11 @@ Base.show(io::IO, a::NaiveHMCAdaptor) = print(io, "NaiveHMCAdaptor(pc=$(a.pc), s
 
 getM⁻¹(aca::NaiveHMCAdaptor) = getM⁻¹(aca.pc)
 getϵ(aca::NaiveHMCAdaptor) = getϵ(aca.ssa)
-function adapt!(nca::NaiveHMCAdaptor, θ::AbstractVector{<:Real}, α::AbstractFloat)
+function adapt!(
+    nca::NaiveHMCAdaptor,
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::AbstractScalarOrVec{<:AbstractFloat}
+)
     adapt!(nca.ssa, θ, α)
     adapt!(nca.pc, θ, α)
 end

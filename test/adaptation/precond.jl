@@ -6,13 +6,15 @@ using ForwardDiff: gradient!
 # Check that the estimated variance is approximately correct.
 @testset "Online v.s. naive v.s. true var/cov estimation" begin
     D = 10
+    T = Float64
+    sz = (D,)
     n_samples = 100_000
 
-    var_welford = WelfordVar(D)
-    var_naive = NaiveVar()
+    var_welford = WelfordVar(T, sz)
+    var_naive = NaiveVar(T, sz)
     var_estimators = [var_welford, var_naive]
-    cov_welford = WelfordCov(D)
-    cov_naive = NaiveCov()
+    cov_welford = WelfordCov(T, sz)
+    cov_naive = NaiveCov(T, sz)
     cov_estimators = [cov_welford, cov_naive]
     estimators = [var_estimators..., cov_estimators...]
 
@@ -89,7 +91,7 @@ let D=10
             gradient!(res, ℓπ, θ)
             return (value(res), gradient(res))
         end
-        
+
         return ℓπ, ∂ℓπ∂θ
     end
 
@@ -102,7 +104,7 @@ let D=10
         prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
         adaptor = StanHMCAdaptor(
             n_adapts, 
-            Preconditioner(metric), 
+            Preconditioner(metric),
             NesterovDualAveraging(0.8, prop.integrator)
         )
         samples, stats = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; verbose=false)
@@ -117,14 +119,14 @@ let D=10
             for _ in 1:n_tests
                 # Random variance
                 σ = ones(D) + abs.(randn(D))
-            
+
                 # Diagonal Gaussian
                 target = MvNormal(zeros(D), σ)
                 ℓπ, ∂ℓπ∂θ = buildfuncs(target)
-                
+
                 res = runnuts(ℓπ, ∂ℓπ∂θ, DiagEuclideanMetric(D))
                 @test res.adaptor.pc.var ≈ σ .^ 2 rtol=0.2
-                
+
                 res = runnuts(ℓπ, ∂ℓπ∂θ, DenseEuclideanMetric(D))
                 @test res.adaptor.pc.covar ≈ diagm(0 => σ.^2) rtol=0.25
             end
@@ -139,10 +141,10 @@ let D=10
                 # Correlated Gaussian
                 target = MvNormal(zeros(D), Σ)
                 ℓπ, ∂ℓπ∂θ = buildfuncs(target)
-                
+
                 res = runnuts(ℓπ, ∂ℓπ∂θ, DiagEuclideanMetric(D))
                 @test res.adaptor.pc.var ≈ diag(Σ) rtol=0.2
-                
+
                 res = runnuts(ℓπ, ∂ℓπ∂θ, DenseEuclideanMetric(D))
                 @test res.adaptor.pc.covar ≈ Σ rtol=0.25
             end
@@ -161,5 +163,23 @@ let D=10
         mass_init = diagm(0 => fill(0.5, D))
         res = runnuts(ℓπ, ∂ℓπ∂θ, DenseEuclideanMetric(mass_init); n_samples=1)
         @test res.adaptor.pc.covar == mass_init
+    end
+end
+
+@testset "rand momentum variables from metric via vector of RNGs" begin
+    D = 10
+    n_chains = 5
+    rng = [MersenneTwister(1) for _ in 1:n_chains]
+    for metric in [
+        UnitEuclideanMetric((D, n_chains)),
+        DiagEuclideanMetric((D, n_chains)),
+        # DenseEuclideanMetric((D, n_chains)) # not supported at the moment
+    ]
+        r = rand(rng, metric)
+        all_same = true
+        for i in 2:n_chains
+            all_same = all_same && r[:,i] == r[:,1]
+        end
+        @test all_same
     end
 end

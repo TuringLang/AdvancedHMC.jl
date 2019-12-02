@@ -13,6 +13,16 @@ using ArgCheck: @argcheck
 
 import StatsBase: sample
 
+# Support of passing a vector of RNGs
+Base.rand(rng::AbstractVector{<:AbstractRNG}) = rand.(rng)
+Base.randn(rng::AbstractVector{<:AbstractRNG}) = randn.(rng)
+function Base.randn(
+    rng::AbstractVector{<:AbstractRNG},
+    T,
+    sz::Int...)
+    return cat(randn.(rng, T, first(sz))...; dims=2)
+end
+
 # Notations
 # ℓπ: log density of the target distribution
 # ∂ℓπ∂θ: gradient of the log density of the target distribution
@@ -23,6 +33,8 @@ include("adaptation/Adaptation.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
 export NesterovDualAveraging, Preconditioner, NaiveHMCAdaptor, StanHMCAdaptor
 using .Adaptation
+
+using .Adaptation: AbstractScalarOrVec
 import .Adaptation: adapt!, NesterovDualAveraging
 
 include("hamiltonian.jl")

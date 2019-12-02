@@ -32,20 +32,21 @@ function step_size end
 abstract type AbstractLeapfrog{T} <: AbstractIntegrator end
 
 step_size(lf::AbstractLeapfrog) = lf.ϵ
-jitter(::AbstractRNG, lf::AbstractLeapfrog) = lf
+jitter(::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, lf::AbstractLeapfrog) = lf
 temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int) = r
 stat(lf::AbstractLeapfrog) = (step_size=step_size(lf), nom_step_size=nom_step_size(lf))
 
 function step(
-    rng::AbstractRNG,
     lf::AbstractLeapfrog{T},
     h::Hamiltonian,
     z::PhasePoint,
     n_steps::Int=1;
     fwd::Bool=n_steps > 0   # simulate hamiltonian backward when n_steps < 0,
-) where {T<:AbstractFloat}
+) where {T<:AbstractScalarOrVec{<:AbstractFloat}}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
+
     ϵ = fwd ? step_size(lf) : -step_size(lf)
+    ϵ = ϵ'
 
     @unpack θ, r = z
     @unpack value, gradient = ∂H∂θ(h, θ)
@@ -53,13 +54,13 @@ function step(
         # Tempering
         r = temper(lf, r, (i=i, is_half=true), n_steps)
         # Take a half leapfrog step for momentum variable
-        r = r - ϵ / 2 * gradient
+        r = r - ϵ / 2 .* gradient
         # Take a full leapfrog step for position variable
         ∇r = ∂H∂r(h, r)
-        θ = θ + ϵ * ∇r
+        θ = θ + ϵ .* ∇r
         # Take a half leapfrog step for momentum variable
         @unpack value, gradient = ∂H∂θ(h, θ)
-        r = r - ϵ / 2 * gradient
+        r = r - ϵ / 2 .* gradient
         # Tempering
         r = temper(lf, r, (i=i, is_half=false), n_steps)
         # Create a new phase point by caching the logdensity and gradient
@@ -69,20 +70,16 @@ function step(
     return z
 end
 
-function step(lf::AbstractLeapfrog, h::Hamiltonian, z::PhasePoint, n_steps::Int=1; fwd::Bool=n_steps > 0)
-    return step(GLOBAL_RNG, lf, h, z, n_steps; fwd=fwd)
-end
-
-struct Leapfrog{T<:AbstractFloat} <: AbstractLeapfrog{T}
+struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     ϵ       ::  T
 end
 Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round(l.ϵ; sigdigits=3)))")
 
 ### Jittering
 
-struct JitteredLeapfrog{T<:AbstractFloat} <: AbstractLeapfrog{T}
+struct JitteredLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractLeapfrog{T}
     ϵ0      ::  T  # nominal (unjittered) step size
-    jitter  ::  T
+    jitter  ::  FT
     ϵ       ::  T  # current (jittered) step size
 end
 
@@ -95,16 +92,26 @@ end
 nom_step_size(lf::JitteredLeapfrog) = lf.ϵ0
 
 # Jitter step size; ref: https://github.com/stan-dev/stan/blob/1bb054027b01326e66ec610e95ef9b2a60aa6bec/src/stan/mcmc/hmc/base_hmc.hpp#L177-L178
-function jitter(rng::AbstractRNG, lf::JitteredLeapfrog)
-    ϵ = lf.ϵ0 * (1 + lf.jitter * (2 * rand(rng) - 1))
+function _jitter(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    lf::JitteredLeapfrog{FT,T}
+) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}}
+    ϵ = lf.ϵ0 .* (1 .+ lf.jitter .* (2 .* rand(rng) .- 1))
     return reconstruct(lf, ϵ=ϵ)
 end
 
+jitter(rng::AbstractRNG, lf::JitteredLeapfrog) = _jitter(rng, lf)
+
+jitter(
+    rng::AbstractVector{<:AbstractRNG}, 
+    lf::JitteredLeapfrog{FT,T}
+) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} = _jitter(rng, lf)
+
 ### Tempering
 
-struct TemperedLeapfrog{T<:AbstractFloat} <: AbstractLeapfrog{T}
+struct TemperedLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractLeapfrog{T}
     ϵ       ::  T
-    α       ::  T
+    α       ::  FT
 end
 
 function Base.show(io::IO, l::TemperedLeapfrog)

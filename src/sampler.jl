@@ -2,7 +2,11 @@
 ## Interface functions
 ##
 
-function sample_init(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}) where {T<:Real}
+function sample_init(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, 
+    h::Hamiltonian, 
+    θ::AbstractVecOrMat{<:AbstractFloat}
+)
     # Ensure h.metric has the same dim as θ.
     h = update(h, θ)
     # Initial transition
@@ -11,7 +15,12 @@ function sample_init(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}) wh
 end
 
 # A step is a momentum refreshment plus a transition
-function step(rng::AbstractRNG, h::Hamiltonian, τ::AbstractProposal, z::PhasePoint)
+function step(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, 
+    h::Hamiltonian, 
+    τ::AbstractProposal, 
+    z::PhasePoint
+)
     # Refresh momentum
     z = refresh(rng, z, h)
     # Make transition
@@ -24,9 +33,9 @@ adapt!(
     adaptor::Adaptation.NoAdaptation,
     i::Int,
     n_adapts::Int,
-    θ::AbstractVector{T},
-    α::T
-) where {T<:Real} = h, τ, false
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::AbstractScalarOrVec{<:AbstractFloat}
+) = h, τ, false
 
 function adapt!(
     h::Hamiltonian,
@@ -34,9 +43,9 @@ function adapt!(
     adaptor::Adaptation.AbstractAdaptor,
     i::Int,
     n_adapts::Int,
-    θ::AbstractVector{T},
-    α::T
-) where {T<:Real}
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::AbstractScalarOrVec{<:AbstractFloat}
+)
     isadapted = false
     if i <= n_adapts
         adapt!(adaptor, θ, α)
@@ -68,7 +77,7 @@ simple_pm_next!(pm, stat::NamedTuple, ::Int, ::AbstractMetric) = ProgressMeter.n
 sample(
     h::Hamiltonian,
     τ::AbstractProposal,
-    θ::AbstractVector{T},
+    θ::AbstractVecOrMat{<:AbstractFloat},
     n_samples::Int,
     adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
@@ -76,17 +85,17 @@ sample(
     verbose::Bool=true,
     progress::Bool=false,
     (pm_next!)::Function=pm_next!
-) where {T<:Real} = sample(
-    GLOBAL_RNG, 
-    h, 
-    τ, 
-    θ, 
-    n_samples, 
-    adaptor, 
-    n_adapts; 
+) = sample(
+    GLOBAL_RNG,
+    h,
+    τ,
+    θ,
+    n_samples,
+    adaptor,
+    n_adapts;
     drop_warmup=drop_warmup,
-    verbose=verbose, 
-    progress=progress, 
+    verbose=verbose,
+    progress=progress,
     (pm_next!)=pm_next!,
 )
 
@@ -95,7 +104,7 @@ sample(
         rng::AbstractRNG,
         h::Hamiltonian,
         τ::AbstractProposal,
-        θ::AbstractVector{T},
+        θ::AbstractVecOrMat{T},
         n_samples::Int,
         adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
         n_adapts::Int=min(div(n_samples, 10), 1_000);
@@ -115,10 +124,10 @@ Sample `n_samples` samples using the proposal `τ` under Hamiltonian `h`.
 - `progress` controls whether to show the progress meter or not
 """
 function sample(
-    rng::AbstractRNG,
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
     τ::AbstractProposal,
-    θ::AbstractVector{T},
+    θ::T,
     n_samples::Int,
     adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
@@ -126,11 +135,11 @@ function sample(
     verbose::Bool=true,
     progress::Bool=false,
     (pm_next!)::Function=pm_next!
-) where {T<:Real}
+) where {T<:AbstractVecOrMat{<:AbstractFloat}}
     @assert !(drop_warmup && (adaptor isa Adaptation.NoAdaptation)) "Cannot drop warmup samples if there is no adaptation phase."
     # Prepare containers to store sampling results
     n_keep = n_samples - drop_warmup * n_adapts
-    θs, stats = Vector{Vector{T}}(undef, n_keep), Vector{NamedTuple}(undef, n_keep)
+    θs, stats = Vector{T}(undef, n_keep), Vector{NamedTuple}(undef, n_keep)
     # Initial sampling
     h, t = sample_init(rng, h, θ)
     # Progress meter
@@ -157,9 +166,17 @@ function sample(
     end
     # Report end of sampling
     if verbose
-        EBFMI_est = EBFMI(map(s -> s.hamiltonian_energy, stats)) 
+        EBFMI_est = EBFMI(map(s -> s.hamiltonian_energy, stats))
         average_acceptance_rate = mean(map(s -> s.acceptance_rate, stats))
-        @info "Finished $n_samples sampling steps in $time (s)" h τ EBFMI_est average_acceptance_rate
+        if θ isa AbstractVector
+            n_chains = 1
+        else
+            n_chains = size(θ, 2)
+            # TODO: see if there is other trick to make
+            EBFMI_est = "[" * join(EBFMI_est, ", ") * "]"
+            average_acceptance_rate = "[" * join(average_acceptance_rate, ", ") * "]"
+        end
+        @info "Finished $n_samples sampling steps for $n_chains chains in $time (s)" h τ EBFMI_est average_acceptance_rate
     end
     return θs, stats
 end

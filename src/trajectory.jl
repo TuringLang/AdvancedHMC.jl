@@ -146,20 +146,20 @@ end
 Base.show(io::IO, τ::StaticTrajectory) = print(io, "StaticTrajectory(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
 
 function transition(
-    rng::AbstractRNG,
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     τ::StaticTrajectory,
     h::Hamiltonian,
     z::PhasePoint
 ) where {T<:Real}
     H0 = energy(z)
     integrator = jitter(rng, τ.integrator)
-    z′ = step(rng, integrator, h, z, τ.n_steps)
-    # Accept via MH criteria
-    is_accept, α = mh_accept_ratio(rng, H0, energy(z′))
-    if is_accept
-        # Reverse momentum variable to preserve reversibility
-        z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
-    end
+    z′ = step(τ.integrator, h, z, τ.n_steps)
+    # Are we going to accept the `z′` via MH criteria?
+    is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
+    # Do the actual accept / reject
+    z = accept_phasepoint!(z, z′, is_accept)    # NOTE: this function changes `z′` in place in matrix-parallel mode
+    # Reverse momentum variable to preserve reversibility
+    z = PhasePoint(z.θ, -z.r, z.ℓπ, z.ℓκ)
     H = energy(z)
     tstat = merge(
         (
@@ -175,6 +175,31 @@ function transition(
     return Transition(z, tstat)
 end
 
+# Return the accepted phase point
+function accept_phasepoint!(z::T, z′::T, is_accept::Bool) where {T<:PhasePoint{<:AbstractVector}}
+    if is_accept
+        return z′
+    else
+        return z
+    end
+end
+function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:AbstractMatrix}}
+    # Revert unaccepted proposals in `z′`
+    if any((!).(is_accept))
+        z′.θ[:,(!).(is_accept)] = z.θ[:,(!).(is_accept)]
+        z′.r[:,(!).(is_accept)] = z.r[:,(!).(is_accept)]
+        z′.ℓπ.value[(!).(is_accept)] = z.ℓπ.value[(!).(is_accept)]
+        z′.ℓπ.gradient[:,(!).(is_accept)] = z.ℓπ.gradient[:,(!).(is_accept)]
+        z′.ℓκ.value[(!).(is_accept)] = z.ℓκ.value[(!).(is_accept)]
+        z′.ℓκ.gradient[:,(!).(is_accept)] = z.ℓκ.gradient[:,(!).(is_accept)]
+    end
+    # Always return `z′` as any unaccepted proposal is already reverted
+    # NOTE: This in place treatment of `z′` is for memory efficient consideration.
+    #       We can also copy `z′ and avoid mutating the original `z′`. But this is
+    #       not efficient and immutability of `z′` is not important in this local scope.
+    return z′
+end
+
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
 
 ###
@@ -187,11 +212,11 @@ end
 Base.show(io::IO, τ::HMCDA) = print(io, "HMCDA(integrator=$(τ.integrator), λ=$(τ.λ)))")
 
 function transition(
-    rng::AbstractRNG,
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     τ::HMCDA,
     h::Hamiltonian,
     z::PhasePoint
-) where {T<:Real}
+)
     # Create the corresponding static τ
     n_steps = max(1, floor(Int, τ.λ / nom_step_size(τ.integrator)))
     static_τ = StaticTrajectory(τ.integrator, n_steps)
@@ -390,7 +415,7 @@ function build_tree(
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
-        z′ = step(rng, nt.integrator, h, z, v)
+        z′ = step(nt.integrator, h, z, v)
         H′ = energy(z′)
         ΔH = H′ - H0
         α′ = exp(min(0, -ΔH))
@@ -485,8 +510,8 @@ A single Hamiltonian integration step.
 
 NOTE: this function is intended to be used in `find_good_eps` only.
 """
-function A(rng, h, z, ϵ)
-    z′ = step(rng, Leapfrog(ϵ), h, z)
+function A(h, z, ϵ)
+    z′ = step(Leapfrog(ϵ), h, z)
     H′ = energy(z′)
     return z′, H′
 end
@@ -510,7 +535,7 @@ function find_good_eps(
     H = energy(z)
 
     # Make a proposal phase point to decide direction
-    z′, H′ = A(rng, h, z, ϵ)
+    z′, H′ = A(h, z, ϵ)
     ΔH = H - H′ # compute the energy difference; `exp(ΔH)` is the MH accept ratio
     direction = ΔH > log(a_cross) ? 1 : -1
 
@@ -521,7 +546,7 @@ function find_good_eps(
         # `direction` being `-1` means MH ratio too small
         #     - this means our step szie is too large, thus we decrease
         ϵ′ = direction == 1 ? d * ϵ : 1 / d * ϵ
-        z′, H′ = A(rng, h, z, ϵ)
+        z′, H′ = A(h, z, ϵ)
         ΔH = H - H′
         DEBUG && @debug "Crossing step" direction H′ ϵ "α = $(min(1, exp(ΔH)))"
         if (direction == 1) && !(ΔH > log(a_cross))
@@ -545,7 +570,7 @@ function find_good_eps(
     # the middle value of `ϵ` and `ϵ′` is too extreme.
     for _ = 1:max_n_iters
         ϵ_mid = middle(ϵ, ϵ′)
-        z′, H′ = A(rng, h, z, ϵ_mid)
+        z′, H′ = A(h, z, ϵ_mid)
         ΔH = H - H′
         DEBUG && @debug "Bisection step" H′ ϵ_mid "α = $(min(1, exp(ΔH)))"
         if (exp(ΔH) > a_max)
@@ -565,18 +590,21 @@ find_good_eps(
     h::Hamiltonian,
     θ::AbstractVector{T};
     max_n_iters::Int=100
-) where {T<:Real} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
+) where {T<:AbstractFloat} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
+
+_rand(rng::AbstractRNG) = rand(rng)
+_rand(rng::AbstractVector{<:AbstractRNG}) = rand.(rng)
 
 """
 Perform MH acceptance based on energy, i.e. negative log probability.
 """
 function mh_accept_ratio(
-    rng::AbstractRNG,
-    Horiginal::T,
-    Hproposal::T
-) where {T<:Real}
-    α = min(1.0, exp(Horiginal - Hproposal))
-    accept = rand(rng) < α
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    Horiginal::AbstractScalarOrVec{<:T},
+    Hproposal::AbstractScalarOrVec{<:T}
+) where {T<:AbstractFloat}
+    α = min.(1.0, exp.(Horiginal .- Hproposal))
+    accept = _rand(rng) .< α
     return accept, α
 end
 
@@ -599,6 +627,7 @@ function update(
     τ::AbstractProposal,
     da::NesterovDualAveraging
 )
+    # TODO: this does not support change type of `ϵ` (e.g. Float to Vector)
     integrator = reconstruct(τ.integrator, ϵ=getϵ(da))
     τ = reconstruct(τ, integrator=integrator)
     return h, τ
@@ -618,11 +647,11 @@ end
 
 function update(
     h::Hamiltonian,
-    θ::AbstractVector{T}
-) where {T<:Real}
+    θ::AbstractVecOrMat{T}
+) where {T<:AbstractFloat}
     metric = h.metric
-    if length(metric) != length(θ)
-        metric = typeof(metric)(length(θ))
+    if size(metric) != size(θ)
+        metric = typeof(metric)(size(θ))
         h = reconstruct(h, metric=metric)
     end
     return h
