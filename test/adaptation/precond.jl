@@ -95,7 +95,7 @@ let D=10
     function runnuts(ℓπ, ∂ℓπ∂θ, metric; n_samples=2_000)
         n_adapts = 1_000
 
-        θ_init = randn(D)
+        θ_init = rand(D)
 
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))

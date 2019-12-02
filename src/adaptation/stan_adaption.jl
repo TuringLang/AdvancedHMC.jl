@@ -2,10 +2,42 @@
 ### Mutable states ###
 ######################
 
+@enum WindowState winout=1 winin=2 winend=3
+
+is_in_window(ws::WindowState) = ws != winout
+is_window_end(ws::WindowState) = ws == winend
+
 mutable struct StanHMCAdaptorState
-    i           :: Int
-    in_window   :: Vector{Bool}
-    window_end  :: Vector{Bool}
+    window  ::  Vector{WindowState}
+end
+
+# Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/windowed_adaptation.hpp
+function init!(state::StanHMCAdaptorState, init_buffer::Int, term_buffer::Int, window_size::Int, n_adapts::Int)
+    # Init by all out-window points  
+    window = Vector{WindowState}(undef, n_adapts)
+    window .= winout
+
+    # Update in-window points
+    window[init_buffer+1:end-term_buffer] .= winin
+
+    # Update window-end points
+    next_window = init_buffer + window_size
+    while next_window <= n_adapts - term_buffer
+        window[next_window] = winend
+        window_size *= 2
+        next_window += window_size
+        # Extend the current window to the end of the full window
+        # if the next window reaches the end of the full window
+        next_window_boundary = next_window + 2 * window_size
+        if next_window_boundary > n_adapts - term_buffer
+            next_window = n_adapts - term_buffer
+        end
+    end
+
+    # Make sure the last point is out
+    window[end] = winout
+
+    state.window = window
 end
 
 ################
@@ -23,7 +55,8 @@ struct StanHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: Abstr
     state       :: StanHMCAdaptorState
 end
 Base.show(io::IO, a::StanHMCAdaptor) =
-    print(io, "StanHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa), init_buffer=$(a.init_buffer), term_buffer=$(a.term_buffer))")
+    print(io, "StanHMCAdaptor(\n    pc=$(a.pc),\n    ssa=$(a.ssa),\n    init_buffer=$(a.init_buffer),\n    term_buffer=$(a.term_buffer),\n    window_size=$(a.window_size)\n)")
+
 
 function StanHMCAdaptor(
     pc::M,
@@ -32,44 +65,13 @@ function StanHMCAdaptor(
     term_buffer::Int=50,
     window_size::Int=25
 ) where {M<:AbstractPreconditioner}
-    return StanHMCAdaptor(pc, ssa, init_buffer, term_buffer, window_size, StanHMCAdaptorState(0, Vector{Bool}(undef, 0), Vector{Bool}(undef, 0)))
+    return StanHMCAdaptor(pc, ssa, init_buffer, term_buffer, window_size, StanHMCAdaptorState(Vector{WindowState}(undef, 0)))
 end
-
-# @enum WindowState winout=1 winin=2 winend=3
-is_in_window(tp::StanHMCAdaptor) = tp.state.in_window[tp.state.i] 
-is_window_end(tp::StanHMCAdaptor) = tp.state.window_end[tp.state.i]
 
 getM⁻¹(adaptor::StanHMCAdaptor) = getM⁻¹(adaptor.pc)
 getϵ(adaptor::StanHMCAdaptor)   = getϵ(adaptor.ssa)
-
-# Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/windowed_adaptation.hpp
 function init!(adaptor::StanHMCAdaptor, n_adapts::Int)
-    init_buffer, term_buffer, window_size = adaptor.init_buffer, adaptor.term_buffer, adaptor.window_size
-
-    # Compute in_window points
-    in_window = Vector{Bool}(undef, n_adapts)
-    in_window .= false
-    in_window[init_buffer:n_adapts-term_buffer-1] .= true
-
-    # Compute window_end points
-    window_end = Vector{Bool}(undef, n_adapts)
-    window_end .= false
-    next_window = init_buffer + window_size - 1
-    while next_window < n_adapts - term_buffer
-        window_end[next_window] = true
-        window_size *= 2
-        next_window += window_size
-        # Extend the current window to the end of the full window
-        # if the next window reaches the end of the full window
-        next_window_boundary = next_window + 2 * window_size
-        if next_window_boundary >= n_adapts - term_buffer
-            next_window = n_adapts - term_buffer - 1
-        end
-    end
-
-    adaptor.state.i = 0
-    adaptor.state.in_window = in_window
-    adaptor.state.window_end = window_end
+    init!(adaptor.state, adaptor.init_buffer, adaptor.term_buffer, adaptor.window_size, n_adapts)
 end
 finalize!(adaptor::StanHMCAdaptor) = finalize!(adaptor.ssa)
 
@@ -78,20 +80,20 @@ function adapt!(
     θ::AbstractVecOrMat{<:AbstractFloat},
     α::AbstractScalarOrVec{<:AbstractFloat}
 )
-    tp.state.i += 1
+    ws = popfirst!(tp.state.window)
 
     adapt!(tp.ssa, θ, α)
 
     resize!(tp.pc, θ) # Resize pre-conditioner if necessary.
 
     # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/adapt_diag_e_nuts.hpp
-    if is_in_window(tp)
+    if is_in_window(ws)
         # We accumlate stats from θ online and only trigger the update of M⁻¹ in the end of window.
-        is_update_M⁻¹ = is_window_end(tp)
+        is_update_M⁻¹ = is_window_end(ws)
         adapt!(tp.pc, θ, α, is_update_M⁻¹)
     end
 
-    if is_window_end(tp)
+    if is_window_end(ws)
         reset!(tp.ssa)
         reset!(tp.pc)
     end
