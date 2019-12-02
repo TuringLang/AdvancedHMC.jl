@@ -34,10 +34,35 @@ function init!(state::StanHMCAdaptorState, init_buffer::Int, term_buffer::Int, w
         end
     end
 
-    # Make sure the last point is out
-    window[end] = winout
+    # Make sure the last point is not end
+    if window[end] == winend
+        window[end] = winin
+    end
 
     state.window = window
+end
+
+function get_win_starts_ends(window)
+    winstarts, winends = [], []
+    for i in 1:length(window)-1
+        if window[i] != winin && is_in_window(window[i+1])
+            push!(winstarts, i)
+        end
+        if is_window_end(window[i])
+            push!(winends, i)
+        end
+    end
+    return winstarts, winends
+end
+
+function Base.show(io::IO, state::StanHMCAdaptorState)
+    window = state.window
+    windows = length(window) > 0 ? (
+        findfirst(ws -> ws == winin, window) - 1, 
+        findall(ws -> ws == winend, state.window)...,
+        (state.window[end] == winin ? tuple(length(state.window)) : tuple())...
+    ) : tuple()
+    print(io, "windows(" * string(join(windows, ", ")) * ")")
 end
 
 ################
@@ -55,12 +80,12 @@ struct StanHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: Abstr
     state       :: StanHMCAdaptorState
 end
 Base.show(io::IO, a::StanHMCAdaptor) =
-    print(io, "StanHMCAdaptor(\n    pc=$(a.pc),\n    ssa=$(a.ssa),\n    init_buffer=$(a.init_buffer),\n    term_buffer=$(a.term_buffer),\n    window_size=$(a.window_size)\n)")
+    print(io, "StanHMCAdaptor(\n    pc=$(a.pc),\n    ssa=$(a.ssa),\n    init_buffer=$(a.init_buffer),\n    term_buffer=$(a.term_buffer),\n    window_size=$(a.window_size),\n    state=$(a.state)\n)")
 
 
 function StanHMCAdaptor(
     pc::M,
-    ssa::StepSizeAdaptor,
+    ssa::StepSizeAdaptor;
     init_buffer::Int=75,
     term_buffer::Int=50,
     window_size::Int=25
