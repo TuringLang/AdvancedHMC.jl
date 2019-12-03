@@ -6,7 +6,7 @@ include("common.jl")
     n_chains_max = 20
     n_chains_list = collect(1:n_chains_max)
     θ_init_list = [rand(D, n_chains) for n_chains in n_chains_list]
-    ϵ = 0.5
+    ϵ = 0.2
     lf = Leapfrog(ϵ)
     i_test = 5
     lfi = Leapfrog(fill(ϵ, i_test))
