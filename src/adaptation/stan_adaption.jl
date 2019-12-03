@@ -17,7 +17,8 @@ function init!(state::StanHMCAdaptorState, init_buffer::Int, term_buffer::Int, w
     window = fill(winout, n_adapts)
 
     # Update in-window points
-    window[init_buffer+1:end-term_buffer] .= winin
+    foreach(i -> window[i] = winin, init_buffer+1:n_adapts-term_buffer)
+    # window[init_buffer+1:end-term_buffer] .= winin    # this is buggy for Julia 1.0 and 1.1
 
     # Update window-end points
     next_window = init_buffer + window_size
