@@ -117,11 +117,12 @@ let D=10
     end
 
     @testset "Adapted mass v.s. true variance" begin
-        Random.seed!(1)
         n_tests = 5
 
         @testset "DiagEuclideanMetric" begin
             for _ in 1:n_tests
+                Random.seed!(1)
+                
                 # Random variance
                 σ = ones(D) + abs.(randn(D))
 
