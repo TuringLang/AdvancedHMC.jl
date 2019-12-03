@@ -60,7 +60,6 @@ end
 ### Adaptors ###
 ################
 
-# TODO: currently only StanHMCAdaptor has the filed `n_adapts`. maybe we could unify all
 # Acknowledgement: this adaption settings is mimicing Stan's 3-phase adaptation.
 struct StanHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
     pc          :: M
@@ -72,7 +71,6 @@ struct StanHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: Abstr
 end
 Base.show(io::IO, a::StanHMCAdaptor) =
     print(io, "StanHMCAdaptor(\n    pc=$(a.pc),\n    ssa=$(a.ssa),\n    init_buffer=$(a.init_buffer),\n    term_buffer=$(a.term_buffer),\n    window_size=$(a.window_size),\n    state=$(a.state)\n)")
-
 
 function StanHMCAdaptor(
     pc::M,
@@ -114,3 +112,20 @@ function adapt!(
         reset!(tp.pc)
     end
 end
+
+# Deprecated constructor
+
+function StanHMCAdaptor(
+    n_adapts::Int,
+    pc::M,
+    ssa::StepSizeAdaptor;
+    init_buffer::Int=75,
+    term_buffer::Int=50,
+    window_size::Int=25
+) where {M<:AbstractPreconditioner}
+    adaptor = StanHMCAdaptor(pc, ssa, init_buffer, term_buffer, window_size, StanHMCAdaptorState(Vector{WindowState}(undef, 0)))
+    init!(adaptor)
+    return adaptor
+end
+
+@deprecate StanHMCAdaptor(n_adapts, pc, ssa) StanHMCAdaptor(pc, ssa)
