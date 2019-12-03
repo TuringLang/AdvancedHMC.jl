@@ -81,7 +81,7 @@ end
 
     @test_deprecated StanHMCAdaptor(
         1_000,
-        Preconditioner(DenseEuclideanMetric),
+        Preconditioner(DiagEuclideanMetric),
         NesterovDualAveraging(0.8, 0.5)
     )
 end

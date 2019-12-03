@@ -86,6 +86,7 @@ getM⁻¹(adaptor::StanHMCAdaptor) = getM⁻¹(adaptor.pc)
 getϵ(adaptor::StanHMCAdaptor)   = getϵ(adaptor.ssa)
 function init!(adaptor::StanHMCAdaptor, n_adapts::Int)
     init!(adaptor.state, adaptor.init_buffer, adaptor.term_buffer, adaptor.window_size, n_adapts)
+    return adaptor
 end
 finalize!(adaptor::StanHMCAdaptor) = finalize!(adaptor.ssa)
 
@@ -114,18 +115,4 @@ function adapt!(
 end
 
 # Deprecated constructor
-
-function StanHMCAdaptor(
-    n_adapts::Int,
-    pc::M,
-    ssa::StepSizeAdaptor;
-    init_buffer::Int=75,
-    term_buffer::Int=50,
-    window_size::Int=25
-) where {M<:AbstractPreconditioner}
-    adaptor = StanHMCAdaptor(pc, ssa, init_buffer, term_buffer, window_size, StanHMCAdaptorState(Vector{WindowState}(undef, 0)))
-    init!(adaptor)
-    return adaptor
-end
-
-@deprecate StanHMCAdaptor(n_adapts, pc, ssa) StanHMCAdaptor(pc, ssa)
+@deprecate StanHMCAdaptor(n_adapts, pc, ssa) init!(StanHMCAdaptor(pc, ssa), n_adapts)
