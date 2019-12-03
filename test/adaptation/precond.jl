@@ -73,7 +73,7 @@ end
     )
     for a in [adaptor1, adaptor2, adaptor3]
         AdvancedHMC.init!(a, 1_000)
-        @test a.state.window_start == 75
+        @test a.state.window_start == 76
         @test a.state.window_end == 950
         @test a.state.window_splits == [100, 150, 250, 450, 950]
         AdvancedHMC.adapt!(a, θ, 1.)
@@ -117,7 +117,7 @@ let D=10
     end
 
     @testset "Adapted mass v.s. true variance" begin
-        Random.seed!(123)
+        Random.seed!(1)
         n_tests = 5
 
         @testset "DiagEuclideanMetric" begin
@@ -133,7 +133,7 @@ let D=10
                 @test res.adaptor.pc.var ≈ σ .^ 2 rtol=0.2
 
                 res = runnuts(ℓπ, ∂ℓπ∂θ, DenseEuclideanMetric(D))
-                @test res.adaptor.pc.covar ≈ diagm(0 => σ.^2) rtol=0.25
+                @test res.adaptor.pc.covar ≈ diagm(0 => σ .^ 2) rtol=0.25
             end
         end
 

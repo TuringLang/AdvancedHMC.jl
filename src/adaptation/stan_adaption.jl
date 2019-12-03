@@ -13,23 +13,33 @@ StanHMCAdaptorState() = StanHMCAdaptorState(0, 0, 0, Vector{Int}(undef, 0))
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/windowed_adaptation.hpp
 function init!(state::StanHMCAdaptorState, init_buffer::Int, term_buffer::Int, window_size::Int, n_adapts::Int)
-    state.window_start = init_buffer
-    state.window_end = n_adapts - term_buffer
+    window_start = init_buffer + 1
+    window_end = n_adapts - term_buffer
+    
     # Update window-end points
+    window_splits = Vector{Int}(undef, 0)
     next_window = init_buffer + window_size
-    while next_window <= n_adapts - term_buffer
+    while next_window <= window_end
         # Extend the current window to the end of the full window
         # if the next window reaches the end of the full window
         next_window_boundary = next_window + 2 * window_size
-        if next_window_boundary > n_adapts - term_buffer
-            next_window = n_adapts - term_buffer
+        if next_window_boundary > window_end
+            next_window = window_end
         end
         # Include the window split
-        push!(state.window_splits, next_window)
+        push!(window_splits, next_window)
         # Expand window and compute the next split
         window_size *= 2
         next_window += window_size
     end
+    # Avoid updating in the end
+    if window_splits[end] == n_adapts
+        pop!(window_splits)
+    end
+
+    state.window_start  = window_start
+    state.window_end    = window_end
+    state.window_splits = window_splits
 end
 
 function Base.show(io::IO, state::StanHMCAdaptorState)
@@ -50,7 +60,7 @@ struct StanHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: Abstr
     state       :: StanHMCAdaptorState
 end
 Base.show(io::IO, a::StanHMCAdaptor) =
-    print(io, "StanHMCAdaptor(\n    pc=$(a.pc),\n    ssa=$(a.ssa),\n    init_buffer=$(a.init_buffer),\n    term_buffer=$(a.term_buffer),\n    window_size=$(a.window_size),\n    state=$(a.state)\n)")
+    print(io, "StanHMCAdaptor(\n    pc=$(a.pc),\n    ssa=$(a.ssa),\n    init_buffer=$(a.init_buffer), term_buffer=$(a.term_buffer), indow_size=$(a.window_size),\n    state=$(a.state)\n)")
 
 function StanHMCAdaptor(
     pc::M,
@@ -70,7 +80,7 @@ function init!(adaptor::StanHMCAdaptor, n_adapts::Int)
 end
 finalize!(adaptor::StanHMCAdaptor) = finalize!(adaptor.ssa)
 
-is_in_window(a::StanHMCAdaptor) = a.state.i > a.state.window_start && a.state.i <= a.state.window_end
+is_in_window(a::StanHMCAdaptor) = a.state.i >= a.state.window_start && a.state.i <= a.state.window_end
 is_window_end(a::StanHMCAdaptor) = a.state.i in a.state.window_splits
 
 function adapt!(

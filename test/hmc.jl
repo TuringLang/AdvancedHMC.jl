@@ -31,7 +31,7 @@ function test_stats(::NUTS, stats, n_adapts)
 end
 
 @testset "HMC and NUTS" begin
-    Random.seed!(123)
+    Random.seed!(1)
 
     @testset "$metricsym" for (metricsym, metric) in Dict(
         :UnitEuclideanMetric => UnitEuclideanMetric(D),
