@@ -8,7 +8,7 @@ include("common.jl")
 
 θ_init = rand(D)
 ϵ = 0.2
-n_steps = 20
+n_steps = 10
 n_samples = 12_000
 n_adapts = 2_000
 
