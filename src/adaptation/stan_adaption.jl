@@ -14,8 +14,7 @@ end
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/windowed_adaptation.hpp
 function init!(state::StanHMCAdaptorState, init_buffer::Int, term_buffer::Int, window_size::Int, n_adapts::Int)
     # Init by all out-window points  
-    window = Vector{WindowState}(undef, n_adapts)
-    window .= winout
+    window = fill(winout, n_adapts)
 
     # Update in-window points
     window[init_buffer+1:end-term_buffer] .= winin
