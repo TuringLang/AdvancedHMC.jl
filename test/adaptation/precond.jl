@@ -73,7 +73,9 @@ end
     )
     for a in [adaptor1, adaptor2, adaptor3]
         AdvancedHMC.init!(a, 1_000)
-        @test AdvancedHMC.Adaptation.getwindows(a.state) == (75, 100, 150, 250, 450, 950)
+        @test a.state.window_start == 75
+        @test a.state.window_end == 950
+        @test a.state.window_splits == [100, 150, 250, 450, 950]
         AdvancedHMC.adapt!(a, θ, 1.)
     end
     @test AdvancedHMC.Adaptation.getM⁻¹(adaptor2) == ones(length(θ))

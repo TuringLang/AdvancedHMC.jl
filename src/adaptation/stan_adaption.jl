@@ -2,59 +2,38 @@
 ### Mutable states ###
 ######################
 
-@enum WindowState winout=1 winin=2 winend=3
-
-is_in_window(ws::WindowState) = ws != winout
-is_window_end(ws::WindowState) = ws == winend
-
 mutable struct StanHMCAdaptorState
-    window  ::  Vector{WindowState}
+    i               ::  Int
+    window_start    ::  Int
+    window_end      ::  Int
+    window_splits   ::  Vector{Int}
 end
+
+StanHMCAdaptorState() = StanHMCAdaptorState(0, 0, 0, Vector{Int}(undef, 0))
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/windowed_adaptation.hpp
 function init!(state::StanHMCAdaptorState, init_buffer::Int, term_buffer::Int, window_size::Int, n_adapts::Int)
-    # Init by all out-window points  
-    window = fill(winout, n_adapts)
-
-    # Update in-window points
-    foreach(i -> window[i] = winin, init_buffer+1:n_adapts-term_buffer)
-    # window[init_buffer+1:end-term_buffer] .= winin    # this is buggy for Julia 1.0 and 1.1
-
+    state.window_start = init_buffer
+    state.window_end = n_adapts - term_buffer
     # Update window-end points
     next_window = init_buffer + window_size
     while next_window <= n_adapts - term_buffer
-        window[next_window] = winend
-        window_size *= 2
-        next_window += window_size
         # Extend the current window to the end of the full window
         # if the next window reaches the end of the full window
         next_window_boundary = next_window + 2 * window_size
         if next_window_boundary > n_adapts - term_buffer
             next_window = n_adapts - term_buffer
         end
+        # Include the window split
+        push!(state.window_splits, next_window)
+        # Expand window and compute the next split
+        window_size *= 2
+        next_window += window_size
     end
-
-    # Make sure the last point is not end
-    if window[end] == winend
-        window[end] = winin
-    end
-
-    state.window = window
-end
-
-function getwindows(state)
-    window = state.window
-    windows = length(window) > 0 ? (
-        findfirst(ws -> ws == winin, window) - 1, 
-        findall(ws -> ws == winend, state.window)...,
-        (state.window[end] == winin ? tuple(length(state.window)) : tuple())...
-    ) : tuple()
-    return windows
 end
 
 function Base.show(io::IO, state::StanHMCAdaptorState)
-    windows = getwindows(state)
-    print(io, "windows(" * string(join(windows, ", ")) * ")")
+    print(io, "window($(state.window_start), $(state.window_end)), window_splits(" * string(join(state.window_splits, ", ")) * ")")
 end
 
 ################
@@ -80,7 +59,7 @@ function StanHMCAdaptor(
     term_buffer::Int=50,
     window_size::Int=25
 ) where {M<:AbstractPreconditioner}
-    return StanHMCAdaptor(pc, ssa, init_buffer, term_buffer, window_size, StanHMCAdaptorState(Vector{WindowState}(undef, 0)))
+    return StanHMCAdaptor(pc, ssa, init_buffer, term_buffer, window_size, StanHMCAdaptorState())
 end
 
 getM⁻¹(adaptor::StanHMCAdaptor) = getM⁻¹(adaptor.pc)
@@ -91,25 +70,28 @@ function init!(adaptor::StanHMCAdaptor, n_adapts::Int)
 end
 finalize!(adaptor::StanHMCAdaptor) = finalize!(adaptor.ssa)
 
+is_in_window(a::StanHMCAdaptor) = a.state.i > a.state.window_start && a.state.i <= a.state.window_end
+is_window_end(a::StanHMCAdaptor) = a.state.i in a.state.window_splits
+
 function adapt!(
     tp::StanHMCAdaptor,
     θ::AbstractVecOrMat{<:AbstractFloat},
     α::AbstractScalarOrVec{<:AbstractFloat}
 )
-    ws = popfirst!(tp.state.window)
+    tp.state.i += 1
 
     adapt!(tp.ssa, θ, α)
 
     resize!(tp.pc, θ) # Resize pre-conditioner if necessary.
 
     # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/adapt_diag_e_nuts.hpp
-    if is_in_window(ws)
+    if is_in_window(tp)
         # We accumlate stats from θ online and only trigger the update of M⁻¹ in the end of window.
-        is_update_M⁻¹ = is_window_end(ws)
+        is_update_M⁻¹ = is_window_end(tp)
         adapt!(tp.pc, θ, α, is_update_M⁻¹)
     end
 
-    if is_window_end(ws)
+    if is_window_end(tp)
         reset!(tp.ssa)
         reset!(tp.pc)
     end
