@@ -7,7 +7,7 @@ using Statistics: mean, var, cov
 include("common.jl")
 
 θ_init = rand(D)
-ϵ = 0.1
+ϵ = 0.5
 n_steps = 20
 n_samples = 12_000
 n_adapts = 2_000
