@@ -78,6 +78,12 @@ end
     end
     @test AdvancedHMC.Adaptation.getM⁻¹(adaptor2) == ones(length(θ))
     @test AdvancedHMC.Adaptation.getM⁻¹(adaptor3) == LinearAlgebra.diagm(0 => ones(length(θ)))
+
+    @test_deprecated StanHMCAdaptor(
+        1_000,
+        Preconditioner(DenseEuclideanMetric),
+        NesterovDualAveraging(0.8, 0.5)
+    )
 end
 
 let D=10
