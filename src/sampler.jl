@@ -48,7 +48,7 @@ function adapt!(
 )
     isadapted = false
     if i <= n_adapts
-        i == 1 && init!(adaptor, n_adapts)
+        i == 1 && initialize!(adaptor, n_adapts)
         adapt!(adaptor, θ, α)
         i == n_adapts && finalize!(adaptor)
         h, τ = update(h, τ, adaptor)

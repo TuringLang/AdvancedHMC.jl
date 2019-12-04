@@ -12,7 +12,7 @@ end
 StanHMCAdaptorState() = StanHMCAdaptorState(0, 0, 0, Vector{Int}(undef, 0))
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/windowed_adaptation.hpp
-function init!(state::StanHMCAdaptorState, init_buffer::Int, term_buffer::Int, window_size::Int, n_adapts::Int)
+function initialize!(state::StanHMCAdaptorState, init_buffer::Int, term_buffer::Int, window_size::Int, n_adapts::Int)
     window_start = init_buffer + 1
     window_end = n_adapts - term_buffer
 
@@ -74,8 +74,8 @@ end
 
 getM⁻¹(adaptor::StanHMCAdaptor) = getM⁻¹(adaptor.pc)
 getϵ(adaptor::StanHMCAdaptor)   = getϵ(adaptor.ssa)
-function init!(adaptor::StanHMCAdaptor, n_adapts::Int)
-    init!(adaptor.state, adaptor.init_buffer, adaptor.term_buffer, adaptor.window_size, n_adapts)
+function initialize!(adaptor::StanHMCAdaptor, n_adapts::Int)
+    initialize!(adaptor.state, adaptor.init_buffer, adaptor.term_buffer, adaptor.window_size, n_adapts)
     return adaptor
 end
 finalize!(adaptor::StanHMCAdaptor) = finalize!(adaptor.ssa)
@@ -108,4 +108,4 @@ function adapt!(
 end
 
 # Deprecated constructor
-@deprecate StanHMCAdaptor(n_adapts, pc, ssa) init!(StanHMCAdaptor(pc, ssa), n_adapts)
+@deprecate StanHMCAdaptor(n_adapts, pc, ssa) initialize!(StanHMCAdaptor(pc, ssa), n_adapts)

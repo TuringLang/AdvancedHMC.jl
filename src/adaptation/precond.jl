@@ -130,7 +130,7 @@ end
 
 abstract type AbstractPreconditioner <: AbstractAdaptor end
 
-init!(adaptor::T, n_adapts::Int) where {T<:AbstractPreconditioner} = nothing
+initialize!(adaptor::T, n_adapts::Int) where {T<:AbstractPreconditioner} = nothing
 finalize!(adaptor::T) where {T<:AbstractPreconditioner} = nothing
 
 ####

@@ -72,7 +72,7 @@ end
         NesterovDualAveraging(0.8, 0.5)
     )
     for a in [adaptor1, adaptor2, adaptor3]
-        AdvancedHMC.init!(a, 1_000)
+        AdvancedHMC.initialize!(a, 1_000)
         @test a.state.window_start == 76
         @test a.state.window_end == 950
         @test a.state.window_splits == [100, 150, 250, 450, 950]
@@ -122,7 +122,7 @@ let D=10
         @testset "DiagEuclideanMetric" begin
             for _ in 1:n_tests
                 Random.seed!(1)
-                
+
                 # Random variance
                 σ = ones(D) + abs.(randn(D))
 

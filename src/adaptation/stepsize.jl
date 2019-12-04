@@ -140,7 +140,7 @@ adapt!(
 
 reset!(da::NesterovDualAveraging) = reset!(da.state)
 
-init!(adaptor::NesterovDualAveraging, n_adapts::Int) = nothing
+initialize!(adaptor::NesterovDualAveraging, n_adapts::Int) = nothing
 
 function finalize!(da::NesterovDualAveraging)
     da.state.ϵ = exp.(da.state.x_bar)
