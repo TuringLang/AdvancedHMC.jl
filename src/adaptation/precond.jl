@@ -130,6 +130,7 @@ end
 
 abstract type AbstractPreconditioner <: AbstractAdaptor end
 
+initialize!(adaptor::T, n_adapts::Int) where {T<:AbstractPreconditioner} = nothing
 finalize!(adaptor::T) where {T<:AbstractPreconditioner} = nothing
 
 ####
@@ -382,8 +383,8 @@ Base.rand(metric::AbstractMetric) = rand(GLOBAL_RNG, metric)
 ####
 
 Preconditioner(m::UnitEuclideanMetric{T}) where {T} = UnitPreconditioner(T)
-Preconditioner(m::DiagEuclideanMetric{T}) where {T} = DiagPreconditioner(T, size(m); var=m.M⁻¹)
-Preconditioner(m::DenseEuclideanMetric{T}) where {T} = DensePreconditioner(T, size(m); covar=m.M⁻¹)
+Preconditioner(m::DiagEuclideanMetric{T}) where {T} = DiagPreconditioner(T, size(m); var=copy(m.M⁻¹))
+Preconditioner(m::DenseEuclideanMetric{T}) where {T} = DensePreconditioner(T, size(m); covar=copy(m.M⁻¹))
 
 Preconditioner(m::Type{TM}, sz::Tuple{Vararg{Int}}=(2,)) where {TM<:AbstractMetric} = Preconditioner(Float64, m, sz)
 Preconditioner(::Type{T}, ::Type{TM}, sz::Tuple{Vararg{Int}}=(2,)) where {T<:AbstractFloat, TM<:AbstractMetric} = Preconditioner(TM(T, sz))

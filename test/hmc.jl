@@ -6,9 +6,9 @@ using Parameters: reconstruct
 using Statistics: mean, var, cov
 include("common.jl")
 
-θ_init = rand(D)
-ϵ = 0.1
-n_steps = 20
+θ_init = rand(MersenneTwister(1), D)
+ϵ = 0.2
+n_steps = 10
 n_samples = 12_000
 n_adapts = 2_000
 
@@ -31,8 +31,6 @@ function test_stats(::NUTS, stats, n_adapts)
 end
 
 @testset "HMC and NUTS" begin
-    Random.seed!(123)
-
     @testset "$metricsym" for (metricsym, metric) in Dict(
         :UnitEuclideanMetric => UnitEuclideanMetric(D),
         :DiagEuclideanMetric => DiagEuclideanMetric(D),
@@ -53,6 +51,7 @@ end
                 :(NUTS{MultinomialTS,Generalised}) => NUTS{MultinomialTS,GeneralisedNoUTurn}(lf),
             )
                 @testset  "NoAdaptation" begin
+                    Random.seed!(1)
                     samples, stats = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
                     @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
                 end
@@ -71,16 +70,16 @@ end
                         NesterovDualAveraging(0.8, τ.integrator),
                     ),
                     :StanHMCAdaptor => StanHMCAdaptor(
-                        n_adapts,
                         Preconditioner(metric),
                         NesterovDualAveraging(0.8, τ.integrator),
                     ),
                 )
+                    Random.seed!(1)
                     # For `Preconditioner`, we use the pre-defined step size as the method cannot adapt the step size.
                     # For other adapatation methods that are able to adpat the step size, we use `find_good_eps`.
                     τ_used = adaptorsym == :PreconditionerOnly ? τ : reconstruct(τ, integrator=reconstruct(lf, ϵ=find_good_eps(h, θ_init)))
-                    samples, stats = sample(h, τ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS, drop_warmup=false)
-                    @test mean(samples[(n_adapts + 1):end]) ≈ zeros(D) atol=RNDATOL
+                    samples, stats = sample(h, τ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
+                    @test mean(samples) ≈ zeros(D) atol=RNDATOL
                     test_stats(τ_used, stats, n_adapts)
                 end
             end
@@ -93,7 +92,6 @@ end
     h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
     τ = NUTS(Leapfrog(ϵ))
     adaptor = StanHMCAdaptor(
-        n_adapts,
         Preconditioner(metric),
         NesterovDualAveraging(0.8, τ.integrator),
     )

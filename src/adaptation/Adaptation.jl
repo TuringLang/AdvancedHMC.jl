@@ -23,6 +23,7 @@ adapt!(
     α::AbstractScalarOrVec{<:AbstractFloat}
 ) where {T<:AbstractAdaptor} = error("`adapt!(adaptor::$T, θ::AbstractVecOrMat{<:AbstractFloat}, α::AbstractScalarOrVec{<:AbstractFloat})` is not implemented.")
 reset!(adaptor::T) where {T<:AbstractAdaptor} = error("`reset!(adaptor::$T)` is not implemented.")
+initialize!(adaptor::T, n_adapts::Int) where {T<:AbstractAdaptor} = throw(MethodError(initialize!, adaptor, n_adapts))
 finalize!(adaptor::T) where {T<:AbstractAdaptor} = error("`finalize!(adaptor::$T)` is not implemented.")
 
 struct NoAdaptation <: AbstractAdaptor end
@@ -57,6 +58,7 @@ function reset!(aca::NaiveHMCAdaptor)
     reset!(aca.ssa)
     reset!(aca.pc)
 end
+initialize!(adaptor::NaiveHMCAdaptor, n_adapts::Int) = nothing
 finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)
 
 ##
@@ -64,7 +66,7 @@ finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)
 ##
 include("stan_adaption.jl")
 
-export adapt!, finalize!, getϵ, getM⁻¹, reset!, renew,
+export adapt!, initialize!, finalize!, getϵ, getM⁻¹, reset!, renew,
        NesterovDualAveraging,
        UnitPreconditioner, DiagPreconditioner, DensePreconditioner,
        AbstractMetric, UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric,

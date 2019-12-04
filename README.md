@@ -13,6 +13,7 @@ If you are interested in using `AdvancedHMC.jl` through a probabilistic programm
 - We presented a poster for AdvancedHMC.jl at [StanCon 2019](https://mc-stan.org/events/stancon2019Cambridge/) in Cambridge, UK. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
 **API CHANGES**
+- [v0.2.15] `n_adapts` is not needed to construct `StanHMCAdaptor`; the old constructor is deprecated.
 - [v0.2.8] Two exported types are renamed: `Multinomial` -> `MultinomialTS` and `Slice` -> `SliceTS`.
 - [v0.2.0] The gradient function passed to `Hamiltonian` is supposed to return a value-gradient tuple now.
 
@@ -49,7 +50,6 @@ h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
 int = Leapfrog(find_good_eps(h, θ_init))
 prop = NUTS{MultinomialTS,GeneralisedNoUTurn}(int)
 adaptor = StanHMCAdaptor(
-    n_adapts, 
     Preconditioner(metric), 
     NesterovDualAveraging(0.8, int)
 )
@@ -98,7 +98,7 @@ where `int` is the integrator used.
 - Preconditioning on metric space `metric`: `pc = Preconditioner(metric)`
 - Nesterov's dual averaging with target acceptance rate `δ` on integrator `int`: `da = NesterovDualAveraging(δ, int)`
 - Combine the two above *naively*: `NaiveHMCAdaptor(pc, da)`
-- Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(n_adapts, pc, da)` where `n_adapts` is the total number of adaptation steps will be used.
+- Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(pc, da)`
 
 All the combinations are tested in [this file](https://github.com/TuringLang/AdvancedHMC.jl/blob/master/test/hmc.jl) except from using tempered leapfrog integrator together with adaptation, which we found unstable empirically.
 

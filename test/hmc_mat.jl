@@ -6,12 +6,12 @@ include("common.jl")
     n_chains_max = 20
     n_chains_list = collect(1:n_chains_max)
     θ_init_list = [rand(D, n_chains) for n_chains in n_chains_list]
-    ϵ = 0.1
+    ϵ = 0.2
     lf = Leapfrog(ϵ)
     i_test = 5
     lfi = Leapfrog(fill(ϵ, i_test))
     lfi_jittered = JitteredLeapfrog(fill(ϵ, i_test), 1.0)
-    n_steps = 20
+    n_steps = 10
     n_samples = 12_000
     n_adapts = 2_000
 
@@ -39,7 +39,6 @@ include("common.jl")
                 NesterovDualAveraging(0.8, lfi.ϵ),
             ),
             StanHMCAdaptor(
-                n_adapts,
                 Preconditioner(metric),
                 NesterovDualAveraging(0.8, lfi.ϵ),
             ),

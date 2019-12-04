@@ -60,26 +60,32 @@ end
     θ = [0.0, 0.0, 0.0, 0.0]
 
     adaptor1 = StanHMCAdaptor(
-        1000,
         Preconditioner(UnitEuclideanMetric),
         NesterovDualAveraging(0.8, 0.5)
     )
     adaptor2 = StanHMCAdaptor(
-        1000,
         Preconditioner(DiagEuclideanMetric),
         NesterovDualAveraging(0.8, 0.5)
     )
     adaptor3 = StanHMCAdaptor(
-        1000,
         Preconditioner(DenseEuclideanMetric),
         NesterovDualAveraging(0.8, 0.5)
     )
-
-    AdvancedHMC.adapt!(adaptor1, θ, 1.)
-    AdvancedHMC.adapt!(adaptor2, θ, 1.)
-    AdvancedHMC.adapt!(adaptor3, θ, 1.)
+    for a in [adaptor1, adaptor2, adaptor3]
+        AdvancedHMC.initialize!(a, 1_000)
+        @test a.state.window_start == 76
+        @test a.state.window_end == 950
+        @test a.state.window_splits == [100, 150, 250, 450, 950]
+        AdvancedHMC.adapt!(a, θ, 1.)
+    end
     @test AdvancedHMC.Adaptation.getM⁻¹(adaptor2) == ones(length(θ))
     @test AdvancedHMC.Adaptation.getM⁻¹(adaptor3) == LinearAlgebra.diagm(0 => ones(length(θ)))
+
+    @test_deprecated StanHMCAdaptor(
+        1_000,
+        Preconditioner(DiagEuclideanMetric),
+        NesterovDualAveraging(0.8, 0.5)
+    )
 end
 
 let D=10
@@ -98,12 +104,11 @@ let D=10
     function runnuts(ℓπ, ∂ℓπ∂θ, metric; n_samples=2_000)
         n_adapts = 1_000
 
-        θ_init = randn(D)
+        θ_init = rand(D)
 
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
         adaptor = StanHMCAdaptor(
-            n_adapts, 
             Preconditioner(metric),
             NesterovDualAveraging(0.8, prop.integrator)
         )
@@ -112,11 +117,12 @@ let D=10
     end
 
     @testset "Adapted mass v.s. true variance" begin
-        Random.seed!(123)
         n_tests = 5
 
         @testset "DiagEuclideanMetric" begin
             for _ in 1:n_tests
+                Random.seed!(1)
+
                 # Random variance
                 σ = ones(D) + abs.(randn(D))
 
@@ -128,7 +134,7 @@ let D=10
                 @test res.adaptor.pc.var ≈ σ .^ 2 rtol=0.2
 
                 res = runnuts(ℓπ, ∂ℓπ∂θ, DenseEuclideanMetric(D))
-                @test res.adaptor.pc.covar ≈ diagm(0 => σ.^2) rtol=0.25
+                @test res.adaptor.pc.covar ≈ diagm(0 => σ .^ 2) rtol=0.25
             end
         end
 

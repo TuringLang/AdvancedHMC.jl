@@ -17,7 +17,7 @@ end
 using AdvancedHMC
 
 # Sampling parameter settings
-n_samples, n_adapts = 10_000, 2_000
+n_samples, n_adapts = 12_000, 2_000
 
 # Draw a random starting points
 θ_init = rand(D)
@@ -28,7 +28,6 @@ h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
 int = Leapfrog(find_good_eps(h, θ_init))
 prop = NUTS{MultinomialTS,GeneralisedNoUTurn}(int)
 adaptor = StanHMCAdaptor(
-    n_adapts, 
     Preconditioner(metric), 
     NesterovDualAveraging(0.8, int)
 )
