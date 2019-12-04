@@ -4,9 +4,9 @@
 
 mutable struct StanHMCAdaptorState
     i               ::  Int
-    window_start    ::  Int
-    window_end      ::  Int
-    window_splits   ::  Vector{Int}
+    window_start    ::  Int         # start of mass matrix adaptation
+    window_end      ::  Int         #   end of mass matrix adaptation
+    window_splits   ::  Vector{Int} # iterations to update metric using mass matrix
 end
 
 StanHMCAdaptorState() = StanHMCAdaptorState(0, 0, 0, Vector{Int}(undef, 0))
