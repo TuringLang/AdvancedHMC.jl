@@ -42,7 +42,7 @@ export Hamiltonian
 include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 include("Kernel/Kernel.jl")
-export StaticTrajectory, find_good_eps, HMCDA, NUTS, SliceTS, MultinomialTS, ClassicNoUTurn, GeneralisedNoUTurn
+export HMC, HMCDA, NUTS, LastTS, SliceTS, MultinomialTS, ClassicNoUTurn, GeneralisedNoUTurn, find_good_eps
 
 include("diagnosis.jl")
 include("sampler.jl")

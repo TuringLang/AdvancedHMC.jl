@@ -20,8 +20,8 @@ include("common.jl")
         DiagEuclideanMetric,
         # DenseEuclideanMetric  # not supported at the moment
     ], τ in [
-        StaticTrajectory(lfi, n_steps),
-        StaticTrajectory(lfi_jittered, n_steps),
+        HMC(lfi, n_steps),
+        HMC(lfi_jittered, n_steps),
         HMCDA(lf, ϵ * n_steps)
     ]
         n_chains = n_chains_list[i_test]
@@ -64,7 +64,7 @@ include("common.jl")
 
     # Simple time benchmark
     let metricT=UnitEuclideanMetric
-        τ = StaticTrajectory(lf, n_steps)
+        τ = HMC(lf, n_steps)
 
         time_mat = Vector{Float64}(undef, n_chains_max)
         for (i, n_chains) in enumerate(n_chains_list)

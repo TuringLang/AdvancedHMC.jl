@@ -12,7 +12,7 @@ n_steps = 10
 n_samples = 12_000
 n_adapts = 2_000
 
-function test_stats(::Union{StaticTrajectory,HMCDA}, stats, n_adapts)
+function test_stats(::Union{HMC,HMCDA}, stats, n_adapts)
     for name in (:step_size, :nom_step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :hamiltonian_energy_error, :is_adapt)
         @test all(map(s -> in(name, propertynames(s)), stats))
     end
@@ -43,7 +43,7 @@ end
             :TemperedLeapfrog => TemperedLeapfrog(ϵ, 1.05),
         )
             @testset "$τsym" for (τsym, τ) in Dict(
-                :HMC => StaticTrajectory(lf, n_steps),
+                :HMC => HMC(lf, n_steps),
                 # :(HMC{LastTS}) => HMC{LastTS}(lf, n_steps),
                 # :(HMC{MultinomialTS}) => HMC{MultinomialTS}(lf, n_steps),
                 :HMCDA => HMCDA(lf, ϵ * n_steps),
