@@ -29,7 +29,7 @@ end
 # θ: position variables / model parameters
 # r: momentum variables
 
-include("adaptation/Adaptation.jl")
+include("Adaptation/Adaptation.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
 export NesterovDualAveraging, Preconditioner, NaiveHMCAdaptor, StanHMCAdaptor
 using .Adaptation
@@ -41,7 +41,7 @@ include("hamiltonian.jl")
 export Hamiltonian
 include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
-include("trajectory.jl")
+include("Kernel/Kernel.jl")
 export StaticTrajectory, find_good_eps, HMCDA, NUTS, SliceTS, MultinomialTS, ClassicNoUTurn, GeneralisedNoUTurn
 
 include("diagnosis.jl")

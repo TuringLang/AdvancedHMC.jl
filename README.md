@@ -39,7 +39,7 @@ end
 using AdvancedHMC
 
 # Sampling parameter settings
-n_samples, n_adapts = 10_000, 2_000
+n_samples, n_adapts = 12_000, 2_000
 
 # Draw a random starting points
 θ_init = rand(D)
