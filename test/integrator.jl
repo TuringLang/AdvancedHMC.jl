@@ -10,7 +10,7 @@ r_init = AdvancedHMC.rand(h.metric)
 
 n_steps = 10
 
-@testset "step(::Leapfrog) against steps(::Leapfrog)" begin
+@testset "step(::Leapfrog) against step(::Leapfrog)" begin
     z = AdvancedHMC.phasepoint(h, copy(θ_init), copy(r_init))
     z_step = z
 
@@ -20,14 +20,14 @@ n_steps = 10
 
     t_steps = @elapsed z_steps = AdvancedHMC.step(lf, h, z, n_steps)
 
-    @info "Performance of step() v.s. steps()" n_steps t_step t_steps t_step / t_steps
+    @info "Performance of step() v.s. step()" n_steps t_step t_steps t_step / t_steps
 
     @test z_step.θ ≈ z_steps.θ atol=DETATOL
     @test z_step.r ≈ z_steps.r atol=DETATOL
 end
 
 # using Turing: Inference
-# @testset "steps(::Leapfrog) against Turing.Inference._leapfrog()" begin
+# @testset "step(::Leapfrog) against Turing.Inference._leapfrog()" begin
 #     z = AdvancedHMC.phasepoint(h, θ_init, r_init)
 #     t_Turing = @elapsed θ_Turing, r_Turing, _ = Inference._leapfrog(θ_init, r_init, n_steps, ϵ, x -> (nothing, ∂logπ∂θ(x)))
 #     t_AHMC = @elapsed z_AHMC = AdvancedHMC.step(lf, h, z, n_steps)

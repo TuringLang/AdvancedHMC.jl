@@ -36,12 +36,24 @@ jitter(::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, lf::AbstractLeapfrog)
 temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int) = r
 stat(lf::AbstractLeapfrog) = (step_size=step_size(lf), nom_step_size=nom_step_size(lf))
 
+function step(lf::AbstractLeapfrog, ϵ, h::Hamiltonian, θ, r, value, gradient)
+    # Take a half leapfrog step for momentum variable
+    r = r - ϵ / 2 .* gradient
+    # Take a full leapfrog step for position variable
+    ∇r = ∂H∂r(h, r)
+    θ = θ + ϵ .* ∇r
+    # Take a half leapfrog step for momentum variable
+    @unpack value, gradient = ∂H∂θ(h, θ)
+    r = r - ϵ / 2 .* gradient
+    return θ, r, value, gradient
+end
+
 function step(
     lf::AbstractLeapfrog{T},
     h::Hamiltonian,
     z::PhasePoint,
     n_steps::Int=1;
-    fwd::Bool=n_steps > 0   # simulate hamiltonian backward when n_steps < 0,
+    fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0,
 ) where {T<:AbstractScalarOrVec{<:AbstractFloat}}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
 
@@ -53,14 +65,8 @@ function step(
     for i = 1:n_steps
         # Tempering
         r = temper(lf, r, (i=i, is_half=true), n_steps)
-        # Take a half leapfrog step for momentum variable
-        r = r - ϵ / 2 .* gradient
-        # Take a full leapfrog step for position variable
-        ∇r = ∂H∂r(h, r)
-        θ = θ + ϵ .* ∇r
-        # Take a half leapfrog step for momentum variable
-        @unpack value, gradient = ∂H∂θ(h, θ)
-        r = r - ϵ / 2 .* gradient
+        # Single leapfrog step
+        θ, r, value, gradient = step(lf, ϵ, h, θ, r, value, gradient)
         # Tempering
         r = temper(lf, r, (i=i, is_half=false), n_steps)
         # Create a new phase point by caching the logdensity and gradient
