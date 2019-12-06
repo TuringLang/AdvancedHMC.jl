@@ -74,7 +74,7 @@ end
 
 ### Last from trajecory
 
-samplecand(::AbstractRNG, τ::HMC{LastTS}, h, z) = step(τ.integrator, h, z, τ.n_steps)
+samplecand(rng, τ::HMC{LastTS}, h, z) = step(τ.integrator, h, z, τ.n_steps)
 
 ### Multinomial sampling from trajecory
 
