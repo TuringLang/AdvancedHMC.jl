@@ -43,9 +43,8 @@ end
             :TemperedLeapfrog => TemperedLeapfrog(ϵ, 1.05),
         )
             @testset "$τsym" for (τsym, τ) in Dict(
-                :HMC => HMC(lf, n_steps),
-                # :(HMC{LastTS}) => HMC{LastTS}(lf, n_steps),
-                # :(HMC{MultinomialTS}) => HMC{MultinomialTS}(lf, n_steps),
+                :(HMC{LastTS}) => HMC{LastTS}(lf, n_steps),
+                :(HMC{MultinomialTS}) => HMC{MultinomialTS}(lf, n_steps),
                 :HMCDA => HMCDA(lf, ϵ * n_steps),
                 :(NUTS{SliceTS,Original}) => NUTS{SliceTS,ClassicNoUTurn}(lf),
                 :(NUTS{SliceTS,Generalised}) => NUTS{SliceTS,GeneralisedNoUTurn}(lf),

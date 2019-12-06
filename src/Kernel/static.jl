@@ -25,7 +25,7 @@ function transition(
 ) where {T<:Real}
     H0 = energy(z)
     integrator = jitter(rng, τ.integrator)
-    z′ = step(τ.integrator, h, z, τ.n_steps)
+    z′ = samplecand(rng, τ, h, z)
     # Are we going to accept the `z′` via MH criteria?
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
     # Do the actual accept / reject
@@ -70,4 +70,28 @@ function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:Abs
     #       We can also copy `z′ and avoid mutating the original `z′`. But this is
     #       not efficient and immutability of `z′` is not important in this local scope.
     return z′
+end
+
+### Last from trajecory
+
+samplecand(::AbstractRNG, τ::HMC{LastTS}, h, z) = step(τ.integrator, h, z, τ.n_steps)
+
+### Multinomial sampling from trajecory
+
+function randcat(rng::AbstractRNG, xs, p)
+    u = rand(rng)
+    cp = zero(eltype(p))
+    i = 0
+    while cp < u
+        cp += p[i +=1]
+    end
+    return xs[max(i, 1)]
+end
+
+function samplecand(rng, τ::HMC{MultinomialTS}, h, z)
+    zs = steps(τ.integrator, h, z, τ.n_steps)
+    ℓws = -energy.(zs)
+    ℓws = ℓws .- maximum(ℓws)
+    p_unorm = exp.(ℓws)
+    return randcat(rng, zs, p_unorm / sum(p_unorm))
 end

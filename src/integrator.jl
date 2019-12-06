@@ -75,6 +75,36 @@ function step(
     end
     return z
 end
+# TODO: merge step and steps using Task
+function steps(
+    lf::AbstractLeapfrog{T},
+    h::Hamiltonian,
+    z::PhasePoint,
+    n_steps::Int=1;
+    fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0,
+) where {T<:AbstractScalarOrVec{<:AbstractFloat}}
+    n_steps = abs(n_steps)  # to support `n_steps < 0` cases
+
+    ϵ = fwd ? step_size(lf) : -step_size(lf)
+    ϵ = ϵ'
+
+    @unpack θ, r = z
+    @unpack value, gradient = ∂H∂θ(h, θ)
+    zs = []
+    for i = 1:n_steps
+        # Tempering
+        r = temper(lf, r, (i=i, is_half=true), n_steps)
+        # Single leapfrog step
+        θ, r, value, gradient = step(lf, ϵ, h, θ, r, value, gradient)
+        # Tempering
+        r = temper(lf, r, (i=i, is_half=false), n_steps)
+        # Create a new phase point by caching the logdensity and gradient
+        z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
+        !isfinite(z) && break
+        push!(zs, z)
+    end
+    return zs
+end
 
 struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     ϵ       ::  T
