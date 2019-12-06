@@ -95,3 +95,7 @@ function samplecand(rng, τ::HMC{MultinomialTS}, h, z)
     p_unorm = exp.(ℓws)
     return randcat(rng, zs, p_unorm / sum(p_unorm))
 end
+
+# Deprecation
+
+@deprecate StaticTrajectory(integrator, n_steps) HMC(integrator, n_steps)
