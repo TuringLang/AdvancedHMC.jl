@@ -3,6 +3,7 @@ abstract type StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} e
 ###
 ### Standard HMC implementation with fixed leapfrog step numbers.
 ###
+
 struct HMC{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: StaticTrajectory{I}
     integrator  ::  I
     n_steps     ::  Int

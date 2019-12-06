@@ -3,24 +3,31 @@ abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} 
 ###
 ### Standard HMC implementation with fixed total trajectory length.
 ###
-struct HMCDA{I<:AbstractIntegrator} <: DynamicTrajectory{I}
+
+struct HMCDA{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: DynamicTrajectory{I}
     integrator  ::  I
     λ           ::  AbstractFloat
 end
-Base.show(io::IO, τ::HMCDA) = print(io, "HMCDA(integrator=$(τ.integrator), λ=$(τ.λ)))")
+
+Base.show(io::IO, τ::HMCDA{S,I}) where {I,S<:LastTS} =
+    print(io, "HMCDA{LastTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+Base.show(io::IO, τ::HMCDA{S,I}) where {I,S<:MultinomialTS} =
+    print(io, "HMCDA{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+
+HMCDA{S}(integrator::I, λ::AbstractFloat) where {S,I} = HMCDA{S,I}(integrator, λ)
+HMCDA(args...) = HMCDA{LastTS}(args...) # default HMCDA using last point from trajectory
 
 function transition(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
-    τ::HMCDA,
+    τ::HMCDA{S},
     h::Hamiltonian,
     z::PhasePoint
-)
+) where {S}
     # Create the corresponding static τ
     n_steps = max(1, floor(Int, τ.λ / nom_step_size(τ.integrator)))
-    static_τ = HMC(τ.integrator, n_steps)
+    static_τ = HMC{S}(τ.integrator, n_steps)
     return transition(rng, static_τ, h, z)
 end
-
 
 ###
 ### Advanced HMC implementation with (adaptive) dynamic trajectory length.
@@ -302,4 +309,3 @@ function transition(
 
     return Transition(zcand, tstat)
 end
-
