@@ -15,7 +15,7 @@ function sample_init(
 end
 
 # A step is a momentum refreshment plus a transition
-function transit(
+function step(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, 
     h::Hamiltonian, 
     τ::AbstractProposal, 
@@ -147,7 +147,7 @@ function sample(
     pm = progress ? ProgressMeter.Progress(n_samples, desc="Sampling", barlen=31) : nothing
     time = @elapsed for i = 1:n_samples
         # Make a step
-        t = transit(rng, h, τ, t.z)
+        t = step(rng, h, τ, t.z)
         # Adapt h and τ; what mutable is the adaptor
         tstat = stat(t)
         h, τ, isadapted = adapt!(h, τ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
@@ -181,7 +181,3 @@ function sample(
     end
     return θs, stats
 end
-
-# Deprecation
-
-@deprecate step(rng, h, τ, z) transit(rng, h, τ, z)
