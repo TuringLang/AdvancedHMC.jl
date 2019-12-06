@@ -2,8 +2,8 @@ using Distributed, Test
 
 @testset "AdvancedHMC" begin
     tests = [
-        "Kernel/trajectory",
         "Adaptation/precond",
+        "trajectory",
         "hamiltonian",
         "integrator",
         "models",

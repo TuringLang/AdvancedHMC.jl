@@ -1,7 +1,7 @@
 using Test, AdvancedHMC, Random
 using Statistics: mean
 using LinearAlgebra: dot
-include("../common.jl")
+include("common.jl")
 
 ϵ = 0.01
 lf = Leapfrog(ϵ)
