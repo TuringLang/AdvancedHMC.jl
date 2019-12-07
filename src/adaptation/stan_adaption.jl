@@ -107,6 +107,6 @@ function adapt!(
     end
 end
 
-# Deprecation
+# Deprecated functions
 
 @deprecate StanHMCAdaptor(n_adapts, pc, ssa) initialize!(StanHMCAdaptor(pc, ssa), n_adapts)
