@@ -79,6 +79,7 @@ function step_channel(
     return c
 end
 
+# Return only the last point during integration
 function step(lf::AbstractLeapfrog, args...; kwargs...)
     local z′
     for z′′ in step_channel(lf, args...; kwargs...)
@@ -87,6 +88,7 @@ function step(lf::AbstractLeapfrog, args...; kwargs...)
     return z′
 end
 
+# Return all points during integration
 steps(lf::AbstractLeapfrog, args...; kwargs...) = [z′ for z′ in step_channel(lf, args...; kwargs...)]
 
 struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
