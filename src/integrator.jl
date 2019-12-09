@@ -48,13 +48,14 @@ function step(lf::AbstractLeapfrog, ϵ, h::Hamiltonian, θ, r, value, gradient)
     return θ, r, value, gradient
 end
 
-function step_channel(
+function step(
     lf::AbstractLeapfrog{T},
     h::Hamiltonian,
-    z::PhasePoint,
+    z::P,
     n_steps::Int=1;
-    fwd::Bool=n_steps > 0   # simulate hamiltonian backward when n_steps < 0
-) where {T<:AbstractScalarOrVec{<:AbstractFloat}}
+    fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
+    res::Union{Vector{P}, P}=z
+) where {T<:AbstractScalarOrVec{<:AbstractFloat}, P<:PhasePoint}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
     c = Channel(n_steps)
 
@@ -73,23 +74,17 @@ function step_channel(
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
         !isfinite(z) && break
-        put!(c, z)
+        if res isa Vector 
+            res[i] = z
+        else 
+            res = z
+        end
     end
-    close(c)
-    return c
-end
-
-# Return only the last point during integration
-function step(lf::AbstractLeapfrog, args...; kwargs...)
-    local z′
-    for z′′ in step_channel(lf, args...; kwargs...)
-        z′ = z′′
-    end
-    return z′
+    res
 end
 
 # Return all points during integration
-steps(lf::AbstractLeapfrog, args...; kwargs...) = [z′ for z′ in step_channel(lf, args...; kwargs...)]
+steps(lf, h, z, n_steps; kwargs...) = step(lf, h, z, n_steps; kwargs..., res=[z for _ in 1:abs(n_steps)])
 
 struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     ϵ       ::  T

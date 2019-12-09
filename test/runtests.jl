@@ -6,9 +6,9 @@ using Distributed, Test
         "trajectory",
         "hamiltonian",
         "integrator",
-        "models",
-        "sampler",
-        "sampler_mat",
+        # "models",
+        # "sampler",
+        # "sampler_mat",
     ]
 
     res = map(tests) do t
