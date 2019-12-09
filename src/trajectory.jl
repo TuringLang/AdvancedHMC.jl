@@ -37,7 +37,7 @@ Sampler carried during the building of the tree.
 """
 abstract type AbstractTrajectorySampler end
 
-struct LastTS <: AbstractTrajectorySampler end
+struct EndPointTS <: AbstractTrajectorySampler end
 
 """
 Slice sampler carried during the building of the tree.
@@ -153,13 +153,13 @@ struct HMC{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: StaticTrajecto
     n_steps     ::  Int
 end
 
-Base.show(io::IO, τ::HMC{S,I}) where {I,S<:LastTS} =
-    print(io, "HMC{LastTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+Base.show(io::IO, τ::HMC{S,I}) where {I,S<:EndPointTS} =
+    print(io, "HMC{EndPointTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
 Base.show(io::IO, τ::HMC{S,I}) where {I,S<:MultinomialTS} =
     print(io, "HMC{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
 
 HMC{S}(integrator::I, n_steps::Int) where {S,I} = HMC{S,I}(integrator, n_steps)
-HMC(args...) = HMC{LastTS}(args...) # default HMC using last point from trajectory
+HMC(args...) = HMC{EndPointTS}(args...) # default HMC using last point from trajectory
 
 function transition(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
@@ -218,7 +218,7 @@ end
 
 ### Last from trajecory
 
-samplecand(rng, τ::HMC{LastTS}, h, z) = step(τ.integrator, h, z, τ.n_steps)
+samplecand(rng, τ::HMC{EndPointTS}, h, z) = step(τ.integrator, h, z, τ.n_steps)
 
 ### Multinomial sampling from trajecory
 
@@ -255,13 +255,13 @@ struct HMCDA{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: DynamicTraje
     λ           ::  AbstractFloat
 end
 
-Base.show(io::IO, τ::HMCDA{S,I}) where {I,S<:LastTS} =
-    print(io, "HMCDA{LastTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+Base.show(io::IO, τ::HMCDA{S,I}) where {I,S<:EndPointTS} =
+    print(io, "HMCDA{EndPointTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
 Base.show(io::IO, τ::HMCDA{S,I}) where {I,S<:MultinomialTS} =
     print(io, "HMCDA{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
 
 HMCDA{S}(integrator::I, λ::AbstractFloat) where {S,I} = HMCDA{S,I}(integrator, λ)
-HMCDA(args...) = HMCDA{LastTS}(args...) # default HMCDA using last point from trajectory
+HMCDA(args...) = HMCDA{EndPointTS}(args...) # default HMCDA using last point from trajectory
 
 function transition(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
