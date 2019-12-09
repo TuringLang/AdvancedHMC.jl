@@ -53,7 +53,7 @@ function step_channel(
     h::Hamiltonian,
     z::PhasePoint,
     n_steps::Int=1;
-    fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0,
+    fwd::Bool=n_steps > 0   # simulate hamiltonian backward when n_steps < 0
 ) where {T<:AbstractScalarOrVec{<:AbstractFloat}}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
     c = Channel(n_steps)
