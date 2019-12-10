@@ -45,7 +45,6 @@ function step(
     res::Union{Vector{P}, P}=z
 ) where {T<:AbstractScalarOrVec{<:AbstractFloat}, P<:PhasePoint}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
-    c = Channel(n_steps)
 
     ϵ = fwd ? step_size(lf) : -step_size(lf)
     ϵ = ϵ'
