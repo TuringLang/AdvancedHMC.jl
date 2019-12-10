@@ -55,7 +55,6 @@ function step(
     for i = 1:n_steps
         # Tempering
         r = temper(lf, r, (i=i, is_half=true), n_steps)
-        # Single leapfrog step
         # Take a half leapfrog step for momentum variable
         r = r - ϵ / 2 .* gradient
         # Take a full leapfrog step for position variable

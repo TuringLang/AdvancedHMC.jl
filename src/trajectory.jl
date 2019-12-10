@@ -216,7 +216,7 @@ function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:Abs
     return z′
 end
 
-### Last from trajecory
+### Use end-point from trajecory as proposal 
 
 samplecand(rng, τ::HMC{EndPointTS}, h, z) = step(τ.integrator, h, z, τ.n_steps)
 
