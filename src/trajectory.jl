@@ -233,7 +233,7 @@ function randcat(rng::AbstractRNG, xs, p)
 end
 
 function samplecand(rng, τ::HMC{MultinomialTS}, h, z)
-    zs = steps(τ.integrator, h, z, τ.n_steps)
+    zs = step(τ.integrator, h, z, τ.n_steps; res=[z for _ in 1:abs(n_steps)])
     ℓws = -energy.(zs)
     ℓws = ℓws .- maximum(ℓws)
     p_unorm = exp.(ℓws)
