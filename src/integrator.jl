@@ -36,18 +36,6 @@ jitter(::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, lf::AbstractLeapfrog)
 temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int) = r
 stat(lf::AbstractLeapfrog) = (step_size=step_size(lf), nom_step_size=nom_step_size(lf))
 
-function step(lf::AbstractLeapfrog, ϵ, h::Hamiltonian, θ, r, value, gradient)
-    # Take a half leapfrog step for momentum variable
-    r = r - ϵ / 2 .* gradient
-    # Take a full leapfrog step for position variable
-    ∇r = ∂H∂r(h, r)
-    θ = θ + ϵ .* ∇r
-    # Take a half leapfrog step for momentum variable
-    @unpack value, gradient = ∂H∂θ(h, θ)
-    r = r - ϵ / 2 .* gradient
-    return θ, r, value, gradient
-end
-
 function step(
     lf::AbstractLeapfrog{T},
     h::Hamiltonian,
@@ -57,7 +45,6 @@ function step(
     res::Union{Vector{P}, P}=z
 ) where {T<:AbstractScalarOrVec{<:AbstractFloat}, P<:PhasePoint}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
-    c = Channel(n_steps)
 
     ϵ = fwd ? step_size(lf) : -step_size(lf)
     ϵ = ϵ'
@@ -67,24 +54,27 @@ function step(
     for i = 1:n_steps
         # Tempering
         r = temper(lf, r, (i=i, is_half=true), n_steps)
-        # Single leapfrog step
-        θ, r, value, gradient = step(lf, ϵ, h, θ, r, value, gradient)
+        # Take a half leapfrog step for momentum variable
+        r = r - ϵ / 2 .* gradient
+        # Take a full leapfrog step for position variable
+        ∇r = ∂H∂r(h, r)
+        θ = θ + ϵ .* ∇r
+        # Take a half leapfrog step for momentum variable
+        @unpack value, gradient = ∂H∂θ(h, θ)
+        r = r - ϵ / 2 .* gradient
         # Tempering
         r = temper(lf, r, (i=i, is_half=false), n_steps)
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
         !isfinite(z) && break
-        if res isa Vector 
+        if res isa Vector
             res[i] = z
-        else 
+        else
             res = z
         end
     end
     res
 end
-
-# Return all points during integration
-steps(lf, h, z, n_steps; kwargs...) = step(lf, h, z, n_steps; kwargs..., res=[z for _ in 1:abs(n_steps)])
 
 struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     ϵ       ::  T
@@ -119,7 +109,7 @@ end
 jitter(rng::AbstractRNG, lf::JitteredLeapfrog) = _jitter(rng, lf)
 
 jitter(
-    rng::AbstractVector{<:AbstractRNG}, 
+    rng::AbstractVector{<:AbstractRNG},
     lf::JitteredLeapfrog{FT,T}
 ) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} = _jitter(rng, lf)
 

@@ -214,7 +214,7 @@ function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:Abs
     return z′
 end
 
-### Last from trajecory
+### Use end-point from trajecory as proposal 
 
 samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h, z, τ.n_steps)
 
@@ -231,7 +231,7 @@ function randcat(rng::AbstractRNG, xs, p)
 end
 
 function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
-    zs = steps(τ.integrator, h, z, τ.n_steps)
+    zs = step(τ.integrator, h, z, τ.n_steps; res=[z for _ in 1:abs(τ.n_steps)])
     ℓws = -energy.(zs)
     ℓws = ℓws .- maximum(ℓws)
     p_unorm = exp.(ℓws)
