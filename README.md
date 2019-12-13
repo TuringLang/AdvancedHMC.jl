@@ -13,7 +13,6 @@ If you are interested in using `AdvancedHMC.jl` through a probabilistic programm
 - We presented a poster for AdvancedHMC.jl at [StanCon 2019](https://mc-stan.org/events/stancon2019Cambridge/) in Cambridge, UK. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
 **API CHANGES**
-- [v0.2.16] `StaticTrajectory(integrator, n_steps)` is deprecated, use `HMC(integrator, n_steps)` instead.
 - [v0.2.15] `n_adapts` is not needed to construct `StanHMCAdaptor`; the old constructor is deprecated.
 - [v0.2.8] Two exported types are renamed: `Multinomial` -> `MultinomialTS` and `Slice` -> `SliceTS`.
 - [v0.2.0] The gradient function passed to `Hamiltonian` is supposed to return a value-gradient tuple now.
@@ -85,7 +84,7 @@ where `ϵ` is the step size of leapfrog integration.
 
 ### Proposal (`prop`)
 
-- Static HMC with a fixed number of steps (`n_steps`): `HMC(int, n_steps)`
+- Static HMC with a fixed number of steps (`n_steps`): `StaticTrajectory(int, n_steps)`
 - HMC with a fixed total trajectory length (`len_traj`): `HMCDA(int, len_traj)` 
 - Original NUTS with slice sampling: `NUTS{SliceTS,ClassicNoUTurn}(int)`
 - Generalised NUTS with slice sampling: `NUTS{SliceTS,GeneralisedNoUTurn}(int)`

@@ -142,28 +142,26 @@ transition(
 ### Actual trajecory implementations
 ###
 
-abstract type StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
-
 ###
-### Standard HMC implementation with fixed leapfrog step numbers.
+### Static trajecotry with fixed leapfrog step numbers.
 ###
 
-struct HMC{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: StaticTrajectory{I}
+struct StaticTrajectory{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: AbstractTrajectory{I}
     integrator  ::  I
     n_steps     ::  Int
 end
 
-Base.show(io::IO, τ::HMC{S,I}) where {I,S<:EndPointTS} =
-    print(io, "HMC{EndPointTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
-Base.show(io::IO, τ::HMC{S,I}) where {I,S<:MultinomialTS} =
-    print(io, "HMC{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+Base.show(io::IO, τ::StaticTrajectory{S,I}) where {I,S<:EndPointTS} =
+    print(io, "StaticTrajectory{EndPointTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+Base.show(io::IO, τ::StaticTrajectory{S,I}) where {I,S<:MultinomialTS} =
+    print(io, "StaticTrajectory{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
 
-HMC{S}(integrator::I, n_steps::Int) where {S,I} = HMC{S,I}(integrator, n_steps)
-HMC(args...) = HMC{EndPointTS}(args...) # default HMC using last point from trajectory
+StaticTrajectory{S}(integrator::I, n_steps::Int) where {S,I} = StaticTrajectory{S,I}(integrator, n_steps)
+StaticTrajectory(args...) = StaticTrajectory{EndPointTS}(args...) # default StaticTrajectory using last point from trajectory
 
 function transition(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
-    τ::HMC,
+    τ::StaticTrajectory,
     h::Hamiltonian,
     z::PhasePoint
 ) where {T<:Real}
@@ -218,7 +216,7 @@ end
 
 ### Last from trajecory
 
-samplecand(rng, τ::HMC{EndPointTS}, h, z) = step(τ.integrator, h, z, τ.n_steps)
+samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h, z, τ.n_steps)
 
 ### Multinomial sampling from trajecory
 
@@ -232,17 +230,13 @@ function randcat(rng::AbstractRNG, xs, p)
     return xs[max(i, 1)]
 end
 
-function samplecand(rng, τ::HMC{MultinomialTS}, h, z)
+function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
     zs = steps(τ.integrator, h, z, τ.n_steps)
     ℓws = -energy.(zs)
     ℓws = ℓws .- maximum(ℓws)
     p_unorm = exp.(ℓws)
     return randcat(rng, zs, p_unorm / sum(p_unorm))
 end
-
-# Deprecation
-
-@deprecate StaticTrajectory(integrator, n_steps) HMC(integrator, n_steps)
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
 
@@ -271,7 +265,7 @@ function transition(
 ) where {S}
     # Create the corresponding static τ
     n_steps = max(1, floor(Int, τ.λ / nom_step_size(τ.integrator)))
-    static_τ = HMC{S}(τ.integrator, n_steps)
+    static_τ = StaticTrajectory{S}(τ.integrator, n_steps)
     return transition(rng, static_τ, h, z)
 end
 
