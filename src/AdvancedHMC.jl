@@ -7,7 +7,7 @@ using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, chol
 using StatsFuns: logaddexp
 using LazyArrays: BroadcastArray
 using Random: GLOBAL_RNG, AbstractRNG
-using ProgressMeter, OrdinaryDiffEq
+using ProgressMeter
 using Parameters: @unpack, reconstruct
 using ArgCheck: @argcheck
 
@@ -47,5 +47,7 @@ export StaticTrajectory, HMCDA, NUTS, EndPointTS, SliceTS, MultinomialTS, Classi
 include("diagnosis.jl")
 include("sampler.jl")
 export sample
+
+include("init.jl")
 
 end # module
