@@ -39,7 +39,7 @@ end
 using AdvancedHMC
 
 # Sampling parameter settings
-n_samples, n_adapts = 10_000, 2_000
+n_samples, n_adapts = 12_000, 2_000
 
 # Draw a random starting points
 θ_init = rand(D)
@@ -84,7 +84,7 @@ where `ϵ` is the step size of leapfrog integration.
 
 ### Proposal (`prop`)
 
-- Static HMC with a fixed number of steps (`n_steps`): `HMC(int, n_steps)`
+- Static HMC with a fixed number of steps (`n_steps`): `StaticTrajectory(int, n_steps)`
 - HMC with a fixed total trajectory length (`len_traj`): `HMCDA(int, len_traj)` 
 - Original NUTS with slice sampling: `NUTS{SliceTS,ClassicNoUTurn}(int)`
 - Generalised NUTS with slice sampling: `NUTS{SliceTS,GeneralisedNoUTurn}(int)`

@@ -37,6 +37,8 @@ Sampler carried during the building of the tree.
 """
 abstract type AbstractTrajectorySampler end
 
+struct EndPointTS <: AbstractTrajectorySampler end
+
 """
 Slice sampler carried during the building of the tree.
 It contains the slice variable and the number of acceptable condidates in the tree.
@@ -137,13 +139,25 @@ transition(
 ) where {I<:AbstractIntegrator} = transition(GLOBAL_RNG, τ, h, z)
 
 ###
-### Standard HMC implementation with fixed leapfrog step numbers.
+### Actual trajecory implementations
 ###
-struct StaticTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I}
+
+###
+### Static trajecotry with fixed leapfrog step numbers.
+###
+
+struct StaticTrajectory{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: AbstractTrajectory{I}
     integrator  ::  I
     n_steps     ::  Int
 end
-Base.show(io::IO, τ::StaticTrajectory) = print(io, "StaticTrajectory(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+
+Base.show(io::IO, τ::StaticTrajectory{S,I}) where {I,S<:EndPointTS} =
+    print(io, "StaticTrajectory{EndPointTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+Base.show(io::IO, τ::StaticTrajectory{S,I}) where {I,S<:MultinomialTS} =
+    print(io, "StaticTrajectory{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+
+StaticTrajectory{S}(integrator::I, n_steps::Int) where {S,I} = StaticTrajectory{S,I}(integrator, n_steps)
+StaticTrajectory(args...) = StaticTrajectory{EndPointTS}(args...) # default StaticTrajectory using last point from trajectory
 
 function transition(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
@@ -153,7 +167,7 @@ function transition(
 ) where {T<:Real}
     H0 = energy(z)
     integrator = jitter(rng, τ.integrator)
-    z′ = step(τ.integrator, h, z, τ.n_steps)
+    z′ = samplecand(rng, τ, h, z)
     # Are we going to accept the `z′` via MH criteria?
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
     # Do the actual accept / reject
@@ -200,29 +214,60 @@ function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:Abs
     return z′
 end
 
+### Use end-point from trajecory as proposal 
+
+samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h, z, τ.n_steps)
+
+### Multinomial sampling from trajecory
+
+function randcat(rng::AbstractRNG, xs, p)
+    u = rand(rng)
+    cp = zero(eltype(p))
+    i = 0
+    while cp < u
+        cp += p[i +=1]
+    end
+    return xs[max(i, 1)]
+end
+
+function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
+    zs = step(τ.integrator, h, z, τ.n_steps; res=[z for _ in 1:abs(τ.n_steps)])
+    ℓws = -energy.(zs)
+    ℓws = ℓws .- maximum(ℓws)
+    p_unorm = exp.(ℓws)
+    return randcat(rng, zs, p_unorm / sum(p_unorm))
+end
+
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
 
 ###
 ### Standard HMC implementation with fixed total trajectory length.
 ###
-struct HMCDA{I<:AbstractIntegrator} <: DynamicTrajectory{I}
+
+struct HMCDA{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: DynamicTrajectory{I}
     integrator  ::  I
     λ           ::  AbstractFloat
 end
-Base.show(io::IO, τ::HMCDA) = print(io, "HMCDA(integrator=$(τ.integrator), λ=$(τ.λ)))")
+
+Base.show(io::IO, τ::HMCDA{S,I}) where {I,S<:EndPointTS} =
+    print(io, "HMCDA{EndPointTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+Base.show(io::IO, τ::HMCDA{S,I}) where {I,S<:MultinomialTS} =
+    print(io, "HMCDA{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+
+HMCDA{S}(integrator::I, λ::AbstractFloat) where {S,I} = HMCDA{S,I}(integrator, λ)
+HMCDA(args...) = HMCDA{EndPointTS}(args...) # default HMCDA using last point from trajectory
 
 function transition(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
-    τ::HMCDA,
+    τ::HMCDA{S},
     h::Hamiltonian,
     z::PhasePoint
-)
+) where {S}
     # Create the corresponding static τ
     n_steps = max(1, floor(Int, τ.λ / nom_step_size(τ.integrator)))
-    static_τ = StaticTrajectory(τ.integrator, n_steps)
+    static_τ = StaticTrajectory{S}(τ.integrator, n_steps)
     return transition(rng, static_τ, h, z)
 end
-
 
 ###
 ### Advanced HMC implementation with (adaptive) dynamic trajectory length.
@@ -504,6 +549,10 @@ function transition(
 
     return Transition(zcand, tstat)
 end
+
+###
+### Initialisation of step size
+###
 
 """
 A single Hamiltonian integration step.

@@ -39,10 +39,11 @@ stat(lf::AbstractLeapfrog) = (step_size=step_size(lf), nom_step_size=nom_step_si
 function step(
     lf::AbstractLeapfrog{T},
     h::Hamiltonian,
-    z::PhasePoint,
+    z::P,
     n_steps::Int=1;
-    fwd::Bool=n_steps > 0   # simulate hamiltonian backward when n_steps < 0,
-) where {T<:AbstractScalarOrVec{<:AbstractFloat}}
+    fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
+    res::Union{Vector{P}, P}=z
+) where {T<:AbstractScalarOrVec{<:AbstractFloat}, P<:PhasePoint}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
 
     ϵ = fwd ? step_size(lf) : -step_size(lf)
@@ -66,8 +67,13 @@ function step(
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
         !isfinite(z) && break
+        if res isa Vector
+            res[i] = z
+        else
+            res = z
+        end
     end
-    return z
+    res
 end
 
 struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
@@ -103,7 +109,7 @@ end
 jitter(rng::AbstractRNG, lf::JitteredLeapfrog) = _jitter(rng, lf)
 
 jitter(
-    rng::AbstractVector{<:AbstractRNG}, 
+    rng::AbstractVector{<:AbstractRNG},
     lf::JitteredLeapfrog{FT,T}
 ) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} = _jitter(rng, lf)
 

@@ -134,3 +134,10 @@ refresh(
     z::PhasePoint,
     h::Hamiltonian
 ) = phasepoint(h, z.θ, rand(rng, h.metric))
+
+# refresh(
+#     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+#     z::PhasePoint,
+#     h::Hamiltonian,
+#     α::AbstractFloat
+# ) = phasepoint(h, z.θ, α * z.r + (1 - α^2) * rand(rng, h.metric))
