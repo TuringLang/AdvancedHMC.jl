@@ -7,7 +7,7 @@ using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, chol
 using StatsFuns: logaddexp
 using LazyArrays: BroadcastArray
 using Random: GLOBAL_RNG, AbstractRNG
-using ProgressMeter
+using ProgressMeter, OrdinaryDiffEq
 using Parameters: @unpack, reconstruct
 using ArgCheck: @argcheck
 
