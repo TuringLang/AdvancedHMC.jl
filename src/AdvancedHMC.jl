@@ -48,6 +48,7 @@ include("diagnosis.jl")
 include("sampler.jl")
 export sample
 
+using Requires
 include("init.jl")
 
 end # module
