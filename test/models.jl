@@ -18,7 +18,7 @@ include("common.jl")
 
     samples, _ = sample(rng, h, prop, θ_init, n_samples, adaptor, n_adapts)
 
-    m_est = mean(map(_s -> [exp(_s[1]), _s[2]], samples[1000:end]))
+    m_est = mean(map(invlink_gdemo, samples[1000:end]))
 
     @test m_est ≈ [49 / 24, 7 / 6] atol=RNDATOL
 end
