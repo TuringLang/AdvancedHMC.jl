@@ -221,7 +221,7 @@ function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:Abs
     return z′
 end
 
-### Use end-point from trajecory as proposal 
+### Use end-point from trajecory as proposal
 
 samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h, z, τ.n_steps)
 
@@ -753,13 +753,15 @@ end
 """
 Stochastic Gradient Langevin Dynamics with fixed number of steps.
 """
-struct SGLD{
+mutable struct SGLD{
     I<:AbstractIntegrator,
     F<:AbstractFloat
 } <: AbstractTrajectory{I}
     integrator      :: I
     n_steps         :: Int  # number of samples
     ϵ               :: F    # constant scale factor of the learning rate
+    i               :: Int  # iteration counter
+    γ               :: F    # scaling constant
 end
 
 function transition(
@@ -768,9 +770,21 @@ function transition(
     h::Hamiltonian,
     z::PhasePoint
 ) where {T<:Real}
-    z′ = step(rng, τ.integrator, h, z, τ.n_steps)
+    # z′ = step(rng, τ.integrator, h, z, τ.n_steps)
+    DEBUG && @debug "compute current step size..."
+    # γ = .35
+    τ.i += 1
+    ϵ_t = τ.ϵ / τ.i ^ τ.γ # NOTE: Choose γ=.55 in paper
+
+    DEBUG && @debug "recording old variables..."
+    θ = z.θ
+    grad = -z.ℓπ.gradient
+
+    DEBUG && @debug "update latent variables..."
+    θ .+= ϵ_t .* grad ./ 2 .+ rand.(Normal.(zeros(length(θ)), sqrt(ϵ_t)))
+
     # no M-H step
-    z = PhasePoint(z′.θ, -z′.r, z′.ℓπ, z′.ℓκ)
+    z = PhasePoint(h, θ, -z.r)
     stat = (
         step_size=τ.integrator.ϵ,
         n_steps=τ.n_steps,
