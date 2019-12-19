@@ -12,6 +12,7 @@ const RNDATOL = 5e-2 * D * TRATIO
 using Distributions: logpdf, MvNormal, InverseGamma, Normal
 using DiffResults: GradientResult, JacobianResult, value, gradient, jacobian
 using ForwardDiff: gradient!, jacobian!
+using Bijectors: link, invlink, logpdf_with_trans
 
 const dm = zeros(D)
 const dσ = ones(D)
@@ -59,10 +60,24 @@ function ∂ℓπ∂θ_viajacob(θ::AbstractMatrix)
     return (value(res), jacob)
 end
 
-function ℓπ_gdemo(θ)
-    s = exp(θ[1])
+# For the Turing model
+# @model gdemo() = begin
+#     s ~ InverseGamma(2, 3)
+#     m ~ Normal(0, sqrt(s))
+#     1.5 ~ Normal(m, sqrt(s))
+#     2.0 ~ Normal(m, sqrt(s))
+#     return s, m
+# end
+
+function invlink_gdemo(θ)
+    s = invlink(InverseGamma(2, 3), θ[1])
     m = θ[2]
-    logprior = logpdf(InverseGamma(2, 3), s) + log(s) + logpdf(Normal(0, sqrt(s)), m)
+    return [s, m]
+end
+
+function ℓπ_gdemo(θ)
+    s, m = invlink_gdemo(θ)
+    logprior = logpdf_with_trans(InverseGamma(2, 3), s, true) + logpdf(Normal(0, sqrt(s)), m)
     loglikelihood = logpdf(Normal(m, sqrt(s)), 1.5) + logpdf(Normal(m, sqrt(s)), 2.0)
     return logprior + loglikelihood
 end
