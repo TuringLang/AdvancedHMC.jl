@@ -12,7 +12,7 @@ function __init__()
             z::P,
             n_steps::Int=1;
             fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
-            res::Union{Vector{P}, P}=z)
+            res::Union{Vector{P}, P}=z) where P
 
             @unpack θ, r = z
             u0 = θ
