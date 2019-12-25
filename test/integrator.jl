@@ -68,6 +68,7 @@ end
 
 end
 
+using OrdinaryDiffEq
 using LinearAlgebra: dot
 using Statistics: mean
 @testset "Eq (2.11) from (Neal, 2011)" begin
@@ -76,35 +77,38 @@ using Statistics: mean
     ∂negU∂q = q -> (res = GradientResult(q); gradient!(res, negU, q); (value(res), gradient(res)))
 
     ϵ = 0.01
-    lf = Leapfrog(ϵ)
+    for lf in [
+        Leapfrog(ϵ),
+        DiffEqIntegrator(ϵ)
+    ]
+        q_init = randn(D)
+        h = Hamiltonian(UnitEuclideanMetric(D), negU, ∂negU∂q)
+        p_init = AdvancedHMC.rand(h.metric)
 
-    q_init = randn(D)
-    h = Hamiltonian(UnitEuclideanMetric(D), negU, ∂negU∂q)
-    p_init = AdvancedHMC.rand(h.metric)
+        q, p = copy(q_init), copy(p_init)
+        z = AdvancedHMC.phasepoint(h, q, p)
 
-    q, p = copy(q_init), copy(p_init)
-    z = AdvancedHMC.phasepoint(h, q, p)
+        n_steps = 10_000
+        qs = zeros(n_steps)
+        ps = zeros(n_steps)
+        Hs = zeros(n_steps)
+        for i = 1:n_steps
+            z = AdvancedHMC.step(lf, h, z)
+            qs[i] = z.θ[1]
+            ps[i] = z.r[1]
+            Hs[i] = -AdvancedHMC.neg_energy(z)
+        end
 
-    n_steps = 10_000
-    qs = zeros(n_steps)
-    ps = zeros(n_steps)
-    Hs = zeros(n_steps)
-    for i = 1:n_steps
-        z = AdvancedHMC.step(lf, h, z)
-        qs[i] = z.θ[1]
-        ps[i] = z.r[1]
-        Hs[i] = -AdvancedHMC.neg_energy(z)
+        # Throw first 1_000 steps
+        qs = qs[1_000:end]
+        ps = ps[1_000:end]
+        Hs = Hs[1_000:end]
+
+        # Check if all points located at a cirle centered at the origin
+        rs = sqrt.(qs.^2 + ps.^2)
+        @test all(x-> abs(x - mean(rs)) < 2e-3, rs)
+
+        # Check if the Hamiltonian energy is stable
+        @test all(x-> abs(x - mean(Hs)) < 2e-3, Hs)
     end
-
-    # Throw first 1_000 steps
-    qs = qs[1_000:end]
-    ps = ps[1_000:end]
-    Hs = Hs[1_000:end]
-
-    # Check if all points located at a cirle centered at the origin
-    rs = sqrt.(qs.^2 + ps.^2)
-    @test all(x-> abs(x - mean(rs)) < 2e-3, rs)
-
-    # Check if the Hamiltonian energy is stable
-    @test all(x-> abs(x - mean(Hs)) < 2e-3, Hs)
 end
