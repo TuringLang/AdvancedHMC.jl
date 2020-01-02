@@ -641,19 +641,25 @@ find_good_eps(
     max_n_iters::Int=100
 ) where {T<:AbstractFloat} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
 
-_rand(rng::AbstractRNG) = rand(rng)
-_rand(rng::AbstractVector{<:AbstractRNG}) = rand.(rng)
-
 """
 Perform MH acceptance based on energy, i.e. negative log probability.
 """
 function mh_accept_ratio(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
-    Horiginal::AbstractScalarOrVec{<:T},
-    Hproposal::AbstractScalarOrVec{<:T}
+    rng::AbstractRNG,
+    Horiginal::T,
+    Hproposal::T,
+) where {T <: AbstractFloat}
+    α = min(1.0, exp(Horiginal - Hproposal))
+    accept = rand(rng) < α
+    return accept, α
+end
+function mh_accept_ratio(
+    rng::AbstractVector{<:AbstractRNG},
+    Horiginal::AbstractVector{<:T},
+    Hproposal::AbstractVector{<:T},
 ) where {T<:AbstractFloat}
     α = min.(1.0, exp.(Horiginal .- Hproposal))
-    accept = _rand(rng) .< α
+    accept = rand.(rng) .< α
     return accept, α
 end
 
