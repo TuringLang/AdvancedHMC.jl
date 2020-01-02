@@ -101,8 +101,8 @@ let D=10
         return ℓπ, ∂ℓπ∂θ
     end
 
-    function runnuts(ℓπ, ∂ℓπ∂θ, metric; n_samples=2_000)
-        n_adapts = 1_000
+    function runnuts(ℓπ, ∂ℓπ∂θ, metric; n_samples=3_000)
+        n_adapts = 1_500
 
         θ_init = rand(D)
 
