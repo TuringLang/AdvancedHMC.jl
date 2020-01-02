@@ -654,7 +654,7 @@ function mh_accept_ratio(
     return accept, α
 end
 function mh_accept_ratio(
-    rng::AbstractVector{<:AbstractRNG},
+    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     Horiginal::AbstractVector{<:T},
     Hproposal::AbstractVector{<:T},
 ) where {T<:AbstractFloat}
