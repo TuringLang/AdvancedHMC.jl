@@ -79,7 +79,7 @@ using Statistics: mean
     ϵ = 0.01
     for lf in [
         Leapfrog(ϵ),
-        DiffEqIntegrator(ϵ)
+        DiffEqIntegrator(ϵ, VerletLeapfrog())
     ]
         q_init = randn(D)
         h = Hamiltonian(UnitEuclideanMetric(D), negU, ∂negU∂q)
