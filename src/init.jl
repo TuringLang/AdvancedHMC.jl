@@ -3,10 +3,9 @@ function __init__()
 
         using .OrdinaryDiffEq
 
-        struct DiffEqIntegrator{T<:AbstractScalarOrVec{<:AbstractFloat},A} <: AbstractLeapfrog{T}
+        struct DiffEqIntegrator{T<:AbstractScalarOrVec{<:AbstractFloat}, DiffEqSolver} <: AbstractLeapfrog{T}
             ϵ::T
-            alg::A
-            DiffEqIntegrator(ϵ::T, alg::A=VelocityVerlet()) where {T,A} = new{T,A}(ϵ, alg)
+            algorithm::DiffEqSolver
         end
 
         function step(
