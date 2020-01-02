@@ -659,9 +659,11 @@ function mh_accept_ratio(
     Hproposal::AbstractVector{<:T},
 ) where {T<:AbstractFloat}
     α = min.(1.0, exp.(Horiginal .- Hproposal))
-    accept = rand.(rng) .< α
+    accept = _rand(rng) .< α
     return accept, α
 end
+_rand(rng::AbstractRNG) = rand(rng)
+_rand(rng::AbstractVector{<:AbstractRNG}) = rand.(rng)
 
 ####
 #### Adaption
