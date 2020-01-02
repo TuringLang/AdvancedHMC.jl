@@ -1,7 +1,7 @@
 function __init__()
     @require OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed" begin
 
-        using OrdinaryDiffEq
+        using .OrdinaryDiffEq
 
         struct DiffEqIntegrator{T<:AbstractScalarOrVec{<:AbstractFloat},A} <: AbstractLeapfrog{T}
             ϵ::T
