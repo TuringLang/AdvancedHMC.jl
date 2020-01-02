@@ -21,10 +21,10 @@ function __init__()
             # For DynamicalODEProblem `u` is `θ` and `v` is `r`
             # f1 is dr/dt RHS function
             # f2 is dθ/dt RHS function
-			v0, u0 = r, θ
+            v0, u0 = r, θ
 
-			f1(v, u, p, t) = -∂H∂θ(h, u).gradient
-			f2(v, u, p, t) = ∂H∂r(h, v)
+            f1(v, u, p, t) = -∂H∂θ(h, u).gradient
+            f2(v, u, p, t) = ∂H∂r(h, v)
 
             ϵ = fwd ? step_size(integrator) : -step_size(integrator)
             tspan = (0.0, sign(n_steps))
@@ -42,10 +42,10 @@ function __init__()
                     res = z
                 end
             end
-			return res
-		end
+            return res
+        end
 
-		export DiffEqIntegrator
+        export DiffEqIntegrator
 
     end
 end
