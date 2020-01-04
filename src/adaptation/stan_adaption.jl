@@ -33,8 +33,10 @@ function initialize!(state::StanHMCAdaptorState, init_buffer::Int, term_buffer::
         next_window += window_size
     end
     # Avoid updating in the end
-    if window_splits[end] == n_adapts
-        pop!(window_splits)
+    if !isempty(window_splits)  # only when there is at least one split
+        if window_splits[end] == n_adapts
+            pop!(window_splits)
+        end
     end
 
     state.window_start  = window_start
