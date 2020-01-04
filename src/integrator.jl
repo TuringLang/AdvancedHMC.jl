@@ -66,12 +66,13 @@ function step(
         r = temper(lf, r, (i=i, is_half=false), n_steps)
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
-        !isfinite(z) && break
+        # Update result
         if res isa Vector
             res[i] = z
         else
             res = z
         end
+        !isfinite(z) && break
     end
     res
 end
