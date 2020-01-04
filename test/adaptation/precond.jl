@@ -86,6 +86,16 @@ end
         Preconditioner(DiagEuclideanMetric),
         NesterovDualAveraging(0.8, 0.5)
     )
+
+    @testset "buffer > `n_adapts`" begin
+        AdvancedHMC.initialize!(
+            StanHMCAdaptor(
+                Preconditioner(DenseEuclideanMetric),
+                NesterovDualAveraging(0.8, 0.5)
+            ),
+            100
+        )
+    end
 end
 
 let D=10
