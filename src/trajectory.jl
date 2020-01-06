@@ -154,11 +154,11 @@ struct StaticTrajectory{S<:AbstractTrajectorySampler, I<:AbstractIntegrator} <: 
     n_steps     ::  Int
 end
 
-function Base.show(io::IO, τ::StaticTrajectory)
+function Base.show(io::IO, τ::StaticTrajectory{<:EndPointTS})
     print(io, "StaticTrajectory{EndPointTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
 end
 
-function Base.show(io::IO, τ::StaticTrajectory)
+function Base.show(io::IO, τ::StaticTrajectory{<:MultinomialTS})
     print(io, "StaticTrajectory{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
 end
 
