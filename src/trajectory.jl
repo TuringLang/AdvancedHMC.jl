@@ -3,8 +3,8 @@
 ####
 #### Developers' Notes
 ####
-#### Not all functions that use `rng` requires a callback function with `GLOBAL_RNG`
-#### as default. In short, only those exported to other libries need such a callback
+#### Not all functions that use `rng` require a fallback function with `GLOBAL_RNG`
+#### as default. In short, only those exported to other libries need such a fallback
 #### function. Internal uses shall always use the explict `rng` version. (Kai Xu 6/Jul/19)
 
 """
@@ -40,7 +40,9 @@ abstract type AbstractTrajectorySampler end
 struct EndPointTS <: AbstractTrajectorySampler end
 
 """
-Slice sampler carried during the building of the tree.
+    SliceTS{F<:AbstractFloat} <: AbstractTrajectorySampler
+
+Trajectory slice sampler carried during the building of the tree.
 It contains the slice variable and the number of acceptable condidates in the tree.
 """
 struct SliceTS{F<:AbstractFloat} <: AbstractTrajectorySampler
@@ -52,7 +54,9 @@ end
 Base.show(io::IO, s::SliceTS) = print(io, "SliceTS(ℓu=$(s.ℓu), n=$(s.n))")
 
 """
-Multinomial sampler carried during the building of the tree.
+    MultinomialTS{F<:AbstractFloat} <: AbstractTrajectorySampler
+
+Multinomial trajectory sampler carried during the building of the tree.
 It contains the weight of the tree, defined as the total probabilities of the leaves.
 """
 struct MultinomialTS{F<:AbstractFloat} <: AbstractTrajectorySampler
@@ -61,6 +65,7 @@ struct MultinomialTS{F<:AbstractFloat} <: AbstractTrajectorySampler
 end
 
 """
+
 Slice sampler for the starting single leaf tree.
 Slice variable is initialized.
 """
@@ -75,68 +80,66 @@ Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/base_n
 MultinomialTS(rng::AbstractRNG, z0::PhasePoint) = MultinomialTS(z0, zero(energy(z0)))
 
 """
+    SliceTS(s::SliceTS, H0::AbstractFloat, zcand::PhasePoint)
+
 Create a slice sampler for a single leaf tree:
 - the slice variable is copied from the passed-in sampler `s` and
 - the number of acceptable candicates is computed by comparing the slice variable against the current energy.
 """
-SliceTS(s::SliceTS, H0::AbstractFloat, zcand::PhasePoint) =
-    SliceTS(zcand, s.ℓu, (s.ℓu <= -energy(zcand)) ? 1 : 0)
+function SliceTS(s::SliceTS, H0::AbstractFloat, zcand::PhasePoint)
+    return SliceTS(zcand, s.ℓu, (s.ℓu <= -energy(zcand)) ? 1 : 0)
+end
 
 """
+    MultinomialTS(s::MultinomialTS, H0::AbstractFloat, zcand::PhasePoint)
+
 Multinomial sampler for a trajectory consisting only a leaf node.
 - tree weight is the (unnormalised) energy of the leaf.
 """
-MultinomialTS(s::MultinomialTS, H0::AbstractFloat, zcand::PhasePoint) =
-    MultinomialTS(zcand, H0 - energy(zcand))
+function MultinomialTS(s::MultinomialTS, H0::AbstractFloat, zcand::PhasePoint)
+    return MultinomialTS(zcand, H0 - energy(zcand))
+end
 
 function combine(rng::AbstractRNG, s1::SliceTS, s2::SliceTS)
     @assert s1.ℓu == s2.ℓu "Cannot combine two slice sampler with different slice variable"
     n = s1.n + s2.n
     zcand = rand(rng) < s1.n / n ? s1.zcand : s2.zcand
-    SliceTS(zcand, s1.ℓu, n)
+    return SliceTS(zcand, s1.ℓu, n)
 end
 
 function combine(zcand::PhasePoint, s1::SliceTS, s2::SliceTS)
     @assert s1.ℓu == s2.ℓu "Cannot combine two slice sampler with different slice variable"
     n = s1.n + s2.n
-    SliceTS(zcand, s1.ℓu, n)
+    return SliceTS(zcand, s1.ℓu, n)
 end
 
 function combine(rng::AbstractRNG, s1::MultinomialTS, s2::MultinomialTS)
     ℓw = logaddexp(s1.ℓw, s2.ℓw)
     zcand = rand(rng) < exp(s1.ℓw - ℓw) ? s1.zcand : s2.zcand
-    MultinomialTS(zcand, ℓw)
+    return MultinomialTS(zcand, ℓw)
 end
 
 function combine(zcand::PhasePoint, s1::MultinomialTS, s2::MultinomialTS)
     ℓw = logaddexp(s1.ℓw, s2.ℓw)
-    MultinomialTS(zcand, ℓw)
+    return MultinomialTS(zcand, ℓw)
 end
 
-mh_accept(
-    rng::AbstractRNG,
-    s::SliceTS,
-    s′::SliceTS
-) = rand(rng) < min(1, s′.n / s.n)
+mh_accept(rng::AbstractRNG, s::SliceTS, s′::SliceTS) = rand(rng) < min(1, s′.n / s.n)
 
-mh_accept(
-    rng::AbstractRNG,
-    s::MultinomialTS,
-    s′::MultinomialTS
-) = rand(rng) < min(1, exp(s′.ℓw - s.ℓw))
+function mh_accept(rng::AbstractRNG, s::MultinomialTS, s′::MultinomialTS)
+    return rand(rng) < min(1, exp(s′.ℓw - s.ℓw))
+end
 
 """
     transition(τ::AbstractTrajectory{I}, h::Hamiltonian, z::PhasePoint)
 
 Make a MCMC transition from phase point `z` using the trajectory `τ` under Hamiltonian `h`.
 
-NOTE: This is a RNG-implicit callback function for `transition(GLOBAL_RNG, τ, h, z)`
+NOTE: This is a RNG-implicit fallback function for `transition(GLOBAL_RNG, τ, h, z)`
 """
-transition(
-    τ::AbstractTrajectory{I},
-    h::Hamiltonian,
-    z::PhasePoint
-) where {I<:AbstractIntegrator} = transition(GLOBAL_RNG, τ, h, z)
+function transition(τ::AbstractTrajectory, h::Hamiltonian, z::PhasePoint)
+    return transition(GLOBAL_RNG, τ, h, z)
+end
 
 ###
 ### Actual trajecory implementations
@@ -146,25 +149,28 @@ transition(
 ### Static trajecotry with fixed leapfrog step numbers.
 ###
 
-struct StaticTrajectory{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: AbstractTrajectory{I}
+struct StaticTrajectory{S<:AbstractTrajectorySampler, I<:AbstractIntegrator} <: AbstractTrajectory{I}
     integrator  ::  I
     n_steps     ::  Int
 end
 
-Base.show(io::IO, τ::StaticTrajectory{S,I}) where {I,S<:EndPointTS} =
+function Base.show(io::IO, τ::StaticTrajectory{<:EndPointTS})
     print(io, "StaticTrajectory{EndPointTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
-Base.show(io::IO, τ::StaticTrajectory{S,I}) where {I,S<:MultinomialTS} =
+end
+
+function Base.show(io::IO, τ::StaticTrajectory{<:MultinomialTS})
     print(io, "StaticTrajectory{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+end
 
 StaticTrajectory{S}(integrator::I, n_steps::Int) where {S,I} = StaticTrajectory{S,I}(integrator, n_steps)
 StaticTrajectory(args...) = StaticTrajectory{EndPointTS}(args...) # default StaticTrajectory using last point from trajectory
 
 function transition(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     τ::StaticTrajectory,
     h::Hamiltonian,
-    z::PhasePoint
-) where {T<:Real}
+    z::PhasePoint,
+)
     H0 = energy(z)
     integrator = jitter(rng, τ.integrator)
     z′ = samplecand(rng, τ, h, z)
@@ -177,14 +183,14 @@ function transition(
     H = energy(z)
     tstat = merge(
         (
-         n_steps=τ.n_steps,
-         is_accept=is_accept,
-         acceptance_rate=α,
-         log_density=z.ℓπ.value,
-         hamiltonian_energy=H,
-         hamiltonian_energy_error=H - H0
+            n_steps=τ.n_steps,
+            is_accept=is_accept,
+            acceptance_rate=α,
+            log_density=z.ℓπ.value,
+            hamiltonian_energy=H,
+            hamiltonian_energy_error=H - H0,
         ),
-        stat(integrator)
+        stat(integrator),
     )
     return Transition(z, tstat)
 end
@@ -249,19 +255,21 @@ struct HMCDA{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: DynamicTraje
     λ           ::  AbstractFloat
 end
 
-Base.show(io::IO, τ::HMCDA{S,I}) where {I,S<:EndPointTS} =
+function Base.show(io::IO, τ::HMCDA{<:EndPointTS})
     print(io, "HMCDA{EndPointTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
-Base.show(io::IO, τ::HMCDA{S,I}) where {I,S<:MultinomialTS} =
+end
+function Base.show(io::IO, τ::HMCDA{<:MultinomialTS})
     print(io, "HMCDA{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+end
 
 HMCDA{S}(integrator::I, λ::AbstractFloat) where {S,I} = HMCDA{S,I}(integrator, λ)
 HMCDA(args...) = HMCDA{EndPointTS}(args...) # default HMCDA using last point from trajectory
 
 function transition(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     τ::HMCDA{S},
     h::Hamiltonian,
-    z::PhasePoint
+    z::PhasePoint,
 ) where {S}
     # Create the corresponding static τ
     n_steps = max(1, floor(Int, τ.λ / nom_step_size(τ.integrator)))
@@ -311,14 +319,19 @@ struct NUTS{
     Δ_max           ::  F
 end
 
-Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTS,C<:ClassicNoUTurn} =
+function Base.show(io::IO, τ::NUTS{<:SliceTS, <:ClassicNoUTurn})
     print(io, "NUTS{SliceTS}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
-Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:SliceTS,C<:GeneralisedNoUTurn} =
+end
+function Base.show(io::IO, τ::NUTS{<:SliceTS, <:GeneralisedNoUTurn})
     print(io, "NUTS{SliceTS,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
-Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:MultinomialTS,C<:ClassicNoUTurn} =
+end
+function Base.show(io::IO, τ::NUTS{<:MultinomialTS, <:ClassicNoUTurn})
     print(io, "NUTS{MultinomialTS}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
-Base.show(io::IO, τ::NUTS{S,C,I,F}) where {I,F,S<:MultinomialTS,C<:GeneralisedNoUTurn} =
+end
+function Base.show(io::IO, τ::NUTS{<:MultinomialTS, <:GeneralisedNoUTurn})
     print(io, "NUTS{MultinomialTS,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+end
+
 
 const NUTS_DOCSTR = """
     NUTS{S,C}(
@@ -334,7 +347,7 @@ Create an instance for the No-U-Turn sampling algorithm.
 function NUTS{S,C}(
     integrator::I,
     max_depth::Int=10,
-    Δ_max::F=1000.0
+    Δ_max::F=1000.0,
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
     return NUTS{S,C,I,F}(integrator, max_depth, Δ_max)
 end
@@ -349,13 +362,15 @@ Below is the doc for NUTS{S,C}.
 
 $NUTS_DOCSTR
 """
-NUTS(args...) = NUTS{MultinomialTS,GeneralisedNoUTurn}(args...)
+NUTS(args...) = NUTS{MultinomialTS, GeneralisedNoUTurn}(args...)
 
 ###
 ### The doubling tree algorithm for expanding trajectory.
 ###
 
 """
+    Termination
+
 Termination reasons
 - `dynamic`: due to stoping criteria
 - `numerical`: due to large energy deviation from starting (possibly numerical errors)
@@ -370,24 +385,22 @@ Base.:*(d1::Termination, d2::Termination) = Termination(d1.dynamic || d2.dynamic
 isterminated(d::Termination) = d.dynamic || d.numerical
 
 """
+    Termination(s::SliceTS, nt::NUTS, H0::F, H′::F) where {F<:AbstractFloat}
+
 Check termination of a Hamiltonian trajectory.
 """
-Termination(
-    s::SliceTS,
-    nt::NUTS,
-    H0::F,
-    H′::F
-) where {F<:AbstractFloat} = Termination(false, !(s.ℓu < nt.Δ_max + -H′))
+function Termination(s::SliceTS, nt::NUTS, H0::F, H′::F) where {F<:AbstractFloat}
+    return Termination(false, !(s.ℓu < nt.Δ_max + -H′))
+end
 
 """
+    Termination(s::MultinomialTS, nt::NUTS, H0::F, H′::F) where {F<:AbstractFloat}
+
 Check termination of a Hamiltonian trajectory.
 """
-Termination(
-    s::MultinomialTS,
-    nt::NUTS,
-    H0::F,
-    H′::F
-) where {F<:AbstractFloat} = Termination(false, !(-H0 < nt.Δ_max + -H′))
+function Termination(s::MultinomialTS, nt::NUTS, H0::F, H′::F) where {F<:AbstractFloat}
+    return Termination(false, !(-H0 < nt.Δ_max + -H′))
+end
 
 """
 A full binary tree trajectory with only necessary leaves and information stored.
@@ -406,7 +419,7 @@ end
 
 Return the value with the largest absolute value.
 """
-@inline maxabs(a, b) = abs(a) > abs(b) ? a : b
+maxabs(a, b) = abs(a) > abs(b) ? a : b
 
 """
     combine(treeleft::BinaryTree, treeright::BinaryTree)
@@ -414,16 +427,26 @@ Return the value with the largest absolute value.
 Merge a left tree `treeleft` and a right tree `treeright` under given Hamiltonian `h`,
 then draw a new candidate sample and update related statistics for the resulting tree.
 """
-combine(treeleft::BinaryTree, treeright::BinaryTree) =
-    BinaryTree(treeleft.zleft, treeright.zright, combine(treeleft.c, treeright.c), treeleft.sum_α + treeright.sum_α, treeleft.nα + treeright.nα, maxabs(treeleft.ΔH_max, treeright.ΔH_max))
+function combine(treeleft::BinaryTree, treeright::BinaryTree)
+    return BinaryTree(
+        treeleft.zleft,
+        treeright.zright,
+        combine(treeleft.c, treeright.c),
+        treeleft.sum_α + treeright.sum_α,
+        treeleft.nα + treeright.nα,
+        maxabs(treeleft.ΔH_max, treeright.ΔH_max),
+    )
+end
 
 """
+    isterminated(h::Hamiltonian, t::BinaryTree{<:ClassicNoUTurn})
+
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 using the (original) no-U-turn cirterion.
 
 Ref: https://arxiv.org/abs/1111.4246, https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, t::BinaryTree{C}) where {C<:ClassicNoUTurn}
+function isterminated(h::Hamiltonian, t::BinaryTree{<:ClassicNoUTurn})
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
     Δθ = z1.θ - z0.θ
@@ -432,12 +455,14 @@ function isterminated(h::Hamiltonian, t::BinaryTree{C}) where {C<:ClassicNoUTurn
 end
 
 """
+    isterminated(h::Hamiltonian, t::BinaryTree{<:GeneralisedNoUTurn})
+
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 using the generalised no-U-turn criterion.
 
 Ref: https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, t::BinaryTree{C}) where {C<:GeneralisedNoUTurn}
+function isterminated(h::Hamiltonian, t::BinaryTree{<:GeneralisedNoUTurn})
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
     rho = t.c.rho
@@ -456,7 +481,7 @@ function build_tree(
     sampler::AbstractTrajectorySampler,
     v::Int,
     j::Int,
-    H0::AbstractFloat
+    H0::AbstractFloat,
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
@@ -492,7 +517,7 @@ function transition(
     rng::AbstractRNG,
     τ::NUTS{S,C,I,F},
     h::Hamiltonian,
-    z0::PhasePoint
+    z0::PhasePoint,
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
     H0 = energy(z0)
     tree = BinaryTree(z0, z0, C(z0), zero(F), zero(Int), zero(H0))
@@ -534,17 +559,17 @@ function transition(
     H = energy(zcand)
     tstat = merge(
         (
-         n_steps=tree.nα,
-         is_accept=true,
-         acceptance_rate=tree.sum_α / tree.nα,
-         log_density=zcand.ℓπ.value,
-         hamiltonian_energy=H,
-         hamiltonian_energy_error=H - H0,
-         max_hamiltonian_energy_error=tree.ΔH_max,
-         tree_depth=j,
-         numerical_error=termination.numerical,
+            n_steps=tree.nα,
+            is_accept=true,
+            acceptance_rate=tree.sum_α / tree.nα,
+            log_density=zcand.ℓπ.value,
+            hamiltonian_energy=H,
+            hamiltonian_energy_error=H - H0,
+            max_hamiltonian_energy_error=tree.ΔH_max,
+            tree_depth=j,
+            numerical_error=termination.numerical,
         ),
-        stat(τ.integrator)
+        stat(τ.integrator),
     )
 
     return Transition(zcand, tstat)
@@ -572,7 +597,7 @@ function find_good_eps(
     rng::AbstractRNG,
     h::Hamiltonian,
     θ::AbstractVector{T};
-    max_n_iters::Int=100
+    max_n_iters::Int=100,
 ) where {T<:Real}
     # Initialize searching parameters
     ϵ′ = ϵ = T(0.1)
@@ -635,11 +660,13 @@ function find_good_eps(
     return ϵ
 end
 
-find_good_eps(
+function find_good_eps(
     h::Hamiltonian,
-    θ::AbstractVector{T};
-    max_n_iters::Int=100
-) where {T<:AbstractFloat} = find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
+    θ::AbstractVector{<:AbstractFloat};
+    max_n_iters::Int=100,
+)
+    return find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
+end
 
 """
 Perform MH acceptance based on energy, i.e. negative log probability.
@@ -653,6 +680,7 @@ function mh_accept_ratio(
     accept = rand(rng) < α
     return accept, α
 end
+
 function mh_accept_ratio(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     Horiginal::AbstractVector{<:T},
@@ -662,6 +690,7 @@ function mh_accept_ratio(
     accept = _rand(rng) .< α
     return accept, α
 end
+
 _rand(rng::AbstractRNG) = rand(rng)
 _rand(rng::AbstractVector{<:AbstractRNG}) = rand.(rng)
 
@@ -672,18 +701,14 @@ _rand(rng::AbstractVector{<:AbstractRNG}) = rand.(rng)
 function update(
     h::Hamiltonian,
     τ::AbstractProposal,
-    pc::Adaptation.AbstractPreconditioner
+    pc::Adaptation.AbstractPreconditioner,
 )
     metric = renew(h.metric, getM⁻¹(pc))
     h = reconstruct(h, metric=metric)
     return h, τ
 end
 
-function update(
-    h::Hamiltonian,
-    τ::AbstractProposal,
-    da::NesterovDualAveraging
-)
+function update(h::Hamiltonian, τ::AbstractProposal, da::NesterovDualAveraging)
     # TODO: this does not support change type of `ϵ` (e.g. Float to Vector)
     integrator = reconstruct(τ.integrator, ϵ=getϵ(da))
     τ = reconstruct(τ, integrator=integrator)
@@ -693,7 +718,7 @@ end
 function update(
     h::Hamiltonian,
     τ::AbstractProposal,
-    ca::Union{Adaptation.NaiveHMCAdaptor, Adaptation.StanHMCAdaptor}
+    ca::Union{Adaptation.NaiveHMCAdaptor, Adaptation.StanHMCAdaptor},
 )
     metric = renew(h.metric, getM⁻¹(ca.pc))
     h = reconstruct(h, metric=metric)
@@ -702,10 +727,7 @@ function update(
     return h, τ
 end
 
-function update(
-    h::Hamiltonian,
-    θ::AbstractVecOrMat{T}
-) where {T<:AbstractFloat}
+function update(h::Hamiltonian, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
     metric = h.metric
     if size(metric) != size(θ)
         metric = typeof(metric)(size(θ))
