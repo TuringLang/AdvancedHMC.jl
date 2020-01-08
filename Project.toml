@@ -22,7 +22,7 @@ LazyArrays = "0.9, 0.10, 0.11, 0.12, 0.13"
 Parameters = "0.10, 0.11, 0.12"
 ProgressMeter = "1"
 StatsBase = "0.31, 0.32"
-StatsFuns = "0.8"
+StatsFuns = "0.8,0.9"
 
 [extras]
 DiffResults = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
