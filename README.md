@@ -27,12 +27,9 @@ D = 10
 target = MvNormal(zeros(D), ones(D))
 ℓπ(θ) = logpdf(target, θ)
 
-### Load an AD library - AdvancedHMC will use it for gradient
-using ForwardDiff   # or using Zygote
-
 ### Build up a HMC sampler to draw samples
-using ForwardDiff, AdvancedHMC  
-
+using AdvancedHMC, Zygote   # or using ForwardDiff
+                            # AdvancedHMC will use it for gradient
 # Sampling parameter settings
 n_samples, n_adapts = 12_000, 2_000
 
