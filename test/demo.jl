@@ -5,11 +5,8 @@ D = 10
 target = MvNormal(zeros(D), ones(D))
 ℓπ(θ) = logpdf(target, θ)
 
-# Load ForwardDiff; AdvancedHMC will use it for automatic differentiation
-using ForwardDiff
-
 ### Build up a HMC sampler to draw samples
-using AdvancedHMC
+using ForwardDiff, AdvancedHMC  # AdvancedHMC will use it for automatic differentiation
 
 # Sampling parameter settings
 n_samples, n_adapts = 12_000, 2_000

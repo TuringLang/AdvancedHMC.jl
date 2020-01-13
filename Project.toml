@@ -27,7 +27,6 @@ Requires = "0.5, 1"
 julia = "1"
 
 [extras]
-DiffResults = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
@@ -39,4 +38,4 @@ OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["DiffResults", "Distributed", "Distributions", "ForwardDiff", "Test", "Turing", "UnicodePlots", "Bijectors", "OrdinaryDiffEq"]
+test = ["Distributed", "Distributions", "ForwardDiff", "Test", "Turing", "UnicodePlots", "Bijectors", "OrdinaryDiffEq"]
