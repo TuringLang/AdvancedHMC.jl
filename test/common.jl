@@ -10,8 +10,6 @@ const DETATOL = 1e-3 * D * TRATIO
 const RNDATOL = 5e-2 * D * TRATIO
 
 using Distributions: logpdf, MvNormal, InverseGamma, Normal
-using DiffResults: GradientResult, JacobianResult, value, gradient, jacobian
-using ForwardDiff: gradient!, jacobian!
 using Bijectors: link, invlink, logpdf_with_trans
 
 const dm = zeros(D)
@@ -28,36 +26,6 @@ function ∂ℓπ∂θ(θ::AbstractVecOrMat)
     v = θ isa AbstractMatrix ? vec(v) : v
     g = -diff
     return (v, g)
-end
-
-function ∂ℓπ∂θ_ad(θ::AbstractVector)
-    res = GradientResult(θ)
-    gradient!(res, ℓπ, θ)
-    return (value(res), gradient(res))
-end
-
-function ∂ℓπ∂θ_ad(θ::AbstractMatrix)
-    v = similar(θ, size(θ, 2))
-    g = similar(θ)
-    for i in 1:size(θ, 2)
-        res = GradientResult(θ[:,i])
-        gradient!(res, ℓπ, θ[:,i])
-        v[i] = value(res)
-        g[:,i] = gradient(res)
-    end
-    return (v, g)
-end
-
-function ∂ℓπ∂θ_viajacob(θ::AbstractMatrix)
-    jacob = similar(θ)
-    res = JacobianResult(similar(θ, size(θ, 2)), jacob)
-    jacobian!(res, ℓπ, θ)
-    jacob_full = jacobian(res)
-    d, n = size(jacob)
-    for i in 1:n
-        jacob[:,i] = jacob_full[i,1+(i-1)*d:i*d]
-    end
-    return (value(res), jacob)
 end
 
 # For the Turing model
@@ -80,10 +48,4 @@ function ℓπ_gdemo(θ)
     logprior = logpdf_with_trans(InverseGamma(2, 3), s, true) + logpdf(Normal(0, sqrt(s)), m)
     loglikelihood = logpdf(Normal(m, sqrt(s)), 1.5) + logpdf(Normal(m, sqrt(s)), 2.0)
     return logprior + loglikelihood
-end
-
-function ∂ℓπ∂θ_gdemo(θ)
-    res = GradientResult(θ)
-    gradient!(res, ℓπ_gdemo, θ)
-    return (value(res), gradient(res))
 end

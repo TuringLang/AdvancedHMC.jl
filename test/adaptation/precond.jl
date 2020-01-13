@@ -1,7 +1,5 @@
 using Test, LinearAlgebra, Distributions, AdvancedHMC, Random
 using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, add_sample!, get_var, get_cov, reset!
-using DiffResults: GradientResult, value, gradient
-using ForwardDiff: gradient!
 
 # Check that the estimated variance is approximately correct.
 @testset "Online v.s. naive v.s. true var/cov estimation" begin

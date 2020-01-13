@@ -1,17 +1,12 @@
-### Define the target distribution and its gradient
+### Define the target distribution
 using Distributions: logpdf, MvNormal
-using DiffResults: GradientResult, value, gradient
-using ForwardDiff: gradient!
 
 D = 10
 target = MvNormal(zeros(D), ones(D))
 ℓπ(θ) = logpdf(target, θ)
 
-function ∂ℓπ∂θ(θ)
-    res = GradientResult(θ)
-    gradient!(res, ℓπ, θ)
-    return (value(res), gradient(res))
-end
+# Load ForwardDiff; AdvancedHMC will use it for automatic differentiation
+using ForwardDiff
 
 ### Build up a HMC sampler to draw samples
 using AdvancedHMC
@@ -24,7 +19,7 @@ n_samples, n_adapts = 12_000, 2_000
 
 # Define metric space, Hamiltonian, sampling method and adaptor
 metric = DiagEuclideanMetric(D)
-h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+h = Hamiltonian(metric, ℓπ)
 int = Leapfrog(find_good_eps(h, θ_init))
 prop = NUTS{MultinomialTS,GeneralisedNoUTurn}(int)
 adaptor = StanHMCAdaptor(
