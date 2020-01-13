@@ -60,16 +60,14 @@ end
 """
 Progress meter update with all trajectory stats, iteration number and metric shown.
 """
-function pm_next!(pm, stat::NamedTuple, i::Int, metric::AbstractMetric)
-    # Add current iteration and mass matrix
-    stat = (iterations=i, stat..., mass_matrix=metric)
+function pm_next!(pm, stat::NamedTuple)
     ProgressMeter.next!(pm; showvalues=[tuple(s...) for s in pairs(stat)])
 end
 
 """
 Simple progress meter update without any show values.
 """
-simple_pm_next!(pm, stat::NamedTuple, ::Int, ::AbstractMetric) = ProgressMeter.next!(pm)
+simple_pm_next!(pm, stat::NamedTuple) = ProgressMeter.next!(pm)
 
 ##
 ## Sampling functions
@@ -154,7 +152,8 @@ function sample(
         tstat = merge(tstat, (is_adapt=isadapted,))
         # Update progress meter
         if progress
-            pm_next!(pm, tstat, i, h.metric)
+            # Do include current iteration and mass matrix
+            pm_next!(pm, (iterations=i, tstat..., mass_matrix=h.metric))
         # Report finish of adapation
         elseif verbose && isadapted && i == n_adapts
             @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
