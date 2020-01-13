@@ -125,7 +125,7 @@ function adapt_stepsize!(da::NesterovDualAveraging{T}, α::AbstractScalarOrVec{<
     # TODO: we might want to remove this when all other numerical issues are correctly handelled
     if any(isnan.(ϵ)) || any(isinf.(ϵ))
         @warn "Incorrect ϵ = $ϵ; ϵ_previous = $(da.state.ϵ) is used instead."
-        # TODO: this revert is buggy for batch mode
+        # FIXME: this revert is buggy for batch mode
         @unpack m, ϵ, x_bar, H_bar = state
     end
 

@@ -1,5 +1,4 @@
 # TODO: add a type for kinetic energy
-# TODO: add cache for gradients by letting ∂logπ∂θ return both log density and gradient
 
 struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
     metric::M
@@ -43,7 +42,7 @@ struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
         @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
         if any(isfinite.((θ, r, ℓπ, ℓκ)) .== false)
             @warn "The current proposal will be rejected due to numerical error(s)." isfinite.((θ, r, ℓπ, ℓκ))
-            # TODO: make `-Inf` adjust to vec or mat
+            # FIXME: make `-Inf` adjust to vec or mat
             ℓπ = DualValue(-Inf, ℓπ.gradient)
             ℓκ = DualValue(-Inf, ℓκ.gradient)
         end

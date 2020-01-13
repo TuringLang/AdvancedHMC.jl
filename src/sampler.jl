@@ -172,7 +172,6 @@ function sample(
             n_chains = 1
         else
             n_chains = size(θ, 2)
-            # TODO: see if there is other trick to make
             EBFMI_est = "[" * join(EBFMI_est, ", ") * "]"
             average_acceptance_rate = "[" * join(average_acceptance_rate, ", ") * "]"
         end

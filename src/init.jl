@@ -60,7 +60,6 @@ function __init__()
 
         function ∂ℓπ∂θ_zygote(ℓπ, θ::AbstractMatrix)
             res, back = Zygote.pullback(ℓπ, θ)
-            # FIXME: this can return Float64 when eltype(θ) is Float32
             return res, back(fill(1, size(θ)...))[1]
         end
 
