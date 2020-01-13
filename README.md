@@ -40,7 +40,7 @@ n_samples, n_adapts = 12_000, 2_000
 metric = DiagEuclideanMetric(D)
 h = Hamiltonian(metric, ℓπ) # Hamiltonian(metric, ℓπ, ∂ℓπ∂θ) for hand-coded gradient ∂ℓπ∂θ
 int = Leapfrog(find_good_eps(h, θ_init))
-prop = NUTS{MultinomialTS,GeneralisedNoUTurn}(int)
+prop = NUTS{MultinomialTS, GeneralisedNoUTurn}(int)
 adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, int))
 
 # Draw samples via simulating Hamiltonian dynamics
