@@ -1,4 +1,4 @@
-using Test, Random, AdvancedHMC
+using Test, Random, AdvancedHMC, ForwardDiff
 using Statistics: mean
 include("common.jl")
 
@@ -11,7 +11,7 @@ include("common.jl")
     θ_init = randn(rng, 2)
 
     metric = DiagEuclideanMetric(2)
-    h = Hamiltonian(metric, ℓπ_gdemo, ∂ℓπ∂θ_gdemo)
+    h = Hamiltonian(metric, ℓπ_gdemo)
     init_eps = Leapfrog(0.1)
     prop = NUTS(init_eps)
     adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, prop.integrator))

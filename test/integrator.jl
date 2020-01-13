@@ -1,4 +1,4 @@
-using Test, Random, AdvancedHMC
+using Test, Random, AdvancedHMC, ForwardDiff
 include("common.jl")
 
 ϵ = 0.01
@@ -74,7 +74,6 @@ using Statistics: mean
 @testset "Eq (2.11) from (Neal, 2011)" begin
     D = 1
     negU(q::AbstractVector{T}) where {T<:Real} = -dot(q, q) / 2
-    ∂negU∂q = q -> (res = GradientResult(q); gradient!(res, negU, q); (value(res), gradient(res)))
 
     ϵ = 0.01
     for lf in [
@@ -82,7 +81,7 @@ using Statistics: mean
         DiffEqIntegrator(ϵ, VerletLeapfrog())
     ]
         q_init = randn(D)
-        h = Hamiltonian(UnitEuclideanMetric(D), negU, ∂negU∂q)
+        h = Hamiltonian(UnitEuclideanMetric(D), negU)
         p_init = AdvancedHMC.rand(h.metric)
 
         q, p = copy(q_init), copy(p_init)

@@ -6,8 +6,8 @@ target = MvNormal(zeros(D), ones(D))
 ℓπ(θ) = logpdf(target, θ)
 
 ### Build up a HMC sampler to draw samples
-using AdvancedHMC, Zygote   # or using ForwardDiff
-                            # AdvancedHMC will use it for gradient
+using AdvancedHMC, ForwardDiff  # or using Zygote
+                                # AdvancedHMC will use it for gradient
 # Sampling parameter settings
 n_samples, n_adapts = 12_000, 2_000
 
