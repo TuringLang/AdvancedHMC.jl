@@ -49,27 +49,27 @@ function __init__()
 
     end
 
-    # @require Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f" begin
+    @require Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f" begin
 
-    #     import Zygote
+        import .Zygote
 
-    #     function ∂ℓπ∂θ_zygote(ℓπ, θ::AbstractVector)
-    #         res, back = Zygote.pullback(ℓπ, θ)
-    #         return res[1], back(1)[1]
-    #     end
-        
-    #     function ∂ℓπ∂θ_zygote(ℓπ, θ::AbstractMatrix)
-    #         res, back = Zygote.pullback(ℓπ, θ)
-    #         # FIXME: this can return Float64 when eltype(θ) is Float32
-    #         return res, back(fill(1, size(θ)...))[1]
-    #     end
-        
-    #     function Hamiltonian(metric, ℓπ)
-    #         ∂ℓπ∂θ(θ::AbstractVecOrMat) = ∂ℓπ∂θ_zygote(ℓπ, θ)
-    #         return Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-    #     end
+        function ∂ℓπ∂θ_zygote(ℓπ, θ::AbstractVector)
+            res, back = Zygote.pullback(ℓπ, θ)
+            return res[1], back(1)[1]
+        end
 
-    # end
+        function ∂ℓπ∂θ_zygote(ℓπ, θ::AbstractMatrix)
+            res, back = Zygote.pullback(ℓπ, θ)
+            # FIXME: this can return Float64 when eltype(θ) is Float32
+            return res, back(fill(1, size(θ)...))[1]
+        end
+
+        function Hamiltonian(metric, ℓπ)
+            ∂ℓπ∂θ(θ::AbstractVecOrMat) = ∂ℓπ∂θ_zygote(ℓπ, θ)
+            return Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+        end
+
+    end
 
     @require ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210" begin
 

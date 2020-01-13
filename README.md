@@ -27,8 +27,11 @@ D = 10
 target = MvNormal(zeros(D), ones(D))
 ℓπ(θ) = logpdf(target, θ)
 
+### Load an AD library - AdvancedHMC will use it for gradient
+using ForwardDiff   # or using Zygote
+
 ### Build up a HMC sampler to draw samples
-using ForwardDiff, AdvancedHMC  # AdvancedHMC will use it for automatic differentiation
+using ForwardDiff, AdvancedHMC  
 
 # Sampling parameter settings
 n_samples, n_adapts = 12_000, 2_000
@@ -38,7 +41,7 @@ n_samples, n_adapts = 12_000, 2_000
 
 # Define metric space, Hamiltonian, sampling method and adaptor
 metric = DiagEuclideanMetric(D)
-h = Hamiltonian(metric, ℓπ)
+h = Hamiltonian(metric, ℓπ) # do Hamiltonian(metric, ℓπ, ∂ℓπ∂θ) if you have a hand-coded gradient function ∂ℓπ∂θ
 int = Leapfrog(find_good_eps(h, θ_init))
 prop = NUTS{MultinomialTS,GeneralisedNoUTurn}(int)
 adaptor = StanHMCAdaptor(
