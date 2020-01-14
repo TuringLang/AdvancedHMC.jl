@@ -48,11 +48,39 @@ include("diagnosis.jl")
 include("sampler.jl")
 export sample
 
-# AD utilities
+### AD utilities
+
 abstract type AbstractAD end
-const AD_AMBIGUITY_ERROR_MSG = "MethodError: Hamiltonian(metric::AbstractMetric, ℓπ) is ambiguous because both Zygote and ForwardDiff is loaded. Please use Hamiltonian(metric, ℓπ, ZygoteAD) or Hamiltonian(metric, ℓπ, ForwardDiffAD) explictly."
-function Hamiltonian(metric, ℓπ)
-    error("MethodError: no method matching Hamiltonian(metric::AbstractMetric, ℓπ) because no AD backend is loaded. Please load Zygote or ForwardDiff before calling Hamiltonian(metric, ℓπ).")
+
+struct NoAD <: AbstractAD end
+
+ADBACKEND = NoAD()
+
+Hamiltonian(metric::AbstractMetric, ℓπ) = Hamiltonian(metric, ℓπ, ADBACKEND)
+
+struct MultipleAD <: AbstractAD
+    ads::Set{AbstractAD}
+end
+
+function update_ADBACKEND!(ad::AbstractAD)
+    global ADBACKEND
+    if ADBACKEND isa NoAD
+        ADBACKEND = ad
+    elseif ADBACKEND isa MultipleAD
+        ADBACKEND = MultipleAD(Set((ADBACKEND.ads..., ad)))
+    else
+        ADBACKEND = MultipleAD(Set((ADBACKEND, ad)))
+    end
+end
+
+function Hamiltonian(metric::AbstractMetric, ℓπ, ::NoAD)
+    error("MethodError: no method matching Hamiltonian(metric::AbstractMetric, ℓπ) because no AD backend is loaded. Please load an AD package before calling Hamiltonian(metric, ℓπ).")
+end
+
+function Hamiltonian(metric::AbstractMetric, ℓπ, ad::MultipleAD)
+    backend_list_str = join(" and ", string.(backend.(ad.ads)))
+    constructors_str = join(" or ", map(s -> "Hamiltonian(metric, ℓπ, $s)", string.(ad.ads)))
+    error("MethodError: Hamiltonian(metric::AbstractMetric, ℓπ) is ambiguous because $backend_list_str are available in the same time. Please use $constructors_str explictly.")
 end
 
 using Requires

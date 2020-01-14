@@ -51,10 +51,12 @@ function __init__()
 
     @require ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210" begin
 
-        struct ForwardDiffAD <: AbstractAD end
-
         import .ForwardDiff
         DiffResults = ForwardDiff.DiffResults
+
+        struct ForwardDiffAD <: AbstractAD end
+        backend(::ForwardDiffAD) = ForwardDiff
+        update_ADBACKEND!(ForwardDiffAD())
 
         function ∂ℓπ∂θ_forwarddiff(ℓπ, θ::AbstractVector)
             res = DiffResults.GradientResult(θ)
@@ -101,22 +103,19 @@ function __init__()
         function Hamiltonian(metric::AbstractMetric, ℓπ, ::Union{ForwardDiffAD, Type{ForwardDiffAD}})
             ∂ℓπ∂θ(θ::AbstractVecOrMat) = ∂ℓπ∂θ_forwarddiff(ℓπ, θ)
             return Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-        end
-
-        function Hamiltonian(metric::AbstractMetric, ℓπ)
-            isdefined(AdvancedHMC, :ZygoteAD) && error(AD_AMBIGUITY_ERROR_MSG)
-            return Hamiltonian(metric, ℓπ, ForwardDiffAD)
-        end
+        end        
 
         export ForwardDiffAD
 
     end
 
-    @require ZygoteRules = "700de1a5-db45-46bc-99cf-38207098b444" begin
-
-        struct ZygoteAD <: AbstractAD end
+    @require Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f" begin
 
         import .Zygote
+
+        struct ZygoteAD <: AbstractAD end
+        backend(::ZygoteAD) = Zygote
+        update_ADBACKEND!(ZygoteAD())
 
         function ∂ℓπ∂θ_zygote(ℓπ, θ::AbstractVector)
             res, back = Zygote.pullback(ℓπ, θ)
@@ -131,11 +130,6 @@ function __init__()
         function Hamiltonian(metric::AbstractMetric, ℓπ, ::Union{ZygoteAD, Type{ZygoteAD}})
             ∂ℓπ∂θ(θ::AbstractVecOrMat) = ∂ℓπ∂θ_zygote(ℓπ, θ)
             return Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-        end
-
-        function Hamiltonian(metric::AbstractMetric, ℓπ)
-            isdefined(AdvancedHMC, :ForwardDiffAD) && error(AD_AMBIGUITY_ERROR_MSG)
-            return Hamiltonian(metric, ℓπ, ZygoteAD)
         end
 
         export ZygoteAD
