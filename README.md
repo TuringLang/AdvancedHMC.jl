@@ -39,7 +39,7 @@ n_samples, n_adapts = 12_000, 2_000
 # Define metric space, Hamiltonian, sampling method and adaptor
 metric = DiagEuclideanMetric(D)
 hamiltonian = Hamiltonian(metric, ℓπ) # Or, Hamiltonian(metric, ℓπ, ∂ℓπ∂θ) for hand-coded gradient ∂ℓπ∂θ
-int = Leapfrog(find_good_eps(h, θ_init))
+integrator = Leapfrog(find_good_eps(h, θ_init))
 proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(int)
 adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, int))
 
