@@ -51,11 +51,7 @@ function __init__()
 
     @require ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210" begin
 
-        import .ForwardDiff
-        DiffResults = ForwardDiff.DiffResults
-
-        struct ForwardDiffAD end
-        ADAVAILABLE[:ForwardDiff] = ForwardDiffAD()
+        import .ForwardDiff, .ForwardDiff.DiffResults
 
         function ∂ℓπ∂θ_forwarddiff(ℓπ, θ::AbstractVector)
             res = DiffResults.GradientResult(θ)
@@ -99,21 +95,18 @@ function __init__()
         #     return v, g
         # end
 
-        function Hamiltonian(metric::AbstractMetric, ℓπ, ::Union{ForwardDiffAD, Type{ForwardDiffAD}})
+        function ForwardDiffHamiltonian(metric::AbstractMetric, ℓπ)
             ∂ℓπ∂θ(θ::AbstractVecOrMat) = ∂ℓπ∂θ_forwarddiff(ℓπ, θ)
             return Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-        end        
+        end
 
-        export ForwardDiffAD
+        ADAVAILABLE[ForwardDiffAD] = ForwardDiffHamiltonian
 
     end
 
     @require Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f" begin
 
         import .Zygote
-
-        struct ZygoteAD end
-        ADAVAILABLE[:Zygote] = ZygoteAD()
 
         function ∂ℓπ∂θ_zygote(ℓπ, θ::AbstractVector)
             res, back = Zygote.pullback(ℓπ, θ)
@@ -125,12 +118,12 @@ function __init__()
             return res, back(ones(Int, size(θ)))[1]
         end
 
-        function Hamiltonian(metric::AbstractMetric, ℓπ, ::Union{ZygoteAD, Type{ZygoteAD}})
+        function ZygoteADHamiltonian(metric::AbstractMetric, ℓπ)
             ∂ℓπ∂θ(θ::AbstractVecOrMat) = ∂ℓπ∂θ_zygote(ℓπ, θ)
             return Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         end
 
-        export ZygoteAD
+        ADAVAILABLE[ZygoteAD] = ZygoteADHamiltonian
         
     end
 

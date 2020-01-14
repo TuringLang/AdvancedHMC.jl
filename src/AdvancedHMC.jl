@@ -50,23 +50,26 @@ export sample
 
 ### AD utilities
 
-abstract type AbstractAD end
-const ADSUPPORT = (:Zygote, :ForwardDiff)
-const ADAVAILABLE = Dict()
+@enum AutoDiff ForwardDiffAD=1 ZygoteAD=2
+const ADAVAILABLE = Dict{AutoDiff, Function}()
+Hamiltonian(metric::AbstractMetric, ℓπ, ad::AutoDiff) = ADAVAILABLE[ad](metric, ℓπ)
 
 function Hamiltonian(metric::AbstractMetric, ℓπ)
     available = collect(keys(ADAVAILABLE))
+    ad2package(x) = string(x)[1:end-2]
     if length(available) == 0
-        support_list_str = join(ADSUPPORT, " or ")
+        support_list_str = join(map(ad2package, instances(AutoDiff)), " or ")
         error("MethodError: no method matching Hamiltonian(metric::AbstractMetric, ℓπ) because no backend is loaded. Please load an AD package ($support_list_str) first.")
-    elseif length(available) == 1
-        Hamiltonian(metric, ℓπ, ADAVAILABLE[first(available)])
-    else
-        available_list_str = join(available, " and ")
-        constructor_list_str = join(map(package_sym -> "Hamiltonian(metric, ℓπ, $(ADAVAILABLE[package_sym]))", available), "\n  ")
+    elseif length(available) > 1
+        available_list_str = join(map(ad2package, available), " and ")
+        constructor_list_str = join(map(instance -> "Hamiltonian(metric, ℓπ, AutoDiff($(Int(instance)))) to use $instance", available), "\n  ")
         error("MethodError: Hamiltonian(metric::AbstractMetric, ℓπ) is ambiguous because multiple AD pakcages are available ($available_list_str). Please use AD explictly. Candidates:\n  $constructor_list_str")
+    else
+        return Hamiltonian(metric, ℓπ, first(available))
     end
 end
+
+export AutoDiff
 
 using Requires
 include("init.jl")
