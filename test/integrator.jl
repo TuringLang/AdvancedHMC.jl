@@ -81,7 +81,7 @@ using Statistics: mean
         DiffEqIntegrator(ϵ, VerletLeapfrog())
     ]
         q_init = randn(D)
-        h = Hamiltonian(UnitEuclideanMetric(D), negU)
+        h = Hamiltonian(UnitEuclideanMetric(D), negU, ForwardDiffAD())
         p_init = AdvancedHMC.rand(h.metric)
 
         q, p = copy(q_init), copy(p_init)

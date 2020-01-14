@@ -48,6 +48,13 @@ include("diagnosis.jl")
 include("sampler.jl")
 export sample
 
+# AD utilities
+abstract type AbstractAD end
+const AD_AMBIGUITY_ERROR_MSG = "MethodError: Hamiltonian(metric::AbstractMetric, ℓπ) is ambiguous because both Zygote and ForwardDiff is loaded. Please use Hamiltonian(metric, ℓπ, ZygoteAD) or Hamiltonian(metric, ℓπ, ForwardDiffAD) explictly."
+function Hamiltonian(metric, ℓπ)
+    error("MethodError: no method matching Hamiltonian(metric::AbstractMetric, ℓπ) because no AD backend is loaded. Please load Zygote or ForwardDiff before calling Hamiltonian(metric, ℓπ).")
+end
+
 using Requires
 include("init.jl")
 

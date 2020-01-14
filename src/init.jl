@@ -49,16 +49,9 @@ function __init__()
 
     end
 
-    abstract type AbstractAD end
-
-    function Hamiltonian(metric, ℓπ)
-        error("No AD backend is loaded. Please load Zygote or ForwardDiff before calling Hamiltonian(metric, ℓπ).")
-    end
-
     @require ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210" begin
 
         struct ForwardDiffAD <: AbstractAD end
-        export ForwardDiffAD
 
         import .ForwardDiff
         DiffResults = ForwardDiff.DiffResults
@@ -69,6 +62,7 @@ function __init__()
             return DiffResults.value(res), DiffResults.gradient(res)
         end
 
+        # Implementation 1
         function ∂ℓπ∂θ_forwarddiff(ℓπ, θ::AbstractMatrix)
             jacob = similar(θ)
             res = DiffResults.JacobianResult(similar(θ, size(θ, 2)), jacob)
@@ -104,23 +98,23 @@ function __init__()
         #     return v, g
         # end
 
-        function Hamiltonian(metric, ℓπ, ::ForwardDiffAD)
-            if isdefined(AdvancedHMC, ZygoteAD)
-                error("""MethodError: Hamiltonian(metric, ℓπ) is ambiguous.
-                  This is because both Zygote and ForwardDiff is loaded.
-                  Please use Hamiltonian(metric, ℓπ, ZygoteAD) or Hamiltonian(metric, ℓπ, ForwardDiffAD) explictly."""
-                )
-            end
+        function Hamiltonian(metric::AbstractMetric, ℓπ, ::Union{ForwardDiffAD, Type{ForwardDiffAD}})
             ∂ℓπ∂θ(θ::AbstractVecOrMat) = ∂ℓπ∂θ_forwarddiff(ℓπ, θ)
             return Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         end
+
+        function Hamiltonian(metric::AbstractMetric, ℓπ)
+            isdefined(AdvancedHMC, :ZygoteAD) && error(AD_AMBIGUITY_ERROR_MSG)
+            return Hamiltonian(metric, ℓπ, ForwardDiffAD)
+        end
+
+        export ForwardDiffAD
 
     end
 
     @require ZygoteRules = "700de1a5-db45-46bc-99cf-38207098b444" begin
 
         struct ZygoteAD <: AbstractAD end
-        export ZygoteAD
 
         import .Zygote
 
@@ -134,17 +128,18 @@ function __init__()
             return res, back(ones(Int, size(θ)))[1]
         end
 
-        function Hamiltonian(metric, ℓπ, ::ZygoteAD)
-            if isdefined(AdvancedHMC, ForwardDiffAD)
-                error("""MethodError: Hamiltonian(metric, ℓπ) is ambiguous.
-                  This is because both Zygote and ForwardDiff is loaded.
-                  Please use Hamiltonian(metric, ℓπ, ZygoteAD) or Hamiltonian(metric, ℓπ, ForwardDiffAD) explictly."""
-                )
-            end
+        function Hamiltonian(metric::AbstractMetric, ℓπ, ::Union{ZygoteAD, Type{ZygoteAD}})
             ∂ℓπ∂θ(θ::AbstractVecOrMat) = ∂ℓπ∂θ_zygote(ℓπ, θ)
             return Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         end
 
+        function Hamiltonian(metric::AbstractMetric, ℓπ)
+            isdefined(AdvancedHMC, :ForwardDiffAD) && error(AD_AMBIGUITY_ERROR_MSG)
+            return Hamiltonian(metric, ℓπ, ZygoteAD)
+        end
+
+        export ZygoteAD
+        
     end
 
 end
