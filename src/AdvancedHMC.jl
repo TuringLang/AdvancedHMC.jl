@@ -51,36 +51,21 @@ export sample
 ### AD utilities
 
 abstract type AbstractAD end
+const ADSUPPORT = (:Zygote, :ForwardDiff)
+const ADAVAILABLE = Dict()
 
-struct NoAD <: AbstractAD end
-
-ADBACKEND = NoAD()
-
-Hamiltonian(metric::AbstractMetric, ℓπ) = Hamiltonian(metric, ℓπ, ADBACKEND)
-
-struct MultipleAD <: AbstractAD
-    ads::Set{AbstractAD}
-end
-
-function update_ADBACKEND!(ad::AbstractAD)
-    global ADBACKEND
-    if ADBACKEND isa NoAD
-        ADBACKEND = ad
-    elseif ADBACKEND isa MultipleAD
-        ADBACKEND = MultipleAD(Set((ADBACKEND.ads..., ad)))
+function Hamiltonian(metric::AbstractMetric, ℓπ)
+    available = collect(keys(ADAVAILABLE))
+    if length(available) == 0
+        support_list_str = join(ADSUPPORT, " or ")
+        error("MethodError: no method matching Hamiltonian(metric::AbstractMetric, ℓπ) because no backend is loaded. Please load an AD package ($support_list_str) first.")
+    elseif length(available) == 1
+        Hamiltonian(metric, ℓπ, ADAVAILABLE[first(available)])
     else
-        ADBACKEND = MultipleAD(Set((ADBACKEND, ad)))
+        available_list_str = join(available, " and ")
+        constructor_list_str = join(map(package_sym -> "Hamiltonian(metric, ℓπ, $(ADAVAILABLE[package_sym]))", available), "\n  ")
+        error("MethodError: Hamiltonian(metric::AbstractMetric, ℓπ) is ambiguous because multiple AD pakcages are available ($available_list_str). Please use AD explictly. Candidates:\n  $constructor_list_str")
     end
-end
-
-function Hamiltonian(metric::AbstractMetric, ℓπ, ::NoAD)
-    error("MethodError: no method matching Hamiltonian(metric::AbstractMetric, ℓπ) because no AD backend is loaded. Please load an AD package before calling Hamiltonian(metric, ℓπ).")
-end
-
-function Hamiltonian(metric::AbstractMetric, ℓπ, ad::MultipleAD)
-    backend_list_str = join(" and ", string.(backend.(ad.ads)))
-    constructors_str = join(" or ", map(s -> "Hamiltonian(metric, ℓπ, $s)", string.(ad.ads)))
-    error("MethodError: Hamiltonian(metric::AbstractMetric, ℓπ) is ambiguous because $backend_list_str are available in the same time. Please use $constructors_str explictly.")
 end
 
 using Requires

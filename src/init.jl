@@ -54,9 +54,8 @@ function __init__()
         import .ForwardDiff
         DiffResults = ForwardDiff.DiffResults
 
-        struct ForwardDiffAD <: AbstractAD end
-        backend(::ForwardDiffAD) = ForwardDiff
-        update_ADBACKEND!(ForwardDiffAD())
+        struct ForwardDiffAD end
+        ADAVAILABLE[:ForwardDiff] = ForwardDiffAD()
 
         function ∂ℓπ∂θ_forwarddiff(ℓπ, θ::AbstractVector)
             res = DiffResults.GradientResult(θ)
@@ -113,9 +112,8 @@ function __init__()
 
         import .Zygote
 
-        struct ZygoteAD <: AbstractAD end
-        backend(::ZygoteAD) = Zygote
-        update_ADBACKEND!(ZygoteAD())
+        struct ZygoteAD end
+        ADAVAILABLE[:Zygote] = ZygoteAD()
 
         function ∂ℓπ∂θ_zygote(ℓπ, θ::AbstractVector)
             res, back = Zygote.pullback(ℓπ, θ)
