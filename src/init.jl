@@ -113,7 +113,7 @@ function __init__()
 
         function ∂ℓπ∂θ_zygote(ℓπ, θ::AbstractMatrix)
             res, back = Zygote.pullback(ℓπ, θ)
-            return res, back(fill(1, size(θ)...))[1]
+            return res, back(ones(Int, size(θ)))[1]
         end
 
         # NOTE
