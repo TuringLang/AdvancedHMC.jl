@@ -1,46 +1,18 @@
 # Based on https://rlouf.github.io/post/jax-random-walk-metropolis/
 
-using ArgParse, PyCall
+include(joinpath(@__DIR__, "argparse.jl"))
 
-function parse_commandline()
-    s = ArgParseSettings()
-
-    @add_arg_table s begin
-        "--n_dims"
-            arg_type = Int
-            required = true
-        "--n_samples"
-            arg_type = Int
-            required = true
-        "--n_chains"
-            arg_type = Int
-            required = true
-        "--use_xla"
-            arg_type = Bool
-            required = true
-        "--target"
-            arg_type = String
-            required = true
-            range_tester = (x -> x in ("mog", "gauss"))
-    end
-
-    return parse_args(s)
-end
+using PyCall
 
 function main()
     parsed_args = parse_commandline()
-    n_dims = parsed_args["n_dims"]
-    n_samples = parsed_args["n_samples"]
-    n_chains = parsed_args["n_chains"]
-    use_xla = parsed_args["use_xla"]
-    target = parsed_args["target"]
+    @assert parsed_args[:target] in ("mog", "gauss") "Only mixture of Gaussians and Gaussian targets are implemented in TFP."
     
     py"""
-    import os
+    import os, time
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
     from functools import partial
-
     import numpy as np
     import tensorflow as tf
     import tensorflow_probability as tfp
@@ -81,26 +53,22 @@ function main()
     target_gauss = tfd.Normal(loc=dtype(-0.0), scale=dtype(1.0))
     target_dict["gauss"] = target_gauss
 
-    target = target_dict[$target]
+    # Choose target
+    target_name = $(parsed_args[:target])
+    target = target_dict[target_name]
 
-    import time
+    # Define parameters
+    n_dims = $(parsed_args[:n_dims])
+    n_samples = $(parsed_args[:n_samples])
+    n_chains = $(parsed_args[:n_chains])
 
-    n_dims = $n_dims
-    n_samples = $n_samples
-    n_chains = $n_chains
-
-    ts = []
-
-    for c in [1, 10, 100, 1000, 10000]:
-        print(f"Running {c} chains")
-        run_mcm = partial(hmc_sampler, n_dims, n_samples, c, target)
-        start = time.time()
-        tf.xla.experimental.compile(run_mcm) if $use_xla else run_mcm()
-        t = time.time() - start
-        print(f"...Done with {t} seconds")
-        ts.append(t)
-
-    print(ts)
+    # Run sampling
+    print(f"Running {n_dims} dimensional {target_name} for {n_samples} samples with {n_chains} chains")
+    run_mcm = partial(hmc_sampler, n_dims, n_samples, n_chains, target)
+    start = time.time()
+    tf.xla.experimental.compile(run_mcm) if $(parsed_args[:use_xla]) else run_mcm()
+    t = time.time() - start
+    print(f"...Done with {t} seconds")
     """
 end
 
