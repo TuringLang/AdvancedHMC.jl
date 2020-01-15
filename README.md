@@ -4,7 +4,7 @@
 [![DOI](https://zenodo.org/badge/72657907.svg)](https://zenodo.org/badge/latestdoi/72657907)
 [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
 
-`AdvancedHMC.jl` provides a robust, modular and efficient implementation of advanced HMC algorithms. An inllustrative example for `AdvancedHMC`'s usage is given below. `AdvancedHMC.jl` is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia. 
+AdvancedHMC.jl provides a robust, modular and efficient implementation of advanced HMC algorithms. An inllustrative example for AdvancedHMC's usage is given below. AdvancedHMC.jl is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia. 
 If you are interested in using `AdvancedHMC.jl` through a probabilistic programming language, please check it out!
 
 **Interfaces**
