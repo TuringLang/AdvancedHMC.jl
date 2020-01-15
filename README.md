@@ -36,18 +36,18 @@ n_samples, n_adapts = 2_000, 1_000
 metric = DiagEuclideanMetric(D)
 hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  
 
-# Create a leapfrog integrator with initial step size set by a heuristic 
+# Define a leapfrog solver, with initial step size chosen heuristically
 initial_ϵ = find_good_eps(hamiltonian, initial_θ) 
 integrator = Leapfrog(initial_ϵ)
 
-# Create an HMC sampler with a
+# Define an HMC sampler, with the following components
 #   - multinomial sampling scheme,
 #   - generalised No-U-Turn criteria, and
 #   - windowed adaption for step-size and diagonal mass matrix
 proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
 adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, integrator))
 
-# Draw samples from the given target distribution using HMC, where
+# Run the sampler to draw samples from the specified Gaussian, where
 #   - `samples` will store the samples
 #   - `stats` will store diagnostic statistics for each sample
 samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; progress=true)
