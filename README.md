@@ -1,12 +1,14 @@
-# AdvancedHMC.jl: a robust, modular and efficient implementation of advanced HMC algorithms
+# AdvancedHMC.jl
 
 [![Build Status](https://travis-ci.org/TuringLang/AdvancedHMC.jl.svg?branch=master)](https://travis-ci.org/TuringLang/AdvancedHMC.jl)
 [![DOI](https://zenodo.org/badge/72657907.svg)](https://zenodo.org/badge/latestdoi/72657907)
 [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
 
-`AdvancedHMC.jl` is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia. 
+AdvancedHMC.jl provides a robust, modular and efficient implementation of advanced HMC algorithms. An inllustrative example for AdvancedHMC's usage is given below. AdvancedHMC.jl is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia. 
 If you are interested in using `AdvancedHMC.jl` through a probabilistic programming language, please check it out!
 
+**Interfaces**
+- [Python interface](https://github.com/salilab/hmc) for AdvancedHMC 
 
 **NEWS**
 - We presented AdvancedHMC.jl at [AABI](http://approximateinference.org/) 2019 in Vancouver, Canada. ([pdf](https://openreview.net/forum?id=rJgzckn4tH))
@@ -20,30 +22,37 @@ If you are interested in using `AdvancedHMC.jl` through a probabilistic programm
 ## A minimal example - sampling from a multivariate Gaussian using NUTS
 
 ```julia
-### Define the target distribution
-using Distributions: logpdf, MvNormal
 
-D = 10
+using AdvancedHMC, Distributions, ForwardDiff
+
+# Choose parameter dimentionality and initial parameter value
+D = 10; initial_θ = rand(D)   
+
+# Define the target distribution
 ℓπ(θ) = logpdf(MvNormal(zeros(D), ones(D)), θ)
 
-### Build up a HMC sampler to draw samples
-using AdvancedHMC, ForwardDiff
+# Set the number of samples to draw and warmup iterations
+n_samples, n_adapts = 2_000, 1_000 
 
-# Parameter settings
-n_samples, n_adapts = 12_000, 2_000
-θ₀ = rand(D)    # draw a random starting points
-
-# Define metric space, Hamiltonian, sampling method and adaptor
+# Define a Hamiltonian system
 metric = DiagEuclideanMetric(D)
-hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  # or, Hamiltonian(metric, ℓπ, ∂ℓπ∂θ) for hand-coded gradient ∂ℓπ∂θ
-integrator = Leapfrog(find_good_eps(hamiltonian, θ₀))
+hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  
+
+# Define a leapfrog solver, with initial step size chosen heuristically
+initial_ϵ = find_good_eps(hamiltonian, initial_θ) 
+integrator = Leapfrog(initial_ϵ)
+
+# Define an HMC sampler, with the following components
+#   - multinomial sampling scheme,
+#   - generalised No-U-Turn criteria, and
+#   - windowed adaption for step-size and diagonal mass matrix
 proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
 adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, integrator))
 
-# Draw samples via simulating Hamiltonian dynamics
-# - `samples` will store the samples
-# - `stats` will store statistics for each sample
-samples, stats = sample(hamiltonian, proposal, θ₀, n_samples, adaptor, n_adapts; progress=true)
+# Run the sampler to draw samples from the specified Gaussian, where
+#   - `samples` will store the samples
+#   - `stats` will store diagnostic statistics for each sample
+samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; progress=true)
 ```
 
 ## API and supported HMC algorithms
@@ -60,7 +69,7 @@ The minimal example above can be modified to suit particular inference problems 
 
 where `dim` is the dimensionality of the sampling space.
 
-### Integrator (`int`)
+### Integrator (`integrator`)
 
 - Ordinary leapfrog integrator: `Leapfrog(ϵ)`
 - Jittered leapfrog integrator with jitter rate `n`: `JitteredLeapfrog(ϵ, n)`
@@ -68,7 +77,7 @@ where `dim` is the dimensionality of the sampling space.
 
 where `ϵ` is the step size of leapfrog integration.
 
-### Proposal (`prop`)
+### Proposal (`proposal`)
 
 - Static HMC with a fixed number of steps (`n_steps`): `StaticTrajectory(int, n_steps)`
 - HMC with a fixed total trajectory length (`len_traj`): `HMCDA(int, len_traj)` 
@@ -85,6 +94,9 @@ where `int` is the integrator used.
 - Nesterov's dual averaging with target acceptance rate `δ` on integrator `int`: `da = NesterovDualAveraging(δ, int)`
 - Combine the two above *naively*: `NaiveHMCAdaptor(pc, da)`
 - Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(pc, da)`
+
+### Gradients 
+`AdvancedHMC` supports both AD-based (`Zygote`, `Tracker` and `ForwardDiff`) and user-specified gradients. For the latter, simply replace `ForwardDiff` with `ℓπ_grad` in the ` Hamiltonian`  constructor. 
 
 All the combinations are tested in [this file](https://github.com/TuringLang/AdvancedHMC.jl/blob/master/test/hmc.jl) except from using tempered leapfrog integrator together with adaptation, which we found unstable empirically.
 
