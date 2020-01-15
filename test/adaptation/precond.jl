@@ -1,5 +1,6 @@
-using Test, LinearAlgebra, Distributions, AdvancedHMC, Random, ForwardDiff
+using Test, LinearAlgebra, Distributions, AdvancedHMC, Random
 using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, add_sample!, get_var, get_cov, reset!
+include("../common.jl")
 
 # Check that the estimated variance is approximately correct.
 @testset "Online v.s. naive v.s. true var/cov estimation" begin
@@ -97,21 +98,6 @@ end
 end
 
 let D=10
-    function runnuts(ℓπ, metric; n_samples=3_000)
-        n_adapts = 1_500
-
-        θ_init = rand(D)
-
-        h = Hamiltonian(metric, ℓπ, ForwardDiff)
-        prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
-        adaptor = StanHMCAdaptor(
-            Preconditioner(metric),
-            NesterovDualAveraging(0.8, prop.integrator)
-        )
-        samples, stats = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; verbose=false)
-        return (samples=samples, stats=stats, adaptor=adaptor)
-    end
-
     @testset "Adapted mass v.s. true variance" begin
         n_tests = 5
 
@@ -126,10 +112,10 @@ let D=10
                 target = MvNormal(zeros(D), σ)
                 ℓπ = θ -> logpdf(target, θ)
 
-                res = runnuts(ℓπ, DiagEuclideanMetric(D))
+                res = run_nuts(D, ℓπ; metric=DiagEuclideanMetric(D))
                 @test res.adaptor.pc.var ≈ σ .^ 2 rtol=0.2
 
-                res = runnuts(ℓπ, DenseEuclideanMetric(D))
+                res = run_nuts(D, ℓπ; metric=DenseEuclideanMetric(D))
                 @test res.adaptor.pc.covar ≈ diagm(0 => σ .^ 2) rtol=0.25
             end
         end
@@ -144,10 +130,10 @@ let D=10
                 target = MvNormal(zeros(D), Σ)
                 ℓπ = θ -> logpdf(target, θ)
 
-                res = runnuts(ℓπ, DiagEuclideanMetric(D))
+                res = run_nuts(D, ℓπ; metric=DiagEuclideanMetric(D))
                 @test res.adaptor.pc.var ≈ diag(Σ) rtol=0.2
 
-                res = runnuts(ℓπ, DenseEuclideanMetric(D))
+                res = run_nuts(D, ℓπ; metric=DenseEuclideanMetric(D))
                 @test res.adaptor.pc.covar ≈ Σ rtol=0.25
             end
         end
@@ -159,11 +145,11 @@ let D=10
         ℓπ = θ -> logpdf(target, θ)
 
         mass_init = fill(0.5, D)
-        res = runnuts(ℓπ, DiagEuclideanMetric(mass_init); n_samples=1)
+        res = run_nuts(D, ℓπ; n_samples=1, metric=DiagEuclideanMetric(mass_init))
         @test res.adaptor.pc.var == mass_init
 
         mass_init = diagm(0 => fill(0.5, D))
-        res = runnuts(ℓπ, DenseEuclideanMetric(mass_init); n_samples=1)
+        res = run_nuts(D, ℓπ; n_samples=1, metric=DenseEuclideanMetric(mass_init))
         @test res.adaptor.pc.covar == mass_init
     end
 end

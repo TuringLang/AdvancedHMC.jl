@@ -1,24 +1,16 @@
 using Test, Random, AdvancedHMC, ForwardDiff
 using Statistics: mean
 include("common.jl")
+include(joinpath(splitpath(@__DIR__)[1:end-1]..., "benchmarks", "targets", "gdemo.jl"))
 
-@testset "`gdemo`" begin
-    rng = MersenneTwister(0)
+@testset "models" begin
 
-    n_samples = 5_000
-    n_adapts = 1_000
+    @testset "gdemo" begin
+        res = run_nuts(2, ℓπ_gdemo; rng=MersenneTwister(1), verbose=true, drop_warmup=true)
 
-    θ_init = randn(rng, 2)
+        θ̂ = mean(map(invlink_gdemo, res.samples))
 
-    metric = DiagEuclideanMetric(2)
-    h = Hamiltonian(metric, ℓπ_gdemo, ForwardDiff)
-    init_eps = Leapfrog(0.1)
-    prop = NUTS(init_eps)
-    adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, prop.integrator))
+        @test θ̂ ≈ [49 / 24, 7 / 6] atol=RNDATOL
+    end
 
-    samples, _ = sample(rng, h, prop, θ_init, n_samples, adaptor, n_adapts)
-
-    m_est = mean(map(invlink_gdemo, samples[1000:end]))
-
-    @test m_est ≈ [49 / 24, 7 / 6] atol=RNDATOL
-end
+end # @testset

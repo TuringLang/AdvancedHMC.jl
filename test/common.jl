@@ -1,16 +1,6 @@
-# TODO: add more target distributions and make them iteratable
+### Hand-coded multivaite Gaussain
 
-# Dimension of testing distribution
 const D = 5
-# Tolerance ratio
-const TRATIO = Int == Int64 ? 1 : 2
-# Deterministic tolerance
-const DETATOL = 1e-3 * D * TRATIO
-# Random tolerance
-const RNDATOL = 5e-2 * D * TRATIO
-
-# Hand-coded multivaite Gaussain
-
 const gaussian_m = zeros(D)
 const gaussian_s = ones(D)
 
@@ -46,27 +36,31 @@ function ∂ℓπ∂θ(θ::AbstractMatrix)
     return dropdims(sum(v; dims=1); dims=1), g
 end
 
-# For the Turing model
-# @model gdemo() = begin
-#     s ~ InverseGamma(2, 3)
-#     m ~ Normal(0, sqrt(s))
-#     1.5 ~ Normal(m, sqrt(s))
-#     2.0 ~ Normal(m, sqrt(s))
-#     return s, m
-# end
+### Testing parameters
 
-using Distributions: logpdf, InverseGamma, Normal
-using Bijectors: invlink, logpdf_with_trans
+# Tolerance ratio
+const TRATIO = Int == Int64 ? 1 : 2
+# Deterministic tolerance
+const DETATOL = 1e-3 * D * TRATIO
+# Random tolerance
+const RNDATOL = 5e-2 * D * TRATIO
 
-function invlink_gdemo(θ)
-    s = invlink(InverseGamma(2, 3), θ[1])
-    m = θ[2]
-    return [s, m]
-end
+### NUTS helper
 
-function ℓπ_gdemo(θ)
-    s, m = invlink_gdemo(θ)
-    logprior = logpdf_with_trans(InverseGamma(2, 3), s, true) + logpdf(Normal(0, sqrt(s)), m)
-    loglikelihood = logpdf(Normal(m, sqrt(s)), 1.5) + logpdf(Normal(m, sqrt(s)), 2.0)
-    return logprior + loglikelihood
+using ForwardDiff
+using Random: GLOBAL_RNG
+
+function run_nuts(dim::Int, ℓπ::Function; rng=GLOBAL_RNG, ∂ℓπ∂θ=ForwardDiff, metric=DiagEuclideanMetric(dim), n_samples=5_000, n_adapts=2_000, verbose=false, drop_warmup=false)
+    initial_θ = randn(rng, dim)
+
+    hamiltonian = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+    
+    integrator = Leapfrog(0.1)
+
+    proposal = NUTS(integrator)
+    adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, integrator))
+
+    samples, stats = sample(rng, hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; verbose=verbose, drop_warmup=drop_warmup)
+
+    return (samples=samples, stats=stats, adaptor=adaptor)
 end
