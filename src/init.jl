@@ -100,7 +100,7 @@ function __init__()
             return Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         end
 
-        ADAVAILABLE[ForwardDiffAD] = ForwardDiffHamiltonian
+        ADAVAILABLE[ForwardDiff] = ForwardDiffHamiltonian
 
     end
 
@@ -123,7 +123,7 @@ function __init__()
             return Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         end
 
-        ADAVAILABLE[ZygoteAD] = ZygoteADHamiltonian
+        ADAVAILABLE[Zygote] = ZygoteADHamiltonian
         
     end
 

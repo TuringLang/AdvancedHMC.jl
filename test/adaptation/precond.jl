@@ -102,7 +102,7 @@ let D=10
 
         θ_init = rand(D)
 
-        h = Hamiltonian(metric, ℓπ, AutoDiff())
+        h = Hamiltonian(metric, ℓπ, ForwardDiff)
         prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
         adaptor = StanHMCAdaptor(
             Preconditioner(metric),
