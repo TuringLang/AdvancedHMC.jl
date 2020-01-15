@@ -1,10 +1,10 @@
-# AdvancedHMC.jl: a robust, modular and efficient implementation of advanced HMC algorithms
+# AdvancedHMC.jl
 
 [![Build Status](https://travis-ci.org/TuringLang/AdvancedHMC.jl.svg?branch=master)](https://travis-ci.org/TuringLang/AdvancedHMC.jl)
 [![DOI](https://zenodo.org/badge/72657907.svg)](https://zenodo.org/badge/latestdoi/72657907)
 [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
 
-`AdvancedHMC.jl` is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia. 
+`AdvancedHMC.jl` provides a robust, modular and efficient implementation of advanced HMC algorithms. An inllustrative example for `AdvancedHMC`'s usage is given below. `AdvancedHMC.jl` is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia. 
 If you are interested in using `AdvancedHMC.jl` through a probabilistic programming language, please check it out!
 
 
@@ -36,7 +36,7 @@ n_samples, n_adapts = 2_000, 1_000
 metric = DiagEuclideanMetric(D)
 hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  
 
-# Pick initial step size by a heuristic. 
+# Create a leapfrog integrator with initial step size set by a heuristic 
 initial_ϵ = find_good_eps(hamiltonian, initial_θ) 
 integrator = Leapfrog(initial_ϵ)
 
