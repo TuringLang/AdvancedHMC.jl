@@ -52,6 +52,7 @@ export sample
 
 @enum AutoDiff ForwardDiffAD=1 ZygoteAD=2
 const ADAVAILABLE = Dict{AutoDiff, Function}()
+AutoDiff() = first(keys(ADAVAILABLE))
 Hamiltonian(metric::AbstractMetric, ℓπ, ad::AutoDiff) = ADAVAILABLE[ad](metric, ℓπ)
 
 function Hamiltonian(metric::AbstractMetric, ℓπ)
