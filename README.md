@@ -40,14 +40,14 @@ hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
 initial_ϵ = find_good_eps(hamiltonian, initial_θ) 
 integrator = Leapfrog(initial_ϵ)
 
-# Create an HMC sampler with 
-#    - multinomial sampling scheme
-#    - generalised No-U-Turn criteria 
-#    - windowed adaption for step-size and diagonal mass matrix
+# Create an HMC sampler with a
+#   - multinomial sampling scheme,
+#   - generalised No-U-Turn criteria, and
+#   - windowed adaption for step-size and diagonal mass matrix
 proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
 adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, integrator))
 
-# Draw samples from the given target distribution using HMC
+# Draw samples from the given target distribution using HMC, where
 #   - `samples` will store the samples
 #   - `stats` will store statistics for each sample
 samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; progress=true)
