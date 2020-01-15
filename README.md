@@ -32,18 +32,18 @@ D = 10; initial_θ = rand(D)
 # Set the number of samples to draw and warmup iterations
 n_samples, n_adapts = 2_000, 1_000 
 
+# Define a Hamiltonian system
+metric = DiagEuclideanMetric(D)
+hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  
+
+# Pick initial step size by a heuristic. 
+initial_ϵ = find_good_eps(hamiltonian, initial_θ) 
+integrator = Leapfrog(initial_ϵ)
+
 # Create an HMC sampler with 
 #    - multinomial sampling scheme
 #    - generalised No-U-Turn criteria 
 #    - windowed adaption for step-size and diagonal mass matrix
-#  Note: `AdvancedHMC` supports both AD-based (`Zygote`, `Tracker` and `ForwardDiff`) 
-#    and user-specified gradients. For the latter, simply replace `ForwardDiff` 
-#    with `ℓπ_grad` in the following ` Hamiltonian`  constructor. 
-metric = DiagEuclideanMetric(D)
-hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  
-# Set initial step size by a heuristic. 
-initial_ϵ = find_good_eps(hamiltonian, initial_θ) 
-integrator = Leapfrog(initial_ϵ)
 proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
 adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, integrator))
 
@@ -92,6 +92,9 @@ where `int` is the integrator used.
 - Nesterov's dual averaging with target acceptance rate `δ` on integrator `int`: `da = NesterovDualAveraging(δ, int)`
 - Combine the two above *naively*: `NaiveHMCAdaptor(pc, da)`
 - Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(pc, da)`
+
+### Gradients 
+`AdvancedHMC` supports both AD-based (`Zygote`, `Tracker` and `ForwardDiff`) and user-specified gradients. For the latter, simply replace `ForwardDiff` with `ℓπ_grad` in the ` Hamiltonian`  constructor. 
 
 All the combinations are tested in [this file](https://github.com/TuringLang/AdvancedHMC.jl/blob/master/test/hmc.jl) except from using tempered leapfrog integrator together with adaptation, which we found unstable empirically.
 
