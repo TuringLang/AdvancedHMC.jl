@@ -7,6 +7,8 @@
 `AdvancedHMC.jl` provides a robust, modular and efficient implementation of advanced HMC algorithms. An inllustrative example for `AdvancedHMC`'s usage is given below. `AdvancedHMC.jl` is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia. 
 If you are interested in using `AdvancedHMC.jl` through a probabilistic programming language, please check it out!
 
+**Interfaces**
+- [Python interface](https://github.com/salilab/hmc) for AdvancedHMC 
 
 **NEWS**
 - We presented AdvancedHMC.jl at [AABI](http://approximateinference.org/) 2019 in Vancouver, Canada. ([pdf](https://openreview.net/forum?id=rJgzckn4tH))
