@@ -9,7 +9,7 @@ If you are interested in using `AdvancedHMC.jl` through a probabilistic programm
 
 
 **NEWS**
-- We will present AdvancedHMC.jl at [AABI](http://approximateinference.org/) 2019 in Vancouver, Canada.
+- We presented AdvancedHMC.jl at [AABI](http://approximateinference.org/) 2019 in Vancouver, Canada. ([pdf](https://openreview.net/forum?id=rJgzckn4tH))
 - We presented a poster for AdvancedHMC.jl at [StanCon 2019](https://mc-stan.org/events/stancon2019Cambridge/) in Cambridge, UK. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
 **API CHANGES**
@@ -27,7 +27,7 @@ D = 10
 ℓπ(θ) = logpdf(MvNormal(zeros(D), ones(D)), θ)
 
 ### Build up a HMC sampler to draw samples
-using AdvancedHMC, ForwardDiff  # or, using Zygote
+using AdvancedHMC, ForwardDiff
 
 # Parameter settings
 n_samples, n_adapts = 12_000, 2_000
@@ -35,8 +35,8 @@ n_samples, n_adapts = 12_000, 2_000
 
 # Define metric space, Hamiltonian, sampling method and adaptor
 metric = DiagEuclideanMetric(D)
-hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)      # or, Hamiltonian(metric, ℓπ, Zygote) if Zygote is loaded instead
-integrator = Leapfrog(find_good_eps(hamiltonian, θ₀))   # or, Hamiltonian(metric, ℓπ, ∂ℓπ∂θ) for hand-coded gradient ∂ℓπ∂θ
+hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  # or, Hamiltonian(metric, ℓπ, ∂ℓπ∂θ) for hand-coded gradient ∂ℓπ∂θ
+integrator = Leapfrog(find_good_eps(hamiltonian, θ₀))
 proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
 adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, integrator))
 

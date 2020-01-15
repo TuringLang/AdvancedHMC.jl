@@ -97,4 +97,6 @@ end
 
 ADAVAILABLE[Zygote] = ZygoteADHamiltonian
 
+# Zygote.@adjoint
+
 end # @require

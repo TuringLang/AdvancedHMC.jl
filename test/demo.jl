@@ -5,7 +5,7 @@ D = 10
 ℓπ(θ) = logpdf(MvNormal(zeros(D), ones(D)), θ)
 
 ### Build up a HMC sampler to draw samples
-using AdvancedHMC, ForwardDiff  # or, using Zygote
+using AdvancedHMC, ForwardDiff
 
 # Parameter settings
 n_samples, n_adapts = 12_000, 2_000
@@ -13,8 +13,8 @@ n_samples, n_adapts = 12_000, 2_000
 
 # Define metric space, Hamiltonian, sampling method and adaptor
 metric = DiagEuclideanMetric(D)
-hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)      # or, Hamiltonian(metric, ℓπ, Zygote) if Zygote is loaded instead
-integrator = Leapfrog(find_good_eps(hamiltonian, θ₀))   # or, Hamiltonian(metric, ℓπ, ∂ℓπ∂θ) for hand-coded gradient ∂ℓπ∂θ
+hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  # or, Hamiltonian(metric, ℓπ, ∂ℓπ∂θ) for hand-coded gradient ∂ℓπ∂θ
+integrator = Leapfrog(find_good_eps(hamiltonian, θ₀))
 proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
 adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, integrator))
 
