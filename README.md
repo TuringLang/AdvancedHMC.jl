@@ -35,9 +35,8 @@ n_samples, n_adapts = 2_000, 1_000
 # Create an HMC sampler with 
 #    - multinomial sampling scheme
 #    - generalised No-U-Turn criteria 
-#    - diagonal mass matrix 
-#    - windowed adaption for step-size and mass matrix
-#  note: `AdvancedHMC` supports both AD (`Zygote`, `Tracker` and `ForwardDiff`) and user-specified gradients. For the latter, simply replace `ForwardDiff` with `ℓπ_grad` in the following ` Hamiltonian`  constructor. 
+#    - windowed adaption for step-size and diagonal mass matrix
+#  note: `AdvancedHMC` supports both AD-based (`Zygote`, `Tracker` and `ForwardDiff`) and user-specified gradients. For the latter, simply replace `ForwardDiff` with `ℓπ_grad` in the following ` Hamiltonian`  constructor. 
 metric = DiagEuclideanMetric(D)
 hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  
 # Set initial step size by a heuristic. 
