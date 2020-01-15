@@ -9,7 +9,7 @@ If you are interested in using `AdvancedHMC.jl` through a probabilistic programm
 
 
 **NEWS**
-- We will present AdvancedHMC.jl at [AABI](http://approximateinference.org/) 2019 in Vancouver, Canada.
+- We presented AdvancedHMC.jl at [AABI](http://approximateinference.org/) 2019 in Vancouver, Canada. ([pdf](https://openreview.net/forum?id=rJgzckn4tH))
 - We presented a poster for AdvancedHMC.jl at [StanCon 2019](https://mc-stan.org/events/stancon2019Cambridge/) in Cambridge, UK. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
 **API CHANGES**
@@ -20,44 +20,30 @@ If you are interested in using `AdvancedHMC.jl` through a probabilistic programm
 ## A minimal example - sampling from a multivariate Gaussian using NUTS
 
 ```julia
-### Define the target distribution and its gradient
+### Define the target distribution
 using Distributions: logpdf, MvNormal
-using DiffResults: GradientResult, value, gradient
-using ForwardDiff: gradient!
 
 D = 10
-target = MvNormal(zeros(D), ones(D))
-ℓπ(θ) = logpdf(target, θ)
-
-function ∂ℓπ∂θ(θ)
-    res = GradientResult(θ)
-    gradient!(res, ℓπ, θ)
-    return (value(res), gradient(res))
-end
+ℓπ(θ) = logpdf(MvNormal(zeros(D), ones(D)), θ)
 
 ### Build up a HMC sampler to draw samples
-using AdvancedHMC
+using AdvancedHMC, ForwardDiff
 
-# Sampling parameter settings
+# Parameter settings
 n_samples, n_adapts = 12_000, 2_000
-
-# Draw a random starting points
-θ_init = rand(D)
+θ₀ = rand(D)    # draw a random starting points
 
 # Define metric space, Hamiltonian, sampling method and adaptor
 metric = DiagEuclideanMetric(D)
-h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-int = Leapfrog(find_good_eps(h, θ_init))
-prop = NUTS{MultinomialTS,GeneralisedNoUTurn}(int)
-adaptor = StanHMCAdaptor(
-    Preconditioner(metric), 
-    NesterovDualAveraging(0.8, int)
-)
+hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  # or, Hamiltonian(metric, ℓπ, ∂ℓπ∂θ) for hand-coded gradient ∂ℓπ∂θ
+integrator = Leapfrog(find_good_eps(hamiltonian, θ₀))
+proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, integrator))
 
 # Draw samples via simulating Hamiltonian dynamics
 # - `samples` will store the samples
 # - `stats` will store statistics for each sample
-samples, stats = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; progress=true)
+samples, stats = sample(hamiltonian, proposal, θ₀, n_samples, adaptor, n_adapts; progress=true)
 ```
 
 ## API and supported HMC algorithms

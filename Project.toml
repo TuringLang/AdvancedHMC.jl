@@ -1,6 +1,6 @@
 name = "AdvancedHMC"
 uuid = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
-version = "0.2.19"
+version = "0.2.20"
 
 [deps]
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
@@ -27,7 +27,6 @@ Requires = "0.5, 1"
 julia = "1"
 
 [extras]
-DiffResults = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
@@ -36,6 +35,7 @@ Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"
 Bijectors = "76274a88-744f-5084-9051-94815aaf08c4"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["Test", "Distributions", "ForwardDiff", "Turing", "Distributed", "DiffResults", "UnicodePlots", "Bijectors", "OrdinaryDiffEq"]
+test = ["Distributed", "Distributions", "ForwardDiff", "Test", "Turing", "UnicodePlots", "Bijectors", "OrdinaryDiffEq", "Zygote"]

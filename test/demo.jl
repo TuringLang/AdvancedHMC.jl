@@ -1,38 +1,24 @@
-### Define the target distribution and its gradient
+### Define the target distribution
 using Distributions: logpdf, MvNormal
-using DiffResults: GradientResult, value, gradient
-using ForwardDiff: gradient!
 
 D = 10
-target = MvNormal(zeros(D), ones(D))
-ℓπ(θ) = logpdf(target, θ)
-
-function ∂ℓπ∂θ(θ)
-    res = GradientResult(θ)
-    gradient!(res, ℓπ, θ)
-    return (value(res), gradient(res))
-end
+ℓπ(θ) = logpdf(MvNormal(zeros(D), ones(D)), θ)
 
 ### Build up a HMC sampler to draw samples
-using AdvancedHMC
+using AdvancedHMC, ForwardDiff
 
-# Sampling parameter settings
+# Parameter settings
 n_samples, n_adapts = 12_000, 2_000
-
-# Draw a random starting points
-θ_init = rand(D)
+θ₀ = rand(D)    # draw a random starting points
 
 # Define metric space, Hamiltonian, sampling method and adaptor
 metric = DiagEuclideanMetric(D)
-h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-int = Leapfrog(find_good_eps(h, θ_init))
-prop = NUTS{MultinomialTS,GeneralisedNoUTurn}(int)
-adaptor = StanHMCAdaptor(
-    Preconditioner(metric), 
-    NesterovDualAveraging(0.8, int)
-)
+hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  # or, Hamiltonian(metric, ℓπ, ∂ℓπ∂θ) for hand-coded gradient ∂ℓπ∂θ
+integrator = Leapfrog(find_good_eps(hamiltonian, θ₀))
+proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, integrator))
 
 # Draw samples via simulating Hamiltonian dynamics
 # - `samples` will store the samples
 # - `stats` will store statistics for each sample
-samples, stats = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; progress=true)
+samples, stats = sample(hamiltonian, proposal, θ₀, n_samples, adaptor, n_adapts; progress=true)

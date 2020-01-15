@@ -48,7 +48,13 @@ include("diagnosis.jl")
 include("sampler.jl")
 export sample
 
+### Init
+
 using Requires
-include("init.jl")
+
+function __init__()
+    include(joinpath(@__DIR__, "contrib/diffeq.jl"))
+    include(joinpath(@__DIR__, "contrib/ad.jl"))
+end
 
 end # module

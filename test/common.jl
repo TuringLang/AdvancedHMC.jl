@@ -9,55 +9,41 @@ const DETATOL = 1e-3 * D * TRATIO
 # Random tolerance
 const RNDATOL = 5e-2 * D * TRATIO
 
-using Distributions: logpdf, MvNormal, InverseGamma, Normal
-using DiffResults: GradientResult, JacobianResult, value, gradient, jacobian
-using ForwardDiff: gradient!, jacobian!
-using Bijectors: link, invlink, logpdf_with_trans
+# Hand-coded multivaite Gaussain
 
-const dm = zeros(D)
-const dσ = ones(D)
-const MVN = MvNormal(dm, dσ)
-ℓπ(θ) = logpdf(MVN, θ)
+const gaussian_m = zeros(D)
+const gaussian_s = ones(D)
 
-# Manual implementation of gradient so that it support matrix mode
-function ∂ℓπ∂θ(θ::AbstractVecOrMat)
-    d = MVN
-    diff = θ .- dm
-    dims = θ isa AbstractVector ? (:) : 1
-    v = -(D * log(2π) + 2 * sum(log.(dσ)) .+ sum(abs2, diff ./ dσ; dims=dims)) / 2
-    v = θ isa AbstractMatrix ? vec(v) : v
+function ℓπ(m, s, x::AbstractVecOrMat{T}) where {T}
+    diff = x .- m
+    v = s.^2
+    return -(log(2 * T(pi)) .+ log.(v) .+ diff .* diff ./ v) / 2
+end
+
+function ℓπ(θ::AbstractVector)
+    return sum(ℓπ(gaussian_m, gaussian_s, θ))
+end
+
+function ℓπ(θ::AbstractMatrix)
+    return dropdims(sum(ℓπ(gaussian_m, gaussian_s, θ); dims=1); dims=1)
+end
+
+function ∂ℓπ∂θ(m, s, x::AbstractVecOrMat{T}) where {T}
+    diff = x .- m
+    v = s.^2
+    v = -(log(2 * T(pi)) .+ log.(v) .+ diff .* diff ./ v) / 2
     g = -diff
-    return (v, g)
+    return v, g
 end
 
-function ∂ℓπ∂θ_ad(θ::AbstractVector)
-    res = GradientResult(θ)
-    gradient!(res, ℓπ, θ)
-    return (value(res), gradient(res))
+function ∂ℓπ∂θ(θ::AbstractVector)
+    v, g = ∂ℓπ∂θ(gaussian_m, gaussian_s, θ)
+    return sum(v), g
 end
 
-function ∂ℓπ∂θ_ad(θ::AbstractMatrix)
-    v = similar(θ, size(θ, 2))
-    g = similar(θ)
-    for i in 1:size(θ, 2)
-        res = GradientResult(θ[:,i])
-        gradient!(res, ℓπ, θ[:,i])
-        v[i] = value(res)
-        g[:,i] = gradient(res)
-    end
-    return (v, g)
-end
-
-function ∂ℓπ∂θ_viajacob(θ::AbstractMatrix)
-    jacob = similar(θ)
-    res = JacobianResult(similar(θ, size(θ, 2)), jacob)
-    jacobian!(res, ℓπ, θ)
-    jacob_full = jacobian(res)
-    d, n = size(jacob)
-    for i in 1:n
-        jacob[:,i] = jacob_full[i,1+(i-1)*d:i*d]
-    end
-    return (value(res), jacob)
+function ∂ℓπ∂θ(θ::AbstractMatrix)
+    v, g = ∂ℓπ∂θ(gaussian_m, gaussian_s, θ)
+    return dropdims(sum(v; dims=1); dims=1), g
 end
 
 # For the Turing model
@@ -68,6 +54,9 @@ end
 #     2.0 ~ Normal(m, sqrt(s))
 #     return s, m
 # end
+
+using Distributions: logpdf, InverseGamma, Normal
+using Bijectors: invlink, logpdf_with_trans
 
 function invlink_gdemo(θ)
     s = invlink(InverseGamma(2, 3), θ[1])
@@ -80,10 +69,4 @@ function ℓπ_gdemo(θ)
     logprior = logpdf_with_trans(InverseGamma(2, 3), s, true) + logpdf(Normal(0, sqrt(s)), m)
     loglikelihood = logpdf(Normal(m, sqrt(s)), 1.5) + logpdf(Normal(m, sqrt(s)), 2.0)
     return logprior + loglikelihood
-end
-
-function ∂ℓπ∂θ_gdemo(θ)
-    res = GradientResult(θ)
-    gradient!(res, ℓπ_gdemo, θ)
-    return (value(res), gradient(res))
 end

@@ -6,6 +6,7 @@ using Distributed, Test
         "trajectory",
         "hamiltonian",
         "integrator",
+        "demo",
         "models",
         "sampler",
         "sampler_mat",
