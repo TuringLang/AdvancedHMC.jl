@@ -49,7 +49,7 @@ adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, inte
 
 # Draw samples from the given target distribution using HMC, where
 #   - `samples` will store the samples
-#   - `stats` will store statistics for each sample
+#   - `stats` will store diagnostic statistics for each sample
 samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; progress=true)
 ```
 
