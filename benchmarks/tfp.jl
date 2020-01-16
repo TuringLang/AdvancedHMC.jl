@@ -6,7 +6,7 @@ using PyCall
 
 function main()
     parsed_args = parse_commandline()
-    @assert parsed_args[:target] in ("mog", "gauss") "Only mixture of Gaussians and Gaussian targets are implemented in TFP."
+    @assert parsed_args[:target] in ("mog", "gaussian") "Only mixture of Gaussians and Gaussian targets are implemented in TFP."
     
     py"""
     import os, time
@@ -51,7 +51,7 @@ function main()
 
     # Define Gaussian
     target_gauss = tfd.Normal(loc=dtype(-0.0), scale=dtype(1.0))
-    target_dict["gauss"] = target_gauss
+    target_dict["gaussian"] = target_gauss
 
     # Choose target
     target_name = $(parsed_args[:target])
