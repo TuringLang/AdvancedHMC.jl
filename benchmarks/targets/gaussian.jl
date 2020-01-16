@@ -1,20 +1,20 @@
 using InteractiveUtils: @code_warntype
 
-function ℓπ_gaussian(m, s, x::AbstractVecOrMat{T}) where {T}
+function ℓπ_gaussian_impl(m, s, x::AbstractVecOrMat{T}) where {T}
     diff = x .- m
     v = s.^2
     return -(log(2 * T(pi)) .+ log.(v) .+ diff .* diff ./ v) / 2
 end
 
 function ℓπ_gaussian(m, s, x::AbstractVector)
-    return sum(ℓπ_gaussian(m, s, x))
+    return sum(ℓπ_gaussian_impl(m, s, x))
 end
 
 function ℓπ_gaussian(m, s, x::AbstractMatrix)
-    return dropdims(sum(ℓπ_gaussian(m, s, x); dims=1); dims=1)
+    return dropdims(sum(ℓπ_gaussian_impl(m, s, x); dims=1); dims=1)
 end
 
-function ∂ℓπ∂θ_gaussian(m, s, x::AbstractVecOrMat{T}) where {T}
+function ∂ℓπ∂θ_gaussian_impl(m, s, x::AbstractVecOrMat{T}) where {T}
     diff = x .- m
     v = s.^2
     v = -(log(2 * T(pi)) .+ log.(v) .+ diff .* diff ./ v) / 2
@@ -23,12 +23,12 @@ function ∂ℓπ∂θ_gaussian(m, s, x::AbstractVecOrMat{T}) where {T}
 end
 
 function ∂ℓπ∂θ_gaussian(m, s, x::AbstractVector)
-    v, g = ∂ℓπ∂θ_gaussian(m, s, x)
+    v, g = ∂ℓπ∂θ_gaussian_impl(m, s, x)
     return sum(v), g
 end
 
 function ∂ℓπ∂θ_gaussian(m, s, x::AbstractMatrix)
-    v, g = ∂ℓπ∂θ_gaussian(m, s, x)
+    v, g = ∂ℓπ∂θ_gaussian_impl(m, s, x)
     return dropdims(sum(v; dims=1); dims=1), g
 end
 

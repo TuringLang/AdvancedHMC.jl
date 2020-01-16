@@ -7,6 +7,7 @@ using PyCall
 function main()
     parsed_args = parse_commandline()
     @assert parsed_args[:target] in ("mog", "gaussian") "Only mixture of Gaussians and Gaussian targets are implemented in TFP."
+    @info "Args" parsed_args...
     
     py"""
     import os, time
@@ -58,17 +59,19 @@ function main()
     target = target_dict[target_name]
 
     # Define parameters
-    n_dims = $(parsed_args[:n_dims])
+    n_dims    = $(parsed_args[:n_dims])
     n_samples = $(parsed_args[:n_samples])
-    n_chains = $(parsed_args[:n_chains])
+    n_chains  = $(parsed_args[:n_chains])
+    n_runs    = $(parsed_args[:n_runs])
 
     # Run sampling
-    print(f"Running {n_dims} dimensional {target_name} for {n_samples} samples with {n_chains} chains")
-    run_mcm = partial(hmc_sampler, n_dims, n_samples, n_chains, target)
-    start = time.time()
-    tf.xla.experimental.compile(run_mcm) if $(parsed_args[:use_xla]) else run_mcm()
-    t = time.time() - start
-    print(f"...Done with {t} seconds")
+    for i in range(n_runs):
+        print(f"Running {i} ...")
+        run_mcm = partial(hmc_sampler, n_dims, n_samples, n_chains, target)
+        start = time.time()
+        run_mcm() if $(parsed_args[:no_xla]) else tf.xla.experimental.compile(run_mcm)
+        t = time.time() - start
+        print(f"...Done with {t} seconds")
     """
 end
 
