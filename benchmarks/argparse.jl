@@ -16,10 +16,12 @@ function parse_commandline()
         "--target"
             arg_type = String
             required = true
-            range_tester = (x -> x in ("mog", "gauss"))
+            range_tester = (x -> x in ("mog", "gaussian"))
         "--use_xla"
             arg_type = Bool
             default = true
+        "--check_typed"
+            action = :store_true
     end
 
     parsed_args = parse_args(s; as_symbols=true)
