@@ -1,4 +1,4 @@
-const ADSUPPORT = (:ForwardDiff, :Zygote)
+const ADSUPPORT = (:ForwardDiff, :Zygote, :ReverseDiff)
 const ADAVAILABLE = Dict{Module, Function}()
 
 Hamiltonian(metric::AbstractMetric, ℓπ, m::Module) = ADAVAILABLE[m](metric, ℓπ)
@@ -80,7 +80,7 @@ end # @require
 
 import .Zygote
 
-function ∂ℓπ∂θ_zygote(ℓπ, θ::AbstractVector)
+function ∂ℓπ∂θ_reversediff(ℓπ, θ::AbstractVector)
     res, back = Zygote.pullback(ℓπ, θ)
     return res, first(back(Zygote.sensitivity(res)))
 end
@@ -97,6 +97,28 @@ end
 
 ADAVAILABLE[Zygote] = ZygoteADHamiltonian
 
-# Zygote.@adjoint
+end # @require
+
+### ReverseDiff
+
+@require ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267" begin
+
+import .ReverseDiff, .ReverseDiff.DiffResults
+
+function ReverseDiffADHamiltonian(metric::AbstractMetric, ℓπ)
+    inputs = (rand(metric),)
+    f_tape = ReverseDiff.GradientTape(ℓπ, inputs)
+    compiled_f_tape = ReverseDiff.compile(f_tape)
+    results = similar.(inputs)
+    all_results = map(DiffResults.GradientResult, results)
+    cfg = ReverseDiff.GradientConfig(inputs)
+    function ∂ℓπ∂θ(θ::AbstractVector)
+        ReverseDiff.gradient!(all_results, compiled_f_tape, (θ,))
+        return DiffResults.value(first(all_results)), DiffResults.gradient(first(all_results))
+    end
+    return Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+end
+
+ADAVAILABLE[ReverseDiff] = ReverseDiffADHamiltonian
 
 end # @require
