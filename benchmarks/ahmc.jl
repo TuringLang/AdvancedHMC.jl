@@ -56,11 +56,9 @@ function main()
         return run_hmc(ns, nc, n_dims, ℓπ, ∂ℓπ∂θ)
     end
 
-    # To get rid of compilation time
-    run_hmc_on_target(1, n_chains)
-
     for i_run in 1:n_runs
         print("Running $i_run ...")
+        run_hmc_on_target(1, n_chains)  # to get rid of compilation time
         val, t, bytes, gctime, memallocs = @timed run_hmc_on_target(n_samples, n_chains)
         println(" Done! $(lpad(round(t; digits=3), 7)) seconds used")
     end
