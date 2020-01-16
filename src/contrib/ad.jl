@@ -80,7 +80,7 @@ end # @require
 
 import .Zygote
 
-function ∂ℓπ∂θ_reversediff(ℓπ, θ::AbstractVector)
+function ∂ℓπ∂θ_zygote(ℓπ, θ::AbstractVector)
     res, back = Zygote.pullback(ℓπ, θ)
     return res, first(back(Zygote.sensitivity(res)))
 end
@@ -111,10 +111,14 @@ function ReverseDiffADHamiltonian(metric::AbstractMetric, ℓπ)
     compiled_f_tape = ReverseDiff.compile(f_tape)
     results = similar.(inputs)
     all_results = map(DiffResults.GradientResult, results)
-    cfg = ReverseDiff.GradientConfig(inputs)
+    # cfg = ReverseDiff.GradientConfig(inputs)    # we may use this in the future; see https://github.com/JuliaDiff/ReverseDiff.jl/blob/master/examples/gradient.jl#L43
     function ∂ℓπ∂θ(θ::AbstractVector)
         ReverseDiff.gradient!(all_results, compiled_f_tape, (θ,))
         return DiffResults.value(first(all_results)), DiffResults.gradient(first(all_results))
+    end
+    # TODO: implement this
+    function ∂ℓπ∂θ(θ::AbstractMatrix)
+        error("MethodError: utility of gradient via ReverseDiff for vectorized mode is not implementation; please construct it explictly")
     end
     return Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
 end
