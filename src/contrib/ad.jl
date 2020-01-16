@@ -17,6 +17,7 @@ function Hamiltonian(metric::AbstractMetric, ℓπ)
     end
 end
 
+# FIXME: pre-allocate results for ForwardDiff as well
 ### ForwardDiff
 
 @require ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210" begin
