@@ -22,7 +22,7 @@ If you are interested in using `AdvancedHMC.jl` through a probabilistic programm
 ## A minimal example - sampling from a multivariate Gaussian using NUTS
 
 ```julia
-using AdvancedHMC, Distributions, ReverseDiff
+using AdvancedHMC, Distributions, Zygote
 
 # Choose parameter dimentionality and initial parameter value
 D = 10; initial_θ = rand(D)   
@@ -35,7 +35,7 @@ n_samples, n_adapts = 2_000, 1_000
 
 # Define a Hamiltonian system
 metric = DiagEuclideanMetric(D)
-hamiltonian = Hamiltonian(metric, ℓπ, ReverseDiff)  
+hamiltonian = Hamiltonian(metric, ℓπ, Zygote)  
 
 # Define a leapfrog solver, with initial step size chosen heuristically
 initial_ϵ = find_good_eps(hamiltonian, initial_θ) 
