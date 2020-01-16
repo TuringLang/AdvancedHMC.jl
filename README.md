@@ -22,8 +22,7 @@ If you are interested in using `AdvancedHMC.jl` through a probabilistic programm
 ## A minimal example - sampling from a multivariate Gaussian using NUTS
 
 ```julia
-
-using AdvancedHMC, Distributions, ForwardDiff
+using AdvancedHMC, Distributions, ReverseDiff
 
 # Choose parameter dimentionality and initial parameter value
 D = 10; initial_θ = rand(D)   
@@ -36,7 +35,7 @@ n_samples, n_adapts = 2_000, 1_000
 
 # Define a Hamiltonian system
 metric = DiagEuclideanMetric(D)
-hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  
+hamiltonian = Hamiltonian(metric, ℓπ, ReverseDiff)  
 
 # Define a leapfrog solver, with initial step size chosen heuristically
 initial_ϵ = find_good_eps(hamiltonian, initial_θ) 
@@ -96,7 +95,8 @@ where `int` is the integrator used.
 - Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(pc, da)`
 
 ### Gradients 
-`AdvancedHMC` supports both AD-based (`Zygote`, `Tracker` and `ForwardDiff`) and user-specified gradients. For the latter, simply replace `ForwardDiff` with `ℓπ_grad` in the ` Hamiltonian`  constructor. 
+`AdvancedHMC` supports both AD-based (`Zygote`, `ReverseDiff` and `ForwardDiff`) and user-specified gradients. 
+For the latter, simply replace `ForwardDiff` with `ℓπ_grad` in the ` Hamiltonian`  constructor. 
 
 All the combinations are tested in [this file](https://github.com/TuringLang/AdvancedHMC.jl/blob/master/test/hmc.jl) except from using tempered leapfrog integrator together with adaptation, which we found unstable empirically.
 
