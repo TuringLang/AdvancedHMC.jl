@@ -45,11 +45,14 @@ end
 
 # Implementation 2
 # function ∂ℓπ∂θ_forwarddiff(ℓπ, θ::AbstractMatrix)
-#     local densities
-#     f(x) = (densities = ℓπ(x); sum(densities))
+#     logdensities = similar(θ, size(θ, 2))   # pre-allocate logdensities; this is important
+#     function ℓπ_sum(x)
+#         logdensities .= ℓπ(x)
+#         return sum(logdensities)
+#     end
 #     res = DiffResults.GradientResult(θ)
-#     ForwardDiff.gradient!(res, f, θ)
-#     return ForwardDiff.value.(densities), DiffResults.gradient(res)
+#     ForwardDiff.gradient!(res, ℓπ_sum, θ)
+#     return ForwardDiff.value.(logdensities), DiffResults.gradient(res)
 # end
 
 # Implementation 3
@@ -105,21 +108,59 @@ end # @require
 
 import .ReverseDiff, .ReverseDiff.DiffResults
 
-function ReverseDiffADHamiltonian(metric::AbstractMetric, ℓπ)
-    inputs = (rand(metric),)
+function get_∂ℓπ∂θ_reversediff(ℓπ, θ::AbstractVector)
+    inputs = (θ,)
     f_tape = ReverseDiff.GradientTape(ℓπ, inputs)
     compiled_f_tape = ReverseDiff.compile(f_tape)
     results = similar.(inputs)
-    all_results = map(DiffResults.GradientResult, results)
+    all_results = DiffResults.GradientResult.(results)
     # cfg = ReverseDiff.GradientConfig(inputs)    # we may use this in the future; see https://github.com/JuliaDiff/ReverseDiff.jl/blob/master/examples/gradient.jl#L43
     function ∂ℓπ∂θ(θ::AbstractVector)
         ReverseDiff.gradient!(all_results, compiled_f_tape, (θ,))
         return DiffResults.value(first(all_results)), DiffResults.gradient(first(all_results))
     end
-    # TODO: implement this
-    function ∂ℓπ∂θ(θ::AbstractMatrix)
-        error("MethodError: utility of gradient via ReverseDiff for vectorized mode is not implementation; please construct it explictly")
+    return ∂ℓπ∂θ
+end
+
+# Implementation 1
+function get_∂ℓπ∂θ_reversediff(ℓπ, θ::AbstractMatrix)
+    logdensities = similar(θ, size(θ, 2))   # pre-allocate logdensities; this is important
+    function ℓπ_sum(x)
+        logdensities .= ℓπ(x)
+        return sum(logdensities)
     end
+    inputs = (θ,)
+    f_tape = ReverseDiff.GradientTape(ℓπ_sum, inputs)
+    compiled_f_tape = ReverseDiff.compile(f_tape)
+    results = similar.(inputs)
+    all_results = DiffResults.GradientResult.(results)
+    # cfg = ReverseDiff.GradientConfig(inputs)    # we may use this in the future; see https://github.com/JuliaDiff/ReverseDiff.jl/blob/master/examples/gradient.jl#L43
+    function ∂ℓπ∂θ(θ::AbstractMatrix)
+        ReverseDiff.gradient!(all_results, compiled_f_tape, (θ,))
+        return ReverseDiff.value(logdensities), DiffResults.gradient(first(all_results))
+    end
+    return ∂ℓπ∂θ
+end
+
+# Implementation 2 (not finished as it's too slow already without the transformation, compared to Impl. 1)
+# function get_∂ℓπ∂θ_reversediff(ℓπ, θ::AbstractMatrix)
+#     inputs = (θ,)
+#     f_tape = ReverseDiff.JacobianTape(ℓπ, inputs)
+#     compiled_f_tape = ReverseDiff.compile(f_tape)
+#     results = similar.(inputs, size(θ, 2))
+#     all_results = DiffResults.JacobianResult.(results, inputs)
+#     # cfg = ReverseDiff.JacobianConfig(inputs)    # we may use this in the future; see https://github.com/JuliaDiff/ReverseDiff.jl/blob/master/examples/gradient.jl#L43
+#     function ∂ℓπ∂θ(θ::AbstractMatrix)
+#         ReverseDiff.jacobian!(all_results, compiled_f_tape, (θ,))
+#         return DiffResults.value(first(all_results)), DiffResults.jacobian(first(all_results))
+#     # FIXME: transform the Jacob to vectorized form and return
+#     end
+#     return ∂ℓπ∂θ
+# end
+
+function ReverseDiffADHamiltonian(metric::AbstractMetric, ℓπ)
+    θ = rand(metric)
+    ∂ℓπ∂θ = get_∂ℓπ∂θ_reversediff(ℓπ, θ)
     return Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
 end
 
