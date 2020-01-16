@@ -28,7 +28,7 @@ function get_gdemo()
     return (ℓπ=ℓπ_gdemo, invlink=invlink_gdemo, θ̄=[49 / 24, 7 / 6])
 end
 
-function check_typed()
+function check_typed_gdemo()
     ℓπ_gdemo, invlink_gdemo = get_gdemo()
 
     x = zeros(2)
@@ -37,5 +37,5 @@ function check_typed()
 end
 
 if "--check_typed" in ARGS
-    check_typed()
+    check_typed_gdemo()
 end
