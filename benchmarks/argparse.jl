@@ -7,6 +7,7 @@ function parse_commandline()
         "--n_dims"
             help = "Dimensionality of target space"
             arg_type = Int
+            nargs = '*'
             required = true
         "--n_samples"
             help = "Number of samples to draw"
@@ -15,6 +16,7 @@ function parse_commandline()
         "--n_chains"
             help = "Number of chains to run"
             arg_type = Int
+            nargs = '*'
             required = true
         "--target"
             help = "Target distribution"

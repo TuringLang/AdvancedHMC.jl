@@ -33,15 +33,15 @@ end
 function main()
     parsed_args = parse_commandline()
     @info "Args" parsed_args...
-    n_dims    = parsed_args[:n_dims]
-    n_samples = parsed_args[:n_samples]
-    n_chains  = parsed_args[:n_chains]
-    n_runs    = parsed_args[:n_runs]
-    target    = parsed_args[:target]
-    ad        = parsed_args[:ad]
+    n_dims_list   = parsed_args[:n_dims]
+    n_samples     = parsed_args[:n_samples]
+    n_chains_list = parsed_args[:n_chains]
+    n_runs        = parsed_args[:n_runs]
+    target        = parsed_args[:target]
+    ad            = parsed_args[:ad]
 
     if target == "gdemo"
-        @assert n_dims == 2 "gdemo only supports n_dims=2."
+        @assert n_dims_list == [2] "gdemo only supports n_dims = 2."
     end
     ℓπ = TARGETDICT[target]
 
@@ -52,15 +52,21 @@ function main()
         ∂ℓπ∂θ = ADDICT[ad]
     end
 
-    function run_hmc_on_target(ns, nc)
-        return run_hmc(ns, nc, n_dims, ℓπ, ∂ℓπ∂θ)
+    function run_hmc_on_target(ns, nc, nd)
+        return run_hmc(ns, nc, nd, ℓπ, ∂ℓπ∂θ)
     end
 
     for i_run in 1:n_runs
-        print("Running $i_run ...")
-        run_hmc_on_target(1, n_chains)  # to get rid of compilation time
-        val, t, bytes, gctime, memallocs = @timed run_hmc_on_target(n_samples, n_chains)
-        println(" Done! $(lpad(round(t; digits=3), 7)) seconds used")
+        println("Running $i_run ...")
+        ts = Matrix{Float64}(undef, length(n_dims_list), length(n_chains_list))
+        for (i, nd) in enumerate(n_dims_list), (j, nc) in enumerate(n_chains_list)
+            run_hmc_on_target(1, nc, nd)  # to get rid of compilation time
+            print("  n_dims=$nd, n_chains=$nc ...")
+            val, t, bytes, gctime, memallocs = @timed run_hmc_on_target(n_samples, nc, nd)
+            println(" Done! $(lpad(round(t; digits=3), 7)) seconds used")
+            ts[i,j]  =t
+        end
+        println(ts)
     end
 end
 
