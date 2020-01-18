@@ -38,6 +38,9 @@ function parse_commandline()
         "--check_typed"
             help ="Whether or not to check type stability for Julia models"
             action = :store_true
+        "--grad_only"
+            help ="Only check the gradient time"
+            action = :store_true
     end
 
     parsed_args = parse_args(s; as_symbols=true)
