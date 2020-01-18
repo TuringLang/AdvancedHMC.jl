@@ -51,7 +51,7 @@ function main()
     target_dict["mog"] = target_mog
 
     # Define Gaussian
-    target_gauss = tfd.Normal(loc=dtype(-0.0), scale=dtype(1.0))
+    target_gauss = tfd.Normal(loc=dtype(0.0), scale=dtype(1.0))
     target_dict["gaussian"] = target_gauss
 
     # Choose target
