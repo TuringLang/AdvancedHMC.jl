@@ -205,13 +205,14 @@ function accept_phasepoint!(z::T, z′::T, is_accept::Bool) where {T<:PhasePoint
 end
 function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:AbstractMatrix}}
     # Revert unaccepted proposals in `z′`
-    if any((!).(is_accept))
-        z′.θ[:,(!).(is_accept)] = z.θ[:,(!).(is_accept)]
-        z′.r[:,(!).(is_accept)] = z.r[:,(!).(is_accept)]
-        z′.ℓπ.value[(!).(is_accept)] = z.ℓπ.value[(!).(is_accept)]
-        z′.ℓπ.gradient[:,(!).(is_accept)] = z.ℓπ.gradient[:,(!).(is_accept)]
-        z′.ℓκ.value[(!).(is_accept)] = z.ℓκ.value[(!).(is_accept)]
-        z′.ℓκ.gradient[:,(!).(is_accept)] = z.ℓκ.gradient[:,(!).(is_accept)]
+    is_reject = (!).(is_accept)
+    if any(is_reject)
+        z′.θ[:,is_reject] = z.θ[:,is_reject]
+        z′.r[:,is_reject] = z.r[:,is_reject]
+        z′.ℓπ.value[is_reject] = z.ℓπ.value[is_reject]
+        z′.ℓπ.gradient[:,is_reject] = z.ℓπ.gradient[:,is_reject]
+        z′.ℓκ.value[is_reject] = z.ℓκ.value[is_reject]
+        z′.ℓκ.gradient[:,is_reject] = z.ℓκ.gradient[:,is_reject]
     end
     # Always return `z′` as any unaccepted proposal is already reverted
     # NOTE: This in place treatment of `z′` is for memory efficient consideration.
@@ -676,7 +677,7 @@ function mh_accept_ratio(
     Horiginal::T,
     Hproposal::T,
 ) where {T <: AbstractFloat}
-    α = min(1.0, exp(Horiginal - Hproposal))
+    α = min(one(T), exp(Horiginal - Hproposal))
     accept = rand(rng) < α
     return accept, α
 end
@@ -686,7 +687,8 @@ function mh_accept_ratio(
     Horiginal::AbstractVector{<:T},
     Hproposal::AbstractVector{<:T},
 ) where {T<:AbstractFloat}
-    α = min.(1.0, exp.(Horiginal .- Hproposal))
+    α = min.(one(T), exp.(Horiginal .- Hproposal))
+    # FIXME: is this a bug?
     accept = _rand(rng) .< α
     return accept, α
 end
