@@ -21,13 +21,17 @@ const TARGETDICT = Dict(
     "gdemo"    => ℓπ_gdemo,
 )
 
-function run_hmc(n_samples::Int, n_chains::Int, n_dims::Int, ℓπ, ∂ℓπ∂θ; ϵ=0.01, n_steps=4)
+function run_hmc(n_samples::Int, n_chains::Int, n_dims::Int, ℓπ, ∂ℓπ∂θ; ϵ=T(0.01), n_steps=4, grad_only=false)
     initial_θ = n_chains == 1 ? zeros(T, n_dims) : zeros(T, n_dims, n_chains)
     metric = UnitEuclideanMetric(T, size(initial_θ))
     hamiltonian = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-    integrator = Leapfrog(T(ϵ))
-    proposal = StaticTrajectory(integrator, n_steps)
-    samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples; progress=false, verbose=false)
+    if grad_only
+        [hamiltonian.∂ℓπ∂θ(initial_θ) for i in 1:n_steps*n_samples]
+    else
+        integrator = Leapfrog(T(ϵ))
+        proposal = StaticTrajectory(integrator, n_steps)
+        samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples; progress=false, verbose=false)
+    end
 end
 
 function main()
