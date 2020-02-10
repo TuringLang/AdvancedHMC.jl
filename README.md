@@ -96,7 +96,7 @@ where `int` is the integrator used.
 - Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(pc, da)`
 
 ### Gradients 
-`AdvancedHMC` supports both AD-based (`Zygote`, `Tracker` and `ForwardDiff`) and user-specified gradients. For the latter, simply replace `ForwardDiff` with `ℓπ_grad` in the ` Hamiltonian`  constructor. 
+`AdvancedHMC` supports both AD-based (`Zygote`, `Tracker` and `ForwardDiff`) and user-specified gradients. For the latter, simply replace `ForwardDiff` with `ℓπ_grad` in the ` Hamiltonian`  constructor, where the gradient function `π_grad` should return a tuple containing both the likelihood and its gradient. 
 
 All the combinations are tested in [this file](https://github.com/TuringLang/AdvancedHMC.jl/blob/master/test/hmc.jl) except from using tempered leapfrog integrator together with adaptation, which we found unstable empirically.
 
