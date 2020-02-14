@@ -676,7 +676,7 @@ function mh_accept_ratio(
     rng::AbstractRNG,
     Horiginal::T,
     Hproposal::T,
-) where {T <: AbstractFloat}
+) where {T<:AbstractFloat}
     α = min(one(T), exp(Horiginal - Hproposal))
     accept = rand(rng) < α
     return accept, α
@@ -688,13 +688,12 @@ function mh_accept_ratio(
     Hproposal::AbstractVector{<:T},
 ) where {T<:AbstractFloat}
     α = min.(one(T), exp.(Horiginal .- Hproposal))
-    # FIXME: is this a bug?
-    accept = _rand(rng) .< α
+    accept = _rand(rng, length(Horiginal)) .< α
     return accept, α
 end
 
-_rand(rng::AbstractRNG) = rand(rng)
-_rand(rng::AbstractVector{<:AbstractRNG}) = rand.(rng)
+_rand(rng::AbstractRNG, n_chains::Int) = rand(rng, n_chains)
+_rand(rng::AbstractVector{<:AbstractRNG}, ::Int) = rand.(rng)
 
 ####
 #### Adaption
