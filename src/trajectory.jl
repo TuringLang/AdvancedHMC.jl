@@ -692,6 +692,11 @@ function mh_accept_ratio(
     return accept, α
 end
 
+# NOTE: There is a chance that sharing the RNG over multiple
+#       chains for accepting / rejecting might couple
+#       the chains. We need to revisit this more rigirously 
+#       in the future. See discussions at 
+#       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
 _rand(rng::AbstractRNG, n_chains::Int) = rand(rng, n_chains)
 _rand(rng::AbstractVector{<:AbstractRNG}, ::Int) = rand.(rng)
 
