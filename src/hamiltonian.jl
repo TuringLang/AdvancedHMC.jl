@@ -93,7 +93,7 @@ neg_energy(
     h::Hamiltonian{<:UnitEuclideanMetric},
     r::T,
     θ::T
-) where {T<:AbstractMatrix} = -vec(sum(abs2, r; dims=1)) ./ 2
+) where {T<:AbstractMatrix} = -vec(sum(abs2, r; dims=1)) / 2
 
 neg_energy(
     h::Hamiltonian{<:DiagEuclideanMetric},
