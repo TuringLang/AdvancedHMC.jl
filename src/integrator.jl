@@ -74,7 +74,7 @@ function step(
         end
         !isfinite(z) && break
     end
-    res
+    return res
 end
 
 struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}

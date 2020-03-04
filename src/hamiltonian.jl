@@ -23,6 +23,9 @@ struct DualValue{V<:AbstractScalarOrVec{<:AbstractFloat}, G<:AbstractVecOrMat{<:
     end
 end
 
+Base.similar(dv::DualValue{V, G}) where {V<:AbstractVector, G<:AbstractMatrix} = 
+    DualValue(similar(dv.value), similar(dv.gradient))
+
 # `∂H∂θ` now returns `(logprob, -∂ℓπ∂θ)`
 function ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat)
     res = h.∂ℓπ∂θ(θ)

@@ -227,22 +227,50 @@ samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h,
 
 ### Multinomial sampling from trajecory
 
-function randcat(rng::AbstractRNG, xs, p)
+function randcat(rng::AbstractRNG, xs, p::AbstractVector)
     u = rand(rng)
     cp = zero(eltype(p))
     i = 0
     while cp < u
-        cp += p[i +=1]
+        cp += p[i+=1]
     end
     return xs[max(i, 1)]
+end
+
+# xs is in the form of Vector{Vector} and has shape [n_steps][]
+function randcat(rng::AbstractRNG, xs, P::AbstractMatrix)
+    x1 = first(xs)
+    θ = similar(x1.θ)
+    r = similar(x1.r)
+    ℓπ = similar(x1.ℓπ)
+    ℓκ = similar(x1.ℓκ)
+    n_chains, n_steps = size(P)
+    for j in 1:n_chains
+        u = rand(rng)
+        cp = zero(eltype(P))
+        i = 0
+        while cp < u
+            cp += P[j,i+=1]
+        end
+        θ[:,j] = xs[i].θ[:,j]
+        r[:,j] = xs[i].r[:,j]
+        ℓπ.value[j] = xs[i].ℓπ.value[j]
+        ℓπ.gradient[:,j] = xs[i].ℓπ.gradient[:,j]
+        ℓκ.value[j] = xs[i].ℓκ.value[j]
+        ℓκ.gradient[:,j] = xs[i].ℓκ.gradient[:,j]
+    end
+    return PhasePoint(θ, r, ℓπ, ℓκ)
 end
 
 function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
     zs = step(τ.integrator, h, z, τ.n_steps; res=[z for _ in 1:abs(τ.n_steps)])
     ℓws = -energy.(zs)
+    if eltype(ℓws) <: AbstractVector
+        ℓws = hcat(ℓws...)
+    end
     ℓws = ℓws .- maximum(ℓws)
     p_unorm = exp.(ℓws)
-    return randcat(rng, zs, p_unorm / sum(p_unorm))
+    return randcat(rng, zs, p_unorm ./ sum(p_unorm; dims=2))
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
