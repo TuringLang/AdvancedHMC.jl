@@ -80,8 +80,7 @@ end
 struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     ϵ       ::  T
 end
-Base.show(io::IO, l::Leapfrog) = 
-    print(io, "Leapfrog(ϵ=$(l.ϵ isa AbstractFloat ? round(l.ϵ; sigdigits=3) : round.(l.ϵ; sigdigits=3)))")
+Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)))")
 
 ### Jittering
 

@@ -23,8 +23,7 @@ struct DualValue{V<:AbstractScalarOrVec{<:AbstractFloat}, G<:AbstractVecOrMat{<:
     end
 end
 
-Base.similar(dv::DualValue{V, G}) where {V<:AbstractVector, G<:AbstractMatrix} = 
-    DualValue(similar(dv.value), similar(dv.gradient))
+Base.similar(dv::DualValue{<:AbstractVector}) = DualValue(similar(dv.value), similar(dv.gradient))
 
 # `∂H∂θ` now returns `(logprob, -∂ℓπ∂θ)`
 function ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat)
@@ -45,13 +44,8 @@ struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
         @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
         if any(isfinite.((θ, r, ℓπ, ℓκ)) .== false)
             @warn "The current proposal will be rejected due to numerical error(s)." isfinite.((θ, r, ℓπ, ℓκ))
-            if T <: AbstractVector
-                ℓπ = DualValue(-Inf, ℓπ.gradient)
-                ℓκ = DualValue(-Inf, ℓκ.gradient)
-            else
-                ℓπ = DualValue(map(v -> isfinite(v) ? v : -Inf, ℓπ.value), ℓπ.gradient)
-                ℓκ = DualValue(map(v -> isfinite(v) ? v : -Inf, ℓκ.value), ℓκ.gradient)
-            end
+            ℓπ = DualValue(map(v -> isfinite(v) ? v : -Inf, ℓπ.value), ℓπ.gradient)
+            ℓκ = DualValue(map(v -> isfinite(v) ? v : -Inf, ℓκ.value), ℓκ.gradient)
         end
         new{T,V}(θ, r, ℓπ, ℓκ)
     end

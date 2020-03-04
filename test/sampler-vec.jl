@@ -23,7 +23,9 @@ include("common.jl")
         StaticTrajectory{EndPointTS}(lfi, n_steps),
         StaticTrajectory{MultinomialTS}(lfi, n_steps),
         StaticTrajectory{EndPointTS}(lfi_jittered, n_steps),
-        HMCDA(lf, ϵ * n_steps)
+        StaticTrajectory{MultinomialTS}(lfi_jittered, n_steps),
+        HMCDA{EndPointTS}(lf, ϵ * n_steps),
+        HMCDA{MultinomialTS}(lf, ϵ * n_steps),
     ]
         n_chains = n_chains_list[i_test]
         metric = metricT((D, n_chains))
