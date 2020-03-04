@@ -57,6 +57,8 @@ struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
     end
 end
 
+Base.similar(z::PhasePoint{<:AbstractMatrix}) = PhasePoint(similar(z.θ), similar(z.r), similar(z.ℓπ), similar(z.ℓκ))
+
 phasepoint(
     h::Hamiltonian,
     θ::T,

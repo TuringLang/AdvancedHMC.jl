@@ -249,21 +249,17 @@ randcat(rng::AbstractRNG, xs, p::AbstractVector) = xs[randcat(rng, p)]
 
 # xs is in the form of Vector{Vector} and has shape [n_steps][]
 function randcat(rng::AbstractRNG, xs, P::AbstractMatrix)
-    x1 = first(xs)
-    θ = similar(x1.θ)
-    r = similar(x1.r)
-    ℓπ = similar(x1.ℓπ)
-    ℓκ = similar(x1.ℓκ)
+    x = similar(first(xs))
     is = randcat(rng, P)
     foreach(zip(1:size(P, 1), is)) do (i_chain, i_step)
-        θ[:,i_chain] = xs[i_step].θ[:,i_chain]
-        r[:,i_chain] = xs[i_step].r[:,i_chain]
-        ℓπ.value[i_chain] = xs[i_step].ℓπ.value[i_chain]
-        ℓπ.gradient[:,i_chain] = xs[i_step].ℓπ.gradient[:,i_chain]
-        ℓκ.value[i_chain] = xs[i_step].ℓκ.value[i_chain]
-        ℓκ.gradient[:,i_chain] = xs[i_step].ℓκ.gradient[:,i_chain]
+        x.θ[:,i_chain] = xs[i_step].θ[:,i_chain]
+        x.r[:,i_chain] = xs[i_step].r[:,i_chain]
+        x.ℓπ.value[i_chain] = xs[i_step].ℓπ.value[i_chain]
+        x.ℓπ.gradient[:,i_chain] = xs[i_step].ℓπ.gradient[:,i_chain]
+        x.ℓκ.value[i_chain] = xs[i_step].ℓκ.value[i_chain]
+        x.ℓκ.gradient[:,i_chain] = xs[i_step].ℓκ.gradient[:,i_chain]
     end
-    return PhasePoint(θ, r, ℓπ, ℓκ)
+    return x
 end
 
 function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
