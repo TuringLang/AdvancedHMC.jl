@@ -42,9 +42,13 @@ struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
         @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
         if any(isfinite.((θ, r, ℓπ, ℓκ)) .== false)
             @warn "The current proposal will be rejected due to numerical error(s)." isfinite.((θ, r, ℓπ, ℓκ))
-            # FIXME: make `-Inf` adjust to vec or mat
-            ℓπ = DualValue(-Inf, ℓπ.gradient)
-            ℓκ = DualValue(-Inf, ℓκ.gradient)
+            if T <: AbstractVector
+                ℓπ = DualValue(-Inf, ℓπ.gradient)
+                ℓκ = DualValue(-Inf, ℓκ.gradient)
+            else
+                ℓπ = DualValue(map(v -> isfinite(v) ? v : -Inf, ℓπ.value), ℓπ.gradient)
+                ℓκ = DualValue(map(v -> isfinite(v) ? v : -Inf, ℓκ.value), ℓκ.gradient)
+            end
         end
         new{T,V}(θ, r, ℓπ, ℓκ)
     end
