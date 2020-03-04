@@ -227,15 +227,25 @@ samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h,
 
 ### Multinomial sampling from trajecory
 
-function randcat(rng::AbstractRNG, xs, p::AbstractVector)
+function randcat(rng::AbstractRNG, p::AbstractVector)
     u = rand(rng)
     cp = zero(eltype(p))
     i = 0
     while cp < u
         cp += p[i+=1]
     end
-    return xs[max(i, 1)]
+    return max(i, 1)
 end
+
+function randcat(rng::AbstractRNG, P::AbstractMatrix)
+    n_chains, n_steps = size(P)
+    u = rand(rng, n_chains)
+    C = cumsum(P; dims=2)
+    is = convert.(Int, vec(sum(C .< u; dims=2)))
+    return max.(is, 1)
+end
+
+randcat(rng::AbstractRNG, xs, p::AbstractVector) = xs[randcat(rng, p)]
 
 # xs is in the form of Vector{Vector} and has shape [n_steps][]
 function randcat(rng::AbstractRNG, xs, P::AbstractMatrix)
@@ -244,20 +254,14 @@ function randcat(rng::AbstractRNG, xs, P::AbstractMatrix)
     r = similar(x1.r)
     ℓπ = similar(x1.ℓπ)
     ℓκ = similar(x1.ℓκ)
-    n_chains, n_steps = size(P)
-    for j in 1:n_chains
-        u = rand(rng)
-        cp = zero(eltype(P))
-        i = 0
-        while cp < u
-            cp += P[j,i+=1]
-        end
-        θ[:,j] = xs[i].θ[:,j]
-        r[:,j] = xs[i].r[:,j]
-        ℓπ.value[j] = xs[i].ℓπ.value[j]
-        ℓπ.gradient[:,j] = xs[i].ℓπ.gradient[:,j]
-        ℓκ.value[j] = xs[i].ℓκ.value[j]
-        ℓκ.gradient[:,j] = xs[i].ℓκ.gradient[:,j]
+    is = randcat(rng, P)
+    foreach(zip(1:size(P, 1), is)) do (i_chain, i_step)
+        θ[:,i_chain] = xs[i_step].θ[:,i_chain]
+        r[:,i_chain] = xs[i_step].r[:,i_chain]
+        ℓπ.value[i_chain] = xs[i_step].ℓπ.value[i_chain]
+        ℓπ.gradient[:,i_chain] = xs[i_step].ℓπ.gradient[:,i_chain]
+        ℓκ.value[i_chain] = xs[i_step].ℓκ.value[i_chain]
+        ℓκ.gradient[:,i_chain] = xs[i_step].ℓκ.gradient[:,i_chain]
     end
     return PhasePoint(θ, r, ℓπ, ℓκ)
 end
