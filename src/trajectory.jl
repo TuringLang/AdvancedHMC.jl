@@ -227,7 +227,8 @@ samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h,
 
 ### Multinomial sampling from trajecory
 
-function randcat(rng::AbstractRNG, p::AbstractVector)
+function randcat(rng::AbstractRNG, p_unorm::AbstractVector)
+    p = p_unorm ./ sum(p_unorm)
     u = rand(rng)
     cp = zero(eltype(p))
     i = 0
@@ -237,9 +238,8 @@ function randcat(rng::AbstractRNG, p::AbstractVector)
     return max(i, 1)
 end
 
-function randcat(rng::AbstractRNG, P::AbstractMatrix)
-    n_chains, n_steps = size(P)
-    u = rand(rng, n_chains)
+function randcat(rng, P::AbstractMatrix)
+    u = rng isa AbstractRNG ? rand(rng, size(P, 1)) : rand(rng)
     C = cumsum(P; dims=2)
     is = convert.(Int, vec(sum(C .< u; dims=2)))
     return max.(is, 1)
@@ -248,16 +248,18 @@ end
 randcat(rng::AbstractRNG, xs, p::AbstractVector) = xs[randcat(rng, p)]
 
 # xs is in the form of Vector{Vector} and has shape [n_steps][]
-function randcat(rng::AbstractRNG, xs, P::AbstractMatrix)
+function randcat(rng, xs, P_unorm::AbstractMatrix)
+    P = P_unorm ./ sum(P_unorm; dims=2)
     x = similar(first(xs))
     is = randcat(rng, P)
     foreach(zip(1:size(P, 1), is)) do (i_chain, i_step)
-        x.θ[:,i_chain] = xs[i_step].θ[:,i_chain]
-        x.r[:,i_chain] = xs[i_step].r[:,i_chain]
-        x.ℓπ.value[i_chain] = xs[i_step].ℓπ.value[i_chain]
-        x.ℓπ.gradient[:,i_chain] = xs[i_step].ℓπ.gradient[:,i_chain]
-        x.ℓκ.value[i_chain] = xs[i_step].ℓκ.value[i_chain]
-        x.ℓκ.gradient[:,i_chain] = xs[i_step].ℓκ.gradient[:,i_chain]
+        xi = xs[i_step]
+        x.θ[:,i_chain] = xi.θ[:,i_chain]
+        x.r[:,i_chain] = xi.r[:,i_chain]
+        x.ℓπ.value[i_chain] = xi.ℓπ.value[i_chain]
+        x.ℓπ.gradient[:,i_chain] = xi.ℓπ.gradient[:,i_chain]
+        x.ℓκ.value[i_chain] = xi.ℓκ.value[i_chain]
+        x.ℓκ.gradient[:,i_chain] = xi.ℓκ.gradient[:,i_chain]
     end
     return x
 end
@@ -269,8 +271,8 @@ function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
         ℓws = hcat(ℓws...)
     end
     ℓws = ℓws .- maximum(ℓws)
-    p_unorm = exp.(ℓws)
-    return randcat(rng, zs, p_unorm ./ sum(p_unorm; dims=2))
+    prob_unorm = exp.(ℓws)
+    return randcat(rng, zs, prob_unorm)
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end

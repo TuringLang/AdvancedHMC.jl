@@ -15,11 +15,8 @@ import StatsBase: sample
 # Support of passing a vector of RNGs
 Base.rand(rng::AbstractVector{<:AbstractRNG}) = rand.(rng)
 Base.randn(rng::AbstractVector{<:AbstractRNG}) = randn.(rng)
-function Base.randn(
-    rng::AbstractVector{<:AbstractRNG},
-    T,
-    sz::Int...)
-    return cat(randn.(rng, T, first(sz))...; dims=2)
+function Base.randn(rng::AbstractVector{<:AbstractRNG}, T, dim::Int, n_chains::Int)
+    return cat(randn.(rng, T, dim)...; dims=2)
 end
 
 # Notations
