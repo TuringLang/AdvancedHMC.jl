@@ -238,7 +238,7 @@ function randcat(rng::AbstractRNG, p_unorm::AbstractVector{T}) where {T}
     return max(i, 1)
 end
 
-function randcat(rng, P_unorm::AbstractMatrix{T}) where {T}
+function randcat(rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, P_unorm::AbstractMatrix{T}) where {T}
     P = P_unorm ./ sum(P_unorm; dims=2)
     u = rand(rng, T, size(P, 1))
     C = cumsum(P; dims=2)
@@ -246,22 +246,22 @@ function randcat(rng, P_unorm::AbstractMatrix{T}) where {T}
     return max.(is, 1)
 end
 
-randcat(rng::AbstractRNG, xs, p::AbstractVector) = xs[randcat(rng, p)]
+randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, p::AbstractVector) = zs[randcat(rng, p)]
 
-# xs is in the form of Vector{Vector} and has shape [n_steps][]
-function randcat(rng, xs, P_unorm::AbstractMatrix)
-    x = similar(first(xs))
+# zs is in the form of Vector{PhasePoint{Matrix}} and has shape [n_steps][dim, n_chains]
+function randcat(rng, zs::AbstractVector{<:PhasePoint}, P_unorm::AbstractMatrix)
+    z = similar(first(zs))
     is = randcat(rng, P_unorm)
     foreach(enumerate(is)) do (i_chain, i_step)
-        xi = xs[i_step]
-        x.θ[:,i_chain] = xi.θ[:,i_chain]
-        x.r[:,i_chain] = xi.r[:,i_chain]
-        x.ℓπ.value[i_chain] = xi.ℓπ.value[i_chain]
-        x.ℓπ.gradient[:,i_chain] = xi.ℓπ.gradient[:,i_chain]
-        x.ℓκ.value[i_chain] = xi.ℓκ.value[i_chain]
-        x.ℓκ.gradient[:,i_chain] = xi.ℓκ.gradient[:,i_chain]
+        zi = zs[i_step]
+        z.θ[:,i_chain] = zi.θ[:,i_chain]
+        z.r[:,i_chain] = zi.r[:,i_chain]
+        z.ℓπ.value[i_chain] = zi.ℓπ.value[i_chain]
+        z.ℓπ.gradient[:,i_chain] = zi.ℓπ.gradient[:,i_chain]
+        z.ℓκ.value[i_chain] = zi.ℓκ.value[i_chain]
+        z.ℓκ.gradient[:,i_chain] = zi.ℓκ.gradient[:,i_chain]
     end
-    return x
+    return z
 end
 
 function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
