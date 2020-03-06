@@ -227,8 +227,8 @@ samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h,
 
 ### Multinomial sampling from trajecory
 
-function randcat(rng::AbstractRNG, p_unorm::AbstractVector{T}) where {T}
-    p = p_unorm ./ sum(p_unorm)
+function randcat(rng::AbstractRNG, up::AbstractVector{T}) where {T}
+    p = up ./ sum(up)
     u = rand(rng, T)
     cp = zero(eltype(p))
     i = 0
@@ -238,20 +238,20 @@ function randcat(rng::AbstractRNG, p_unorm::AbstractVector{T}) where {T}
     return max(i, 1)
 end
 
-function randcat(rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, P_unorm::AbstractMatrix{T}) where {T}
-    P = P_unorm ./ sum(P_unorm; dims=2)
+function randcat(rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, uP::AbstractMatrix{T}) where {T}
+    P = uP ./ sum(uP; dims=2)
     u = rand(rng, T, size(P, 1))
     C = cumsum(P; dims=2)
     is = convert.(Int, vec(sum(C .< u; dims=2)))
     return max.(is, 1)
 end
 
-randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, p::AbstractVector) = zs[randcat(rng, p)]
+randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, up::AbstractVector) = zs[randcat(rng, up)]
 
 # zs is in the form of Vector{PhasePoint{Matrix}} and has shape [n_steps][dim, n_chains]
-function randcat(rng, zs::AbstractVector{<:PhasePoint}, P_unorm::AbstractMatrix)
+function randcat(rng, zs::AbstractVector{<:PhasePoint}, uP::AbstractMatrix)
     z = similar(first(zs))
-    is = randcat(rng, P_unorm)
+    is = randcat(rng, uP)
     foreach(enumerate(is)) do (i_chain, i_step)
         zi = zs[i_step]
         z.θ[:,i_chain] = zi.θ[:,i_chain]
@@ -271,8 +271,8 @@ function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
         ℓws = hcat(ℓws...)
     end
     ℓws = ℓws .- maximum(ℓws)
-    prob_unorm = exp.(ℓws)
-    return randcat(rng, zs, prob_unorm)
+    unnormalised_prob = exp.(ℓws)
+    return randcat(rng, zs, unnormalised_prob)
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
