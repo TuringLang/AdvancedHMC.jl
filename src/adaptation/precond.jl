@@ -349,7 +349,7 @@ Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DenseEuclideanMetric(d
 # `rand` functions for `metric` types.
 
 function _rand(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     metric::UnitEuclideanMetric{T}
 ) where {T}
     r = randn(rng, T, size(metric)...)
@@ -357,7 +357,7 @@ function _rand(
 end
 
 function _rand(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     metric::DiagEuclideanMetric{T}
 ) where {T}
     r = randn(rng, T, size(metric)...)
@@ -366,7 +366,7 @@ function _rand(
 end
 
 function _rand(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     metric::DenseEuclideanMetric{T}
 ) where {T}
     r = randn(rng, T, size(metric)...)
