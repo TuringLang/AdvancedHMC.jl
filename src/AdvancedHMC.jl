@@ -29,7 +29,6 @@ end
 randcatlog(rng::AbstractRNG, unnorm_ℓp::AbstractVector{T}) where {T} =
     randcat(rng, exp.(unnorm_ℓp - logsumexp(unnorm_ℓp)))
 function randcat(rng::AbstractRNG, p::AbstractVector{T}) where {T}
-    p = exp.(ℓp)
     u = rand(rng, T)
     c = zero(eltype(p))
     i = 0
@@ -42,7 +41,6 @@ end
 randcatlog(rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, unnorm_ℓP::AbstractMatrix{T}) where {T} = 
     randcat(rng, exp.(unnorm_ℓP - logsumexp(unnorm_ℓP; dims=2)))
 function randcat(rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, P::AbstractMatrix{T}) where {T}
-    P = exp.(ℓP)
     u = rand(rng, T, size(P, 1))
     C = cumsum(P; dims=2)
     is = convert.(Int, vec(sum(C .< u; dims=2)))
