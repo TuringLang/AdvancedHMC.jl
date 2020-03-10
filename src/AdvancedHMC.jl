@@ -27,7 +27,7 @@ function Base.randn(rng::AbstractVector{<:AbstractRNG}, T, dim::Int, n_chains::I
 end
 
 randcatlog(rng::AbstractRNG, unnorm_ℓp::AbstractVector) =
-    randcat(rng, exp.(unnorm_ℓp - logsumexp(unnorm_ℓp)))
+    randcat(rng, exp.(unnorm_ℓp .- logsumexp(unnorm_ℓp)))
 function randcat(rng::AbstractRNG, p::AbstractVector{T}) where {T}
     u = rand(rng, T)
     c = zero(eltype(p))
@@ -39,7 +39,7 @@ function randcat(rng::AbstractRNG, p::AbstractVector{T}) where {T}
 end
 
 randcatlog(rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, unnorm_ℓP::AbstractMatrix) =
-    randcat(rng, exp.(unnorm_ℓP - logsumexp(unnorm_ℓP; dims=2)))
+    randcat(rng, exp.(unnorm_ℓP .- logsumexp(unnorm_ℓP; dims=2)))
 function randcat(rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, P::AbstractMatrix{T}) where {T}
     u = rand(rng, T, size(P, 1))
     C = cumsum(P; dims=2)
