@@ -3,7 +3,7 @@
 ##
 
 function sample_init(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, 
+    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
     h::Hamiltonian, 
     θ::AbstractVecOrMat{<:AbstractFloat}
 )
@@ -16,7 +16,7 @@ end
 
 # A step is a momentum refreshment plus a transition
 function step(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, 
+    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
     h::Hamiltonian, 
     τ::AbstractProposal, 
     z::PhasePoint
@@ -123,7 +123,7 @@ Sample `n_samples` samples using the proposal `τ` under Hamiltonian `h`.
 - `progress` controls whether to show the progress meter or not
 """
 function sample(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
     τ::AbstractProposal,
     θ::T,

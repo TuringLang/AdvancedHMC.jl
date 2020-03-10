@@ -23,6 +23,8 @@ struct DualValue{V<:AbstractScalarOrVec{<:AbstractFloat}, G<:AbstractVecOrMat{<:
     end
 end
 
+Base.similar(dv::DualValue{<:AbstractVector}) = DualValue(similar(dv.value), similar(dv.gradient))
+
 # `∂H∂θ` now returns `(logprob, -∂ℓπ∂θ)`
 function ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat)
     res = h.∂ℓπ∂θ(θ)
@@ -42,13 +44,14 @@ struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
         @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
         if any(isfinite.((θ, r, ℓπ, ℓκ)) .== false)
             @warn "The current proposal will be rejected due to numerical error(s)." isfinite.((θ, r, ℓπ, ℓκ))
-            # FIXME: make `-Inf` adjust to vec or mat
-            ℓπ = DualValue(-Inf, ℓπ.gradient)
-            ℓκ = DualValue(-Inf, ℓκ.gradient)
+            ℓπ = DualValue(map(v -> isfinite(v) ? v : -Inf, ℓπ.value), ℓπ.gradient)
+            ℓκ = DualValue(map(v -> isfinite(v) ? v : -Inf, ℓκ.value), ℓκ.gradient)
         end
         new{T,V}(θ, r, ℓπ, ℓκ)
     end
 end
+
+Base.similar(z::PhasePoint{<:AbstractMatrix}) = PhasePoint(similar(z.θ), similar(z.r), similar(z.ℓπ), similar(z.ℓκ))
 
 phasepoint(
     h::Hamiltonian,
@@ -123,19 +126,19 @@ energy(args...) = -neg_energy(args...)
 ####
 
 phasepoint(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     θ::AbstractVecOrMat{T},
     h::Hamiltonian
 ) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric))
 
 refresh(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     z::PhasePoint,
     h::Hamiltonian
 ) = phasepoint(h, z.θ, rand(rng, h.metric))
 
 # refresh(
-#     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+#     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
 #     z::PhasePoint,
 #     h::Hamiltonian,
 #     α::AbstractFloat

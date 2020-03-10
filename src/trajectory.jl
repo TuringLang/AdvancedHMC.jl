@@ -227,22 +227,32 @@ samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h,
 
 ### Multinomial sampling from trajecory
 
-function randcat(rng::AbstractRNG, xs, p)
-    u = rand(rng)
-    cp = zero(eltype(p))
-    i = 0
-    while cp < u
-        cp += p[i +=1]
+randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_ℓp::AbstractVector) = zs[randcat_logp(rng, unnorm_ℓp)]
+
+# zs is in the form of Vector{PhasePoint{Matrix}} and has shape [n_steps][dim, n_chains]
+function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMatrix)
+    z = similar(first(zs))
+    is = randcat_logp(rng, unnorm_ℓP)
+    foreach(enumerate(is)) do (i_chain, i_step)
+        zi = zs[i_step]
+        z.θ[:,i_chain] = zi.θ[:,i_chain]
+        z.r[:,i_chain] = zi.r[:,i_chain]
+        z.ℓπ.value[i_chain] = zi.ℓπ.value[i_chain]
+        z.ℓπ.gradient[:,i_chain] = zi.ℓπ.gradient[:,i_chain]
+        z.ℓκ.value[i_chain] = zi.ℓκ.value[i_chain]
+        z.ℓκ.gradient[:,i_chain] = zi.ℓκ.gradient[:,i_chain]
     end
-    return xs[max(i, 1)]
+    return z
 end
 
 function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
     zs = step(τ.integrator, h, z, τ.n_steps; res=[z for _ in 1:abs(τ.n_steps)])
     ℓws = -energy.(zs)
-    ℓws = ℓws .- maximum(ℓws)
-    p_unorm = exp.(ℓws)
-    return randcat(rng, zs, p_unorm / sum(p_unorm))
+    if eltype(ℓws) <: AbstractVector
+        ℓws = hcat(ℓws...)
+    end
+    unnorm_ℓprob = ℓws
+    return randcat(rng, zs, unnorm_ℓprob)
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
@@ -678,7 +688,7 @@ function mh_accept_ratio(
     Hproposal::T,
 ) where {T<:AbstractFloat}
     α = min(one(T), exp(Horiginal - Hproposal))
-    accept = rand(rng) < α
+    accept = rand(rng, T) < α
     return accept, α
 end
 
@@ -688,17 +698,14 @@ function mh_accept_ratio(
     Hproposal::AbstractVector{<:T},
 ) where {T<:AbstractFloat}
     α = min.(one(T), exp.(Horiginal .- Hproposal))
-    accept = _rand(rng, length(Horiginal)) .< α
+    # NOTE: There is a chance that sharing the RNG over multiple
+    #       chains for accepting / rejecting might couple
+    #       the chains. We need to revisit this more rigirously 
+    #       in the future. See discussions at 
+    #       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
+    accept = rand(rng, T, length(Horiginal)) .< α
     return accept, α
 end
-
-# NOTE: There is a chance that sharing the RNG over multiple
-#       chains for accepting / rejecting might couple
-#       the chains. We need to revisit this more rigirously 
-#       in the future. See discussions at 
-#       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
-_rand(rng::AbstractRNG, n_chains::Int) = rand(rng, n_chains)
-_rand(rng::AbstractVector{<:AbstractRNG}, ::Int) = rand.(rng)
 
 ####
 #### Adaption

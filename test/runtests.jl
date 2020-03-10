@@ -9,7 +9,7 @@ using Distributed, Test
         "demo",
         "models",
         "sampler",
-        "sampler_mat",
+        "sampler-vec",
     ]
 
     res = map(tests) do t
