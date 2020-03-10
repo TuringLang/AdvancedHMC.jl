@@ -246,12 +246,12 @@ function randcat(rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, uP::Abs
     return max.(is, 1)
 end
 
-randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, up::AbstractVector) = zs[randcat(rng, up)]
+randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_p::AbstractVector) = zs[randcat(rng, unnorm_p)]
 
 # zs is in the form of Vector{PhasePoint{Matrix}} and has shape [n_steps][dim, n_chains]
-function randcat(rng, zs::AbstractVector{<:PhasePoint}, uP::AbstractMatrix)
+function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_P::AbstractMatrix)
     z = similar(first(zs))
-    is = randcat(rng, uP)
+    is = randcat(rng, unnorm_P)
     foreach(enumerate(is)) do (i_chain, i_step)
         zi = zs[i_step]
         z.θ[:,i_chain] = zi.θ[:,i_chain]
