@@ -26,7 +26,7 @@ function Base.randn(rng::AbstractVector{<:AbstractRNG}, T, dim::Int, n_chains::I
     return cat(randn.(rng, T, dim)...; dims=2)
 end
 
-randcatlog(rng::AbstractRNG, unnorm_ℓp::AbstractVector) =
+randcat_logp(rng::AbstractRNG, unnorm_ℓp::AbstractVector) =
     randcat(rng, exp.(unnorm_ℓp .- logsumexp(unnorm_ℓp)))
 function randcat(rng::AbstractRNG, p::AbstractVector{T}) where {T}
     u = rand(rng, T)
@@ -38,7 +38,7 @@ function randcat(rng::AbstractRNG, p::AbstractVector{T}) where {T}
     return max(i, 1)
 end
 
-randcatlog(rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, unnorm_ℓP::AbstractMatrix) =
+randcat_logp(rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, unnorm_ℓP::AbstractMatrix) =
     randcat(rng, exp.(unnorm_ℓP .- logsumexp(unnorm_ℓP; dims=2)))
 function randcat(rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, P::AbstractMatrix{T}) where {T}
     u = rand(rng, T, size(P, 1))
