@@ -227,31 +227,33 @@ samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h,
 
 ### Multinomial sampling from trajecory
 
-function randcat(rng::AbstractRNG, up::AbstractVector{T}) where {T}
-    p = up ./ sum(up)
+function randcat(rng::AbstractRNG, unnorm_ℓp::AbstractVector{T}) where {T}
+    ℓp = unnorm_ℓp - logsumexp(unnorm_ℓp)
+    p = exp.(ℓp)
     u = rand(rng, T)
-    cp = zero(eltype(p))
+    c = zero(eltype(p))
     i = 0
-    while cp < u
-        cp += p[i+=1]
+    while c < u
+        c += p[i+=1]
     end
     return max(i, 1)
 end
 
-function randcat(rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, uP::AbstractMatrix{T}) where {T}
-    P = uP ./ sum(uP; dims=2)
+function randcat(rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, unnorm_ℓP::AbstractMatrix{T}) where {T}
+    ℓP = unnorm_ℓP - logsumexp(unnorm_ℓP; dims=2)
+    P = exp.(ℓP)
     u = rand(rng, T, size(P, 1))
     C = cumsum(P; dims=2)
     is = convert.(Int, vec(sum(C .< u; dims=2)))
     return max.(is, 1)
 end
 
-randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_p::AbstractVector) = zs[randcat(rng, unnorm_p)]
+randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_ℓp::AbstractVector) = zs[randcat(rng, unnorm_ℓp)]
 
 # zs is in the form of Vector{PhasePoint{Matrix}} and has shape [n_steps][dim, n_chains]
-function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_P::AbstractMatrix)
+function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMatrix)
     z = similar(first(zs))
-    is = randcat(rng, unnorm_P)
+    is = randcat(rng, unnorm_ℓP)
     foreach(enumerate(is)) do (i_chain, i_step)
         zi = zs[i_step]
         z.θ[:,i_chain] = zi.θ[:,i_chain]
@@ -270,9 +272,8 @@ function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
     if eltype(ℓws) <: AbstractVector
         ℓws = hcat(ℓws...)
     end
-    ℓws = ℓws .- maximum(ℓws)
-    unnormalised_prob = exp.(ℓws)
-    return randcat(rng, zs, unnormalised_prob)
+    unnorm_ℓprob = ℓws
+    return randcat(rng, zs, unnorm_ℓprob)
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
