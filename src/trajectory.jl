@@ -205,13 +205,14 @@ function accept_phasepoint!(z::T, z′::T, is_accept::Bool) where {T<:PhasePoint
 end
 function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:AbstractMatrix}}
     # Revert unaccepted proposals in `z′`
-    if any((!).(is_accept))
-        z′.θ[:,(!).(is_accept)] = z.θ[:,(!).(is_accept)]
-        z′.r[:,(!).(is_accept)] = z.r[:,(!).(is_accept)]
-        z′.ℓπ.value[(!).(is_accept)] = z.ℓπ.value[(!).(is_accept)]
-        z′.ℓπ.gradient[:,(!).(is_accept)] = z.ℓπ.gradient[:,(!).(is_accept)]
-        z′.ℓκ.value[(!).(is_accept)] = z.ℓκ.value[(!).(is_accept)]
-        z′.ℓκ.gradient[:,(!).(is_accept)] = z.ℓκ.gradient[:,(!).(is_accept)]
+    is_reject = (!).(is_accept)
+    if any(is_reject)
+        z′.θ[:,is_reject] = z.θ[:,is_reject]
+        z′.r[:,is_reject] = z.r[:,is_reject]
+        z′.ℓπ.value[is_reject] = z.ℓπ.value[is_reject]
+        z′.ℓπ.gradient[:,is_reject] = z.ℓπ.gradient[:,is_reject]
+        z′.ℓκ.value[is_reject] = z.ℓκ.value[is_reject]
+        z′.ℓκ.gradient[:,is_reject] = z.ℓκ.gradient[:,is_reject]
     end
     # Always return `z′` as any unaccepted proposal is already reverted
     # NOTE: This in place treatment of `z′` is for memory efficient consideration.
@@ -226,22 +227,32 @@ samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h,
 
 ### Multinomial sampling from trajecory
 
-function randcat(rng::AbstractRNG, xs, p)
-    u = rand(rng)
-    cp = zero(eltype(p))
-    i = 0
-    while cp < u
-        cp += p[i +=1]
+randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_ℓp::AbstractVector) = zs[randcat_logp(rng, unnorm_ℓp)]
+
+# zs is in the form of Vector{PhasePoint{Matrix}} and has shape [n_steps][dim, n_chains]
+function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMatrix)
+    z = similar(first(zs))
+    is = randcat_logp(rng, unnorm_ℓP)
+    foreach(enumerate(is)) do (i_chain, i_step)
+        zi = zs[i_step]
+        z.θ[:,i_chain] = zi.θ[:,i_chain]
+        z.r[:,i_chain] = zi.r[:,i_chain]
+        z.ℓπ.value[i_chain] = zi.ℓπ.value[i_chain]
+        z.ℓπ.gradient[:,i_chain] = zi.ℓπ.gradient[:,i_chain]
+        z.ℓκ.value[i_chain] = zi.ℓκ.value[i_chain]
+        z.ℓκ.gradient[:,i_chain] = zi.ℓκ.gradient[:,i_chain]
     end
-    return xs[max(i, 1)]
+    return z
 end
 
 function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
     zs = step(τ.integrator, h, z, τ.n_steps; res=[z for _ in 1:abs(τ.n_steps)])
     ℓws = -energy.(zs)
-    ℓws = ℓws .- maximum(ℓws)
-    p_unorm = exp.(ℓws)
-    return randcat(rng, zs, p_unorm / sum(p_unorm))
+    if eltype(ℓws) <: AbstractVector
+        ℓws = hcat(ℓws...)
+    end
+    unnorm_ℓprob = ℓws
+    return randcat(rng, zs, unnorm_ℓprob)
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
@@ -675,9 +686,9 @@ function mh_accept_ratio(
     rng::AbstractRNG,
     Horiginal::T,
     Hproposal::T,
-) where {T <: AbstractFloat}
-    α = min(1.0, exp(Horiginal - Hproposal))
-    accept = rand(rng) < α
+) where {T<:AbstractFloat}
+    α = min(one(T), exp(Horiginal - Hproposal))
+    accept = rand(rng, T) < α
     return accept, α
 end
 
@@ -686,13 +697,15 @@ function mh_accept_ratio(
     Horiginal::AbstractVector{<:T},
     Hproposal::AbstractVector{<:T},
 ) where {T<:AbstractFloat}
-    α = min.(1.0, exp.(Horiginal .- Hproposal))
-    accept = _rand(rng) .< α
+    α = min.(one(T), exp.(Horiginal .- Hproposal))
+    # NOTE: There is a chance that sharing the RNG over multiple
+    #       chains for accepting / rejecting might couple
+    #       the chains. We need to revisit this more rigirously 
+    #       in the future. See discussions at 
+    #       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
+    accept = rand(rng, T, length(Horiginal)) .< α
     return accept, α
 end
-
-_rand(rng::AbstractRNG) = rand(rng)
-_rand(rng::AbstractVector{<:AbstractRNG}) = rand.(rng)
 
 ####
 #### Adaption
