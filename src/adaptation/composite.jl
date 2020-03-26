@@ -1,6 +1,4 @@
-######################
-### Mutable states ###
-######################
+### Mutable states
 
 mutable struct StanHMCAdaptorState
     i               ::  Int
@@ -48,9 +46,7 @@ function Base.show(io::IO, state::StanHMCAdaptorState)
     print(io, "window($(state.window_start), $(state.window_end)), window_splits(" * string(join(state.window_splits, ", ")) * ")")
 end
 
-################
-### Adaptors ###
-################
+### Composite adaptors
 
 abstract type CompositeAdaptor <: AbstractAdaptor end
 

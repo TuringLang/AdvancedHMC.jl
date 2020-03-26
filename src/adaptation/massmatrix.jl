@@ -217,7 +217,7 @@ function Base.push!(wc::WelfordCov, s::AbstractVector{T}) where {T}
     @unpack δ, μ, n, M = wc
     δ .= s - μ
     μ .= μ + δ / n
-    M .= M + δ * δ' * (T(n - 1) / n)    # eqv. to `M + (s - μ) * δ'
+    M .= M + (s - μ) * δ'
 end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/covar_adaptation.hpp
