@@ -35,10 +35,11 @@ mutable struct WelfordVar{T<:AbstractVecOrMat{<:AbstractFloat}} <: VarEstimator{
     n :: Int
     μ :: T
     M :: T
-    # TODO: implement temporary `δ` as `WelfordCov`
+    δ :: T  # temporary
 end
 
-WelfordVar(::Type{T}, sz::Union{Tuple{Int},Tuple{Int,Int}}) where {T<:AbstractFloat} = WelfordVar(0, zeros(T, sz), zeros(T, sz))
+WelfordVar(::Type{T}, sz::Union{Tuple{Int},Tuple{Int,Int}}) where {T<:AbstractFloat} = 
+    WelfordVar(0, zeros(T, sz), zeros(T, sz), zeros(T, sz))
 
 function reset!(wv::WelfordVar{<:AbstractVecOrMat{T}}) where {T<:AbstractFloat}
     wv.n = 0
@@ -48,12 +49,10 @@ end
 
 function add_sample!(wv::WelfordVar, s::AbstractVecOrMat)
     wv.n += 1
-    @unpack μ, M, n = wv
-    for i in eachindex(s)
-        δ = s[i] - μ[i]
-        μ[i] += δ / n
-        M[i] += δ * (s[i] - μ[i])
-    end
+    @unpack δ, μ, M, n = wv
+    δ .= s - μ
+    μ .= μ + δ / n
+    M .= M + (s - μ) .* δ   # sum(abs2, δ) * (n - 1) / n
 end
 
 # https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
@@ -100,7 +99,7 @@ end
 
 function WelfordCov(::Type{T}, sz::Tuple{Int}) where {T<:AbstractFloat}
     d, = sz
-    WelfordCov(0, zeros(T, d), zeros(T, d, d), zeros(T, d))
+    return WelfordCov(0, zeros(T, d), zeros(T, d, d), zeros(T, d))
 end
 
 function reset!(wc::WelfordCov{T}) where {T<:AbstractFloat}
@@ -112,9 +111,9 @@ end
 function add_sample!(wc::WelfordCov, s::AbstractVector)
     wc.n += 1
     @unpack δ, μ, n, M = wc
-    δ .= s .- μ
-    μ .+= δ ./ n
-    M .+= (s .- μ) .* δ'
+    δ .= s - μ
+    μ .= μ + δ / n
+    M .= M + (s - μ) * δ'
 end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/covar_adaptation.hpp
