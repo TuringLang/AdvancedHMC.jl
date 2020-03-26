@@ -20,7 +20,7 @@ struct NoAdaptation <: AbstractAdaptor end
 export NoAdaptation
 include("stepsize.jl")
 export StepSizeAdaptor, NesterovDualAveraging
-include("massmatrix.jl")
+include("precond.jl")
 export MassMatrixAdaptor, UnitMassMatrix, WelfordVar, WelfordCov
 include("composite.jl")
 export CompositeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor
