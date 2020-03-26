@@ -1,5 +1,7 @@
 module AdvancedHMC
 
+const DEBUG = parse(Bool, get(ENV, "DEBUG_AHMC", "0"))
+
 using Statistics: mean, var, middle
 using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
 using StatsFuns: logaddexp, logsumexp
@@ -9,8 +11,6 @@ using Parameters: Parameters, @unpack, reconstruct
 using ArgCheck: @argcheck
 
 import StatsBase: sample
-
-const AbstractScalarOrVec{T} = Union{T,AbstractVector{T}} where {T<:AbstractFloat}
 
 include("utilities.jl")
 

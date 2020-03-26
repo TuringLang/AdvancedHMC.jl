@@ -1,3 +1,5 @@
+const AbstractScalarOrVec{T} = Union{T,AbstractVector{T}} where {T<:AbstractFloat}
+
 # Support of passing a vector of RNGs
 
 Base.rand(rng::AbstractVector{<:AbstractRNG}) = rand.(rng)

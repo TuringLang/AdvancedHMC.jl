@@ -5,7 +5,7 @@ using LinearAlgebra: LinearAlgebra
 using Statistics: Statistics
 using Parameters: @unpack, @pack!
 
-const AbstractScalarOrVec{T} = Union{T,AbstractVector{T}} where {T<:AbstractFloat}
+using ..AdvancedHMC: DEBUG, AbstractScalarOrVec
 
 abstract type AbstractAdaptor end
 function getM⁻¹ end
