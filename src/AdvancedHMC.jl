@@ -52,23 +52,40 @@ end
 # r: momentum variables
 
 include("adaptation/Adaptation.jl")
-export NesterovDualAveraging, NaiveHMCAdaptor, StanHMCAdaptor
 using .Adaptation
 using .Adaptation: AbstractScalarOrVec
-import .Adaptation: adapt!, NesterovDualAveraging
+export NesterovDualAveraging, UnitMassMatrix, WelfordVar, WelfordCov, NaiveHMCAdaptor, StanHMCAdaptor
 
 include("metric.jl")
-export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric, WelfordEstimator
+export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
 include("hamiltonian.jl")
 export Hamiltonian
 include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 include("trajectory.jl")
 export StaticTrajectory, HMCDA, NUTS, EndPointTS, SliceTS, MultinomialTS, ClassicNoUTurn, GeneralisedNoUTurn, find_good_eps
-
 include("diagnosis.jl")
 include("sampler.jl")
 export sample
+
+# Default adaptors
+
+StepSizeAdaptor(δ::AbstractFloat, i::AbstractIntegrator) = NesterovDualAveraging(δ, nom_step_size(i))
+
+import .Adaptation: NesterovDualAveraging
+@deprecate NesterovDualAveraging(δ, i::AbstractIntegrator) StepSizeAdaptor(δ, i)
+export NesterovDualAveraging
+
+MassMatrixAdaptor(m::UnitEuclideanMetric{T}) where {T} = UnitMassMatrix(T)
+MassMatrixAdaptor(m::DiagEuclideanMetric{T}) where {T} = WelfordVar(T, size(m); var=copy(m.M⁻¹))
+MassMatrixAdaptor(m::DenseEuclideanMetric{T}) where {T} = WelfordCov(T, size(m); cov=copy(m.M⁻¹))
+
+@deprecate Preconditioner(m::AbstractMatrix) MassMatrixAdaptor(m)
+
+MassMatrixAdaptor(m::Type{TM}, sz::Tuple{Vararg{Int}}=(2,)) where {TM<:AbstractMetric} = MassMatrixAdaptor(Float64, m, sz)
+MassMatrixAdaptor(::Type{T}, ::Type{TM}, sz::Tuple{Vararg{Int}}=(2,)) where {T<:AbstractFloat, TM<:AbstractMetric} = MassMatrixAdaptor(TM(T, sz))
+
+export StepSizeAdaptor, MassMatrixAdaptor
 
 ### Init
 

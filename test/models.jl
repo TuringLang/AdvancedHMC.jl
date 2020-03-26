@@ -14,7 +14,7 @@ include("common.jl")
     h = Hamiltonian(metric, ℓπ_gdemo, ForwardDiff)
     init_eps = Leapfrog(0.1)
     prop = NUTS(init_eps)
-    adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, prop.integrator))
+    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, prop.integrator))
 
     samples, _ = sample(rng, h, prop, θ_init, n_samples, adaptor, n_adapts)
 

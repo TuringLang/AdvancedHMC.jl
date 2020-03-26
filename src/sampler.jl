@@ -27,7 +27,7 @@ function step(
     return transition(rng, τ, h, z)
 end
 
-adapt!(
+Adaptation.adapt!(
     h::Hamiltonian,
     τ::AbstractProposal,
     adaptor::Adaptation.NoAdaptation,
@@ -37,7 +37,7 @@ adapt!(
     α::AbstractScalarOrVec{<:AbstractFloat}
 ) = h, τ, false
 
-function adapt!(
+function Adaptation.adapt!(
     h::Hamiltonian,
     τ::AbstractProposal,
     adaptor::Adaptation.AbstractAdaptor,

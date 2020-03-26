@@ -9,8 +9,6 @@
 
 abstract type AbstractIntegrator end
 
-NesterovDualAveraging(δ::AbstractFloat, i::AbstractIntegrator) = NesterovDualAveraging(δ, nom_step_size(i))
-
 stat(::AbstractIntegrator) = NamedTuple()
 
 """

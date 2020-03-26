@@ -22,7 +22,6 @@ If you are interested in using `AdvancedHMC.jl` through a probabilistic programm
 ## A minimal example - sampling from a multivariate Gaussian using NUTS
 
 ```julia
-
 using AdvancedHMC, Distributions, ForwardDiff
 
 # Choose parameter dimensionality and initial parameter value
@@ -47,7 +46,7 @@ integrator = Leapfrog(initial_ϵ)
 #   - generalised No-U-Turn criteria, and
 #   - windowed adaption for step-size and diagonal mass matrix
 proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
-adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, integrator))
+adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
 
 # Run the sampler to draw samples from the specified Gaussian, where
 #   - `samples` will store the samples

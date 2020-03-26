@@ -65,19 +65,19 @@ end
                 end
 
                 @testset "$adaptorsym" for (adaptorsym, adaptor) in Dict(
-                    :WelfordEstimatorOnly => WelfordEstimator(metric),
-                    :NesterovDualAveragingOnly => NesterovDualAveraging(0.8, τ.integrator),
+                    :WelfordEstimatorOnly => MassMatrixAdaptor(metric),
+                    :NesterovDualAveragingOnly => StepSizeAdaptor(0.8, τ.integrator),
                     :NaiveHMCAdaptor => NaiveHMCAdaptor(
-                        WelfordEstimator(metric),
-                        NesterovDualAveraging(0.8, τ.integrator),
+                        MassMatrixAdaptor(metric),
+                        StepSizeAdaptor(0.8, τ.integrator),
                     ),
                     :StanHMCAdaptor => StanHMCAdaptor(
-                        WelfordEstimator(metric),
-                        NesterovDualAveraging(0.8, τ.integrator),
+                        MassMatrixAdaptor(metric),
+                        StepSizeAdaptor(0.8, τ.integrator),
                     ),
                 )
                     Random.seed!(1)
-                    # For `WelfordEstimator`, we use the pre-defined step size as the method cannot adapt the step size.
+                    # For `MassMatrixAdaptor`, we use the pre-defined step size as the method cannot adapt the step size.
                     # For other adapatation methods that are able to adpat the step size, we use `find_good_eps`.
                     τ_used = adaptorsym == :WelfordEstimatorOnly ? τ : reconstruct(τ, integrator=reconstruct(lf, ϵ=find_good_eps(h, θ_init)))
                     samples, stats = sample(h, τ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
@@ -94,8 +94,8 @@ end
     h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
     τ = NUTS(Leapfrog(ϵ))
     adaptor = StanHMCAdaptor(
-        WelfordEstimator(metric),
-        NesterovDualAveraging(0.8, τ.integrator),
+        MassMatrixAdaptor(metric),
+        StepSizeAdaptor(0.8, τ.integrator),
     )
     samples, stats = sample(h, τ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false, drop_warmup=true)
     @test length(samples) == n_samples - n_adapts

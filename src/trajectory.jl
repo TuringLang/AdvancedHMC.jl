@@ -721,7 +721,7 @@ function update(
     return h, τ
 end
 
-function update(h::Hamiltonian, τ::AbstractProposal, da::NesterovDualAveraging)
+function update(h::Hamiltonian, τ::AbstractProposal, da::Adaptation.StepSizeAdaptor)
     # TODO: this does not support change type of `ϵ` (e.g. Float to Vector)
     integrator = reconstruct(τ.integrator, ϵ=getϵ(da))
     τ = reconstruct(τ, integrator=integrator)

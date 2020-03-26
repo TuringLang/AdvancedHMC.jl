@@ -35,15 +35,15 @@ include("common.jl")
         @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL * n_chains
         # Adaptation
         for adaptor in [
-            WelfordEstimator(metric),
-            NesterovDualAveraging(0.8, lfi.ϵ),
+            MassMatrixAdaptor(metric),
+            StepSizeAdaptor(0.8, lfi),
             NaiveHMCAdaptor(
-                WelfordEstimator(metric),
-                NesterovDualAveraging(0.8, lfi.ϵ),
+                MassMatrixAdaptor(metric),
+                StepSizeAdaptor(0.8, lfi),
             ),
             StanHMCAdaptor(
-                WelfordEstimator(metric),
-                NesterovDualAveraging(0.8, lfi.ϵ),
+                MassMatrixAdaptor(metric),
+                StepSizeAdaptor(0.8, lfi),
             ),
         ]
             τ isa HMCDA && continue
@@ -63,7 +63,7 @@ include("common.jl")
         end
         @test all_same
     end
-    @info "Adaptation tests for HMCDA with NesterovDualAveraging are skipped"
+    @info "Adaptation tests for HMCDA with StepSizeAdaptor are skipped"
 
     # Simple time benchmark
     let metricT=UnitEuclideanMetric

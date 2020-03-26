@@ -40,11 +40,11 @@ using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, getest
     end
 end
 
-@testset "WelfordEstimator constructors" begin
+@testset "MassMatrixAdaptor constructors" begin
     θ = [0.0, 0.0, 0.0, 0.0]
-    pc1 = WelfordEstimator(UnitEuclideanMetric) # default dim = 2
-    pc2 = WelfordEstimator(DiagEuclideanMetric)
-    pc3 = WelfordEstimator(DenseEuclideanMetric)
+    pc1 = MassMatrixAdaptor(UnitEuclideanMetric) # default dim = 2
+    pc2 = MassMatrixAdaptor(DiagEuclideanMetric)
+    pc3 = MassMatrixAdaptor(DenseEuclideanMetric)
 
     # Var adaptor dimention should be increased to length(θ) from 2
     AdvancedHMC.adapt!(pc1, θ, 1.)
@@ -58,15 +58,15 @@ end
     θ = [0.0, 0.0, 0.0, 0.0]
 
     adaptor1 = StanHMCAdaptor(
-        WelfordEstimator(UnitEuclideanMetric),
+        MassMatrixAdaptor(UnitEuclideanMetric),
         NesterovDualAveraging(0.8, 0.5)
     )
     adaptor2 = StanHMCAdaptor(
-        WelfordEstimator(DiagEuclideanMetric),
+        MassMatrixAdaptor(DiagEuclideanMetric),
         NesterovDualAveraging(0.8, 0.5)
     )
     adaptor3 = StanHMCAdaptor(
-        WelfordEstimator(DenseEuclideanMetric),
+        MassMatrixAdaptor(DenseEuclideanMetric),
         NesterovDualAveraging(0.8, 0.5)
     )
     for a in [adaptor1, adaptor2, adaptor3]
@@ -81,14 +81,14 @@ end
 
     @test_deprecated StanHMCAdaptor(
         1_000,
-        WelfordEstimator(DiagEuclideanMetric),
+        MassMatrixAdaptor(DiagEuclideanMetric),
         NesterovDualAveraging(0.8, 0.5)
     )
 
     @testset "buffer > `n_adapts`" begin
         AdvancedHMC.initialize!(
             StanHMCAdaptor(
-                WelfordEstimator(DenseEuclideanMetric),
+                MassMatrixAdaptor(DenseEuclideanMetric),
                 NesterovDualAveraging(0.8, 0.5)
             ),
             100
@@ -105,8 +105,8 @@ let D=10
         h = Hamiltonian(metric, ℓπ, ForwardDiff)
         prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
         adaptor = StanHMCAdaptor(
-            WelfordEstimator(metric),
-            NesterovDualAveraging(0.8, prop.integrator)
+            MassMatrixAdaptor(metric),
+            StepSizeAdaptor(0.8, prop.integrator)
         )
         samples, stats = sample(h, prop, θ_init, n_samples, adaptor, n_adapts; verbose=false)
         return (samples=samples, stats=stats, adaptor=adaptor)

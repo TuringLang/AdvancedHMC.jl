@@ -69,7 +69,7 @@ end
 DenseEuclideanMetric(::Type{T}, D::Int) where {T} = DenseEuclideanMetric(Matrix{T}(I, D, D))
 DenseEuclideanMetric(D::Int) = DenseEuclideanMetric(Float64, D)
 DenseEuclideanMetric(::Type{T}, sz::Tuple{Int}) where {T} = DenseEuclideanMetric(Matrix{T}(I, first(sz), first(sz)))
-DenseEuclideanMetric(sz::Tuple{Int}) = DenseEuclideanMetric(Float64, D)
+DenseEuclideanMetric(sz::Tuple{Int}) = DenseEuclideanMetric(Float64, sz)
 
 renew(ue::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
 
@@ -107,14 +107,3 @@ end
 Base.rand(rng::AbstractRNG, metric::AbstractMetric) = _rand(rng, metric)    # this disambiguity is required by Random.rand
 Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractMetric) = _rand(rng, metric)
 Base.rand(metric::AbstractMetric) = rand(GLOBAL_RNG, metric)
-
-### WelfordEstimator constructors
-
-WelfordEstimator(m::UnitEuclideanMetric{T}) where {T} = UnitMassMatrix(T)
-WelfordEstimator(m::DiagEuclideanMetric{T}) where {T} = WelfordVar(T, size(m); var=copy(m.M⁻¹))
-WelfordEstimator(m::DenseEuclideanMetric{T}) where {T} = WelfordCov(T, size(m); cov=copy(m.M⁻¹))
-
-@deprecate Preconditioner(metric) WelfordEstimator(metric)
-
-WelfordEstimator(m::Type{TM}, sz::Tuple{Vararg{Int}}=(2,)) where {TM<:AbstractMetric} = WelfordEstimator(Float64, m, sz)
-WelfordEstimator(::Type{T}, ::Type{TM}, sz::Tuple{Vararg{Int}}=(2,)) where {T<:AbstractFloat, TM<:AbstractMetric} = WelfordEstimator(TM(T, sz))

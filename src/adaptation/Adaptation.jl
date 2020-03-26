@@ -64,9 +64,9 @@ finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)
 ##
 include("stan_adaption.jl")
 
-export adapt!, initialize!, finalize!, reset!,
-       getϵ, NesterovDualAveraging,
-       getM⁻¹, UnitMassMatrix, WelfordVar, WelfordCov,
+export Adaptation, adapt!, initialize!, finalize!, reset!, getϵ, getM⁻¹,
+       NesterovDualAveraging,
+       UnitMassMatrix, WelfordVar, WelfordCov,
        NaiveHMCAdaptor, StanHMCAdaptor
 
 end # module
