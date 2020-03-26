@@ -52,13 +52,13 @@ function add_sample!(wv::WelfordVar, s::AbstractVecOrMat)
     @unpack δ, μ, M, n = wv
     δ .= s - μ
     μ .= μ + δ / n
-    M .= M + (s - μ) .* δ   # sum(abs2, δ) * (n - 1) / n
+    M .= M + δ .* δ * (n - 1) / n   # eqv. to `M + (s - μ) .* δ`
 end
 
 # https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
 function get_var(wv::WelfordVar{<:AbstractVecOrMat{T}}) where {T<:AbstractFloat}
     n, M = T(wv.n), wv.M
-    @assert n >= 2 "Cannot get covariance with only one sample"
+    @assert n >= 2 "Cannot get variance with only one sample"
     return (n / ((n + 5) * (n - 1))) .* M .+ T(1e-3) * (5 / (n + 5))
 end
 
@@ -113,13 +113,13 @@ function add_sample!(wc::WelfordCov, s::AbstractVector)
     @unpack δ, μ, n, M = wc
     δ .= s - μ
     μ .= μ + δ / n
-    M .= M + (s - μ) * δ'
+    M .= M + δ * δ' * (n - 1) / n   # eqv. to `M + (s - μ) * δ'
 end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/covar_adaptation.hpp
 function get_cov(wc::WelfordCov{T}) where {T<:AbstractFloat}
     n, M = T(wc.n), wc.M
-    @assert n >= 2 "Cannot get variance with only one sample"
+    @assert n >= 2 "Cannot get covariance with only one sample"
     return (n / ((n + 5) * (n - 1))) .* M + T(1e-3) * (5 / (n + 5)) * LinearAlgebra.I
 end
 
