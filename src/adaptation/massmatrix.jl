@@ -114,19 +114,19 @@ function reset!(wv::WelfordVar{<:AbstractVecOrMat{T}}) where {T<:AbstractFloat}
     wv.M .= zero(T)
 end
 
-function Base.push!(wv::WelfordVar, s::AbstractVecOrMat)
+function Base.push!(wv::WelfordVar, s::AbstractVecOrMat{T}) where {T}
     wv.n += 1
     @unpack δ, μ, M, n = wv
     δ .= s - μ
     μ .= μ + δ / n
-    M .= M + δ .* δ * (n - 1) / n   # eqv. to `M + (s - μ) .* δ`
+    M .= M + δ .* δ * (T(n - 1) / n)    # eqv. to `M + (s - μ) .* δ`
 end
 
 # https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
 function getest(wv::WelfordVar{<:AbstractVecOrMat{T}}) where {T<:AbstractFloat}
     @unpack n, M, var = wv
     @assert n >= 2 "Cannot estimate variance with only one sample"
-    return T(n) / ((n + 5) * (n - 1)) .* M .+ T(1e-3) * (5 / (n + 5))
+    return T(n) / ((n + 5) * (n - 1)) * M .+ T(1e-3) * (5 / (n + 5))
 end
 
 ## Dense mass matrix adaptor
@@ -212,17 +212,17 @@ function reset!(wc::WelfordCov{T}) where {T<:AbstractFloat}
     wc.M .= zero(T)
 end
 
-function Base.push!(wc::WelfordCov, s::AbstractVector)
+function Base.push!(wc::WelfordCov, s::AbstractVector{T}) where {T}
     wc.n += 1
     @unpack δ, μ, n, M = wc
     δ .= s - μ
     μ .= μ + δ / n
-    M .= M + δ * δ' * (n - 1) / n   # eqv. to `M + (s - μ) * δ'
+    M .= M + δ * δ' * (T(n - 1) / n)    # eqv. to `M + (s - μ) * δ'
 end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/covar_adaptation.hpp
 function getest(wc::WelfordCov{T}) where {T<:AbstractFloat}
     @unpack n, M, cov = wc
     @assert n >= 2 "Cannot get covariance with only one sample"
-    return T(n) / ((n + 5) * (n - 1)) .* M + T(1e-3) * (5 / (n + 5)) * LinearAlgebra.I
+    return T(n) / ((n + 5) * (n - 1)) * M + T(1e-3) * (5 / (n + 5)) * LinearAlgebra.I
 end
