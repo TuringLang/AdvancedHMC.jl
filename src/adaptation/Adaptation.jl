@@ -1,7 +1,7 @@
 module Adaptation
 
 using Random: GLOBAL_RNG, AbstractRNG
-using LinearAlgebra: LinearAlgebra, Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
+using LinearAlgebra: LinearAlgebra
 using Statistics: Statistics
 using Parameters: @unpack, @pack!
 
@@ -64,8 +64,9 @@ finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)
 ##
 include("stan_adaption.jl")
 
-export adapt!, initialize!, finalize!, getϵ, getM⁻¹, reset!, renew,
-       NesterovDualAveraging, WelfordEstimator, Preconditioner, NaiveHMCAdaptor, StanHMCAdaptor,
-       AbstractMetric, UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
+export adapt!, initialize!, finalize!, reset!,
+       getϵ, NesterovDualAveraging,
+       getM⁻¹, UnitMassMatrix, WelfordVar, WelfordCov,
+       NaiveHMCAdaptor, StanHMCAdaptor
 
 end # module

@@ -92,7 +92,7 @@ include("common.jl")
             collect(1:n_chains_max),
             time_mat;
             title="Scalabiliry of multiple chains",
-            name="matrix parallism",
+            name="vectorization",
             xlabel="Num of chains",
             ylabel="Time (s)"
         )

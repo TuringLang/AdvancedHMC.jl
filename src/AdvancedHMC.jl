@@ -1,7 +1,7 @@
 module AdvancedHMC
 
 using Statistics: mean, var, middle
-using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky
+using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
 using StatsFuns: logaddexp, logsumexp
 using Random: GLOBAL_RNG, AbstractRNG
 using ProgressMeter: ProgressMeter
@@ -52,13 +52,13 @@ end
 # r: momentum variables
 
 include("adaptation/Adaptation.jl")
-export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
-export NesterovDualAveraging, WelfordEstimator, Preconditioner, NaiveHMCAdaptor, StanHMCAdaptor
+export NesterovDualAveraging, NaiveHMCAdaptor, StanHMCAdaptor
 using .Adaptation
-
 using .Adaptation: AbstractScalarOrVec
 import .Adaptation: adapt!, NesterovDualAveraging
 
+include("metric.jl")
+export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric, WelfordEstimator
 include("hamiltonian.jl")
 export Hamiltonian
 include("integrator.jl")
