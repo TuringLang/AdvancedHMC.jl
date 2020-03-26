@@ -1,7 +1,5 @@
 module AdvancedHMC
 
-const DEBUG = Bool(parse(Int, get(ENV, "DEBUG_AHMC", "0")))
-
 using Statistics: mean, var, middle
 using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky
 using StatsFuns: logaddexp, logsumexp

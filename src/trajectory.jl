@@ -633,7 +633,7 @@ function find_good_eps(
         ϵ′ = direction == 1 ? d * ϵ : 1 / d * ϵ
         z′, H′ = A(h, z, ϵ)
         ΔH = H - H′
-        DEBUG && @debug "Crossing step" direction H′ ϵ "α = $(min(1, exp(ΔH)))"
+        @debug "Crossing step" direction H′ ϵ "α = $(min(1, exp(ΔH)))"
         if (direction == 1) && !(ΔH > log(a_cross))
             break
         elseif (direction == -1) && !(ΔH < log(a_cross))
@@ -657,7 +657,7 @@ function find_good_eps(
         ϵ_mid = middle(ϵ, ϵ′)
         z′, H′ = A(h, z, ϵ_mid)
         ΔH = H - H′
-        DEBUG && @debug "Bisection step" H′ ϵ_mid "α = $(min(1, exp(ΔH)))"
+        @debug "Bisection step" H′ ϵ_mid "α = $(min(1, exp(ΔH)))"
         if (exp(ΔH) > a_max)
             ϵ = ϵ_mid
         elseif (exp(ΔH) < a_min)
