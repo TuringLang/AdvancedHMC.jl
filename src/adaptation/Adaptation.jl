@@ -1,6 +1,6 @@
 module Adaptation
+export Adaptation
 
-using Random: GLOBAL_RNG, AbstractRNG
 using LinearAlgebra: LinearAlgebra
 using Statistics: Statistics
 using Parameters: @unpack, @pack!
@@ -8,65 +8,52 @@ using Parameters: @unpack, @pack!
 const AbstractScalarOrVec{T} = Union{T,AbstractVector{T}} where {T<:AbstractFloat}
 
 abstract type AbstractAdaptor end
-
-##
-## Interface for adaptors
-##
-
-getM⁻¹(adaptor::T) where {T<:AbstractAdaptor} = error("`getM⁻¹(adaptor::$T)` is not implemented.")
-getϵ(adaptor::T) where {T<:AbstractAdaptor} = error("`getϵ(adaptor::$T)` is not implemented.")
-adapt!(
-    adaptor::T,
-    θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat}
-) where {T<:AbstractAdaptor} = error("`adapt!(adaptor::$T, θ::AbstractVecOrMat{<:AbstractFloat}, α::AbstractScalarOrVec{<:AbstractFloat})` is not implemented.")
-reset!(adaptor::T) where {T<:AbstractAdaptor} = error("`reset!(adaptor::$T)` is not implemented.")
-initialize!(adaptor::T, n_adapts::Int) where {T<:AbstractAdaptor} = throw(MethodError(initialize!, adaptor, n_adapts))
-finalize!(adaptor::T) where {T<:AbstractAdaptor} = error("`finalize!(adaptor::$T)` is not implemented.")
+function getM⁻¹ end
+function getϵ end
+function adapt! end
+function reset! end
+function initialize! end
+function finalize! end
+export AbstractAdaptor, adapt!, initialize!, finalize!, reset!, getϵ, getM⁻¹
 
 struct NoAdaptation <: AbstractAdaptor end
-
+export NoAdaptation
 include("stepsize.jl")
+export StepSizeAdaptor, NesterovDualAveraging
 include("massmatrix.jl")
+export MassMatrixAdaptor, UnitMassMatrix, WelfordVar, WelfordCov
+include("composite.jl")
+export CompositeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor
 
-# TODO: implement consensus adaptor
+# User helpers for AdvancedHMC
 
-##
-## Compositional adaptor
-## TODO: generalise this to a list of adaptors
-##
+using ..AdvancedHMC: 
+    AbstractIntegrator, nom_step_size,
+    AbstractMetric, UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
 
-struct NaiveHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
-    pc  :: M
-    ssa :: Tssa
-end
-Base.show(io::IO, a::NaiveHMCAdaptor) = print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
+StepSizeAdaptor(δ::AbstractFloat, i::AbstractIntegrator) = 
+    NesterovDualAveraging(δ, nom_step_size(i))
 
-getM⁻¹(aca::NaiveHMCAdaptor) = getM⁻¹(aca.pc)
-getϵ(aca::NaiveHMCAdaptor) = getϵ(aca.ssa)
-function adapt!(
-    nca::NaiveHMCAdaptor,
-    θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat}
-)
-    adapt!(nca.ssa, θ, α)
-    adapt!(nca.pc, θ, α)
-end
-function reset!(aca::NaiveHMCAdaptor)
-    reset!(aca.ssa)
-    reset!(aca.pc)
-end
-initialize!(adaptor::NaiveHMCAdaptor, n_adapts::Int) = nothing
-finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)
+@deprecate NesterovDualAveraging(δ, i::AbstractIntegrator) StepSizeAdaptor(δ, i)
 
-##
-## Stan's windowed adaptor.
-##
-include("stan_adaption.jl")
+MassMatrixAdaptor(m::UnitEuclideanMetric{T}) where {T} = 
+    UnitMassMatrix(T)
+MassMatrixAdaptor(m::DiagEuclideanMetric{T}) where {T} = 
+    WelfordVar(T, size(m); var=copy(m.M⁻¹))
+MassMatrixAdaptor(m::DenseEuclideanMetric{T}) where {T} = 
+    WelfordCov(T, size(m); cov=copy(m.M⁻¹))
 
-export Adaptation, adapt!, initialize!, finalize!, reset!, getϵ, getM⁻¹,
-       NesterovDualAveraging,
-       UnitMassMatrix, WelfordVar, WelfordCov,
-       NaiveHMCAdaptor, StanHMCAdaptor
+@deprecate Preconditioner(m::AbstractMatrix) MassMatrixAdaptor(m)
+
+MassMatrixAdaptor(
+    m::Type{TM}, 
+    sz::Tuple{Vararg{Int}}=(2,)
+) where {TM<:AbstractMetric} = MassMatrixAdaptor(Float64, m, sz)
+
+MassMatrixAdaptor(
+    ::Type{T}, 
+    ::Type{TM}, 
+    sz::Tuple{Vararg{Int}}=(2,)
+) where {T, TM<:AbstractMetric} = MassMatrixAdaptor(TM(T, sz))
 
 end # module

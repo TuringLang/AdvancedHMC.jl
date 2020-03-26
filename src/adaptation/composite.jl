@@ -52,8 +52,41 @@ end
 ### Adaptors ###
 ################
 
+abstract type CompositeAdaptor <: AbstractAdaptor end
+
+getM⁻¹(ca::CompositeAdaptor) = getM⁻¹(ca.pc)
+getϵ(ca::CompositeAdaptor) = getϵ(ca.ssa)
+
+# TODO: implement consensus adaptor
+
+##
+## Compositional adaptor
+## TODO: generalise this to a list of adaptors
+##
+
+struct NaiveHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: CompositeAdaptor
+    pc  :: M
+    ssa :: Tssa
+end
+Base.show(io::IO, a::NaiveHMCAdaptor) = print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
+
+function adapt!(
+    nca::NaiveHMCAdaptor,
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::AbstractScalarOrVec{<:AbstractFloat}
+)
+    adapt!(nca.ssa, θ, α)
+    adapt!(nca.pc, θ, α)
+end
+function reset!(aca::NaiveHMCAdaptor)
+    reset!(aca.ssa)
+    reset!(aca.pc)
+end
+initialize!(adaptor::NaiveHMCAdaptor, n_adapts::Int) = nothing
+finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)
+
 # Acknowledgement: this adaption settings is mimicing Stan's 3-phase adaptation.
-struct StanHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
+struct StanHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: CompositeAdaptor
     pc          :: M
     ssa         :: Tssa
     init_buffer :: Int
@@ -74,8 +107,6 @@ function StanHMCAdaptor(
     return StanHMCAdaptor(pc, ssa, init_buffer, term_buffer, window_size, StanHMCAdaptorState())
 end
 
-getM⁻¹(adaptor::StanHMCAdaptor) = getM⁻¹(adaptor.pc)
-getϵ(adaptor::StanHMCAdaptor)   = getϵ(adaptor.ssa)
 function initialize!(adaptor::StanHMCAdaptor, n_adapts::Int)
     initialize!(adaptor.state, adaptor.init_buffer, adaptor.term_buffer, adaptor.window_size, n_adapts)
     return adaptor

@@ -1,3 +1,27 @@
+# Update of hamiltonian and proposal
+
+Parameters.reconstruct(h::Hamiltonian, ::AbstractAdaptor) = h
+function Parameters.reconstruct(h::Hamiltonian, adaptor::Union{MassMatrixAdaptor, CompositeAdaptor})
+    metric = renew(h.metric, getM⁻¹(adaptor))
+    return reconstruct(h, metric=metric)
+end
+
+Parameters.reconstruct(τ::AbstractProposal, ::AbstractAdaptor) = τ
+function Parameters.reconstruct(τ::AbstractProposal, adaptor::Union{StepSizeAdaptor, CompositeAdaptor})
+    # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
+    integrator = reconstruct(τ.integrator, ϵ=getϵ(adaptor))
+    return reconstruct(τ, integrator=integrator)
+end
+
+function resize(h::Hamiltonian, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
+    metric = h.metric
+    if size(metric) != size(θ)
+        metric = typeof(metric)(size(θ))
+        h = reconstruct(h, metric=metric)
+    end
+    return h
+end
+
 ##
 ## Interface functions
 ##
@@ -8,7 +32,7 @@ function sample_init(
     θ::AbstractVecOrMat{<:AbstractFloat}
 )
     # Ensure h.metric has the same dim as θ.
-    h = update(h, θ)
+    h = resize(h, θ)
     # Initial transition
     t = Transition(phasepoint(rng, θ, h), NamedTuple())
     return h, t
@@ -40,7 +64,7 @@ Adaptation.adapt!(
 function Adaptation.adapt!(
     h::Hamiltonian,
     τ::AbstractProposal,
-    adaptor::Adaptation.AbstractAdaptor,
+    adaptor::AbstractAdaptor,
     i::Int,
     n_adapts::Int,
     θ::AbstractVecOrMat{<:AbstractFloat},
@@ -51,7 +75,8 @@ function Adaptation.adapt!(
         i == 1 && Adaptation.initialize!(adaptor, n_adapts)
         adapt!(adaptor, θ, α)
         i == n_adapts && finalize!(adaptor)
-        h, τ = update(h, τ, adaptor)
+        h = reconstruct(h, adaptor)
+        τ = reconstruct(τ, adaptor)
         isadapted = true
     end
     return h, τ, isadapted
@@ -78,7 +103,7 @@ sample(
     τ::AbstractProposal,
     θ::AbstractVecOrMat{<:AbstractFloat},
     n_samples::Int,
-    adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
+    adaptor::AbstractAdaptor=NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
     drop_warmup=false,
     verbose::Bool=true,
@@ -105,7 +130,7 @@ sample(
         τ::AbstractProposal,
         θ::AbstractVecOrMat{T},
         n_samples::Int,
-        adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
+        adaptor::AbstractAdaptor=NoAdaptation(),
         n_adapts::Int=min(div(n_samples, 10), 1_000);
         drop_warmup::Bool=false,
         verbose::Bool=true,
@@ -128,7 +153,7 @@ function sample(
     τ::AbstractProposal,
     θ::T,
     n_samples::Int,
-    adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
+    adaptor::AbstractAdaptor=NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
     drop_warmup=false,
     verbose::Bool=true,
