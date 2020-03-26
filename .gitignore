@@ -1,2 +1,3 @@
 .vscode
 Manifest.toml
+test/Project.toml

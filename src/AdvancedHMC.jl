@@ -53,7 +53,7 @@ end
 
 include("adaptation/Adaptation.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
-export NesterovDualAveraging, Preconditioner, NaiveHMCAdaptor, StanHMCAdaptor
+export NesterovDualAveraging, WelfordEstimator, Preconditioner, NaiveHMCAdaptor, StanHMCAdaptor
 using .Adaptation
 
 using .Adaptation: AbstractScalarOrVec

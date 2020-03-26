@@ -714,7 +714,7 @@ end
 function update(
     h::Hamiltonian,
     τ::AbstractProposal,
-    pc::Adaptation.AbstractPreconditioner,
+    pc::Adaptation.MassMatrixAdaptor,
 )
     metric = renew(h.metric, getM⁻¹(pc))
     h = reconstruct(h, metric=metric)

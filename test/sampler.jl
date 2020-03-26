@@ -65,21 +65,21 @@ end
                 end
 
                 @testset "$adaptorsym" for (adaptorsym, adaptor) in Dict(
-                    :PreconditionerOnly => Preconditioner(metric),
+                    :WelfordEstimatorOnly => WelfordEstimator(metric),
                     :NesterovDualAveragingOnly => NesterovDualAveraging(0.8, τ.integrator),
                     :NaiveHMCAdaptor => NaiveHMCAdaptor(
-                        Preconditioner(metric),
+                        WelfordEstimator(metric),
                         NesterovDualAveraging(0.8, τ.integrator),
                     ),
                     :StanHMCAdaptor => StanHMCAdaptor(
-                        Preconditioner(metric),
+                        WelfordEstimator(metric),
                         NesterovDualAveraging(0.8, τ.integrator),
                     ),
                 )
                     Random.seed!(1)
-                    # For `Preconditioner`, we use the pre-defined step size as the method cannot adapt the step size.
+                    # For `WelfordEstimator`, we use the pre-defined step size as the method cannot adapt the step size.
                     # For other adapatation methods that are able to adpat the step size, we use `find_good_eps`.
-                    τ_used = adaptorsym == :PreconditionerOnly ? τ : reconstruct(τ, integrator=reconstruct(lf, ϵ=find_good_eps(h, θ_init)))
+                    τ_used = adaptorsym == :WelfordEstimatorOnly ? τ : reconstruct(τ, integrator=reconstruct(lf, ϵ=find_good_eps(h, θ_init)))
                     samples, stats = sample(h, τ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
                     @test mean(samples) ≈ zeros(D) atol=RNDATOL
                     test_stats(τ_used, stats, n_adapts)
@@ -94,7 +94,7 @@ end
     h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
     τ = NUTS(Leapfrog(ϵ))
     adaptor = StanHMCAdaptor(
-        Preconditioner(metric),
+        WelfordEstimator(metric),
         NesterovDualAveraging(0.8, τ.integrator),
     )
     samples, stats = sample(h, τ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false, drop_warmup=true)

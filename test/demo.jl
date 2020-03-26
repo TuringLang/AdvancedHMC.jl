@@ -16,7 +16,7 @@ metric = DiagEuclideanMetric(D)
 hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  # or, Hamiltonian(metric, ℓπ, ∂ℓπ∂θ) for hand-coded gradient ∂ℓπ∂θ
 integrator = Leapfrog(find_good_eps(hamiltonian, θ₀))
 proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
-adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, integrator))
+adaptor = StanHMCAdaptor(WelfordEstimator(metric), NesterovDualAveraging(0.8, integrator))
 
 # Draw samples via simulating Hamiltonian dynamics
 # - `samples` will store the samples

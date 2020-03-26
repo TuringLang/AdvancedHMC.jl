@@ -25,8 +25,8 @@ If you are interested in using `AdvancedHMC.jl` through a probabilistic programm
 
 using AdvancedHMC, Distributions, ForwardDiff
 
-# Choose parameter dimentionality and initial parameter value
-D = 10; initial_θ = rand(D)   
+# Choose parameter dimensionality and initial parameter value
+D = 10; initial_θ = rand(D)
 
 # Define the target distribution
 ℓπ(θ) = logpdf(MvNormal(zeros(D), ones(D)), θ)

@@ -1,9 +1,8 @@
 module Adaptation
 
-import Base: string, rand
 using Random: GLOBAL_RNG, AbstractRNG
-using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
-import LinearAlgebra, Statistics
+using LinearAlgebra: LinearAlgebra, Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
+using Statistics: Statistics
 using Parameters: @unpack, @pack!
 
 const AbstractScalarOrVec{T} = Union{T,AbstractVector{T}} where {T<:AbstractFloat}
@@ -28,7 +27,7 @@ finalize!(adaptor::T) where {T<:AbstractAdaptor} = error("`finalize!(adaptor::$T
 struct NoAdaptation <: AbstractAdaptor end
 
 include("stepsize.jl")
-include("precond.jl")
+include("massmatrix.jl")
 
 # TODO: implement consensus adaptor
 
@@ -37,7 +36,7 @@ include("precond.jl")
 ## TODO: generalise this to a list of adaptors
 ##
 
-struct NaiveHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
+struct NaiveHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
     pc  :: M
     ssa :: Tssa
 end
@@ -66,9 +65,7 @@ finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)
 include("stan_adaption.jl")
 
 export adapt!, initialize!, finalize!, getϵ, getM⁻¹, reset!, renew,
-       NesterovDualAveraging,
-       UnitPreconditioner, DiagPreconditioner, DensePreconditioner,
-       AbstractMetric, UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric,
-       Preconditioner, NaiveHMCAdaptor, StanHMCAdaptor
+       NesterovDualAveraging, WelfordEstimator, Preconditioner, NaiveHMCAdaptor, StanHMCAdaptor,
+       AbstractMetric, UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
 
 end # module

@@ -53,7 +53,7 @@ end
 ################
 
 # Acknowledgement: this adaption settings is mimicing Stan's 3-phase adaptation.
-struct StanHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
+struct StanHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
     pc          :: M
     ssa         :: Tssa
     init_buffer :: Int
@@ -70,7 +70,7 @@ function StanHMCAdaptor(
     init_buffer::Int=75,
     term_buffer::Int=50,
     window_size::Int=25
-) where {M<:AbstractPreconditioner}
+) where {M<:MassMatrixAdaptor}
     return StanHMCAdaptor(pc, ssa, init_buffer, term_buffer, window_size, StanHMCAdaptorState())
 end
 

@@ -35,14 +35,14 @@ include("common.jl")
         @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL * n_chains
         # Adaptation
         for adaptor in [
-            Preconditioner(metric),
+            WelfordEstimator(metric),
             NesterovDualAveraging(0.8, lfi.ϵ),
             NaiveHMCAdaptor(
-                Preconditioner(metric),
+                WelfordEstimator(metric),
                 NesterovDualAveraging(0.8, lfi.ϵ),
             ),
             StanHMCAdaptor(
-                Preconditioner(metric),
+                WelfordEstimator(metric),
                 NesterovDualAveraging(0.8, lfi.ϵ),
             ),
         ]
