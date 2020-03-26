@@ -9,6 +9,7 @@ end
 Parameters.reconstruct(τ::AbstractProposal, ::AbstractAdaptor) = τ
 function Parameters.reconstruct(τ::AbstractProposal, adaptor::Union{StepSizeAdaptor, CompositeAdaptor})
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
+    # FIXME: this is buggy for `JitteredLeapfrog`
     integrator = reconstruct(τ.integrator, ϵ=getϵ(adaptor))
     return reconstruct(τ, integrator=integrator)
 end
