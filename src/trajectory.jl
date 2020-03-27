@@ -245,9 +245,24 @@ function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMat
     return z
 end
 
-function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
-    zs = step(τ.integrator, h, z, τ.n_steps; res=[z for _ in 1:abs(τ.n_steps)])
-    ℓws = -energy.(zs)
+function randcat(rng::AbstractRNG, Z::PhasePoint, unnorm_ℓp::AbstractVector)
+    i = randcat_logp(rng, unnorm_ℓp)
+    return PhasePoint(
+        Z.θ[:,i],
+        Z.r[:,i],
+        DualValue(Z.ℓπ.value[i], Z.ℓπ.gradient[:,i]),
+        DualValue(Z.ℓκ.value[i], Z.ℓκ.gradient[:,i]),
+    )
+end
+
+function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z::T) where {T}
+    zs = step(τ.integrator, h, z, τ.n_steps; res=Vector{T}(undef, abs(τ.n_steps)))
+    pushfirst!(zs, z)
+    if zs isa Vector
+        ℓws = -energy.(zs)
+    else
+        ℓws = -energy(zs)
+    end
     if eltype(ℓws) <: AbstractVector
         ℓws = hcat(ℓws...)
     end

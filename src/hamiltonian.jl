@@ -23,7 +23,14 @@ struct DualValue{V<:AbstractScalarOrVec{<:AbstractFloat}, G<:AbstractVecOrMat{<:
     end
 end
 
-Base.similar(dv::DualValue{<:AbstractVector}) = DualValue(similar(dv.value), similar(dv.gradient))
+Base.similar(dv::DualValue{<:AbstractVector}, args...) =
+    DualValue(similar(dv.value, size(dv.value)..., args...), similar(dv.gradient, size(dv.gradient)..., args...))
+
+function Base.similar(dv::DualValue{<:AbstractFloat}, n::Int)
+    value = zeros(eltype(dv.value), n)
+    gradient = zeros(eltype(dv.gradient), size(dv.gradient)..., n)
+    return DualValue(value, gradient)
+end
 
 # `∂H∂θ` now returns `(logprob, -∂ℓπ∂θ)`
 function ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat)
@@ -51,7 +58,13 @@ struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
     end
 end
 
-Base.similar(z::PhasePoint{<:AbstractMatrix}) = PhasePoint(similar(z.θ), similar(z.r), similar(z.ℓπ), similar(z.ℓκ))
+Base.similar(z::PhasePoint, args...) =
+    PhasePoint(
+        zeros(eltype(z.θ), size(z.θ)..., args...),
+        zeros(eltype(z.r), size(z.r)..., args...),
+        similar(z.ℓπ, args...),
+        similar(z.ℓκ, args...)
+    )
 
 phasepoint(
     h::Hamiltonian,
