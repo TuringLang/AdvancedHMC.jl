@@ -23,14 +23,11 @@ struct DualValue{V<:AbstractScalarOrVec{<:AbstractFloat}, G<:AbstractVecOrMat{<:
     end
 end
 
-Base.similar(dv::DualValue{<:AbstractVector}, args...) =
-    DualValue(similar(dv.value, size(dv.value)..., args...), similar(dv.gradient, size(dv.gradient)..., args...))
+Base.similar(dv::DualValue{<:AbstractVector{T}}, args...) where {T<:AbstractFloat} =
+    DualValue(zeros(T, size(dv.value)..., args...), zeros(T, size(dv.gradient)..., args...))
 
-function Base.similar(dv::DualValue{<:AbstractFloat}, n::Int)
-    value = zeros(eltype(dv.value), n)
-    gradient = zeros(eltype(dv.gradient), size(dv.gradient)..., n)
-    return DualValue(value, gradient)
-end
+Base.similar(dv::DualValue{T}, n::Int) where {T<:AbstractFloat} = 
+    DualValue(zeros(T, n), zeros(T, size(dv.gradient)..., n))
 
 # `∂H∂θ` now returns `(logprob, -∂ℓπ∂θ)`
 function ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat)
@@ -78,12 +75,12 @@ phasepoint(
 # move the momentum variable to that of the position variable.
 # This is needed for AHMC to work with CuArrays (without depending on it).
 phasepoint(
-    h::Hamiltonian,
-    θ::T1,
-    _r::T2;
-    r=T1(_r),
-    ℓπ=∂H∂θ(h, θ),
-    ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, r))
+    h::Hamiltonian, θ::T1, _r::T2;
+    ℓπ = ∂H∂θ(h, θ),
+    ℓκ = (
+        r = T1 == T2 ? _r : T1(_r); 
+        DualValue(neg_energy(h, r, θ), ∂H∂r(h, r))
+    ),
 ) where {T1<:AbstractVecOrMat,T2<:AbstractVecOrMat} = PhasePoint(θ, r, ℓπ, ℓκ)
 
 Base.isfinite(v::DualValue) = all(isfinite, v.value) && all(isfinite, v.gradient)

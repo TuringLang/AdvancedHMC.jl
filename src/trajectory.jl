@@ -257,7 +257,6 @@ end
 
 function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z::T) where {T}
     zs = step(τ.integrator, h, z, τ.n_steps; res=Vector{T}(undef, abs(τ.n_steps)))
-    pushfirst!(zs, z)
     if zs isa Vector
         ℓws = -energy.(zs)
     else
