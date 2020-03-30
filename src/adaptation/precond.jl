@@ -94,7 +94,7 @@ function WelfordVar(
     return WelfordVar(0, n_min, zeros(T, sz), zeros(T, sz), zeros(T, sz), var)
 end
 
-WelfordVar(sz::Tuple{Vararg{Int}}; kwargs...) = WelfordVar(Float64, sz; kwargs...)
+WelfordVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...) = WelfordVar{Float64}(sz; kwargs...)
 
 function Base.resize!(wv::WelfordVar, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
     if size(θ) != size(wv.var)
