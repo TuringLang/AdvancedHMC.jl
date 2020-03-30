@@ -63,7 +63,6 @@ NaiveVar(::Type{T}, sz::Tuple{Int,Int}) where {T<:AbstractFloat} = NaiveVar(0, V
 NaiveVar(sz::Tuple{Vararg{Int}}; kwargs...) = NaiveVar(Float64, sz; kwargs...)
 
 function Base.push!(nv::NaiveVar, s::AbstractVecOrMat)
-    nv.n += 1
     push!(nv.S, s)
 end
 
