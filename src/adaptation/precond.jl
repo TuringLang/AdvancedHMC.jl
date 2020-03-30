@@ -67,7 +67,7 @@ function Base.push!(nv::NaiveVar, s::AbstractVecOrMat)
 end
 
 function reset!(nv::NaiveVar)
-    nv.S = T()
+    resize!(nv.S, 0)
 end
 
 function getest(nv::NaiveVar)
