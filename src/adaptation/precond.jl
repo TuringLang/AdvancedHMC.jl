@@ -66,7 +66,7 @@ function Base.push!(nv::NaiveVar, s::AbstractVecOrMat)
     push!(nv.S, s)
 end
 
-function reset!(nv::NaiveVar{T}) where {T}
+function reset!(nv::NaiveVar)
     nv.S = T()
 end
 
