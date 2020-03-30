@@ -4,8 +4,8 @@
 
 abstract type MassMatrixAdaptor <: AbstractAdaptor end
 
-initialize!(adaptor::T, n_adapts::Int) where {T<:MassMatrixAdaptor} = nothing
-finalize!(adaptor::T) where {T<:MassMatrixAdaptor} = nothing
+initialize!(::MassMatrixAdaptor, ::Int) = nothing
+finalize!(::MassMatrixAdaptor) = nothing
 
 ## Unit mass matrix adaptor
 
