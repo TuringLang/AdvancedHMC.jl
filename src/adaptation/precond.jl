@@ -13,7 +13,7 @@ struct UnitMassMatrix{T<:AbstractFloat} <: MassMatrixAdaptor end
 
 Base.show(io::IO, ::UnitMassMatrix) = print(io, "UnitMassMatrix")
 
-UnitMassMatrix(::Type{T}=Float64) where {T} = UnitMassMatrix{T}()
+UnitMassMatrix() = UnitMassMatrix{Float64}()
 
 Base.string(::UnitMassMatrix) = "I"
 
