@@ -41,7 +41,7 @@ MassMatrixAdaptor(m::UnitEuclideanMetric{T}) where {T} =
 MassMatrixAdaptor(m::DiagEuclideanMetric{T}) where {T} = 
     WelfordVar{T}(size(m); var=copy(m.M⁻¹))
 MassMatrixAdaptor(m::DenseEuclideanMetric{T}) where {T} = 
-    WelfordCov(T, size(m); cov=copy(m.M⁻¹))
+    WelfordCov{T}(size(m); cov=copy(m.M⁻¹))
 
 @deprecate Preconditioner(m::AbstractMatrix) MassMatrixAdaptor(m)
 
