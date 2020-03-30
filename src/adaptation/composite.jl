@@ -94,12 +94,12 @@ Base.show(io::IO, a::StanHMCAdaptor) =
     print(io, "StanHMCAdaptor(\n    pc=$(a.pc),\n    ssa=$(a.ssa),\n    init_buffer=$(a.init_buffer), term_buffer=$(a.term_buffer), window_size=$(a.window_size),\n    state=$(a.state)\n)")
 
 function StanHMCAdaptor(
-    pc::M,
+    pc::MassMatrixAdaptor,
     ssa::StepSizeAdaptor;
     init_buffer::Int=75,
     term_buffer::Int=50,
     window_size::Int=25
-) where {M<:MassMatrixAdaptor}
+)
     return StanHMCAdaptor(pc, ssa, init_buffer, term_buffer, window_size, StanHMCAdaptorState())
 end
 
