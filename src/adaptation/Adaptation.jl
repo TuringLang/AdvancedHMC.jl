@@ -37,7 +37,7 @@ StepSizeAdaptor(δ::AbstractFloat, i::AbstractIntegrator) =
 @deprecate NesterovDualAveraging(δ, i::AbstractIntegrator) StepSizeAdaptor(δ, i)
 
 MassMatrixAdaptor(m::UnitEuclideanMetric{T}) where {T} = 
-    UnitMassMatrix(T)
+    UnitMassMatrix{T}()
 MassMatrixAdaptor(m::DiagEuclideanMetric{T}) where {T} = 
     WelfordVar(T, size(m); var=copy(m.M⁻¹))
 MassMatrixAdaptor(m::DenseEuclideanMetric{T}) where {T} = 
