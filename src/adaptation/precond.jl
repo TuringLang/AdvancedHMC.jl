@@ -141,7 +141,7 @@ function update!(ce::CovEstimator)
 end
 
 # NOTE: This naive covariance estimator is used only in testing.
-mutable struct NaiveCov{F<:AbstractFloat, T<:AbstractVector{<:AbstractVector{F}}} <: CovEstimator{T}
+struct NaiveCov{F<:AbstractFloat, T<:AbstractVector{<:AbstractVector{F}}} <: CovEstimator{T}
     S :: T
     NaiveCov(S::E) where {E} = new{eltype(eltype(E)), E}(S)
 end
