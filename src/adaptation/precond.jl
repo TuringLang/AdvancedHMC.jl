@@ -7,6 +7,17 @@ abstract type MassMatrixAdaptor <: AbstractAdaptor end
 initialize!(::MassMatrixAdaptor, ::Int) = nothing
 finalize!(::MassMatrixAdaptor) = nothing
 
+function adapt!(
+    adaptor::MassMatrixAdaptor,
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::AbstractScalarOrVec{<:AbstractFloat},
+    is_update::Bool=true
+)
+    resize!(adaptor, θ)
+    push!(adaptor, θ)
+    is_update && update!(adaptor)
+end
+
 ## Unit mass matrix adaptor
 
 struct UnitMassMatrix{T<:AbstractFloat} <: MassMatrixAdaptor end
@@ -38,17 +49,8 @@ getM⁻¹(ve::VarEstimator) = ve.var
 
 Base.string(ve::VarEstimator) = string(getM⁻¹(ve))
 
-function adapt!(
-    ve::VarEstimator,
-    θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat},
-    is_update::Bool=true
-)
-    resize!(ve, θ)
-    push!(ve, θ)
-    if ve.n >= ve.n_min && is_update
-        ve.var .= getest(ve)
-    end
+function update!(ve::VarEstimator)
+    ve.n >= ve.n_min && (ve.var .= getest(ve))
 end
 
 # NOTE: this naive variance estimator is used only in testing
@@ -134,17 +136,8 @@ getM⁻¹(ce::CovEstimator) = ce.cov
 
 Base.string(ce::CovEstimator) = string(LinearAlgebra.diag(getM⁻¹(ce)))
 
-function adapt!(
-    ce::CovEstimator,
-    θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat},
-    is_update::Bool=true
-)
-    resize!(ce, θ)
-    push!(ce, θ)
-    if ce.n >= ce.n_min && is_update
-        ce.cov .= getest(ce)
-    end
+function update!(ce::CovEstimator)
+    ce.n >= ce.n_min && (ce.cov .= getest(ce))
 end
 
 # NOTE: This naive covariance estimator is used only in testing.
