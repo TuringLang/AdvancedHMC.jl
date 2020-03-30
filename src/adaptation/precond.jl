@@ -60,7 +60,7 @@ end
 NaiveVar{T}(sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveVar(Vector{Vector{T}}())
 NaiveVar{T}(sz::Tuple{Int,Int}) where {T<:AbstractFloat} = NaiveVar(Vector{Matrix{T}}())
 
-NaiveVar(sz::Tuple{Vararg{Int}}; kwargs...) = NaiveVar(Float64, sz; kwargs...)
+NaiveVar(sz::Union{Tuple{Int},Tuple{Int,Int}}) = NaiveVar{Float64}(sz)
 
 function Base.push!(nv::NaiveVar, s::AbstractVecOrMat)
     push!(nv.S, s)
