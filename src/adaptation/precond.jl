@@ -52,49 +52,48 @@ function adapt!(
 end
 
 # NOTE: this naive variance estimator is used only in testing
-struct NaiveVar{S<:AbstractFloat,T<:AbstractVector{<:AbstractVecOrMat{S}}} <: VarEstimator{T}
-    n :: Int
-    S :: T
+struct NaiveVar{T<:AbstractFloat, E<:AbstractVector{<:AbstractVecOrMat{T}}} <: VarEstimator{T}
+    S :: E
+    NaiveVar(S::E) where {E} = new{eltype(eltype(E)), E}(S)
 end
 
 NaiveVar{T}(sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveVar(Vector{Vector{T}}())
 NaiveVar{T}(sz::Tuple{Int,Int}) where {T<:AbstractFloat} = NaiveVar(Vector{Matrix{T}}())
 
-NaiveVar(sz::Union{Tuple{Int},Tuple{Int,Int}}) = NaiveVar{Float64}(sz)
+NaiveVar(sz::Union{Tuple{Int}, Tuple{Int,Int}}) = NaiveVar{Float64}(sz)
 
-function Base.push!(nv::NaiveVar, s::AbstractVecOrMat)
-    push!(nv.S, s)
-end
+Base.push!(nv::NaiveVar, s::AbstractVecOrMat) = push!(nv.S, s)
 
-function reset!(nv::NaiveVar)
-    resize!(nv.S, 0)
-end
+reset!(nv::NaiveVar) = resize!(nv.S, 0)
 
 function getest(nv::NaiveVar)
-    @assert nv.n >= 2 "Cannot estimate variance with only one sample"
+    @assert length(nv.S) >= 2 "Cannot estimate variance with only one sample"
     return Statistics.var(nv.S)
 end
 
 # Ref： https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_var_estimator.hpp
-mutable struct WelfordVar{T<:AbstractVecOrMat{<:AbstractFloat}} <: VarEstimator{T}
+mutable struct WelfordVar{T<:AbstractFloat, E<:AbstractVecOrMat{T}} <: VarEstimator{T}
     n     :: Int
     n_min :: Int
-    μ     :: T
-    M     :: T
-    δ     :: T    # cache for diff
-    var   :: T    # cache for variance
+    μ     :: E
+    M     :: E
+    δ     :: E    # cache for diff
+    var   :: E    # cache for variance
+    function WelfordVar(n, n_min, args::E...) where {E}
+        return new{eltype(E), E}(n, n_min, args...)
+    end
 end
 
 Base.show(io::IO, ::WelfordVar) = print(io, "WelfordVar")
 
-function WelfordVar(
-    ::Type{T}, sz::Union{Tuple{Int},Tuple{Int,Int}}; 
+function WelfordVar{T}(
+    sz::Union{Tuple{Int}, Tuple{Int,Int}}; 
     n_min::Int=10, var=ones(T, sz)
 ) where {T<:AbstractFloat}
     return WelfordVar(0, n_min, zeros(T, sz), zeros(T, sz), zeros(T, sz), var)
 end
 
-WelfordVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...) = WelfordVar{Float64}(sz; kwargs...)
+WelfordVar(sz::Union{Tuple{Int}, Tuple{Int,Int}}; kwargs...) = WelfordVar{Float64}(sz; kwargs...)
 
 function Base.resize!(wv::WelfordVar, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
     if size(θ) != size(wv.var)
@@ -106,7 +105,7 @@ function Base.resize!(wv::WelfordVar, θ::AbstractVecOrMat{T}) where {T<:Abstrac
     end
 end
 
-function reset!(wv::WelfordVar{<:AbstractVecOrMat{T}}) where {T<:AbstractFloat}
+function reset!(wv::WelfordVar{T}) where {T<:AbstractFloat}
     wv.n = 0
     wv.μ .= zero(T)
     wv.M .= zero(T)
@@ -121,7 +120,7 @@ function Base.push!(wv::WelfordVar, s::AbstractVecOrMat{T}) where {T}
 end
 
 # https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
-function getest(wv::WelfordVar{<:AbstractVecOrMat{T}}) where {T<:AbstractFloat}
+function getest(wv::WelfordVar{T}) where {T<:AbstractFloat}
     @unpack n, M, var = wv
     @assert n >= 2 "Cannot estimate variance with only one sample"
     return T(n) / ((n + 5) * (n - 1)) * M .+ T(1e-3) * (5 / (n + 5))
@@ -149,50 +148,44 @@ function adapt!(
 end
 
 # NOTE: This naive covariance estimator is used only in testing.
-mutable struct NaiveCov{T<:AbstractVector{<:AbstractVector{<:AbstractFloat}}} <: CovEstimator{T}
-    n :: Int
+mutable struct NaiveCov{F<:AbstractFloat, T<:AbstractVector{<:AbstractVector{F}}} <: CovEstimator{T}
     S :: T
+    NaiveCov(S::E) where {E} = new{eltype(eltype(E)), E}(S)
 end
 
-NaiveCov(::Type{T}, sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveCov(0, Vector{Vector{T}}())
+NaiveCov{T}(sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveCov(Vector{Vector{T}}())
 
-NaiveCov(sz::Tuple{Vararg{Int}}; kwargs...) = NaiveCov(Float64, sz; kwargs...)
+NaiveCov(sz::Union{Tuple{Int}, Tuple{Int,Int}}; kwargs...) = NaiveCov{Float64}(sz; kwargs...)
 
-function Base.push!(nc::NaiveCov, s::AbstractVector)
-    nc.n += 1
-    push!(nc.S, s)
-end
+Base.push!(nc::NaiveCov, s::AbstractVector) = push!(nc.S, s)
 
-function reset!(nc::NaiveCov{T}) where {T}
-    nc.n = 0
-    nc.S = T()
-end
+reset!(nc::NaiveCov{T}) where {T} = resize!(nc.S, 0)
 
 function getest(nc::NaiveCov)
-    @assert nc.n >= 2 "Cannot get covariance with only one sample"
+    @assert length(nc.S) >= 2 "Cannot get covariance with only one sample"
     return Statistics.cov(nc.S)
 end
 
 # Ref: https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_covar_estimator.hpp
-mutable struct WelfordCov{T<:AbstractFloat} <: CovEstimator{T}
+mutable struct WelfordCov{F<:AbstractFloat} <: CovEstimator{F}
     n     :: Int
     n_min :: Int
-    μ     :: Vector{T}
-    M     :: Matrix{T}
-    δ     :: Vector{T} # cache for diff
-    cov   :: Matrix{T}
+    μ     :: Vector{F}
+    M     :: Matrix{F}
+    δ     :: Vector{F}  # cache for diff
+    cov   :: Matrix{F}
 end
 
 Base.show(io::IO, ::WelfordCov) = print(io, "WelfordCov")
 
-function WelfordCov(
-    ::Type{T}, sz::Tuple{Int}; n_min::Int=10, cov=LinearAlgebra.diagm(0 => ones(T, first(sz)))
+function WelfordCov{T}(
+    sz::Tuple{Int}; n_min::Int=10, cov=LinearAlgebra.diagm(0 => ones(T, first(sz)))
 ) where {T<:AbstractFloat}
     d = first(sz)
     return WelfordCov(0, n_min, zeros(T, d), zeros(T, d, d), zeros(T, d), cov)
 end
 
-WelfordCov(sz::Tuple{Int}; kwargs...) = WelfordCov(Float64, sz; kwargs...)
+WelfordCov(sz::Tuple{Int}; kwargs...) = WelfordCov{Float64}(sz; kwargs...)
 
 function Base.resize!(wc::WelfordCov, θ::AbstractVector{T}) where {T<:AbstractFloat}
     if length(θ) != size(wc.cov, 1)

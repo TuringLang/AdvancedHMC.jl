@@ -8,11 +8,11 @@ using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, getest
     sz = (D,)
     n_samples = 100_000
 
-    var_welford = WelfordVar(T, sz)
-    var_naive = NaiveVar(T, sz)
+    var_welford = WelfordVar{T}(sz)
+    var_naive = NaiveVar{T}(sz)
     var_estimators = [var_welford, var_naive]
-    cov_welford = WelfordCov(T, sz)
-    cov_naive = NaiveCov(T, sz)
+    cov_welford = WelfordCov{T}(sz)
+    cov_naive = NaiveCov{T}(sz)
     cov_estimators = [cov_welford, cov_naive]
     estimators = [var_estimators..., cov_estimators...]
 
