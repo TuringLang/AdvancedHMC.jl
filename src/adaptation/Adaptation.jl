@@ -34,16 +34,12 @@ using ..AdvancedHMC:
 StepSizeAdaptor(δ::AbstractFloat, i::AbstractIntegrator) = 
     NesterovDualAveraging(δ, nom_step_size(i))
 
-@deprecate NesterovDualAveraging(δ, i::AbstractIntegrator) StepSizeAdaptor(δ, i)
-
 MassMatrixAdaptor(m::UnitEuclideanMetric{T}) where {T} = 
     UnitMassMatrix(T)
 MassMatrixAdaptor(m::DiagEuclideanMetric{T}) where {T} = 
     WelfordVar(T, size(m); var=copy(m.M⁻¹))
 MassMatrixAdaptor(m::DenseEuclideanMetric{T}) where {T} = 
     WelfordCov(T, size(m); cov=copy(m.M⁻¹))
-
-@deprecate Preconditioner(m::AbstractMatrix) MassMatrixAdaptor(m)
 
 MassMatrixAdaptor(
     m::Type{TM}, 
@@ -55,5 +51,11 @@ MassMatrixAdaptor(
     ::Type{TM}, 
     sz::Tuple{Vararg{Int}}=(2,)
 ) where {T, TM<:AbstractMetric} = MassMatrixAdaptor(TM(T, sz))
+
+# Deprecations
+
+@deprecate StanHMCAdaptor(n_adapts, pc, ssa) initialize!(StanHMCAdaptor(pc, ssa), n_adapts)
+@deprecate NesterovDualAveraging(δ, i::AbstractIntegrator) StepSizeAdaptor(δ, i)
+@deprecate Preconditioner(m::AbstractMatrix) MassMatrixAdaptor(m)
 
 end # module

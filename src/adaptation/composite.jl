@@ -135,7 +135,3 @@ function adapt!(
         reset!(tp.pc)
     end
 end
-
-# Deprecated functions
-
-@deprecate StanHMCAdaptor(n_adapts, pc, ssa) initialize!(StanHMCAdaptor(pc, ssa), n_adapts)
