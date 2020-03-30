@@ -4,8 +4,8 @@
 
 abstract type MassMatrixAdaptor <: AbstractAdaptor end
 
-initialize!(adaptor::T, n_adapts::Int) where {T<:MassMatrixAdaptor} = nothing
-finalize!(adaptor::T) where {T<:MassMatrixAdaptor} = nothing
+initialize!(::MassMatrixAdaptor, ::Int) = nothing
+finalize!(::MassMatrixAdaptor) = nothing
 
 ## Unit mass matrix adaptor
 
@@ -13,7 +13,7 @@ struct UnitMassMatrix{T<:AbstractFloat} <: MassMatrixAdaptor end
 
 Base.show(io::IO, ::UnitMassMatrix) = print(io, "UnitMassMatrix")
 
-UnitMassMatrix(::Type{T}=Float64) where {T} = UnitMassMatrix{T}()
+UnitMassMatrix() = UnitMassMatrix{Float64}()
 
 Base.string(::UnitMassMatrix) = "I"
 
@@ -52,24 +52,22 @@ function adapt!(
 end
 
 # NOTE: this naive variance estimator is used only in testing
-mutable struct NaiveVar{E<:AbstractVecOrMat{<:AbstractFloat},T<:AbstractVector{E}} <: VarEstimator{T}
+struct NaiveVar{S<:AbstractFloat,T<:AbstractVector{<:AbstractVecOrMat{S}}} <: VarEstimator{T}
     n :: Int
     S :: T
 end
 
-NaiveVar(::Type{T}, sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveVar(0, Vector{Vector{T}}())
-NaiveVar(::Type{T}, sz::Tuple{Int,Int}) where {T<:AbstractFloat} = NaiveVar(0, Vector{Matrix{T}}())
+NaiveVar{T}(sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveVar(Vector{Vector{T}}())
+NaiveVar{T}(sz::Tuple{Int,Int}) where {T<:AbstractFloat} = NaiveVar(Vector{Matrix{T}}())
 
-NaiveVar(sz::Tuple{Vararg{Int}}; kwargs...) = NaiveVar(Float64, sz; kwargs...)
+NaiveVar(sz::Union{Tuple{Int},Tuple{Int,Int}}) = NaiveVar{Float64}(sz)
 
 function Base.push!(nv::NaiveVar, s::AbstractVecOrMat)
-    nv.n += 1
     push!(nv.S, s)
 end
 
-function reset!(nv::NaiveVar{T}) where {T}
-    nv.n = 0
-    nv.S = T()
+function reset!(nv::NaiveVar)
+    resize!(nv.S, 0)
 end
 
 function getest(nv::NaiveVar)
@@ -96,7 +94,7 @@ function WelfordVar(
     return WelfordVar(0, n_min, zeros(T, sz), zeros(T, sz), zeros(T, sz), var)
 end
 
-WelfordVar(sz::Tuple{Vararg{Int}}; kwargs...) = WelfordVar(Float64, sz; kwargs...)
+WelfordVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...) = WelfordVar{Float64}(sz; kwargs...)
 
 function Base.resize!(wv::WelfordVar, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
     if size(θ) != size(wv.var)
