@@ -57,8 +57,8 @@ struct NaiveVar{S<:AbstractFloat,T<:AbstractVector{<:AbstractVecOrMat{S}}} <: Va
     S :: T
 end
 
-NaiveVar(::Type{T}, sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveVar(0, Vector{Vector{T}}())
-NaiveVar(::Type{T}, sz::Tuple{Int,Int}) where {T<:AbstractFloat} = NaiveVar(0, Vector{Matrix{T}}())
+NaiveVar{T}(sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveVar(Vector{Vector{T}}())
+NaiveVar{T}(sz::Tuple{Int,Int}) where {T<:AbstractFloat} = NaiveVar(Vector{Matrix{T}}())
 
 NaiveVar(sz::Tuple{Vararg{Int}}; kwargs...) = NaiveVar(Float64, sz; kwargs...)
 
