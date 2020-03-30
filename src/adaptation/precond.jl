@@ -52,7 +52,7 @@ function adapt!(
 end
 
 # NOTE: this naive variance estimator is used only in testing
-mutable struct NaiveVar{E<:AbstractVecOrMat{<:AbstractFloat},T<:AbstractVector{E}} <: VarEstimator{T}
+struct NaiveVar{S<:AbstractFloat,T<:AbstractVector{<:AbstractVecOrMat{S}}} <: VarEstimator{T}
     n :: Int
     S :: T
 end
