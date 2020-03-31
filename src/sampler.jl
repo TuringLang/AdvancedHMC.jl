@@ -1,13 +1,17 @@
 # Update of hamiltonian and proposal
 
 Parameters.reconstruct(h::Hamiltonian, ::AbstractAdaptor) = h
-function Parameters.reconstruct(h::Hamiltonian, adaptor::Union{MassMatrixAdaptor, CompositeAdaptor})
+function Parameters.reconstruct(
+    h::Hamiltonian, adaptor::Union{MassMatrixAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
+)
     metric = renew(h.metric, getM⁻¹(adaptor))
     return reconstruct(h, metric=metric)
 end
 
 Parameters.reconstruct(τ::AbstractProposal, ::AbstractAdaptor) = τ
-function Parameters.reconstruct(τ::AbstractProposal, adaptor::Union{StepSizeAdaptor, CompositeAdaptor})
+function Parameters.reconstruct(
+    τ::AbstractProposal, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
+)
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
     # FIXME: this is buggy for `JitteredLeapfrog`
     integrator = reconstruct(τ.integrator, ϵ=getϵ(adaptor))
