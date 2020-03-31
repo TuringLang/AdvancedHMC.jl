@@ -49,7 +49,7 @@ end
 ### Stan's windowed adaptation
 
 # Acknowledgement: this adaption settings is mimicing Stan's 3-phase adaptation.
-struct StanHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: NaiveHMCAdaptor
+struct StanHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
     pc          :: M
     ssa         :: Tssa
     init_buffer :: Int

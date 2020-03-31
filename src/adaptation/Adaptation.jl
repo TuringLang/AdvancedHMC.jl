@@ -28,7 +28,7 @@ export MassMatrixAdaptor, UnitMassMatrix, WelfordVar, WelfordCov
 ## TODO: generalise this to a list of adaptors
 ##
 
-struct NaiveHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor}
+struct NaiveHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
     pc  :: M
     ssa :: Tssa
 end
