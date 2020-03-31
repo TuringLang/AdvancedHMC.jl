@@ -48,7 +48,7 @@ function step(
     ϵ = ϵ'
 
     @unpack θ, r = z
-    @unpack value, gradient = ∂H∂θ(h, θ)
+    @unpack value, gradient = z.ℓπ
     for i = 1:n_steps
         # Tempering
         r = temper(lf, r, (i=i, is_half=true), n_steps)
