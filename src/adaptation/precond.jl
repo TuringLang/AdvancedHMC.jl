@@ -43,18 +43,18 @@ adapt!(
 
 ## Diagonal mass matrix adaptor
 
-abstract type VarEstimator{T} <: MassMatrixAdaptor end
+abstract type DiagMatrixEstimator{T} <: MassMatrixAdaptor end
 
-getM⁻¹(ve::VarEstimator) = ve.var
+getM⁻¹(ve::DiagMatrixEstimator) = ve.var
 
-Base.string(ve::VarEstimator) = string(getM⁻¹(ve))
+Base.string(ve::DiagMatrixEstimator) = string(getM⁻¹(ve))
 
-function update!(ve::VarEstimator)
+function update!(ve::DiagMatrixEstimator)
     ve.n >= ve.n_min && (ve.var .= getest(ve))
 end
 
 # NOTE: this naive variance estimator is used only in testing
-struct NaiveVar{T<:AbstractFloat, E<:AbstractVector{<:AbstractVecOrMat{T}}} <: VarEstimator{T}
+struct NaiveVar{T<:AbstractFloat, E<:AbstractVector{<:AbstractVecOrMat{T}}} <: DiagMatrixEstimator{T}
     S :: E
     NaiveVar(S::E) where {E} = new{eltype(eltype(E)), E}(S)
 end
@@ -74,7 +74,7 @@ function getest(nv::NaiveVar)
 end
 
 # Ref： https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_var_estimator.hpp
-mutable struct WelfordVar{T<:AbstractFloat, E<:AbstractVecOrMat{T}} <: VarEstimator{T}
+mutable struct WelfordVar{T<:AbstractFloat, E<:AbstractVecOrMat{T}} <: DiagMatrixEstimator{T}
     n     :: Int
     n_min :: Int
     μ     :: E
@@ -130,18 +130,18 @@ end
 
 ## Dense mass matrix adaptor
 
-abstract type CovEstimator{T} <: MassMatrixAdaptor end
+abstract type DenseMatrixEstimator{T} <: MassMatrixAdaptor end
 
-getM⁻¹(ce::CovEstimator) = ce.cov
+getM⁻¹(ce::DenseMatrixEstimator) = ce.cov
 
-Base.string(ce::CovEstimator) = string(LinearAlgebra.diag(getM⁻¹(ce)))
+Base.string(ce::DenseMatrixEstimator) = string(LinearAlgebra.diag(getM⁻¹(ce)))
 
-function update!(ce::CovEstimator)
+function update!(ce::DenseMatrixEstimator)
     ce.n >= ce.n_min && (ce.cov .= getest(ce))
 end
 
 # NOTE: This naive covariance estimator is used only in testing.
-struct NaiveCov{F<:AbstractFloat, T<:AbstractVector{<:AbstractVector{F}}} <: CovEstimator{T}
+struct NaiveCov{F<:AbstractFloat, T<:AbstractVector{<:AbstractVector{F}}} <: DenseMatrixEstimator{T}
     S :: T
     NaiveCov(S::E) where {E} = new{eltype(eltype(E)), E}(S)
 end
@@ -160,7 +160,7 @@ function getest(nc::NaiveCov)
 end
 
 # Ref: https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_covar_estimator.hpp
-mutable struct WelfordCov{F<:AbstractFloat} <: CovEstimator{F}
+mutable struct WelfordCov{F<:AbstractFloat} <: DenseMatrixEstimator{F}
     n     :: Int
     n_min :: Int
     μ     :: Vector{F}
