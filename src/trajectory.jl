@@ -593,7 +593,7 @@ end
 """
 A single Hamiltonian integration step.
 
-NOTE: this function is intended to be used in `find_good_eps` only.
+NOTE: this function is intended to be used in `find_good_stepsize` only.
 """
 function A(h, z, ϵ)
     z′ = step(Leapfrog(ϵ), h, z)
@@ -604,7 +604,7 @@ end
 """
 Find a good initial leap-frog step-size via heuristic search.
 """
-function find_good_eps(
+function find_good_stepsize(
     rng::AbstractRNG,
     h::Hamiltonian,
     θ::AbstractVector{T};
@@ -671,12 +671,12 @@ function find_good_eps(
     return ϵ
 end
 
-function find_good_eps(
+function find_good_stepsize(
     h::Hamiltonian,
     θ::AbstractVector{<:AbstractFloat};
     max_n_iters::Int=100,
 )
-    return find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
+    return find_good_stepsize(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
 end
 
 """

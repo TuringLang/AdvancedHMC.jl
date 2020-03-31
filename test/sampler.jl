@@ -78,8 +78,8 @@ end
                 )
                     Random.seed!(1)
                     # For `MassMatrixAdaptor`, we use the pre-defined step size as the method cannot adapt the step size.
-                    # For other adapatation methods that are able to adpat the step size, we use `find_good_eps`.
-                    τ_used = adaptorsym == :MassMatrixAdaptorOnly ? τ : reconstruct(τ, integrator=reconstruct(lf, ϵ=find_good_eps(h, θ_init)))
+                    # For other adapatation methods that are able to adpat the step size, we use `find_good_stepsize`.
+                    τ_used = adaptorsym == :MassMatrixAdaptorOnly ? τ : reconstruct(τ, integrator=reconstruct(lf, ϵ=find_good_stepsize(h, θ_init)))
                     samples, stats = sample(h, τ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
                     @test mean(samples) ≈ zeros(D) atol=RNDATOL
                     test_stats(τ_used, stats, n_adapts)

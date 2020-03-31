@@ -103,7 +103,7 @@ let D=10
         θ_init = rand(D)
 
         h = Hamiltonian(metric, ℓπ, ForwardDiff)
-        prop = NUTS(Leapfrog(find_good_eps(h, θ_init)))
+        prop = NUTS(Leapfrog(find_good_stepsize(h, θ_init)))
         adaptor = StanHMCAdaptor(
             MassMatrixAdaptor(metric),
             StepSizeAdaptor(0.8, prop.integrator)

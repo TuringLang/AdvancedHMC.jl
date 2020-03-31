@@ -38,7 +38,7 @@ metric = DiagEuclideanMetric(D)
 hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  
 
 # Define a leapfrog solver, with initial step size chosen heuristically
-initial_ϵ = find_good_eps(hamiltonian, initial_θ) 
+initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
 integrator = Leapfrog(initial_ϵ)
 
 # Define an HMC sampler, with the following components
