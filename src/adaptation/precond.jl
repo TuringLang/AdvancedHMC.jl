@@ -50,7 +50,7 @@ getM⁻¹(ve::DiagMatrixEstimator) = ve.var
 Base.string(ve::DiagMatrixEstimator) = string(getM⁻¹(ve))
 
 function update!(ve::DiagMatrixEstimator)
-    ve.n >= ve.n_min && (ve.var .= getest(ve))
+    ve.n >= ve.n_min && (ve.var .= get_estimation(ve))
 end
 
 # NOTE: this naive variance estimator is used only in testing
@@ -68,7 +68,7 @@ Base.push!(nv::NaiveVar, s::AbstractVecOrMat) = push!(nv.S, s)
 
 reset!(nv::NaiveVar) = resize!(nv.S, 0)
 
-function getest(nv::NaiveVar)
+function get_estimation(nv::NaiveVar)
     @assert length(nv.S) >= 2 "Cannot estimate variance with only one sample"
     return Statistics.var(nv.S)
 end
@@ -122,7 +122,7 @@ function Base.push!(wv::WelfordVar, s::AbstractVecOrMat{T}) where {T}
 end
 
 # https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
-function getest(wv::WelfordVar{T}) where {T<:AbstractFloat}
+function get_estimation(wv::WelfordVar{T}) where {T<:AbstractFloat}
     @unpack n, M, var = wv
     @assert n >= 2 "Cannot estimate variance with only one sample"
     return T(n) / ((n + 5) * (n - 1)) * M .+ T(1e-3) * (5 / (n + 5))
@@ -137,7 +137,7 @@ getM⁻¹(ce::DenseMatrixEstimator) = ce.cov
 Base.string(ce::DenseMatrixEstimator) = string(LinearAlgebra.diag(getM⁻¹(ce)))
 
 function update!(ce::DenseMatrixEstimator)
-    ce.n >= ce.n_min && (ce.cov .= getest(ce))
+    ce.n >= ce.n_min && (ce.cov .= get_estimation(ce))
 end
 
 # NOTE: This naive covariance estimator is used only in testing.
@@ -154,7 +154,7 @@ Base.push!(nc::NaiveCov, s::AbstractVector) = push!(nc.S, s)
 
 reset!(nc::NaiveCov{T}) where {T} = resize!(nc.S, 0)
 
-function getest(nc::NaiveCov)
+function get_estimation(nc::NaiveCov)
     @assert length(nc.S) >= 2 "Cannot get covariance with only one sample"
     return Statistics.cov(nc.S)
 end
@@ -205,7 +205,7 @@ function Base.push!(wc::WelfordCov, s::AbstractVector{T}) where {T}
 end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/covar_adaptation.hpp
-function getest(wc::WelfordCov{T}) where {T<:AbstractFloat}
+function get_estimation(wc::WelfordCov{T}) where {T<:AbstractFloat}
     @unpack n, M, cov = wc
     @assert n >= 2 "Cannot get covariance with only one sample"
     return T(n) / ((n + 5) * (n - 1)) * M + T(1e-3) * (5 / (n + 5)) * LinearAlgebra.I
