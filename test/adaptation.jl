@@ -1,5 +1,5 @@
 using Test, LinearAlgebra, Distributions, AdvancedHMC, Random, ForwardDiff
-using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, getest, getest, reset!
+using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, get_estimation, get_estimation, reset!
 
 # Check that the estimated variance is approximately correct.
 @testset "Online v.s. naive v.s. true var/cov estimation" begin
@@ -24,14 +24,14 @@ using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, getest
             end
         end
 
-        @test getest(var_welford) ≈ getest(var_naive) atol=0.1D
+        @test get_estimation(var_welford) ≈ get_estimation(var_naive) atol=0.1D
         for estimator in var_estimators
-            @test getest(estimator) ≈ var(dist) atol=0.1D
+            @test get_estimation(estimator) ≈ var(dist) atol=0.1D
         end
 
-        @test getest(cov_welford) ≈ getest(cov_naive) atol=0.1D^2
+        @test get_estimation(cov_welford) ≈ get_estimation(cov_naive) atol=0.1D^2
         for estimator in cov_estimators
-            @test getest(estimator) ≈ cov(dist) atol=0.1D^2
+            @test get_estimation(estimator) ≈ cov(dist) atol=0.1D^2
         end
 
         for estimator in estimators
