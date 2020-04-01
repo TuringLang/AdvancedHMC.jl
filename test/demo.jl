@@ -7,14 +7,14 @@ D = 10; initial_θ = rand(D)
 ℓπ(θ) = logpdf(MvNormal(zeros(D), ones(D)), θ)
 
 # Set the number of samples to draw and warmup iterations
-n_samples, n_adapts = 2_000, 1_000 
+n_samples, n_adapts = 2_000, 1_000
 
 # Define a Hamiltonian system
 metric = DiagEuclideanMetric(D)
-hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  
+hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
 
 # Define a leapfrog solver, with initial step size chosen heuristically
-initial_ϵ = find_good_stepsize(hamiltonian, initial_θ) 
+initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
 integrator = Leapfrog(initial_ϵ)
 
 # Define an HMC sampler, with the following components
