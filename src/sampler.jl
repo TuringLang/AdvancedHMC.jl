@@ -1,15 +1,15 @@
 # Update of hamiltonian and proposal
 
-Parameters.reconstruct(h::Hamiltonian, ::AbstractAdaptor) = h
-function Parameters.reconstruct(
+reconstruct(h::Hamiltonian, ::AbstractAdaptor) = h
+function reconstruct(
     h::Hamiltonian, adaptor::Union{MassMatrixAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
 )
     metric = renew(h.metric, getM⁻¹(adaptor))
     return reconstruct(h, metric=metric)
 end
 
-Parameters.reconstruct(τ::AbstractProposal, ::AbstractAdaptor) = τ
-function Parameters.reconstruct(
+reconstruct(τ::AbstractProposal, ::AbstractAdaptor) = τ
+function reconstruct(
     τ::AbstractProposal, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
 )
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)

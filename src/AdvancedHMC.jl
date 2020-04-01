@@ -7,10 +7,11 @@ using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, chol
 using StatsFuns: logaddexp, logsumexp
 using Random: GLOBAL_RNG, AbstractRNG
 using ProgressMeter: ProgressMeter
-using Parameters: Parameters, @unpack, reconstruct
+using Parameters: @unpack, reconstruct
 using ArgCheck: @argcheck
 
 import StatsBase: sample
+import Parameters: reconstruct
 
 include("utilities.jl")
 
