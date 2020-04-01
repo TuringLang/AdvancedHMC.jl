@@ -15,9 +15,10 @@ If you are interested in using AdvancedHMC.jl through a probabilistic programmin
 - We presented a poster for AdvancedHMC.jl at [StanCon 2019](https://mc-stan.org/events/stancon2019Cambridge/) in Cambridge, UK. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
 **API CHANGES**
-- [v0.2.22] Two helper functions are renamed.
+- [v0.2.22] Three functions are renamed.
   - `Preconditioner(metric::AbstractMetric)` -> `MassMatrixAdaptor(metric)` and 
   - `NesterovDualAveraging(δ, integrator::AbstractIntegrator)` -> `StepSizeAdaptor(δ, integrator)`
+  - `find_good_eps` -> `find_good_stepsize`
 - [v0.2.15] `n_adapts` is not needed to construct `StanHMCAdaptor`; the old constructor is deprecated.
 - [v0.2.8] Two types are renamed.
   - `Multinomial` -> `MultinomialTS`
