@@ -81,8 +81,8 @@ mutable struct WelfordVar{T<:AbstractFloat, E<:AbstractVecOrMat{T}} <: DiagMatri
     M     :: E
     δ     :: E    # cache for diff
     var   :: E    # cache for variance
-    function WelfordVar(n, n_min, args::E...) where {E}
-        return new{eltype(E), E}(n, n_min, args...)
+    function WelfordVar(n::Int, n_min::Int, μ::E, M::E, δ::E, var::E) where {E}
+        return new{eltype(E), E}(n, n_min, μ, M, δ, var)
     end
 end
 
