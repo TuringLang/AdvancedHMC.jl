@@ -66,7 +66,7 @@ An important design goal of AdvancedHMC.jl is modularity; we would like to suppo
 This modularity means that different HMC variants can be easily constructed by composing various components, such as preconditioning metric (i.e. mass matrix), leapfrog integrators,  trajectories (static or dynamic), and adaption schemes etc. 
 The minimal example above can be modified to suit particular inference problems by picking components from the list below.
 
-### Preconditioning matrix (`metric`)
+### Hamiltonian mass matrix (`metric`)
 
 - Unit metric: `UnitEuclideanMetric(dim)`
 - Diagonal metric: `DiagEuclideanMetric(dim)`
