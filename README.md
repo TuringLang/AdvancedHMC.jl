@@ -84,9 +84,9 @@ where `ϵ` is the step size of leapfrog integration.
 
 ### Proposal (`proposal`)
 
-- Static HMC with a fixed number of steps (`n_steps`): `StaticTrajectory(integrator, n_steps)`
-- HMC with a fixed total trajectory length (`trajectory_length`): `HMCDA(integrator, trajectory_length)` 
-- Original NUTS with slice sampling: `NUTS{SliceTS,ClassicNoUTurn}(integrator)`
+- Static HMC with a fixed number of steps (`n_steps`) (Neal, R. M. (2011)): `StaticTrajectory(integrator, n_steps)`
+- HMC with a fixed total trajectory length (`trajectory_length`) (Neal, R. M. (2011)): `HMCDA(integrator, trajectory_length)` 
+- Original NUTS with slice sampling (Hoffman, M. D., & Gelman, A. (2014)): `NUTS{SliceTS,ClassicNoUTurn}(integrator)`
 - Generalised NUTS with slice sampling (Betancourt, M. (2017)): `NUTS{SliceTS,GeneralisedNoUTurn}(integrator)`
 - Original NUTS with multinomial sampling (Betancourt, M. (2017)): `NUTS{MultinomialTS,ClassicNoUTurn}(integrator)`
 - Generalised NUTS with multinomial sampling (Betancourt, M. (2017)): `NUTS{MultinomialTS,GeneralisedNoUTurn}(integrator)`
