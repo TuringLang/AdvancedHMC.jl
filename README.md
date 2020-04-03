@@ -89,7 +89,7 @@ where `ϵ` is the step size of leapfrog integration.
 - Original NUTS with slice sampling: `NUTS{SliceTS,ClassicNoUTurn}(integrator)`
 - Generalised NUTS with slice sampling (Betancourt, M. (2017)): `NUTS{SliceTS,GeneralisedNoUTurn}(integrator)`
 - Original NUTS with multinomial sampling (Betancourt, M. (2017)): `NUTS{MultinomialTS,ClassicNoUTurn}(integrator)`
-- Generalised NUTS with multinomial sampling: `NUTS{MultinomialTS,GeneralisedNoUTurn}(integrator)`
+- Generalised NUTS with multinomial sampling (Betancourt, M. (2017)): `NUTS{MultinomialTS,GeneralisedNoUTurn}(integrator)`
 
 ### Adaptor (`adaptor`)
 
