@@ -20,7 +20,7 @@ If you are interested in using AdvancedHMC.jl through a probabilistic programmin
   - `NesterovDualAveraging(δ, integrator::AbstractIntegrator)` -> `StepSizeAdaptor(δ, integrator)`
   - `find_good_eps` -> `find_good_stepsize`
 - [v0.2.15] `n_adapts` is no longer needed to construct `StanHMCAdaptor`; the old constructor is deprecated.
-- [v0.2.8] Two types are renamed.
+- [v0.2.8] Two Hamiltonian trajectory sampling methods are renamed to avoid a name clash with Distributions.
   - `Multinomial` -> `MultinomialTS`
   - `Slice` -> `SliceTS`
 - [v0.2.0] The gradient function passed to `Hamiltonian` is supposed to return a value-gradient tuple now.
