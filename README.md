@@ -62,7 +62,7 @@ samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n
 
 ## API and supported HMC algorithms
 
-An important design goal of AdvancedHMC.jl is to be modular, and support algorithmic research on HMC.
+An important design goal of AdvancedHMC.jl is modularity; we would like to support algorithmic research on HMC.
 This modularity means that different HMC variants can be easily constructed by composing various components, such as preconditioning metric (i.e. mass matrix), leapfrog integrators,  trajectories (static or dynamic), and adaption schemes etc. 
 The minimal example above can be modified to suit particular inference problems by picking components from the list below.
 
