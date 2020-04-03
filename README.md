@@ -93,7 +93,7 @@ where `ϵ` is the step size of leapfrog integration.
 
 ### Adaptor (`adaptor`)
 
-- Adapt the mass matrix of the metric space `metric`: `mma = MassMatrixAdaptor(metric)`
+- Adapt the mass matrix `metric` of the Hamiltonian dynamics: `mma = MassMatrixAdaptor(metric)`
   - This is lowered to `UnitMassMatrix`, `WelfordVar` or `WelfordCov` based on the type of the mass matrix `metric`
 - Adapt the step size of the leapfrog integrator `integrator`: `ssa = StepSizeAdaptor(δ, integrator)`
   - It uses Nesterov's dual averaging with `δ` as the target acceptance rate.
