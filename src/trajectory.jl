@@ -593,7 +593,7 @@ end
 """
 A single Hamiltonian integration step.
 
-NOTE: this function is intended to be used in `find_good_eps` only.
+NOTE: this function is intended to be used in `find_good_stepsize` only.
 """
 function A(h, z, ϵ)
     z′ = step(Leapfrog(ϵ), h, z)
@@ -604,7 +604,7 @@ end
 """
 Find a good initial leap-frog step-size via heuristic search.
 """
-function find_good_eps(
+function find_good_stepsize(
     rng::AbstractRNG,
     h::Hamiltonian,
     θ::AbstractVector{T};
@@ -671,12 +671,12 @@ function find_good_eps(
     return ϵ
 end
 
-function find_good_eps(
+function find_good_stepsize(
     h::Hamiltonian,
     θ::AbstractVector{<:AbstractFloat};
     max_n_iters::Int=100,
 )
-    return find_good_eps(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
+    return find_good_stepsize(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
 end
 
 """
@@ -705,46 +705,4 @@ function mh_accept_ratio(
     #       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
     accept = rand(rng, T, length(Horiginal)) .< α
     return accept, α
-end
-
-####
-#### Adaption
-####
-
-function update(
-    h::Hamiltonian,
-    τ::AbstractProposal,
-    pc::Adaptation.AbstractPreconditioner,
-)
-    metric = renew(h.metric, getM⁻¹(pc))
-    h = reconstruct(h, metric=metric)
-    return h, τ
-end
-
-function update(h::Hamiltonian, τ::AbstractProposal, da::NesterovDualAveraging)
-    # TODO: this does not support change type of `ϵ` (e.g. Float to Vector)
-    integrator = reconstruct(τ.integrator, ϵ=getϵ(da))
-    τ = reconstruct(τ, integrator=integrator)
-    return h, τ
-end
-
-function update(
-    h::Hamiltonian,
-    τ::AbstractProposal,
-    ca::Union{Adaptation.NaiveHMCAdaptor, Adaptation.StanHMCAdaptor},
-)
-    metric = renew(h.metric, getM⁻¹(ca.pc))
-    h = reconstruct(h, metric=metric)
-    integrator = reconstruct(τ.integrator, ϵ=getϵ(ca.ssa))
-    τ = reconstruct(τ, integrator=integrator)
-    return h, τ
-end
-
-function update(h::Hamiltonian, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
-    metric = h.metric
-    if size(metric) != size(θ)
-        metric = typeof(metric)(size(θ))
-        h = reconstruct(h, metric=metric)
-    end
-    return h
 end

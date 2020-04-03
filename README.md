@@ -5,41 +5,46 @@
 [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
 
 AdvancedHMC.jl provides a robust, modular and efficient implementation of advanced HMC algorithms. An illustrative example for AdvancedHMC's usage is given below. AdvancedHMC.jl is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia. 
-If you are interested in using `AdvancedHMC.jl` through a probabilistic programming language, please check it out!
+If you are interested in using AdvancedHMC.jl through a probabilistic programming language, please check it out!
 
 **Interfaces**
 - [Python interface](https://github.com/salilab/hmc) for AdvancedHMC 
 
 **NEWS**
-- We presented AdvancedHMC.jl at [AABI](http://approximateinference.org/) 2019 in Vancouver, Canada. ([pdf](https://openreview.net/forum?id=rJgzckn4tH))
+- We presented a paper for AdvancedHMC.jl at [AABI](http://approximateinference.org/) 2019 in Vancouver, Canada. ([abs](http://proceedings.mlr.press/v118/xu20a.html), [pdf](http://proceedings.mlr.press/v118/xu20a/xu20a.pdf), [OpenReview](https://openreview.net/forum?id=rJgzckn4tH))
 - We presented a poster for AdvancedHMC.jl at [StanCon 2019](https://mc-stan.org/events/stancon2019Cambridge/) in Cambridge, UK. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
 **API CHANGES**
-- [v0.2.15] `n_adapts` is not needed to construct `StanHMCAdaptor`; the old constructor is deprecated.
-- [v0.2.8] Two exported types are renamed: `Multinomial` -> `MultinomialTS` and `Slice` -> `SliceTS`.
+- [v0.2.22] Three functions are renamed.
+  - `Preconditioner(metric::AbstractMetric)` -> `MassMatrixAdaptor(metric)` and 
+  - `NesterovDualAveraging(δ, integrator::AbstractIntegrator)` -> `StepSizeAdaptor(δ, integrator)`
+  - `find_good_eps` -> `find_good_stepsize`
+- [v0.2.15] `n_adapts` is no longer needed to construct `StanHMCAdaptor`; the old constructor is deprecated.
+- [v0.2.8] Two Hamiltonian trajectory sampling methods are renamed to avoid a name clash with Distributions.
+  - `Multinomial` -> `MultinomialTS`
+  - `Slice` -> `SliceTS`
 - [v0.2.0] The gradient function passed to `Hamiltonian` is supposed to return a value-gradient tuple now.
 
 ## A minimal example - sampling from a multivariate Gaussian using NUTS
 
 ```julia
-
 using AdvancedHMC, Distributions, ForwardDiff
 
-# Choose parameter dimentionality and initial parameter value
-D = 10; initial_θ = rand(D)   
+# Choose parameter dimensionality and initial parameter value
+D = 10; initial_θ = rand(D)
 
 # Define the target distribution
 ℓπ(θ) = logpdf(MvNormal(zeros(D), ones(D)), θ)
 
 # Set the number of samples to draw and warmup iterations
-n_samples, n_adapts = 2_000, 1_000 
+n_samples, n_adapts = 2_000, 1_000
 
 # Define a Hamiltonian system
 metric = DiagEuclideanMetric(D)
-hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)  
+hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
 
 # Define a leapfrog solver, with initial step size chosen heuristically
-initial_ϵ = find_good_eps(hamiltonian, initial_θ) 
+initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
 integrator = Leapfrog(initial_ϵ)
 
 # Define an HMC sampler, with the following components
@@ -47,7 +52,7 @@ integrator = Leapfrog(initial_ϵ)
 #   - generalised No-U-Turn criteria, and
 #   - windowed adaption for step-size and diagonal mass matrix
 proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
-adaptor = StanHMCAdaptor(Preconditioner(metric), NesterovDualAveraging(0.8, integrator))
+adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
 
 # Run the sampler to draw samples from the specified Gaussian, where
 #   - `samples` will store the samples
@@ -57,15 +62,15 @@ samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n
 
 ## API and supported HMC algorithms
 
-An important design goal of `AdvancedHMC.jl` is to be modular, and support algorithmic research on HMC. 
+An important design goal of AdvancedHMC.jl is modularity; we would like to support algorithmic research on HMC.
 This modularity means that different HMC variants can be easily constructed by composing various components, such as preconditioning metric (i.e. mass matrix), leapfrog integrators,  trajectories (static or dynamic), and adaption schemes etc. 
 The minimal example above can be modified to suit particular inference problems by picking components from the list below.
 
-### Preconditioning matrix (`metric`)
+### Hamiltonian mass matrix (`metric`)
 
-- Unit metric: `UnitEuclideanMetric(dim)` 
+- Unit metric: `UnitEuclideanMetric(dim)`
 - Diagonal metric: `DiagEuclideanMetric(dim)`
-- Dense metric: `DenseEuclideanMetric(dim)` 
+- Dense metric: `DenseEuclideanMetric(dim)`
 
 where `dim` is the dimensionality of the sampling space.
 
@@ -79,57 +84,59 @@ where `ϵ` is the step size of leapfrog integration.
 
 ### Proposal (`proposal`)
 
-- Static HMC with a fixed number of steps (`n_steps`): `StaticTrajectory(int, n_steps)`
-- HMC with a fixed total trajectory length (`len_traj`): `HMCDA(int, len_traj)` 
-- Original NUTS with slice sampling: `NUTS{SliceTS,ClassicNoUTurn}(int)`
-- Generalised NUTS with slice sampling: `NUTS{SliceTS,GeneralisedNoUTurn}(int)`
-- Original NUTS with multinomial sampling: `NUTS{MultinomialTS,ClassicNoUTurn}(int)`
-- Generalised NUTS with multinomial sampling: `NUTS{MultinomialTS,GeneralisedNoUTurn}(int)`
-
-where `int` is the integrator used.
+- Static HMC with a fixed number of steps (`n_steps`) (Neal, R. M. (2011)): `StaticTrajectory(integrator, n_steps)`
+- HMC with a fixed total trajectory length (`trajectory_length`) (Neal, R. M. (2011)): `HMCDA(integrator, trajectory_length)` 
+- Original NUTS with slice sampling (Hoffman, M. D., & Gelman, A. (2014)): `NUTS{SliceTS,ClassicNoUTurn}(integrator)`
+- Generalised NUTS with slice sampling (Betancourt, M. (2017)): `NUTS{SliceTS,GeneralisedNoUTurn}(integrator)`
+- Original NUTS with multinomial sampling (Betancourt, M. (2017)): `NUTS{MultinomialTS,ClassicNoUTurn}(integrator)`
+- Generalised NUTS with multinomial sampling (Betancourt, M. (2017)): `NUTS{MultinomialTS,GeneralisedNoUTurn}(integrator)`
 
 ### Adaptor (`adaptor`)
 
-- Preconditioning on metric space `metric`: `pc = Preconditioner(metric)`
-- Nesterov's dual averaging with target acceptance rate `δ` on integrator `int`: `da = NesterovDualAveraging(δ, int)`
-- Combine the two above *naively*: `NaiveHMCAdaptor(pc, da)`
-- Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(pc, da)`
+- Adapt the mass matrix `metric` of the Hamiltonian dynamics: `mma = MassMatrixAdaptor(metric)`
+  - This is lowered to `UnitMassMatrix`, `WelfordVar` or `WelfordCov` based on the type of the mass matrix `metric`
+- Adapt the step size of the leapfrog integrator `integrator`: `ssa = StepSizeAdaptor(δ, integrator)`
+  - It uses Nesterov's dual averaging with `δ` as the target acceptance rate.
+- Combine the two above *naively*: `NaiveHMCAdaptor(mma, ssa)`
+- Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(mma, ssa)`
 
 ### Gradients 
-`AdvancedHMC` supports both AD-based (`Zygote`, `Tracker` and `ForwardDiff`) and user-specified gradients. For the latter, simply replace `ForwardDiff` with `ℓπ_grad` in the ` Hamiltonian`  constructor, where the gradient function `π_grad` should return a tuple containing both the likelihood and its gradient. 
+`AdvancedHMC` supports both AD-based (`Zygote`, `Tracker` and `ForwardDiff`) and user-specified gradients. In order to use user-specified gradients, please replace `ForwardDiff` with `ℓπ_grad` in the `Hamiltonian`  constructor, where the gradient function `ℓπ_grad` should return a tuple containing both the log-posterior and its gradient. 
 
 All the combinations are tested in [this file](https://github.com/TuringLang/AdvancedHMC.jl/blob/master/test/sampler.jl) except from using tempered leapfrog integrator together with adaptation, which we found unstable empirically.
 
 ## The `sample` function signature in detail
 
 ```julia
-sample(
-    rng::AbstractRNG,
+function sample(
+    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
     τ::AbstractProposal,
     θ::AbstractVector{<:AbstractFloat},
     n_samples::Int,
-    adaptor::Adaptation.AbstractAdaptor=Adaptation.NoAdaptation(),
+    adaptor::AbstractAdaptor=NoAdaptation(),
     n_adapts::Int=min(div(n_samples, 10), 1_000);
-    drop_warmup::Bool=false,
+    drop_warmup=false,
     verbose::Bool=true,
-    progress::Bool=false
+    progress::Bool=false,
 )
 ```
 
-Sample `n_samples` samples using the proposal `τ` under Hamiltonian `h`
+Draw `n_samples` samples using the proposal `τ` under the Hamiltonian system `h`
 
-- The randomness is controlled by `rng`. 
-    - If `rng` is not provided, `GLOBAL_RNG` will be used.
+- The randomness is controlled by `rng`.
+  - If `rng` is not provided, `GLOBAL_RNG` will be used.
 - The initial point is given by `θ`.
 - The adaptor is set by `adaptor`, for which the default is no adaptation.
-    - It will perform `n_adapts` steps of adaptation, for which the default is the minimum of `1_000` and 10% of `n_samples`.
+  - It will perform `n_adapts` steps of adaptation, for which the default is `1_000` or 10% of `n_samples`, whichever is lower. 
 - `drop_warmup` specifies whether to drop samples.
 - `verbose` controls the verbosity.
 - `progress` controls whether to show the progress meter or not.
 
 ## Citing AdvancedHMC.jl ##
-If you use **AdvancedHMC.j** for your own research, please consider citing the following publication: Hong Ge, Kai Xu, and Zoubin Ghahramani: **Turing: a language for flexible probabilistic inference.** AISTATS 2018 [pdf](http://proceedings.mlr.press/v84/ge18b.html) [bibtex](https://github.com/TuringLang/Turing.jl/blob/master/CITATION.bib)
+If you use AdvancedHMC.jl for your own research, please consider citing the following publication:
+
+Hong Ge, Kai Xu, and Zoubin Ghahramani: "Turing: a language for flexible probabilistic inference.", *International Conference on Artificial Intelligence and Statistics*, 2018. ([abs](http://proceedings.mlr.press/v84/ge18b.html), [pdf](http://proceedings.mlr.press/v84/ge18b/ge18b.pdf), [BibTeX](https://github.com/TuringLang/Turing.jl/blob/master/CITATION.bib))
 
 ## References
 

@@ -1,51 +1,43 @@
 module Adaptation
+export Adaptation
 
-import Base: string, rand
-using Random: GLOBAL_RNG, AbstractRNG
-using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
-import LinearAlgebra, Statistics
-using ..AdvancedHMC: DEBUG
+using LinearAlgebra: LinearAlgebra
+using Statistics: Statistics
 using Parameters: @unpack, @pack!
 
-const AbstractScalarOrVec{T} = Union{T,AbstractVector{T}} where {T<:AbstractFloat}
+using ..AdvancedHMC: DEBUG, AbstractScalarOrVec
 
 abstract type AbstractAdaptor end
-
-##
-## Interface for adaptors
-##
-
-getM⁻¹(adaptor::T) where {T<:AbstractAdaptor} = error("`getM⁻¹(adaptor::$T)` is not implemented.")
-getϵ(adaptor::T) where {T<:AbstractAdaptor} = error("`getϵ(adaptor::$T)` is not implemented.")
-adapt!(
-    adaptor::T,
-    θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat}
-) where {T<:AbstractAdaptor} = error("`adapt!(adaptor::$T, θ::AbstractVecOrMat{<:AbstractFloat}, α::AbstractScalarOrVec{<:AbstractFloat})` is not implemented.")
-reset!(adaptor::T) where {T<:AbstractAdaptor} = error("`reset!(adaptor::$T)` is not implemented.")
-initialize!(adaptor::T, n_adapts::Int) where {T<:AbstractAdaptor} = throw(MethodError(initialize!, adaptor, n_adapts))
-finalize!(adaptor::T) where {T<:AbstractAdaptor} = error("`finalize!(adaptor::$T)` is not implemented.")
+function getM⁻¹ end
+function getϵ end
+function adapt! end
+function reset! end
+function initialize! end
+function finalize! end
+export AbstractAdaptor, adapt!, initialize!, finalize!, reset!, getϵ, getM⁻¹
 
 struct NoAdaptation <: AbstractAdaptor end
-
+export NoAdaptation
 include("stepsize.jl")
-include("precond.jl")
-
-# TODO: implement consensus adaptor
+export StepSizeAdaptor, NesterovDualAveraging
+include("massmatrix.jl")
+export MassMatrixAdaptor, UnitMassMatrix, WelfordVar, WelfordCov
 
 ##
-## Compositional adaptor
+## Composite adaptors
 ## TODO: generalise this to a list of adaptors
 ##
 
-struct NaiveHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
+struct NaiveHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
     pc  :: M
     ssa :: Tssa
 end
 Base.show(io::IO, a::NaiveHMCAdaptor) = print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
 
-getM⁻¹(aca::NaiveHMCAdaptor) = getM⁻¹(aca.pc)
-getϵ(aca::NaiveHMCAdaptor) = getϵ(aca.ssa)
+getM⁻¹(ca::NaiveHMCAdaptor) = getM⁻¹(ca.pc)
+getϵ(ca::NaiveHMCAdaptor) = getϵ(ca.ssa)
+
+# TODO: implement consensus adaptor
 function adapt!(
     nca::NaiveHMCAdaptor,
     θ::AbstractVecOrMat{<:AbstractFloat},
@@ -61,15 +53,7 @@ end
 initialize!(adaptor::NaiveHMCAdaptor, n_adapts::Int) = nothing
 finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)
 
-##
-## Stan's windowed adaptor.
-##
-include("stan_adaption.jl")
-
-export adapt!, initialize!, finalize!, getϵ, getM⁻¹, reset!, renew,
-       NesterovDualAveraging,
-       UnitPreconditioner, DiagPreconditioner, DensePreconditioner,
-       AbstractMetric, UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric,
-       Preconditioner, NaiveHMCAdaptor, StanHMCAdaptor
+include("stan_adaptor.jl")
+export NaiveHMCAdaptor, StanHMCAdaptor
 
 end # module

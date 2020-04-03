@@ -8,11 +8,11 @@ lf = Leapfrog(ϵ)
 
 θ_init = randn(D)
 h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
-τ = NUTS(Leapfrog(find_good_eps(h, θ_init)))
+τ = NUTS(Leapfrog(find_good_stepsize(h, θ_init)))
 r_init = AdvancedHMC.rand(h.metric)
 
 @testset "Passing random number generator" begin
-    τ_with_jittered_lf = NUTS(JitteredLeapfrog(find_good_eps(h, θ_init), 1.0))
+    τ_with_jittered_lf = NUTS(JitteredLeapfrog(find_good_stepsize(h, θ_init), 1.0))
     for τ_test in [τ, τ_with_jittered_lf],
         seed in [1234, 5678, 90]
         rng = MersenneTwister(seed)

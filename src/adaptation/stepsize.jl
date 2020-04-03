@@ -1,6 +1,4 @@
-######################
-### Mutable states ###
-######################
+### Mutable states
 
 mutable struct DAState{T<:AbstractScalarOrVec{<:AbstractFloat}}
     m     :: Int
@@ -12,42 +10,41 @@ end
 
 computeμ(ϵ::AbstractScalarOrVec{<:AbstractFloat}) = log.(10 * ϵ)
 
-function DAState(ϵ::AbstractFloat)
+function DAState(ϵ::T) where {T}
     μ = computeμ(ϵ)
-    return DAState(0, ϵ, μ, 0.0, 0.0)
+    return DAState(0, ϵ, μ, zero(T), zero(T))
 end
 
-function DAState(ϵ::AbstractVector{<:AbstractFloat})
+function DAState(ϵ::AbstractVector{T}) where {T}
     n = length(ϵ)
     μ = computeμ(ϵ)
-    return DAState(0, ϵ, μ, zeros(n), zeros(n))
+    return DAState(0, ϵ, μ, zeros(T, n), zeros(T, n))
 end
 
-function reset!(dastate::DAState{T}) where {T<:AbstractFloat}
-    dastate.m = 0
-    dastate.μ = computeμ(dastate.ϵ)
-    dastate.x_bar = zero(T)
-    dastate.H_bar = zero(T)
+function reset!(das::DAState{T}) where {T<:AbstractFloat}
+    das.m = 0
+    das.μ = computeμ(das.ϵ)
+    das.x_bar = zero(T)
+    das.H_bar = zero(T)
 end
 
-function reset!(dastate::DAState{<:AbstractVector{T}}) where {T<:AbstractFloat}
-    dastate.m = 0
-    dastate.μ .= computeμ(dastate.ϵ)
-    dastate.x_bar .= zero(T)
-    dastate.H_bar .= zero(T)
+function reset!(das::DAState{<:AbstractVector{T}}) where {T<:AbstractFloat}
+    das.m = 0
+    das.μ .= computeμ(das.ϵ)
+    das.x_bar .= zero(T)
+    das.H_bar .= zero(T)
 end
 
 mutable struct MSSState{T<:AbstractScalarOrVec{<:AbstractFloat}}
     ϵ :: T
 end
 
-################
-### Adaptors ###
-################
+### Step size adaptors
 
 abstract type StepSizeAdaptor <: AbstractAdaptor end
 
-# finalize!(adaptor::T) where {T<:StepSizeAdaptor} = nothing
+initialize!(adaptor::StepSizeAdaptor, n_adapts::Int) = nothing
+finalize!(adaptor::StepSizeAdaptor) = nothing
 
 getϵ(ss::StepSizeAdaptor) = ss.state.ϵ
 
@@ -57,6 +54,13 @@ end
 Base.show(io::IO, a::FixedStepSize) = print(io, "FixedStepSize($(a.ϵ))")
 
 getϵ(fss::FixedStepSize) = fss.ϵ
+
+struct ManualSSAdaptor{T<:AbstractScalarOrVec{<:AbstractFloat}} <:StepSizeAdaptor
+    state :: MSSState{T}
+end
+Base.show(io::IO, a::ManualSSAdaptor) = print(io, "ManualSSAdaptor()")
+
+ManualSSAdaptor(initϵ::T) where {T<:AbstractScalarOrVec{<:AbstractFloat}} = ManualSSAdaptor{T}(MSSState(initϵ))
 
 """
 An implementation of the Nesterov dual averaging algorithm to tune step size.
@@ -86,13 +90,6 @@ NesterovDualAveraging(
     δ::T,
     ϵ::VT
 ) where {T<:AbstractFloat, VT<:AbstractScalarOrVec{T}} = NesterovDualAveraging(0.05, 10.0, 0.75, δ, ϵ)
-
-struct ManualSSAdaptor{T<:AbstractScalarOrVec{<:AbstractFloat}} <:StepSizeAdaptor
-    state :: MSSState{T}
-end
-Base.show(io::IO, a::ManualSSAdaptor) = print(io, "ManualSSAdaptor()")
-
-ManualSSAdaptor(initϵ::T) where {T<:AbstractScalarOrVec{<:AbstractFloat}} = ManualSSAdaptor{T}(MSSState(initϵ))
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
 # Note: This function is not merged with `adapt!` to empahsize the fact that
@@ -139,8 +136,6 @@ adapt!(
 ) = adapt_stepsize!(da, α)
 
 reset!(da::NesterovDualAveraging) = reset!(da.state)
-
-initialize!(adaptor::NesterovDualAveraging, n_adapts::Int) = nothing
 
 function finalize!(da::NesterovDualAveraging)
     da.state.ϵ = exp.(da.state.x_bar)

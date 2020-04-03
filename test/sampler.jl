@@ -65,21 +65,21 @@ end
                 end
 
                 @testset "$adaptorsym" for (adaptorsym, adaptor) in Dict(
-                    :PreconditionerOnly => Preconditioner(metric),
-                    :NesterovDualAveragingOnly => NesterovDualAveraging(0.8, τ.integrator),
+                    :MassMatrixAdaptorOnly => MassMatrixAdaptor(metric),
+                    :StepSizeAdaptorOnly => StepSizeAdaptor(0.8, τ.integrator),
                     :NaiveHMCAdaptor => NaiveHMCAdaptor(
-                        Preconditioner(metric),
-                        NesterovDualAveraging(0.8, τ.integrator),
+                        MassMatrixAdaptor(metric),
+                        StepSizeAdaptor(0.8, τ.integrator),
                     ),
                     :StanHMCAdaptor => StanHMCAdaptor(
-                        Preconditioner(metric),
-                        NesterovDualAveraging(0.8, τ.integrator),
+                        MassMatrixAdaptor(metric),
+                        StepSizeAdaptor(0.8, τ.integrator),
                     ),
                 )
                     Random.seed!(1)
-                    # For `Preconditioner`, we use the pre-defined step size as the method cannot adapt the step size.
-                    # For other adapatation methods that are able to adpat the step size, we use `find_good_eps`.
-                    τ_used = adaptorsym == :PreconditionerOnly ? τ : reconstruct(τ, integrator=reconstruct(lf, ϵ=find_good_eps(h, θ_init)))
+                    # For `MassMatrixAdaptor`, we use the pre-defined step size as the method cannot adapt the step size.
+                    # For other adapatation methods that are able to adpat the step size, we use `find_good_stepsize`.
+                    τ_used = adaptorsym == :MassMatrixAdaptorOnly ? τ : reconstruct(τ, integrator=reconstruct(lf, ϵ=find_good_stepsize(h, θ_init)))
                     samples, stats = sample(h, τ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
                     @test mean(samples) ≈ zeros(D) atol=RNDATOL
                     test_stats(τ_used, stats, n_adapts)
@@ -94,8 +94,8 @@ end
     h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
     τ = NUTS(Leapfrog(ϵ))
     adaptor = StanHMCAdaptor(
-        Preconditioner(metric),
-        NesterovDualAveraging(0.8, τ.integrator),
+        MassMatrixAdaptor(metric),
+        StepSizeAdaptor(0.8, τ.integrator),
     )
     samples, stats = sample(h, τ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false, drop_warmup=true)
     @test length(samples) == n_samples - n_adapts

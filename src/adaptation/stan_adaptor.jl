@@ -1,6 +1,4 @@
-######################
-### Mutable states ###
-######################
+### Mutable states
 
 mutable struct StanHMCAdaptorState
     i               ::  Int
@@ -48,12 +46,10 @@ function Base.show(io::IO, state::StanHMCAdaptorState)
     print(io, "window($(state.window_start), $(state.window_end)), window_splits(" * string(join(state.window_splits, ", ")) * ")")
 end
 
-################
-### Adaptors ###
-################
+### Stan's windowed adaptation
 
 # Acknowledgement: this adaption settings is mimicing Stan's 3-phase adaptation.
-struct StanHMCAdaptor{M<:AbstractPreconditioner, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
+struct StanHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
     pc          :: M
     ssa         :: Tssa
     init_buffer :: Int
@@ -65,17 +61,18 @@ Base.show(io::IO, a::StanHMCAdaptor) =
     print(io, "StanHMCAdaptor(\n    pc=$(a.pc),\n    ssa=$(a.ssa),\n    init_buffer=$(a.init_buffer), term_buffer=$(a.term_buffer), window_size=$(a.window_size),\n    state=$(a.state)\n)")
 
 function StanHMCAdaptor(
-    pc::M,
+    pc::MassMatrixAdaptor,
     ssa::StepSizeAdaptor;
     init_buffer::Int=75,
     term_buffer::Int=50,
     window_size::Int=25
-) where {M<:AbstractPreconditioner}
+)
     return StanHMCAdaptor(pc, ssa, init_buffer, term_buffer, window_size, StanHMCAdaptorState())
 end
 
-getM⁻¹(adaptor::StanHMCAdaptor) = getM⁻¹(adaptor.pc)
-getϵ(adaptor::StanHMCAdaptor)   = getϵ(adaptor.ssa)
+getM⁻¹(ca::StanHMCAdaptor) = getM⁻¹(ca.pc)
+getϵ(ca::StanHMCAdaptor) = getϵ(ca.ssa)
+
 function initialize!(adaptor::StanHMCAdaptor, n_adapts::Int)
     initialize!(adaptor.state, adaptor.init_buffer, adaptor.term_buffer, adaptor.window_size, n_adapts)
     return adaptor
@@ -108,7 +105,3 @@ function adapt!(
         reset!(tp.pc)
     end
 end
-
-# Deprecated functions
-
-@deprecate StanHMCAdaptor(n_adapts, pc, ssa) initialize!(StanHMCAdaptor(pc, ssa), n_adapts)
