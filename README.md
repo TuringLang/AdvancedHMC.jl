@@ -128,7 +128,7 @@ Draw `n_samples` samples using the proposal `τ` under the Hamiltonian system `h
   - If `rng` is not provided, `GLOBAL_RNG` will be used.
 - The initial point is given by `θ`.
 - The adaptor is set by `adaptor`, for which the default is no adaptation.
-  - It will perform `n_adapts` steps of adaptation, for which the default is the minimum of `1_000` and 10% of `n_samples`.
+  - It will perform `n_adapts` steps of adaptation, for which the default is `1_000` or 10% of `n_samples`, whichever is lower. 
 - `drop_warmup` specifies whether to drop samples.
 - `verbose` controls the verbosity.
 - `progress` controls whether to show the progress meter or not.
