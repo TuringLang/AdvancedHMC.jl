@@ -122,7 +122,7 @@ function sample(
 )
 ```
 
-Sample `n_samples` samples using the proposal `τ` under the Hamiltonian `h`
+Draw `n_samples` samples using the proposal `τ` under the Hamiltonian system `h`
 
 - The randomness is controlled by `rng`.
   - If `rng` is not provided, `GLOBAL_RNG` will be used.
