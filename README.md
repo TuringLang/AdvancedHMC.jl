@@ -19,7 +19,7 @@ If you are interested in using AdvancedHMC.jl through a probabilistic programmin
   - `Preconditioner(metric::AbstractMetric)` -> `MassMatrixAdaptor(metric)` and 
   - `NesterovDualAveraging(δ, integrator::AbstractIntegrator)` -> `StepSizeAdaptor(δ, integrator)`
   - `find_good_eps` -> `find_good_stepsize`
-- [v0.2.15] `n_adapts` is not needed to construct `StanHMCAdaptor`; the old constructor is deprecated.
+- [v0.2.15] `n_adapts` is no longer needed to construct `StanHMCAdaptor`; the old constructor is deprecated.
 - [v0.2.8] Two types are renamed.
   - `Multinomial` -> `MultinomialTS`
   - `Slice` -> `SliceTS`
