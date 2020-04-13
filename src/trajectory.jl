@@ -723,6 +723,7 @@ struct SGHMC{
 } <: AbstractTrajectory{I}
     integrator      :: I
     n_steps         :: Int  # number of samples
+    batch_size      :: Int  # no of data points in minibatch for gradient estimate
     η               :: F    # learning rate
     α               :: F    # momentum decay
 end
@@ -733,9 +734,25 @@ function transition(
     h::Hamiltonian,
     z::PhasePoint
 ) where {T<:Real}
-    z′ = step(rng, τ.integrator, h, z, τ.n_steps)
+    # z′ = step(rng, τ.integrator, h, z, τ.n_steps)
+
+    m, η, α, D = τ.n_steps, τ.η, τ.α, τ.batch_size
+    
+    @unpack θ, r = z
+
+    for i=1:m
+        # ToDo: how to compute stochastic gradient
+        stoch_grad = gradient(h, D)
+        
+        # update position
+        θ .+= r
+
+        # update momentum
+        r .= (1 - α) .* r .+ η .* stoch_grad .+ rand.(Normal.(zeros(length(θ)), sqrt(2 * η * α)))
+    end
+
     # no M-H step
-    z = PhasePoint(z′.θ, z′.r, z′.ℓπ, z′.ℓκ)
+    z = PhasePoint(θ, r, z′.ℓπ, z′.ℓκ)
     stat = (
         step_size=τ.integrator.ϵ,
         n_steps=τ.n_steps,
@@ -778,6 +795,7 @@ function transition(
 
     DEBUG && @debug "recording old variables..."
     θ = z.θ
+    # ToDo: how to get stochastic gradient
     grad = -z.ℓπ.gradient
 
     DEBUG && @debug "update latent variables..."
