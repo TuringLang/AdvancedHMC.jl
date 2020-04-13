@@ -1,6 +1,6 @@
 # AdvancedHMC.jl
 
-[![Build Status](https://travis-ci.org/TuringLang/AdvancedHMC.jl.svg?branch=master)](https://travis-ci.org/TuringLang/AdvancedHMC.jl)
+[![Build Status](https://travis-ci.com/TuringLang/AdvancedHMC.jl.svg?branch=master)](https://travis-ci.com/TuringLang/AdvancedHMC.jl)
 [![DOI](https://zenodo.org/badge/72657907.svg)](https://zenodo.org/badge/latestdoi/72657907)
 [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
 
