@@ -44,8 +44,9 @@ import .Adaptation: StepSizeAdaptor, MassMatrixAdaptor, StanHMCAdaptor, Nesterov
 
 # Helpers for initializing adaptors via AHMC structs
 
-StepSizeAdaptor(δ::AbstractFloat, i::AbstractIntegrator) =
-    NesterovDualAveraging(δ, nom_step_size(i))
+StepSizeAdaptor(δ::AbstractFloat, stepsize::AbstractScalarOrVec{<:AbstractFloat}) = 
+    NesterovDualAveraging(δ, stepsize)
+StepSizeAdaptor(δ::AbstractFloat, i::AbstractIntegrator) = StepSizeAdaptor(δ, nom_step_size(i))
 
 MassMatrixAdaptor(m::UnitEuclideanMetric{T}) where {T} =
     UnitMassMatrix{T}()
