@@ -69,7 +69,7 @@ MassMatrixAdaptor(
 # Deprecations
 
 @deprecate StanHMCAdaptor(n_adapts, pc, ssa) initialize!(StanHMCAdaptor(pc, ssa), n_adapts)
-@deprecate NesterovDualAveraging(args...) StepSizeAdaptor(args...)
+@deprecate NesterovDualAveraging(δ::AbstractFloat, i::AbstractIntegrator) StepSizeAdaptor(δ, i)
 @deprecate Preconditioner(args...) MassMatrixAdaptor(args...)
 
 export StepSizeAdaptor, NesterovDualAveraging, 
