@@ -167,3 +167,20 @@ let D=10
         @test res.adaptor.pc.cov == mass_init
     end
 end
+
+@testset "Deprecation" begin
+    dim = 10
+    @test_deprecated Preconditioner(UnitEuclideanMetric(dim))
+    @test_deprecated Preconditioner(DiagEuclideanMetric(dim))
+    @test_deprecated Preconditioner(DenseEuclideanMetric(dim))
+    @test_deprecated Preconditioner(UnitEuclideanMetric)
+    @test_deprecated Preconditioner(DiagEuclideanMetric)
+    @test_deprecated Preconditioner(DenseEuclideanMetric)
+    for T in [Float32, Float64]
+        @test_deprecated Preconditioner(T, UnitEuclideanMetric)
+        @test_deprecated Preconditioner(T, DiagEuclideanMetric)
+        @test_deprecated Preconditioner(T, DenseEuclideanMetric)
+    end
+    @test_deprecated NesterovDualAveraging(0.8, Leapfrog(0.1))
+    @test_deprecated StanHMCAdaptor(100, MassMatrixAdaptor(UnitEuclideanMetric(dim)), StepSizeAdaptor(0.8, Leapfrog(0.1)))
+end
