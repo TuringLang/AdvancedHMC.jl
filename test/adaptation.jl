@@ -181,6 +181,7 @@ end
         @test_deprecated Preconditioner(T, DiagEuclideanMetric)
         @test_deprecated Preconditioner(T, DenseEuclideanMetric)
     end
+    @test_deprecated NesterovDualAveraging(0.8, 0.1)
     @test_deprecated NesterovDualAveraging(0.8, Leapfrog(0.1))
     @test_deprecated StanHMCAdaptor(100, MassMatrixAdaptor(UnitEuclideanMetric(dim)), StepSizeAdaptor(0.8, Leapfrog(0.1)))
 end
