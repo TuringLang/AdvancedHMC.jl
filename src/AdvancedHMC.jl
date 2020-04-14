@@ -70,7 +70,7 @@ MassMatrixAdaptor(
 
 @deprecate StanHMCAdaptor(n_adapts, pc, ssa) initialize!(StanHMCAdaptor(pc, ssa), n_adapts)
 @deprecate NesterovDualAveraging(δ, i::AbstractIntegrator) StepSizeAdaptor(δ, i)
-@deprecate Preconditioner(m::AbstractMetric) MassMatrixAdaptor(m)
+@deprecate Preconditioner(args...) MassMatrixAdaptor(args...)
 
 export StepSizeAdaptor, NesterovDualAveraging, 
        MassMatrixAdaptor, UnitMassMatrix, WelfordVar, WelfordCov, 
