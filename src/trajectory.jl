@@ -11,9 +11,9 @@
 A transition that contains the phase point and
 other statistics of the transition.
 """
-struct Transition{P<:PhasePoint, NT<:NamedTuple}
-    z       ::  P
-    stat    ::  NT
+struct Transition{P<:PhasePoint,NT<:NamedTuple}
+    z::P
+    stat::NT
 end
 
 stat(t::Transition) = t.stat
@@ -46,9 +46,9 @@ Trajectory slice sampler carried during the building of the tree.
 It contains the slice variable and the number of acceptable condidates in the tree.
 """
 struct SliceTS{F<:AbstractFloat} <: AbstractTrajectorySampler
-    zcand   ::  PhasePoint
-    ℓu      ::  F     # slice variable in log space
-    n       ::  Int   # number of acceptable candicates, i.e. those with prob larger than slice variable u
+    zcand::PhasePoint
+    ℓu::F     # slice variable in log space
+    n::Int   # number of acceptable candicates, i.e. those with prob larger than slice variable u
 end
 
 Base.show(io::IO, s::SliceTS) = print(io, "SliceTS(ℓu=$(s.ℓu), n=$(s.n))")
@@ -60,8 +60,8 @@ Multinomial trajectory sampler carried during the building of the tree.
 It contains the weight of the tree, defined as the total probabilities of the leaves.
 """
 struct MultinomialTS{F<:AbstractFloat} <: AbstractTrajectorySampler
-    zcand   ::  PhasePoint
-    ℓw      ::  F     # total energy for the given tree, i.e. sum of energy of all leaves
+    zcand::PhasePoint
+    ℓw::F     # total energy for the given tree, i.e. sum of energy of all leaves
 end
 
 """
@@ -149,9 +149,10 @@ end
 ### Static trajecotry with fixed leapfrog step numbers.
 ###
 
-struct StaticTrajectory{S<:AbstractTrajectorySampler, I<:AbstractIntegrator} <: AbstractTrajectory{I}
-    integrator  ::  I
-    n_steps     ::  Int
+struct StaticTrajectory{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <:
+       AbstractTrajectory{I}
+    integrator::I
+    n_steps::Int
 end
 
 function Base.show(io::IO, τ::StaticTrajectory{<:EndPointTS})
@@ -159,14 +160,18 @@ function Base.show(io::IO, τ::StaticTrajectory{<:EndPointTS})
 end
 
 function Base.show(io::IO, τ::StaticTrajectory{<:MultinomialTS})
-    print(io, "StaticTrajectory{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+    print(
+        io,
+        "StaticTrajectory{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))",
+    )
 end
 
-StaticTrajectory{S}(integrator::I, n_steps::Int) where {S,I} = StaticTrajectory{S,I}(integrator, n_steps)
+StaticTrajectory{S}(integrator::I, n_steps::Int) where {S,I} =
+    StaticTrajectory{S,I}(integrator, n_steps)
 StaticTrajectory(args...) = StaticTrajectory{EndPointTS}(args...) # default StaticTrajectory using last point from trajectory
 
 function transition(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     τ::StaticTrajectory,
     h::Hamiltonian,
     z::PhasePoint,
@@ -183,12 +188,12 @@ function transition(
     H = energy(z)
     tstat = merge(
         (
-            n_steps=τ.n_steps,
-            is_accept=is_accept,
-            acceptance_rate=α,
-            log_density=z.ℓπ.value,
-            hamiltonian_energy=H,
-            hamiltonian_energy_error=H - H0,
+            n_steps = τ.n_steps,
+            is_accept = is_accept,
+            acceptance_rate = α,
+            log_density = z.ℓπ.value,
+            hamiltonian_energy = H,
+            hamiltonian_energy_error = H - H0,
         ),
         stat(integrator),
     )
@@ -196,7 +201,11 @@ function transition(
 end
 
 # Return the accepted phase point
-function accept_phasepoint!(z::T, z′::T, is_accept::Bool) where {T<:PhasePoint{<:AbstractVector}}
+function accept_phasepoint!(
+    z::T,
+    z′::T,
+    is_accept::Bool,
+) where {T<:PhasePoint{<:AbstractVector}}
     if is_accept
         return z′
     else
@@ -207,12 +216,12 @@ function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:Abs
     # Revert unaccepted proposals in `z′`
     is_reject = (!).(is_accept)
     if any(is_reject)
-        z′.θ[:,is_reject] = z.θ[:,is_reject]
-        z′.r[:,is_reject] = z.r[:,is_reject]
+        z′.θ[:, is_reject] = z.θ[:, is_reject]
+        z′.r[:, is_reject] = z.r[:, is_reject]
         z′.ℓπ.value[is_reject] = z.ℓπ.value[is_reject]
-        z′.ℓπ.gradient[:,is_reject] = z.ℓπ.gradient[:,is_reject]
+        z′.ℓπ.gradient[:, is_reject] = z.ℓπ.gradient[:, is_reject]
         z′.ℓκ.value[is_reject] = z.ℓκ.value[is_reject]
-        z′.ℓκ.gradient[:,is_reject] = z.ℓκ.gradient[:,is_reject]
+        z′.ℓκ.gradient[:, is_reject] = z.ℓκ.gradient[:, is_reject]
     end
     # Always return `z′` as any unaccepted proposal is already reverted
     # NOTE: This in place treatment of `z′` is for memory efficient consideration.
@@ -227,7 +236,8 @@ samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h,
 
 ### Multinomial sampling from trajecory
 
-randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_ℓp::AbstractVector) = zs[randcat_logp(rng, unnorm_ℓp)]
+randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_ℓp::AbstractVector) =
+    zs[randcat_logp(rng, unnorm_ℓp)]
 
 # zs is in the form of Vector{PhasePoint{Matrix}} and has shape [n_steps][dim, n_chains]
 function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMatrix)
@@ -235,18 +245,18 @@ function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMat
     is = randcat_logp(rng, unnorm_ℓP)
     foreach(enumerate(is)) do (i_chain, i_step)
         zi = zs[i_step]
-        z.θ[:,i_chain] = zi.θ[:,i_chain]
-        z.r[:,i_chain] = zi.r[:,i_chain]
+        z.θ[:, i_chain] = zi.θ[:, i_chain]
+        z.r[:, i_chain] = zi.r[:, i_chain]
         z.ℓπ.value[i_chain] = zi.ℓπ.value[i_chain]
-        z.ℓπ.gradient[:,i_chain] = zi.ℓπ.gradient[:,i_chain]
+        z.ℓπ.gradient[:, i_chain] = zi.ℓπ.gradient[:, i_chain]
         z.ℓκ.value[i_chain] = zi.ℓκ.value[i_chain]
-        z.ℓκ.gradient[:,i_chain] = zi.ℓκ.gradient[:,i_chain]
+        z.ℓκ.gradient[:, i_chain] = zi.ℓκ.gradient[:, i_chain]
     end
     return z
 end
 
 function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
-    zs = step(τ.integrator, h, z, τ.n_steps; res=[z for _ in 1:abs(τ.n_steps)])
+    zs = step(τ.integrator, h, z, τ.n_steps; res = [z for _ = 1:abs(τ.n_steps)])
     ℓws = -energy.(zs)
     if eltype(ℓws) <: AbstractVector
         ℓws = hcat(ℓws...)
@@ -262,8 +272,8 @@ abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} 
 ###
 
 struct HMCDA{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: DynamicTrajectory{I}
-    integrator  ::  I
-    λ           ::  AbstractFloat
+    integrator::I
+    λ::AbstractFloat
 end
 
 function Base.show(io::IO, τ::HMCDA{<:EndPointTS})
@@ -277,7 +287,7 @@ HMCDA{S}(integrator::I, λ::AbstractFloat) where {S,I} = HMCDA{S,I}(integrator, 
 HMCDA(args...) = HMCDA{EndPointTS}(args...) # default HMCDA using last point from trajectory
 
 function transition(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     τ::HMCDA{S},
     h::Hamiltonian,
     z::PhasePoint,
@@ -323,24 +333,36 @@ struct NUTS{
     S<:AbstractTrajectorySampler,
     C<:AbstractTerminationCriterion,
     I<:AbstractIntegrator,
-    F<:AbstractFloat
+    F<:AbstractFloat,
 } <: DynamicTrajectory{I}
-    integrator      ::  I
-    max_depth       ::  Int
-    Δ_max           ::  F
+    integrator::I
+    max_depth::Int
+    Δ_max::F
 end
 
-function Base.show(io::IO, τ::NUTS{<:SliceTS, <:ClassicNoUTurn})
-    print(io, "NUTS{SliceTS}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+function Base.show(io::IO, τ::NUTS{<:SliceTS,<:ClassicNoUTurn})
+    print(
+        io,
+        "NUTS{SliceTS}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))",
+    )
 end
-function Base.show(io::IO, τ::NUTS{<:SliceTS, <:GeneralisedNoUTurn})
-    print(io, "NUTS{SliceTS,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+function Base.show(io::IO, τ::NUTS{<:SliceTS,<:GeneralisedNoUTurn})
+    print(
+        io,
+        "NUTS{SliceTS,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))",
+    )
 end
-function Base.show(io::IO, τ::NUTS{<:MultinomialTS, <:ClassicNoUTurn})
-    print(io, "NUTS{MultinomialTS}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+function Base.show(io::IO, τ::NUTS{<:MultinomialTS,<:ClassicNoUTurn})
+    print(
+        io,
+        "NUTS{MultinomialTS}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))",
+    )
 end
-function Base.show(io::IO, τ::NUTS{<:MultinomialTS, <:GeneralisedNoUTurn})
-    print(io, "NUTS{MultinomialTS,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+function Base.show(io::IO, τ::NUTS{<:MultinomialTS,<:GeneralisedNoUTurn})
+    print(
+        io,
+        "NUTS{MultinomialTS,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))",
+    )
 end
 
 
@@ -357,9 +379,14 @@ Create an instance for the No-U-Turn sampling algorithm.
 "$NUTS_DOCSTR"
 function NUTS{S,C}(
     integrator::I,
-    max_depth::Int=10,
-    Δ_max::F=1000.0,
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
+    max_depth::Int = 10,
+    Δ_max::F = 1000.0,
+) where {
+    I<:AbstractIntegrator,
+    F<:AbstractFloat,
+    S<:AbstractTrajectorySampler,
+    C<:AbstractTerminationCriterion,
+}
     return NUTS{S,C,I,F}(integrator, max_depth, Δ_max)
 end
 
@@ -373,7 +400,7 @@ Below is the doc for NUTS{S,C}.
 
 $NUTS_DOCSTR
 """
-NUTS(args...) = NUTS{MultinomialTS, GeneralisedNoUTurn}(args...)
+NUTS(args...) = NUTS{MultinomialTS,GeneralisedNoUTurn}(args...)
 
 ###
 ### The doubling tree algorithm for expanding trajectory.
@@ -391,8 +418,10 @@ struct Termination
     numerical::Bool
 end
 
-Base.show(io::IO, d::Termination) = print(io, "Termination(dynamic=$(d.dynamic), numerical=$(d.numerical))")
-Base.:*(d1::Termination, d2::Termination) = Termination(d1.dynamic || d2.dynamic, d1.numerical || d2.numerical)
+Base.show(io::IO, d::Termination) =
+    print(io, "Termination(dynamic=$(d.dynamic), numerical=$(d.numerical))")
+Base.:*(d1::Termination, d2::Termination) =
+    Termination(d1.dynamic || d2.dynamic, d1.numerical || d2.numerical)
 isterminated(d::Termination) = d.dynamic || d.numerical
 
 """
@@ -417,12 +446,12 @@ end
 A full binary tree trajectory with only necessary leaves and information stored.
 """
 struct BinaryTree{C<:AbstractTerminationCriterion}
-    zleft   # left most leaf node
-    zright  # right most leaf node
+    zleft::Any   # left most leaf node
+    zright::Any  # right most leaf node
     c::C    # termination criterion
-    sum_α   # MH stats, i.e. sum of MH accept prob for all leapfrog steps
-    nα      # total # of leap frog steps, i.e. phase points in a trajectory
-    ΔH_max  # energy in tree with largest absolute different from initial energy
+    sum_α::Any   # MH stats, i.e. sum of MH accept prob for all leapfrog steps
+    nα::Any      # total # of leap frog steps, i.e. phase points in a trajectory
+    ΔH_max::Any  # energy in tree with largest absolute different from initial energy
 end
 
 """
@@ -493,7 +522,12 @@ function build_tree(
     v::Int,
     j::Int,
     H0::AbstractFloat,
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
+) where {
+    I<:AbstractIntegrator,
+    F<:AbstractFloat,
+    S<:AbstractTrajectorySampler,
+    C<:AbstractTerminationCriterion,
+}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
         z′ = step(nt.integrator, h, z, v)
@@ -501,7 +535,9 @@ function build_tree(
         ΔH = H′ - H0
         α′ = exp(min(0, -ΔH))
         sampler′ = S(sampler, H0, z′)
-        return BinaryTree(z′, z′, C(z′), α′, 1, ΔH), sampler′, Termination(sampler′, nt, H0, H′)
+        return BinaryTree(z′, z′, C(z′), α′, 1, ΔH),
+        sampler′,
+        Termination(sampler′, nt, H0, H′)
     else
         # Recursion - build the left and right subtrees.
         tree′, sampler′, termination′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
@@ -509,11 +545,13 @@ function build_tree(
         if !isterminated(termination′)
             # Expand left
             if v == -1
-                tree′′, sampler′′, termination′′ = build_tree(rng, nt, h, tree′.zleft, sampler, v, j - 1, H0) # left tree
+                tree′′, sampler′′, termination′′ =
+                    build_tree(rng, nt, h, tree′.zleft, sampler, v, j - 1, H0) # left tree
                 treeleft, treeright = tree′′, tree′
-            # Expand right
+                # Expand right
             else
-                tree′′, sampler′′, termination′′ = build_tree(rng, nt, h, tree′.zright, sampler, v, j - 1, H0) # right tree
+                tree′′, sampler′′, termination′′ =
+                    build_tree(rng, nt, h, tree′.zright, sampler, v, j - 1, H0) # right tree
                 treeleft, treeright = tree′, tree′′
             end
             tree′ = combine(treeleft, treeright)
@@ -529,7 +567,12 @@ function transition(
     τ::NUTS{S,C,I,F},
     h::Hamiltonian,
     z0::PhasePoint,
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
+) where {
+    I<:AbstractIntegrator,
+    F<:AbstractFloat,
+    S<:AbstractTrajectorySampler,
+    C<:AbstractTerminationCriterion,
+}
     H0 = energy(z0)
     tree = BinaryTree(z0, z0, C(z0), zero(F), zero(Int), zero(H0))
     sampler = S(rng, z0)
@@ -537,7 +580,7 @@ function transition(
     zcand = z0
 
     integrator = jitter(rng, τ.integrator)
-    τ = reconstruct(τ, integrator=integrator)
+    τ = reconstruct(τ, integrator = integrator)
 
     j = 0
     while !isterminated(termination) && j < τ.max_depth
@@ -545,11 +588,13 @@ function transition(
         v = rand(rng, [-1, 1])
         if v == -1
             # Create a tree with depth `j` on the left
-            tree′, sampler′, termination′ = build_tree(rng, τ, h, tree.zleft, sampler, v, j, H0)
+            tree′, sampler′, termination′ =
+                build_tree(rng, τ, h, tree.zleft, sampler, v, j, H0)
             treeleft, treeright = tree′, tree
         else
             # Create a tree with depth `j` on the right
-            tree′, sampler′, termination′ = build_tree(rng, τ, h, tree.zright, sampler, v, j, H0)
+            tree′, sampler′, termination′ =
+                build_tree(rng, τ, h, tree.zright, sampler, v, j, H0)
             treeleft, treeright = tree, tree′
         end
         # Perform a MH step and increse depth if not terminated
@@ -570,15 +615,15 @@ function transition(
     H = energy(zcand)
     tstat = merge(
         (
-            n_steps=tree.nα,
-            is_accept=true,
-            acceptance_rate=tree.sum_α / tree.nα,
-            log_density=zcand.ℓπ.value,
-            hamiltonian_energy=H,
-            hamiltonian_energy_error=H - H0,
-            max_hamiltonian_energy_error=tree.ΔH_max,
-            tree_depth=j,
-            numerical_error=termination.numerical,
+            n_steps = tree.nα,
+            is_accept = true,
+            acceptance_rate = tree.sum_α / tree.nα,
+            log_density = zcand.ℓπ.value,
+            hamiltonian_energy = H,
+            hamiltonian_energy_error = H - H0,
+            max_hamiltonian_energy_error = tree.ΔH_max,
+            tree_depth = j,
+            numerical_error = termination.numerical,
         ),
         stat(τ.integrator),
     )
@@ -608,7 +653,7 @@ function find_good_stepsize(
     rng::AbstractRNG,
     h::Hamiltonian,
     θ::AbstractVector{T};
-    max_n_iters::Int=100,
+    max_n_iters::Int = 100,
 ) where {T<:Real}
     # Initialize searching parameters
     ϵ′ = ϵ = T(0.1)
@@ -674,9 +719,9 @@ end
 function find_good_stepsize(
     h::Hamiltonian,
     θ::AbstractVector{<:AbstractFloat};
-    max_n_iters::Int=100,
+    max_n_iters::Int = 100,
 )
-    return find_good_stepsize(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
+    return find_good_stepsize(GLOBAL_RNG, h, θ; max_n_iters = max_n_iters)
 end
 
 """
@@ -693,7 +738,7 @@ function mh_accept_ratio(
 end
 
 function mh_accept_ratio(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     Horiginal::AbstractVector{<:T},
     Hproposal::AbstractVector{<:T},
 ) where {T<:AbstractFloat}

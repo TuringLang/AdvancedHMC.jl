@@ -16,7 +16,7 @@ const gaussian_s = ones(D)
 
 function ℓπ(m, s, x::AbstractVecOrMat{T}) where {T}
     diff = x .- m
-    v = s.^2
+    v = s .^ 2
     return -(log(2 * T(pi)) .+ log.(v) .+ diff .* diff ./ v) / 2
 end
 
@@ -25,12 +25,12 @@ function ℓπ(θ::AbstractVector)
 end
 
 function ℓπ(θ::AbstractMatrix)
-    return dropdims(sum(ℓπ(gaussian_m, gaussian_s, θ); dims=1); dims=1)
+    return dropdims(sum(ℓπ(gaussian_m, gaussian_s, θ); dims = 1); dims = 1)
 end
 
 function ∂ℓπ∂θ(m, s, x::AbstractVecOrMat{T}) where {T}
     diff = x .- m
-    v = s.^2
+    v = s .^ 2
     v = -(log(2 * T(pi)) .+ log.(v) .+ diff .* diff ./ v) / 2
     g = -diff
     return v, g
@@ -43,7 +43,7 @@ end
 
 function ∂ℓπ∂θ(θ::AbstractMatrix)
     v, g = ∂ℓπ∂θ(gaussian_m, gaussian_s, θ)
-    return dropdims(sum(v; dims=1); dims=1), g
+    return dropdims(sum(v; dims = 1); dims = 1), g
 end
 
 # For the Turing model
@@ -66,7 +66,8 @@ end
 
 function ℓπ_gdemo(θ)
     s, m = invlink_gdemo(θ)
-    logprior = logpdf_with_trans(InverseGamma(2, 3), s, true) + logpdf(Normal(0, sqrt(s)), m)
+    logprior =
+        logpdf_with_trans(InverseGamma(2, 3), s, true) + logpdf(Normal(0, sqrt(s)), m)
     loglikelihood = logpdf(Normal(m, sqrt(s)), 1.5) + logpdf(Normal(m, sqrt(s)), 2.0)
     return logprior + loglikelihood
 end

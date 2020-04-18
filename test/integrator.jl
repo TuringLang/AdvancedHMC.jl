@@ -22,8 +22,8 @@ n_steps = 10
 
     @info "Performance of step() v.s. step()" n_steps t_step t_steps t_step / t_steps
 
-    @test z_step.θ ≈ z_steps.θ atol=DETATOL
-    @test z_step.r ≈ z_steps.r atol=DETATOL
+    @test z_step.θ ≈ z_steps.θ atol = DETATOL
+    @test z_step.r ≈ z_steps.r atol = DETATOL
 end
 
 # using Turing: Inference
@@ -50,21 +50,21 @@ end
 
 @testset "temper" begin
     αsqrt = 2.0
-    lf = TemperedLeapfrog(ϵ, αsqrt ^ 2)
+    lf = TemperedLeapfrog(ϵ, αsqrt^2)
     r = ones(5)
-    r1 = AdvancedHMC.temper(lf, r, (i=1, is_half=true), 3)
-    r2 = AdvancedHMC.temper(lf, r, (i=1, is_half=false), 3)
-    r3 = AdvancedHMC.temper(lf, r, (i=2, is_half=true), 3)
-    r4 = AdvancedHMC.temper(lf, r, (i=2, is_half=false), 3)
-    r5 = AdvancedHMC.temper(lf, r, (i=3, is_half=true), 3)
-    r6 = AdvancedHMC.temper(lf, r, (i=3, is_half=false), 3)
+    r1 = AdvancedHMC.temper(lf, r, (i = 1, is_half = true), 3)
+    r2 = AdvancedHMC.temper(lf, r, (i = 1, is_half = false), 3)
+    r3 = AdvancedHMC.temper(lf, r, (i = 2, is_half = true), 3)
+    r4 = AdvancedHMC.temper(lf, r, (i = 2, is_half = false), 3)
+    r5 = AdvancedHMC.temper(lf, r, (i = 3, is_half = true), 3)
+    r6 = AdvancedHMC.temper(lf, r, (i = 3, is_half = false), 3)
     @test r1 == αsqrt * ones(5)
     @test r2 == αsqrt * ones(5)
     @test r3 == αsqrt * ones(5)
     @test r4 == inv(αsqrt) * ones(5)
     @test r5 == inv(αsqrt) * ones(5)
     @test r6 == inv(αsqrt) * ones(5)
-    @test_throws BoundsError AdvancedHMC.temper(lf, r, (i=4, is_half=false), 3)
+    @test_throws BoundsError AdvancedHMC.temper(lf, r, (i = 4, is_half = false), 3)
 
 end
 
@@ -76,10 +76,7 @@ using Statistics: mean
     negU(q::AbstractVector{T}) where {T<:Real} = -dot(q, q) / 2
 
     ϵ = 0.01
-    for lf in [
-        Leapfrog(ϵ),
-        DiffEqIntegrator(ϵ, VerletLeapfrog())
-    ]
+    for lf in [Leapfrog(ϵ), DiffEqIntegrator(ϵ, VerletLeapfrog())]
         q_init = randn(D)
         h = Hamiltonian(UnitEuclideanMetric(D), negU, ForwardDiff)
         p_init = AdvancedHMC.rand(h.metric)
@@ -104,10 +101,10 @@ using Statistics: mean
         Hs = Hs[1_000:end]
 
         # Check if all points located at a cirle centered at the origin
-        rs = sqrt.(qs.^2 + ps.^2)
-        @test all(x-> abs(x - mean(rs)) < 2e-3, rs)
+        rs = sqrt.(qs .^ 2 + ps .^ 2)
+        @test all(x -> abs(x - mean(rs)) < 2e-3, rs)
 
         # Check if the Hamiltonian energy is stable
-        @test all(x-> abs(x - mean(Hs)) < 2e-3, Hs)
+        @test all(x -> abs(x - mean(Hs)) < 2e-3, Hs)
     end
 end

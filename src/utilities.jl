@@ -13,7 +13,7 @@ end
 
 function Base.randn(rng::AbstractVector{<:AbstractRNG}, T, dim::Int, n_chains::Int)
     @argcheck length(rng) == n_chains
-    return cat(randn.(rng, T, dim)...; dims=2)
+    return cat(randn.(rng, T, dim)...; dims = 2)
 end
 
 # Sample from Categorical distributions
@@ -32,16 +32,16 @@ function randcat(rng::AbstractRNG, p::AbstractVector{T}) where {T}
 end
 
 randcat_logp(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
-    unnorm_ℓP::AbstractMatrix
-) = randcat(rng, exp.(unnorm_ℓP .- logsumexp(unnorm_ℓP; dims=2)))
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    unnorm_ℓP::AbstractMatrix,
+) = randcat(rng, exp.(unnorm_ℓP .- logsumexp(unnorm_ℓP; dims = 2)))
 
 function randcat(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
-    P::AbstractMatrix{T}
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    P::AbstractMatrix{T},
 ) where {T}
     u = rand(rng, T, size(P, 1))
-    C = cumsum(P; dims=2)
-    is = convert.(Int, vec(sum(C .< u; dims=2)))
+    C = cumsum(P; dims = 2)
+    is = convert.(Int, vec(sum(C .< u; dims = 2)))
     return max.(is, 1)
 end

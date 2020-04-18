@@ -13,8 +13,7 @@ r_init = AdvancedHMC.rand(h.metric)
 
 @testset "Passing random number generator" begin
     τ_with_jittered_lf = NUTS(JitteredLeapfrog(find_good_stepsize(h, θ_init), 1.0))
-    for τ_test in [τ, τ_with_jittered_lf],
-        seed in [1234, 5678, 90]
+    for τ_test in [τ, τ_with_jittered_lf], seed in [1234, 5678, 90]
         rng = MersenneTwister(seed)
         z = AdvancedHMC.phasepoint(h, θ_init, r_init)
         z1′ = AdvancedHMC.transition(rng, τ_test, h, z).z
@@ -37,19 +36,19 @@ end
 
     ℓu = rand()
     n1 = 2
-    s1 = AdvancedHMC.SliceTS(z1, ℓu, n1) 
+    s1 = AdvancedHMC.SliceTS(z1, ℓu, n1)
     n2 = 1
-    s2 = AdvancedHMC.SliceTS(z2, ℓu, n2) 
+    s2 = AdvancedHMC.SliceTS(z2, ℓu, n2)
     s3 = AdvancedHMC.combine(rng, s1, s2)
     @test s3.ℓu == ℓu
     @test s3.n == n1 + n2
 
-    
+
     s3_θ = Vector(undef, n_samples)
     for i = 1:n_samples
         s3_θ[i] = AdvancedHMC.combine(rng, s1, s2).zcand.θ
     end
-    @test mean(s3_θ) ≈ ones(D) * n2 / (n1 + n2) rtol=0.01
+    @test mean(s3_θ) ≈ ones(D) * n2 / (n1 + n2) rtol = 0.01
 
     w1 = 100
     s1 = AdvancedHMC.MultinomialTS(z1, log(w1))
@@ -62,7 +61,7 @@ end
     for i = 1:n_samples
         s3_θ[i] = AdvancedHMC.combine(rng, s1, s2).zcand.θ
     end
-    @test mean(s3_θ) ≈ ones(D) * w2 / (w1 + w2) rtol=0.01
+    @test mean(s3_θ) ≈ ones(D) * w2 / (w1 + w2) rtol = 0.01
 end
 
 @testset "TerminationCriterion" begin
@@ -75,10 +74,10 @@ end
 
     r1 = randn(D)
     z1 = AdvancedHMC.phasepoint(h, θ_init, r1)
-    c1 = AdvancedHMC.GeneralisedNoUTurn(z1) 
+    c1 = AdvancedHMC.GeneralisedNoUTurn(z1)
     r2 = randn(D)
     z2 = AdvancedHMC.phasepoint(h, θ_init, r2)
-    c2 = AdvancedHMC.GeneralisedNoUTurn(z2) 
+    c2 = AdvancedHMC.GeneralisedNoUTurn(z2)
     c3 = AdvancedHMC.combine(c1, c2)
     @test c3.rho == r1 + r2
 end
@@ -122,7 +121,7 @@ end
     t2 = AdvancedHMC.BinaryTree(z, z, ClassicNoUTurn(), 1.1, 2, 1.0)
     t3 = AdvancedHMC.combine(t1, t2)
 
-    @test t3.sum_α ≈ 1.2 atol=1e-9
+    @test t3.sum_α ≈ 1.2 atol = 1e-9
     @test t3.nα == 3
     @test t3.ΔH_max == -2.0
 
@@ -134,22 +133,30 @@ end
 
 ### Test ClassicNoUTurn and GeneralisedNoUTurn
 
-function makeplot(
-    plt,
-    traj_θ,
-    ts_list...
-)
+function makeplot(plt, traj_θ, ts_list...)
     function plotturn!(traj_θ, ts)
         s = 9.0
         idcs_nodiv = ts .== false
         idcs_div = ts .== true
         idcs_nodiv[1] = idcs_div[1] = false # avoid plotting the first point
-        plt.scatter(traj_θ[1,idcs_nodiv], traj_θ[2,idcs_nodiv], s=s, c="black",  label="¬div")
-        plt.scatter(traj_θ[1,idcs_div], traj_θ[2,idcs_div],  s=s, c="red",    label="div")
-        plt.scatter(traj_θ[1,1], traj_θ[2,1], s=s, c="yellow", label="init")
+        plt.scatter(
+            traj_θ[1, idcs_nodiv],
+            traj_θ[2, idcs_nodiv],
+            s = s,
+            c = "black",
+            label = "¬div",
+        )
+        plt.scatter(
+            traj_θ[1, idcs_div],
+            traj_θ[2, idcs_div],
+            s = s,
+            c = "red",
+            label = "div",
+        )
+        plt.scatter(traj_θ[1, 1], traj_θ[2, 1], s = s, c = "yellow", label = "init")
     end
 
-    fig = plt.figure(figsize=(16, 3))
+    fig = plt.figure(figsize = (16, 3))
 
     for (i, ts, title) in zip(
         1:length(ts_list),
@@ -158,8 +165,8 @@ function makeplot(
             "Hand original (v = 1)",
             "AHMC original (v = 1)",
             "Hand generalised (v = 1)",
-            "AHMC generalised (v = 1)"
-        ]
+            "AHMC generalised (v = 1)",
+        ],
     )
         plt.subplot(1, 4, i)
         plotturn!(traj_θ, ts)
@@ -170,9 +177,9 @@ function makeplot(
     return fig
 end
 
-function gettraj(rng, ϵ=0.1, n_steps=50)
+function gettraj(rng, ϵ = 0.1, n_steps = 50)
     lf = Leapfrog(ϵ)
-    
+
     q_init = randn(rng, D)
     p_init = AdvancedHMC.rand(rng, h.metric)
     z = AdvancedHMC.phasepoint(h, q_init, p_init)
@@ -182,26 +189,32 @@ function gettraj(rng, ϵ=0.1, n_steps=50)
     for i = 2:n_steps
         traj_z[i] = AdvancedHMC.step(lf, h, traj_z[i-1])
     end
-    
+
     return traj_z
 end
 
-function hand_isturn(z0, z1, rho, v=1)
+function hand_isturn(z0, z1, rho, v = 1)
     θ0minusθ1 = z0.θ - z1.θ
     s = (dot(-θ0minusθ1, -z0.r) >= 0) || (dot(θ0minusθ1, z1.r) >= 0)
     return s
 end
 
-ahmc_isturn(z0, z1, rho, v=1) =
-    AdvancedHMC.isterminated(h, AdvancedHMC.BinaryTree(z0, z1, ClassicNoUTurn(), 0, 0, 0.0)).dynamic
+ahmc_isturn(z0, z1, rho, v = 1) =
+    AdvancedHMC.isterminated(
+        h,
+        AdvancedHMC.BinaryTree(z0, z1, ClassicNoUTurn(), 0, 0, 0.0),
+    ).dynamic
 
-function hand_isturn_generalised(z0, z1, rho, v=1)
+function hand_isturn_generalised(z0, z1, rho, v = 1)
     s = (dot(rho, -z0.r) >= 0) || (dot(-rho, z1.r) >= 0)
     return s
 end
 
-ahmc_isturn_generalised(z0, z1, rho, v=1) =
-    AdvancedHMC.isterminated(h, AdvancedHMC.BinaryTree(z0, z1, GeneralisedNoUTurn(rho), 0, 0, 0.0)).dynamic
+ahmc_isturn_generalised(z0, z1, rho, v = 1) =
+    AdvancedHMC.isterminated(
+        h,
+        AdvancedHMC.BinaryTree(z0, z1, GeneralisedNoUTurn(rho), 0, 0, 0.0),
+    ).dynamic
 
 @testset "ClassicNoUTurn" begin
     n_tests = 4
@@ -212,25 +225,52 @@ ahmc_isturn_generalised(z0, z1, rho, v=1) =
             traj_z = gettraj(rng)
             traj_θ = hcat(map(z -> z.θ, traj_z)...)
             traj_r = hcat(map(z -> z.r, traj_z)...)
-            rho = cumsum(traj_r, dims=2)
-            
-            ts_hand_isturn_fwd = hand_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
-            ts_ahmc_isturn_fwd = ahmc_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+            rho = cumsum(traj_r, dims = 2)
 
-            ts_hand_isturn_generalised_fwd = hand_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
-            ts_ahmc_isturn_generalised_fwd = ahmc_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+            ts_hand_isturn_fwd =
+                hand_isturn.(
+                    Ref(traj_z[1]),
+                    traj_z,
+                    [rho[:, i] for i = 1:length(traj_z)],
+                    Ref(1),
+                )
+            ts_ahmc_isturn_fwd =
+                ahmc_isturn.(
+                    Ref(traj_z[1]),
+                    traj_z,
+                    [rho[:, i] for i = 1:length(traj_z)],
+                    Ref(1),
+                )
 
-            @test ts_hand_isturn_fwd[2:end] == ts_ahmc_isturn_fwd[2:end] == ts_hand_isturn_generalised_fwd[2:end] == ts_ahmc_isturn_generalised_fwd[2:end]
-            
+            ts_hand_isturn_generalised_fwd =
+                hand_isturn_generalised.(
+                    Ref(traj_z[1]),
+                    traj_z,
+                    [rho[:, i] for i = 1:length(traj_z)],
+                    Ref(1),
+                )
+            ts_ahmc_isturn_generalised_fwd =
+                ahmc_isturn_generalised.(
+                    Ref(traj_z[1]),
+                    traj_z,
+                    [rho[:, i] for i = 1:length(traj_z)],
+                    Ref(1),
+                )
+
+            @test ts_hand_isturn_fwd[2:end] ==
+                  ts_ahmc_isturn_fwd[2:end] ==
+                  ts_hand_isturn_generalised_fwd[2:end] ==
+                  ts_ahmc_isturn_generalised_fwd[2:end]
+
             if length(ARGS) > 0 && ARGS[1] == "--plot"
                 import PyPlot
                 fig = makeplot(
                     PyPlot,
                     traj_θ,
-                    ts_hand_isturn_fwd, 
+                    ts_hand_isturn_fwd,
                     ts_ahmc_isturn_fwd,
-                    ts_hand_isturn_generalised_fwd, 
-                    ts_ahmc_isturn_generalised_fwd
+                    ts_hand_isturn_generalised_fwd,
+                    ts_ahmc_isturn_generalised_fwd,
                 )
                 fig.savefig("seed=$seed.png")
             end

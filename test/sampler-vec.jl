@@ -16,49 +16,54 @@ include("common.jl")
     n_adapts = 2_000
 
     for metricT in [
-        UnitEuclideanMetric,
-        DiagEuclideanMetric,
-        # DenseEuclideanMetric  # not supported at the moment
-    ], τ in [
-        StaticTrajectory{EndPointTS}(lfi, n_steps),
-        StaticTrajectory{MultinomialTS}(lfi, n_steps),
-        StaticTrajectory{EndPointTS}(lfi_jittered, n_steps),
-        StaticTrajectory{MultinomialTS}(lfi_jittered, n_steps),
-        HMCDA{EndPointTS}(lf, ϵ * n_steps),
-        HMCDA{MultinomialTS}(lf, ϵ * n_steps),
-    ]
+            UnitEuclideanMetric,
+            DiagEuclideanMetric,
+            # DenseEuclideanMetric  # not supported at the moment
+        ],
+        τ in [
+            StaticTrajectory{EndPointTS}(lfi, n_steps),
+            StaticTrajectory{MultinomialTS}(lfi, n_steps),
+            StaticTrajectory{EndPointTS}(lfi_jittered, n_steps),
+            StaticTrajectory{MultinomialTS}(lfi_jittered, n_steps),
+            HMCDA{EndPointTS}(lf, ϵ * n_steps),
+            HMCDA{MultinomialTS}(lf, ϵ * n_steps),
+        ]
+
         n_chains = n_chains_list[i_test]
         metric = metricT((D, n_chains))
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         # NoAdaptation
-        samples, stats = sample(h, τ, θ_init_list[i_test], n_samples; verbose=false)
-        @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL * n_chains
+        samples, stats = sample(h, τ, θ_init_list[i_test], n_samples; verbose = false)
+        @test mean(samples) ≈ zeros(D, n_chains) atol = RNDATOL * n_chains
         # Adaptation
         for adaptor in [
             MassMatrixAdaptor(metric),
             StepSizeAdaptor(0.8, lfi),
-            NaiveHMCAdaptor(
-                MassMatrixAdaptor(metric),
-                StepSizeAdaptor(0.8, lfi),
-            ),
-            StanHMCAdaptor(
-                MassMatrixAdaptor(metric),
-                StepSizeAdaptor(0.8, lfi),
-            ),
+            NaiveHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, lfi)),
+            StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, lfi)),
         ]
             τ isa HMCDA && continue
-            samples, stats = sample(h, τ, θ_init_list[i_test], n_samples, adaptor, n_adapts; verbose=false, progress=false)
-            @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL * n_chains
+            samples, stats = sample(
+                h,
+                τ,
+                θ_init_list[i_test],
+                n_samples,
+                adaptor,
+                n_adapts;
+                verbose = false,
+                progress = false,
+            )
+            @test mean(samples) ≈ zeros(D, n_chains) atol = RNDATOL * n_chains
         end
         # Passing a vector of same RNGs
-        rng = [MersenneTwister(1) for _ in 1:n_chains]
+        rng = [MersenneTwister(1) for _ = 1:n_chains]
         h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∂ℓπ∂θ)
         θ_init = repeat(rand(D), 1, n_chains)
-        samples, stats = sample(rng, h, τ, θ_init, n_samples; verbose=false)
+        samples, stats = sample(rng, h, τ, θ_init, n_samples; verbose = false)
         all_same = true
-        for i_sample in 2:10
-            for j in 2:n_chains
-                all_same = all_same && samples[i_sample][:,j] == samples[i_sample][:,1]
+        for i_sample = 2:10
+            for j = 2:n_chains
+                all_same = all_same && samples[i_sample][:, j] == samples[i_sample][:, 1]
             end
         end
         @test all_same
@@ -66,13 +71,14 @@ include("common.jl")
     @info "Adaptation tests for HMCDA with StepSizeAdaptor are skipped"
 
     # Simple time benchmark
-    let metricT=UnitEuclideanMetric
+    let metricT = UnitEuclideanMetric
         τ = StaticTrajectory(lf, n_steps)
 
         time_mat = Vector{Float64}(undef, n_chains_max)
         for (i, n_chains) in enumerate(n_chains_list)
             h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∂ℓπ∂θ)
-            t = @elapsed samples, stats = sample(h, τ, θ_init_list[i], n_samples; verbose=false)
+            t = @elapsed samples, stats =
+                sample(h, τ, θ_init_list[i], n_samples; verbose = false)
             time_mat[i] = t
         end
 
@@ -80,9 +86,10 @@ include("common.jl")
         time_seperate = Vector{Float64}(undef, n_chains_max)
 
         for (i, n_chains) in enumerate(n_chains_list)
-            t = @elapsed for j in 1:n_chains
+            t = @elapsed for j = 1:n_chains
                 h = Hamiltonian(metricT(D), ℓπ, ∂ℓπ∂θ)
-                samples, stats = sample(h, τ, θ_init_list[i][:,j], n_samples; verbose=false)
+                samples, stats =
+                    sample(h, τ, θ_init_list[i][:, j], n_samples; verbose = false)
             end
             time_seperate[i] = t
         end
@@ -91,12 +98,21 @@ include("common.jl")
         fig = lineplot(
             collect(1:n_chains_max),
             time_mat;
-            title="Scalabiliry of multiple chains",
-            name="vectorization",
-            xlabel="Num of chains",
-            ylabel="Time (s)"
+            title = "Scalabiliry of multiple chains",
+            name = "vectorization",
+            xlabel = "Num of chains",
+            ylabel = "Time (s)",
         )
-        lineplot!(fig, collect(n_chains_list), time_seperate; color=:blue, name="seperate")
-        println(); show(fig); println(); println()
+        lineplot!(
+            fig,
+            collect(n_chains_list),
+            time_seperate;
+            color = :blue,
+            name = "seperate",
+        )
+        println()
+        show(fig)
+        println()
+        println()
     end
 end

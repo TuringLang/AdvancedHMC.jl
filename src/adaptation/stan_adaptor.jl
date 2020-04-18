@@ -1,16 +1,22 @@
 ### Mutable states
 
 mutable struct StanHMCAdaptorState
-    i               ::  Int
-    window_start    ::  Int         # start of mass matrix adaptation
-    window_end      ::  Int         #   end of mass matrix adaptation
-    window_splits   ::  Vector{Int} # iterations to update metric using mass matrix
+    i::Int
+    window_start::Int         # start of mass matrix adaptation
+    window_end::Int         #   end of mass matrix adaptation
+    window_splits::Vector{Int} # iterations to update metric using mass matrix
 end
 
 StanHMCAdaptorState() = StanHMCAdaptorState(0, 0, 0, Vector{Int}(undef, 0))
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/windowed_adaptation.hpp
-function initialize!(state::StanHMCAdaptorState, init_buffer::Int, term_buffer::Int, window_size::Int, n_adapts::Int)
+function initialize!(
+    state::StanHMCAdaptorState,
+    init_buffer::Int,
+    term_buffer::Int,
+    window_size::Int,
+    n_adapts::Int,
+)
     window_start = init_buffer + 1
     window_end = n_adapts - term_buffer
 
@@ -37,55 +43,76 @@ function initialize!(state::StanHMCAdaptorState, init_buffer::Int, term_buffer::
         end
     end
 
-    state.window_start  = window_start
-    state.window_end    = window_end
+    state.window_start = window_start
+    state.window_end = window_end
     state.window_splits = window_splits
 end
 
 function Base.show(io::IO, state::StanHMCAdaptorState)
-    print(io, "window($(state.window_start), $(state.window_end)), window_splits(" * string(join(state.window_splits, ", ")) * ")")
+    print(
+        io,
+        "window($(state.window_start), $(state.window_end)), window_splits(" *
+        string(join(state.window_splits, ", ")) *
+        ")",
+    )
 end
 
 ### Stan's windowed adaptation
 
 # Acknowledgement: this adaption settings is mimicing Stan's 3-phase adaptation.
-struct StanHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
-    pc          :: M
-    ssa         :: Tssa
-    init_buffer :: Int
-    term_buffer :: Int
-    window_size :: Int
-    state       :: StanHMCAdaptorState
+struct StanHMCAdaptor{M<:MassMatrixAdaptor,Tssa<:StepSizeAdaptor} <: AbstractAdaptor
+    pc::M
+    ssa::Tssa
+    init_buffer::Int
+    term_buffer::Int
+    window_size::Int
+    state::StanHMCAdaptorState
 end
-Base.show(io::IO, a::StanHMCAdaptor) =
-    print(io, "StanHMCAdaptor(\n    pc=$(a.pc),\n    ssa=$(a.ssa),\n    init_buffer=$(a.init_buffer), term_buffer=$(a.term_buffer), window_size=$(a.window_size),\n    state=$(a.state)\n)")
+Base.show(io::IO, a::StanHMCAdaptor) = print(
+    io,
+    "StanHMCAdaptor(\n    pc=$(a.pc),\n    ssa=$(a.ssa),\n    init_buffer=$(a.init_buffer), term_buffer=$(a.term_buffer), window_size=$(a.window_size),\n    state=$(a.state)\n)",
+)
 
 function StanHMCAdaptor(
     pc::MassMatrixAdaptor,
     ssa::StepSizeAdaptor;
-    init_buffer::Int=75,
-    term_buffer::Int=50,
-    window_size::Int=25
+    init_buffer::Int = 75,
+    term_buffer::Int = 50,
+    window_size::Int = 25,
 )
-    return StanHMCAdaptor(pc, ssa, init_buffer, term_buffer, window_size, StanHMCAdaptorState())
+    return StanHMCAdaptor(
+        pc,
+        ssa,
+        init_buffer,
+        term_buffer,
+        window_size,
+        StanHMCAdaptorState(),
+    )
 end
 
 getM⁻¹(ca::StanHMCAdaptor) = getM⁻¹(ca.pc)
 getϵ(ca::StanHMCAdaptor) = getϵ(ca.ssa)
 
 function initialize!(adaptor::StanHMCAdaptor, n_adapts::Int)
-    initialize!(adaptor.state, adaptor.init_buffer, adaptor.term_buffer, adaptor.window_size, n_adapts)
+    initialize!(
+        adaptor.state,
+        adaptor.init_buffer,
+        adaptor.term_buffer,
+        adaptor.window_size,
+        n_adapts,
+    )
     return adaptor
 end
 finalize!(adaptor::StanHMCAdaptor) = finalize!(adaptor.ssa)
 
-is_in_window(a::StanHMCAdaptor) = a.state.i >= a.state.window_start && a.state.i <= a.state.window_end
+is_in_window(a::StanHMCAdaptor) =
+    a.state.i >= a.state.window_start && a.state.i <= a.state.window_end
 is_window_end(a::StanHMCAdaptor) = a.state.i in a.state.window_splits
 
 function adapt!(
     tp::StanHMCAdaptor,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat}
+    α::AbstractScalarOrVec{<:AbstractFloat},
 )
     tp.state.i += 1
 
