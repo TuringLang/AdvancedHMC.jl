@@ -1,6 +1,6 @@
 abstract type AbstractMetric end
 
-_string_M⁻¹(mat::AbstractMatrix, n_chars::Int=32) = _string_M⁻¹(LinearAlgebra.diag(mat), n_chars)
+_string_M⁻¹(mat::AbstractMatrix, n_chars::Int=32) = _string_M⁻¹(diag(mat), n_chars)
 function _string_M⁻¹(vec::AbstractVector, n_chars::Int=32)
     s_vec = string(vec)
     l = length(s_vec)
