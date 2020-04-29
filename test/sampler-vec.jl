@@ -30,6 +30,9 @@ include("common.jl")
         n_chains = n_chains_list[i_test]
         metric = metricT((D, n_chains))
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+        @test isnothing(show(metric))
+        @test isnothing(show(h))
+        @test isnothing(show(τ))
         # NoAdaptation
         samples, stats = sample(h, τ, θ_init_list[i_test], n_samples; verbose=false)
         @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL * n_chains
@@ -47,6 +50,7 @@ include("common.jl")
             ),
         ]
             τ isa HMCDA && continue
+            @test isnothing(show(adaptor))
             samples, stats = sample(h, τ, θ_init_list[i_test], n_samples, adaptor, n_adapts; verbose=false, progress=false)
             @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL * n_chains
         end
