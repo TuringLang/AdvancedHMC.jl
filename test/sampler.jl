@@ -36,7 +36,7 @@ end
         :DiagEuclideanMetric => DiagEuclideanMetric(D),
         :DenseEuclideanMetric => DenseEuclideanMetric(D),
     )
-        @test isnothing(show(metric))
+        @test show(metric) == nothing
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         @testset "$lfsym" for (lfsym, lf) in Dict(
             :Leapfrog => Leapfrog(ϵ),
@@ -53,8 +53,8 @@ end
                 :(NUTS{MultinomialTS,Original}) => NUTS{MultinomialTS,ClassicNoUTurn}(lf),
                 :(NUTS{MultinomialTS,Generalised}) => NUTS{MultinomialTS,GeneralisedNoUTurn}(lf),
             )
-                @test isnothing(show(h))
-                @test isnothing(show(τ))
+                @test show(h) == nothing
+                @test show(τ) == nothing
                 @testset  "NoAdaptation" begin
                     Random.seed!(1)
                     samples, stats = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
@@ -79,7 +79,7 @@ end
                         StepSizeAdaptor(0.8, τ.integrator),
                     ),
                 )
-                    @test isnothing(show(adaptor))
+                    @test show(adaptor) == nothing
                     Random.seed!(1)
                     # For `MassMatrixAdaptor`, we use the pre-defined step size as the method cannot adapt the step size.
                     # For other adapatation methods that are able to adpat the step size, we use `find_good_stepsize`.
