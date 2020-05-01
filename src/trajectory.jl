@@ -267,10 +267,10 @@ struct HMCDA{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: DynamicTraje
 end
 
 function Base.show(io::IO, τ::HMCDA{<:EndPointTS})
-    print(io, "HMCDA{EndPointTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+    print(io, "HMCDA{EndPointTS}(integrator=$(τ.integrator), λ=$(τ.λ)))")
 end
 function Base.show(io::IO, τ::HMCDA{<:MultinomialTS})
-    print(io, "HMCDA{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+    print(io, "HMCDA{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.λ)))")
 end
 
 HMCDA{S}(integrator::I, λ::AbstractFloat) where {S,I} = HMCDA{S,I}(integrator, λ)

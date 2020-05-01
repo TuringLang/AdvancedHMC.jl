@@ -91,7 +91,7 @@ end
 JitteredLeapfrog(ϵ0, jitter) = JitteredLeapfrog(ϵ0, jitter, ϵ0)
 
 function Base.show(io::IO, l::JitteredLeapfrog)
-    print(io, "JitteredLeapfrog(ϵ0=$(round(l.ϵ0; sigdigits=3)), jitter=$(round(l.jitter; sigdigits=3)), ϵ=$(round(l.ϵ; sigdigits=3)))")
+    print(io, "JitteredLeapfrog(ϵ0=$(round.(l.ϵ0; sigdigits=3)), jitter=$(round.(l.jitter; sigdigits=3)), ϵ=$(round.(l.ϵ; sigdigits=3)))")
 end
 
 nom_step_size(lf::JitteredLeapfrog) = lf.ϵ0
@@ -120,7 +120,7 @@ struct TemperedLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: Abstrac
 end
 
 function Base.show(io::IO, l::TemperedLeapfrog)
-    print(io, "TemperedLeapfrog(ϵ=$(round(l.ϵ; sigdigits=3)), α=$(round(l.α; sigdigits=3)))")
+    print(io, "TemperedLeapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)), α=$(round.(l.α; sigdigits=3)))")
 end
 
 """
