@@ -267,7 +267,8 @@ samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h,
 
 ### Multinomial sampling from trajectory
 
-randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_ℓp::AbstractVector) = zs[randcat_logp(rng, unnorm_ℓp)]
+randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_ℓp::AbstractVector) = 
+    zs[randcat_logp(rng, unnorm_ℓp)]
 
 # zs is in the form of Vector{PhasePoint{Matrix}} and has shape [n_steps][dim, n_chains]
 function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMatrix)
@@ -286,7 +287,12 @@ function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMat
 end
 
 function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
-    zs = step(τ.integrator, h, z, τ.n_steps; full_trajectory = Val(true))
+    n_steps = abs(τ.n_steps)
+    n_fwd = rand(0:n_steps) # FIXME: deal with multi-chain generically
+    zs_fwd = step(τ.integrator, h, z, n_fwd; fwd=true, full_trajectory=Val(true))
+    n_bwd = n_steps - n_fwd
+    zs_bwd = step(τ.integrator, h, z, n_bwd; fwd=false, full_trajectory=Val(true))
+    zs = vcat(reverse(zs_bwd)..., z, zs_fwd...)
     ℓws = -energy.(zs)
     if eltype(ℓws) <: AbstractVector
         ℓws = hcat(ℓws...)
