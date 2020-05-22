@@ -213,9 +213,7 @@ function transition(
 )
     H0 = energy(z)
     integrator = jitter(rng, τ.integrator)
-    z′ = samplecand(rng, τ, h, z)
-    # Are we going to accept the `z′` via MH criteria?
-    is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
+    z′, is_accept, α = samplecand(rng, τ, h, z)
     # Do the actual accept / reject
     z = accept_phasepoint!(z, z′, is_accept)    # NOTE: this function changes `z′` in place in matrix-parallel mode
     # Reverse momentum variable to preserve reversibility
@@ -263,17 +261,26 @@ end
 
 ### Use end-point from trajectory as proposal 
 
-samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h, z, τ.n_steps)
+function samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z)
+    z′ = step(τ.integrator, h, z, τ.n_steps)
+    # Are we going to accept the `z′` via MH criteria?
+    is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
+    return z′, is_accept, α
+end
 
 ### Multinomial sampling from trajectory
 
-randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_ℓp::AbstractVector) = 
-    zs[randcat_logp(rng, unnorm_ℓp)]
+function randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_ℓp::AbstractVector)
+    p = exp.(unnorm_ℓp .- logsumexp(unnorm_ℓp))
+    i = randcat(rng, p)
+    return zs[i]
+end
 
 # zs is in the form of Vector{PhasePoint{Matrix}} and has shape [n_steps][dim, n_chains]
 function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMatrix)
     z = similar(first(zs))
-    is = randcat_logp(rng, unnorm_ℓP)
+    P = exp.(unnorm_ℓP .- logsumexp(unnorm_ℓP; dims=2))
+    is = randcat(rng, P)
     foreach(enumerate(is)) do (i_chain, i_step)
         zi = zs[i_step]
         z.θ[:,i_chain] = zi.θ[:,i_chain]
@@ -298,7 +305,12 @@ function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
         ℓws = hcat(ℓws...)
     end
     unnorm_ℓprob = ℓws
-    return randcat(rng, zs, unnorm_ℓprob)
+    z′ = randcat(rng, zs, unnorm_ℓprob)
+    Hs = -ℓws
+    # Computing adaptation statistics for dual averaging as done in NUTS
+    ΔH = Hs .- energy(z)
+    α = mean(exp.(min.(0, -ΔH)))
+    return z′, true, α
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
