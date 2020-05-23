@@ -34,6 +34,6 @@ function randcat(
 ) where {T}
     u = rand(rng, T, size(P, 1))
     C = cumsum(P; dims=2)
-    is = convert.(Int, vec(sum(C .< u; dims=2)))
+    is = convert.(Int, vec(sum(C .< u; dims=2))) .+ 1
     return max.(is, 1)
 end

@@ -279,7 +279,7 @@ end
 # zs is in the form of Vector{PhasePoint{Matrix}} and has shape [n_steps][dim, n_chains]
 function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMatrix)
     z = similar(first(zs))
-    P = exp.(unnorm_ℓP .- logsumexp(unnorm_ℓP; dims=2))
+    P = exp.(unnorm_ℓP .- logsumexp(unnorm_ℓP; dims=2)) # (n_chians, n_steps)
     is = randcat(rng, P)
     foreach(enumerate(is)) do (i_chain, i_step)
         zi = zs[i_step]
@@ -302,14 +302,20 @@ function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
     zs = vcat(reverse(zs_bwd)..., z, zs_fwd...)
     ℓws = -energy.(zs)
     if eltype(ℓws) <: AbstractVector
-        ℓws = hcat(ℓws...)
+        ℓws = cat(ℓws...; dims=2)
     end
     unnorm_ℓprob = ℓws
     z′ = randcat(rng, zs, unnorm_ℓprob)
-    Hs = -ℓws
     # Computing adaptation statistics for dual averaging as done in NUTS
+    Hs = -ℓws
     ΔH = Hs .- energy(z)
-    α = mean(exp.(min.(0, -ΔH)))
+    α = exp.(min.(0, -ΔH))  # this is a matrix for vectorized mode and a vector otherwise
+    α =
+    if typeof(α) <: AbstractVector
+        mean(α)
+    else
+        vec(mean(α; dims=2))
+    end
     return z′, true, α
 end
 
