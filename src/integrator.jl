@@ -81,7 +81,17 @@ function step(
     return res
 end
 
+"""
+$(TYPEDEF)
+
+Leapfrog integrator with fixed step size `ϵ`.
+
+# Fields
+
+$(TYPEDFIELDS)
+"""
 struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
+    "Step size."
     ϵ       ::  T
 end
 Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)))")
@@ -91,17 +101,29 @@ Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round.(l.ϵ; sigdigits
 """
 $(TYPEDEF)
 
-Randomly "jitters" the step size at the beginning of each trajectory.
+Leapfrog integrator with randomly "jittered" step size `ϵ` for every trajectory.
 
 # Fields
 
 $(TYPEDFIELDS)
 
 # Description
-
-This might help alleviate issues related to poor interactions with a fixed step size, such as:
-- In regions with high "curvature" the current choice of step size might mean over-shoot leading to almost all steps being rejected. Randomly sampling the step size at the beginning of the trajectories can therefore increase the probability of escaping such high-curvature regions.
-- Exact periodicity of the simulated trajectories might occur, i.e. you might be so unlucky as to simulate the trajectory forwards in time `L ϵ` and ending up at the same point (which results in non-ergodicity; see Section 3.2 in [1]). If momentum is refreshed before each trajectory, then this should not happen *exactly* but it can still be an issue in practice. Randomly choosing the step-size `ϵ` might help alleviate such problems.
+This is the same as `LeapFrog`(@ref) but with a "jittered" step size. This means 
+that at the beginning of each trajectory we sample a step size `ϵ` by adding or 
+subtracting from the nominal/base step size `ϵ0` some random proportion of `ϵ0`, 
+with the proportion specified by `jitter`, i.e. `ϵ = ϵ0 - jitter * ϵ0 * rand()`.
+p
+Jittering might help alleviate issues related to poor interactions with a fixed step size:
+- In regions with high "curvature" the current choice of step size might mean over-shoot 
+  leading to almost all steps being rejected. Randomly sampling the step size at the 
+  beginning of the trajectories can therefore increase the probability of escaping such
+  high-curvature regions.
+- Exact periodicity of the simulated trajectories might occur, i.e. you might be so
+  unlucky as to simulate the trajectory forwards in time `L ϵ` and ending up at the
+  same point (which results in non-ergodicity; see Section 3.2 in [1]). If momentum
+  is refreshed before each trajectory, then this should not happen *exactly* but it
+  can still be an issue in practice. Randomly choosing the step-size `ϵ` might help
+  alleviate such problems.
 
 # References
 1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
@@ -140,9 +162,25 @@ jitter(
 ) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} = _jitter(rng, lf)
 
 ### Tempering
+# TODO: add ref or at least explain what exactly we're doing
+"""
+$(TYPEDEF)
 
+Tempered leapfrog integrator with fixed step size `ϵ` and "temperature" `α`.
+
+# Fields
+
+$(TYPEDFIELDS)
+
+# Description
+
+Tempering can potentially allow greater exploration of the posterior, e.g. 
+in a multi-modal posterior jumps between the modes can be more likely to occur.
+"""
 struct TemperedLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractLeapfrog{T}
+    "Step size."
     ϵ       ::  T
+    "Temperature parameter."
     α       ::  FT
 end
 
