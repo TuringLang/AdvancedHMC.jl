@@ -7,6 +7,17 @@
 # We might want to simplify it to `Tuple{Int,Bool}` when we figured out
 # why the it behaves unexpected on Windos 32.
 
+"""
+$(TYPEDEF)
+
+Represents an integrator used to simulate the Hamiltonian system.
+
+# Implementation
+A `AbstractIntegrator` is expected to have the following implementations:
+- `stat`(@ref)
+- `nom_step_size`(@ref)
+- `step_size`(@ref)
+"""
 abstract type AbstractIntegrator end
 
 stat(::AbstractIntegrator) = NamedTuple()
