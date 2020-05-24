@@ -59,7 +59,7 @@ function step(
     ϵ = ϵ'
 
     res = if FullTraj
-        Vector{typeof(z)}(undef, n_steps)
+        Vector{P}(undef, n_steps)
     else
         z
     end
