@@ -88,10 +88,31 @@ Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round.(l.ϵ; sigdigits
 
 ### Jittering
 
+"""
+$(TYPEDEF)
+
+Randomly "jitters" the step size at the beginning of each trajectory.
+
+# Fields
+
+$(TYPEDFIELDS)
+
+# Description
+
+This might help alleviate issues related to poor interactions with a fixed step size, such as:
+- In regions with high "curvature" the current choice of step size might mean over-shoot leading to almost all steps being rejected. Randomly sampling the step size at the beginning of the trajectories can therefore increase the probability of escaping such high-curvature regions.
+- Exact periodicity of the simulated trajectories might occur, i.e. you might be so unlucky as to simulate the trajectory forwards in time `L ϵ` and ending up at the same point (which results in non-ergodicity; see Section 3.2 in [1]). If momentum is refreshed before each trajectory, then this should not happen *exactly* but it can still be an issue in practice. Randomly choosing the step-size `ϵ` might help alleviate such problems.
+
+# References
+1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
+"""
 struct JitteredLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractLeapfrog{T}
-    ϵ0      ::  T  # nominal (unjittered) step size
+    "Nominal (non-jittered) step size."
+    ϵ0      ::  T
+    "The proportion of the nominal step size `ϵ0` that may be added or subtracted."
     jitter  ::  FT
-    ϵ       ::  T  # current (jittered) step size
+    "Current (jittered) step size."
+    ϵ       ::  T
 end
 
 JitteredLeapfrog(ϵ0, jitter) = JitteredLeapfrog(ϵ0, jitter, ϵ0)
