@@ -40,12 +40,18 @@ function step(
     z::P,
     n_steps::Int=1;
     fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
-    res::Union{Vector{P}, P}=z
-) where {T<:AbstractScalarOrVec{<:AbstractFloat}, P<:PhasePoint}
+    full_trajectory::Val{FullTraj} = Val(false)
+) where {T<:AbstractScalarOrVec{<:AbstractFloat}, P<:PhasePoint, FullTraj}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
 
     ϵ = fwd ? step_size(lf) : -step_size(lf)
     ϵ = ϵ'
+
+    res = if FullTraj
+        Vector{typeof(z)}(undef, n_steps)
+    else
+        z
+    end
 
     @unpack θ, r = z
     @unpack value, gradient = z.ℓπ
@@ -65,7 +71,7 @@ function step(
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
         # Update result
-        if res isa Vector
+        if FullTraj
             res[i] = z
         else
             res = z

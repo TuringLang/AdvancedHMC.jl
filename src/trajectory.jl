@@ -142,7 +142,7 @@ function transition(τ::AbstractTrajectory, h::Hamiltonian, z::PhasePoint)
 end
 
 ###
-### Actual trajecory implementations
+### Actual trajectory implementations
 ###
 
 ###
@@ -246,7 +246,7 @@ function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMat
 end
 
 function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
-    zs = step(τ.integrator, h, z, τ.n_steps; res=[z for _ in 1:abs(τ.n_steps)])
+    zs = step(τ.integrator, h, z, τ.n_steps; full_trajectory = Val(true))
     ℓws = -energy.(zs)
     if eltype(ℓws) <: AbstractVector
         ℓws = hcat(ℓws...)
