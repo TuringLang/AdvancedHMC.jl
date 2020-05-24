@@ -10,6 +10,8 @@ using ProgressMeter: ProgressMeter
 using Parameters: @unpack, reconstruct
 using ArgCheck: @argcheck
 
+using DocStringExtensions: TYPEDEF, TYPEDFIELDS
+
 import StatsBase: sample
 import Parameters: reconstruct
 

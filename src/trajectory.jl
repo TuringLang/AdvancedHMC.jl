@@ -8,14 +8,23 @@
 #### function. Internal uses shall always use the explict `rng` version. (Kai Xu 6/Jul/19)
 
 """
+$(TYPEDEF)
+
 A transition that contains the phase point and
 other statistics of the transition.
+
+# Fields
+
+$(TYPEDFIELDS)
 """
 struct Transition{P<:PhasePoint, NT<:NamedTuple}
+    "Phase-point for the transition."
     z       ::  P
+    "Statistics related to the transition, e.g. energy."
     stat    ::  NT
 end
 
+"Returns the statistics for transition `t`."
 stat(t::Transition) = t.stat
 
 """
@@ -33,38 +42,57 @@ abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 ##
 
 """
-Sampler carried during the building of the tree.
+Defines how to sample a phase-point from the simulated trajectory.
 """
 abstract type AbstractTrajectorySampler end
 
+"""
+$(TYPEDEF)
+
+Samples the end-point of the trajectory.
+"""
 struct EndPointTS <: AbstractTrajectorySampler end
 
 """
-    SliceTS{F<:AbstractFloat} <: AbstractTrajectorySampler
+$(TYPEDEF)
 
 Trajectory slice sampler carried during the building of the tree.
 It contains the slice variable and the number of acceptable condidates in the tree.
+
+# Fields
+
+$(TYPEDFIELDS)
 """
 struct SliceTS{F<:AbstractFloat} <: AbstractTrajectorySampler
+    "Sampled candidate `PhasePoint`."
     zcand   ::  PhasePoint
-    ℓu      ::  F     # slice variable in log space
-    n       ::  Int   # number of acceptable candicates, i.e. those with prob larger than slice variable u
+    "Slice variable in log-space."
+    ℓu      ::  F
+    "Number of acceptable candidates, i.e. those with probability larger than slice variable `u`."
+    n       ::  Int
 end
 
 Base.show(io::IO, s::SliceTS) = print(io, "SliceTS(ℓu=$(s.ℓu), n=$(s.n))")
 
 """
-    MultinomialTS{F<:AbstractFloat} <: AbstractTrajectorySampler
+$(TYPEDEF)
 
 Multinomial trajectory sampler carried during the building of the tree.
 It contains the weight of the tree, defined as the total probabilities of the leaves.
+
+# Fields
+
+$(TYPEDFIELDS)
 """
 struct MultinomialTS{F<:AbstractFloat} <: AbstractTrajectorySampler
+    "Sampled candidate `PhasePoint`."
     zcand   ::  PhasePoint
-    ℓw      ::  F     # total energy for the given tree, i.e. sum of energy of all leaves
+    "Total energy for the given tree, i.e. the sum of energies of all leaves."
+    ℓw      ::  F
 end
 
 """
+    SliceTS(rng::AbstractRNG, z0::PhasePoint)
 
 Slice sampler for the starting single leaf tree.
 Slice variable is initialized.
@@ -72,6 +100,8 @@ Slice variable is initialized.
 SliceTS(rng::AbstractRNG, z0::PhasePoint) = SliceTS(z0, log(rand(rng)) - energy(z0), 1)
 
 """
+    MultinomialTS(rng::AbstractRNG, z0::PhasePoint)
+
 Multinomial sampler for the starting single leaf tree.
 (Log) weights for leaf nodes are their (unnormalised) Hamiltonian energies.
 
@@ -145,12 +175,22 @@ end
 ### Actual trajectory implementations
 ###
 
-###
-### Static trajecotry with fixed leapfrog step numbers.
-###
+"""
+$(TYPEDEF)
 
+Static HMC with a fixed number of leapfrog steps.
+
+# Fields
+
+$(TYPEDFIELDS)
+
+# References
+1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
+"""
 struct StaticTrajectory{S<:AbstractTrajectorySampler, I<:AbstractIntegrator} <: AbstractTrajectory{I}
+    "Integrator used to simulate trajectory."
     integrator  ::  I
+    "Number of steps to simulate, i.e. length of trajectory will be `n_steps + 1`."
     n_steps     ::  Int
 end
 
@@ -221,11 +261,11 @@ function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:Abs
     return z′
 end
 
-### Use end-point from trajecory as proposal 
+### Use end-point from trajectory as proposal 
 
 samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h, z, τ.n_steps)
 
-### Multinomial sampling from trajecory
+### Multinomial sampling from trajectory
 
 randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_ℓp::AbstractVector) = zs[randcat_logp(rng, unnorm_ℓp)]
 
@@ -261,8 +301,22 @@ abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} 
 ### Standard HMC implementation with fixed total trajectory length.
 ###
 
+"""
+$(TYPEDEF)
+
+Standard HMC implementation with fixed total trajectory length.
+
+# Fields
+
+$(TYPEDFIELDS)
+
+# References
+1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901)) 
+"""
 struct HMCDA{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: DynamicTrajectory{I}
+    "Integrator used to simulate trajectory."
     integrator  ::  I
+    "Total length of the trajectory, i.e. take `floor(λ / integrator_step)` number of leapfrog steps."
     λ           ::  AbstractFloat
 end
 
@@ -298,11 +352,36 @@ end
 
 abstract type AbstractTerminationCriterion end
 
+"""
+$(TYPEDEF)
+
+Classic No-U-Turn criterion as described in Eq. (9) in [1].
+
+Informally, this will terminate the trajectory expansion if continuing
+the simulation either forwards or backwards in time will decrease the
+distance between the left-most and right-most positions.
+
+# References
+1. Hoffman, M. D., & Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623. ([arXiv](http://arxiv.org/abs/1111.4246))
+"""
 struct ClassicNoUTurn <: AbstractTerminationCriterion end
 
 ClassicNoUTurn(::PhasePoint) = ClassicNoUTurn()
 
+"""
+$(TYPEDEF)
+
+Generalised No-U-Turn criterion as described in Section A.4.2 in [1].
+
+# Fields
+
+$(TYPEDFIELDS)
+
+# References
+1. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
+"""
 struct GeneralisedNoUTurn{T<:AbstractVector{<:Real}} <: AbstractTerminationCriterion
+    "Integral or sum of momenta along the integration path."
     rho::T
 end
 
