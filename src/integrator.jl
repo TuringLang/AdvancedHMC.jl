@@ -7,6 +7,17 @@
 # We might want to simplify it to `Tuple{Int,Bool}` when we figured out
 # why the it behaves unexpected on Windos 32.
 
+"""
+$(TYPEDEF)
+
+Represents an integrator used to simulate the Hamiltonian system.
+
+# Implementation
+A `AbstractIntegrator` is expected to have the following implementations:
+- `stat`(@ref)
+- `nom_step_size`(@ref)
+- `step_size`(@ref)
+"""
 abstract type AbstractIntegrator end
 
 stat(::AbstractIntegrator) = NamedTuple()
@@ -40,12 +51,18 @@ function step(
     z::P,
     n_steps::Int=1;
     fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
-    res::Union{Vector{P}, P}=z
-) where {T<:AbstractScalarOrVec{<:AbstractFloat}, P<:PhasePoint}
+    full_trajectory::Val{FullTraj} = Val(false)
+) where {T<:AbstractScalarOrVec{<:AbstractFloat}, P<:PhasePoint, FullTraj}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
 
     ϵ = fwd ? step_size(lf) : -step_size(lf)
     ϵ = ϵ'
+
+    res = if FullTraj
+        Vector{P}(undef, n_steps)
+    else
+        z
+    end
 
     @unpack θ, r = z
     @unpack value, gradient = z.ℓπ
@@ -65,7 +82,7 @@ function step(
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
         # Update result
-        if res isa Vector
+        if FullTraj
             res[i] = z
         else
             res = z
@@ -75,17 +92,60 @@ function step(
     return res
 end
 
+"""
+$(TYPEDEF)
+
+Leapfrog integrator with fixed step size `ϵ`.
+
+# Fields
+
+$(TYPEDFIELDS)
+"""
 struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
+    "Step size."
     ϵ       ::  T
 end
 Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)))")
 
 ### Jittering
 
+"""
+$(TYPEDEF)
+
+Leapfrog integrator with randomly "jittered" step size `ϵ` for every trajectory.
+
+# Fields
+
+$(TYPEDFIELDS)
+
+# Description
+This is the same as `LeapFrog`(@ref) but with a "jittered" step size. This means 
+that at the beginning of each trajectory we sample a step size `ϵ` by adding or 
+subtracting from the nominal/base step size `ϵ0` some random proportion of `ϵ0`, 
+with the proportion specified by `jitter`, i.e. `ϵ = ϵ0 - jitter * ϵ0 * rand()`.
+p
+Jittering might help alleviate issues related to poor interactions with a fixed step size:
+- In regions with high "curvature" the current choice of step size might mean over-shoot 
+  leading to almost all steps being rejected. Randomly sampling the step size at the 
+  beginning of the trajectories can therefore increase the probability of escaping such
+  high-curvature regions.
+- Exact periodicity of the simulated trajectories might occur, i.e. you might be so
+  unlucky as to simulate the trajectory forwards in time `L ϵ` and ending up at the
+  same point (which results in non-ergodicity; see Section 3.2 in [1]). If momentum
+  is refreshed before each trajectory, then this should not happen *exactly* but it
+  can still be an issue in practice. Randomly choosing the step-size `ϵ` might help
+  alleviate such problems.
+
+# References
+1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
+"""
 struct JitteredLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractLeapfrog{T}
-    ϵ0      ::  T  # nominal (unjittered) step size
+    "Nominal (non-jittered) step size."
+    ϵ0      ::  T
+    "The proportion of the nominal step size `ϵ0` that may be added or subtracted."
     jitter  ::  FT
-    ϵ       ::  T  # current (jittered) step size
+    "Current (jittered) step size."
+    ϵ       ::  T
 end
 
 JitteredLeapfrog(ϵ0, jitter) = JitteredLeapfrog(ϵ0, jitter, ϵ0)
@@ -113,9 +173,25 @@ jitter(
 ) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} = _jitter(rng, lf)
 
 ### Tempering
+# TODO: add ref or at least explain what exactly we're doing
+"""
+$(TYPEDEF)
 
+Tempered leapfrog integrator with fixed step size `ϵ` and "temperature" `α`.
+
+# Fields
+
+$(TYPEDFIELDS)
+
+# Description
+
+Tempering can potentially allow greater exploration of the posterior, e.g. 
+in a multi-modal posterior jumps between the modes can be more likely to occur.
+"""
 struct TemperedLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractLeapfrog{T}
+    "Step size."
     ϵ       ::  T
+    "Temperature parameter."
     α       ::  FT
 end
 
