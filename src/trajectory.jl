@@ -299,14 +299,14 @@ function sample_phasepoint(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
     n_steps_bwd = n_steps - n_steps_fwd
     zs_bwd = step(τ.integrator, h, z, n_steps_bwd; fwd=false, full_trajectory=Val(true))
     zs = vcat(reverse(zs_bwd)..., z, zs_fwd...)
-    ℓws = -energy.(zs)
-    if eltype(ℓws) <: AbstractVector
-        ℓws = cat(ℓws...; dims=2)
+    ℓweights = -energy.(zs)
+    if eltype(ℓweights) <: AbstractVector
+        ℓweights = cat(ℓweights...; dims=2)
     end
-    unnorm_ℓprob = ℓws
+    unnorm_ℓprob = ℓweights
     z′ = randcat(rng, zs, unnorm_ℓprob)
     # Computing adaptation statistics for dual averaging as done in NUTS
-    Hs = -ℓws
+    Hs = -ℓweights
     ΔH = Hs .- energy(z)
     α = exp.(min.(0, -ΔH))  # this is a matrix for vectorized mode and a vector otherwise
     α =
