@@ -263,7 +263,6 @@ end
 
 function sample_phasepoint(rng, τ::StaticTrajectory{EndPointTS}, h, z)
     z′ = step(τ.integrator, h, z, τ.n_steps)
-    # Are we going to accept the `z′` via MH criteria?
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
     return z′, is_accept, α
 end
