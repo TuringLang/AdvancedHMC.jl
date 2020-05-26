@@ -278,7 +278,7 @@ end
 # zs is in the form of Vector{PhasePoint{Matrix}} and has shape [n_steps][dim, n_chains]
 function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMatrix)
     z = similar(first(zs))
-    P = exp.(unnorm_ℓP .- logsumexp(unnorm_ℓP; dims=2)) # (n_chians, n_steps)
+    P = exp.(unnorm_ℓP .- logsumexp(unnorm_ℓP; dims=2)) # (n_chains, n_steps)
     is = randcat(rng, P')
     foreach(enumerate(is)) do (i_chain, i_step)
         zi = zs[i_step]
