@@ -16,6 +16,20 @@ function Base.randn(rng::AbstractVector{<:AbstractRNG}, T, dim::Int, n_chains::I
     return cat(randn.(rng, T, dim)...; dims=2)
 end
 
+# Helper functions to sync RNGs
+
+rand_sync(rng::AbstractRNG, args...) = rand(rng, args...)
+
+# This function is needed to use only one RNG while a vector of RNGs are provided
+# in a way that RNGs are still synchronised.
+function rand_sync(rngs::AbstractVector{<:AbstractRNG}, args...)
+    # Dummpy calles to sync RNGs
+    foreach(rngs[2:end]) do rng
+        rand(rng, args...)
+    end
+    return res = rand(first(rngs), args...)
+end
+
 # Sample from Categorical distributions
 
 function randcat(rng::AbstractRNG, p::AbstractVector{T}) where {T}
