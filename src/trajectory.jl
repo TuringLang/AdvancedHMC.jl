@@ -213,7 +213,7 @@ function transition(
 )
     H0 = energy(z)
     integrator = jitter(rng, τ.integrator)
-    z′, is_accept, α = samplecand(rng, τ, h, z)
+    z′, is_accept, α = sample_phasepoint(rng, τ, h, z)
     # Do the actual accept / reject
     z = accept_phasepoint!(z, z′, is_accept)    # NOTE: this function changes `z′` in place in matrix-parallel mode
     # Reverse momentum variable to preserve reversibility
@@ -261,7 +261,7 @@ end
 
 ### Use end-point from the trajectory as a proposal and apply MH correction
 
-function samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z)
+function sample_phasepoint(rng, τ::StaticTrajectory{EndPointTS}, h, z)
     z′ = step(τ.integrator, h, z, τ.n_steps)
     # Are we going to accept the `z′` via MH criteria?
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
@@ -293,7 +293,7 @@ function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMat
     return z
 end
 
-function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
+function sample_phasepoint(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
     n_steps = abs(τ.n_steps)
     n_steps_fwd = rand(0:n_steps) # FIXME: deal with multi-chain generically
     zs_fwd = step(τ.integrator, h, z, n_steps_fwd; fwd=true, full_trajectory=Val(true))
