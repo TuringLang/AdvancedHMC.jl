@@ -28,12 +28,43 @@ function randcat(rng::AbstractRNG, p::AbstractVector{T}) where {T}
     return max(i, 1)
 end
 
+"""
+    randcat(rng, P::AbstractMatrix)
+
+Generating Categorical random variables in a vectorized mode.
+`P` is supposed to be a matrix of (D, N) where each column is a probability vector.
+
+Example
+
+```
+P = [
+    0.5 0.3;
+    0.4 0.6;
+    0.1 0.1
+]
+u = [0.3, 0.4]
+C = [
+    0.5 0.3
+    0.9 0.9
+    1.0 1.0
+]
+```
+Then `C .< u'` is
+```
+[
+    0 1
+    0 0
+    0 0
+]
+```
+and thus should have `convert.(Int, vec(sum(C .< u'; dims=1))) .+ 1` equals `[1, 2]`.
+"""
 function randcat(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
     P::AbstractMatrix{T}
 ) where {T}
-    u = rand(rng, T, size(P, 1))
-    C = cumsum(P; dims=2)
-    is = convert.(Int, vec(sum(C .< u; dims=2))) .+ 1
-    return max.(is, 1)
+    u = rand(rng, T, size(P, 2))
+    C = cumsum(P; dims=1)
+    is = convert.(Int, vec(sum(C .< u'; dims=1))) .+ 1
+    return max.(is, 1)  # prevent numerical issue for Float32
 end
