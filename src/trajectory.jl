@@ -309,12 +309,7 @@ function sample_phasepoint(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
     Hs = -ℓweights
     ΔH = Hs .- energy(z)
     α = exp.(min.(0, -ΔH))  # this is a matrix for vectorized mode and a vector otherwise
-    α =
-    if typeof(α) <: AbstractVector
-        mean(α)
-    else
-        vec(mean(α; dims=2))
-    end
+    α = typeof(α) <: AbstractVector ? mean(α) : vec(mean(α; dims=2))
     return z′, true, α
 end
 
