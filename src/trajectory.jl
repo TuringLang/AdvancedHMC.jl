@@ -259,11 +259,7 @@ function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:Abs
     return z′
 end
 
-<<<<<<< HEAD
-### Use end-point from trajectory as proposal 
-=======
 ### Use end-point from the trajectory as a proposal and apply MH correction
->>>>>>> Apply suggestions from Hong
 
 function samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z)
     z′ = step(τ.integrator, h, z, τ.n_steps)
@@ -299,17 +295,10 @@ end
 
 function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
     n_steps = abs(τ.n_steps)
-<<<<<<< HEAD
     n_steps_fwd = rand(0:n_steps) # FIXME: deal with multi-chain generically
     zs_fwd = step(τ.integrator, h, z, n_steps_fwd; fwd=true, full_trajectory=Val(true))
     n_steps_bwd = n_steps - n_steps_fwd
     zs_bwd = step(τ.integrator, h, z, n_steps_bwd; fwd=false, full_trajectory=Val(true))
-=======
-    n_steps_fwd = rand(0:n_steps) # FIXME: deal with multi-chain generically
-    zs_fwd = step(τ.integrator, h, z, n_fwd; fwd=true, res=[z for _ in 1:n_fwd])
-    n_steps_bwd = n_steps - n_steps_fwd
-    zs_bwd = step(τ.integrator, h, z, n_bwd; fwd=false, res=[z for _ in 1:n_bwd])
->>>>>>> Apply suggestions from Hong
     zs = vcat(reverse(zs_bwd)..., z, zs_fwd...)
     ℓws = -energy.(zs)
     if eltype(ℓws) <: AbstractVector
