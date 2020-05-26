@@ -16,12 +16,13 @@ function Base.randn(rng::AbstractVector{<:AbstractRNG}, T, dim::Int, n_chains::I
     return cat(randn.(rng, T, dim)...; dims=2)
 end
 
-# Helper functions to sync RNGs
+# Helper functions to sync RNGs that ensures coupling works properly and reproducible
 
 rand_sync(rng::AbstractRNG, args...) = rand(rng, args...)
 
 # This function is needed to use only one RNG while a vector of RNGs are provided
-# in a way that RNGs are still synchronised.
+# in a way that RNGs are still synchronised. This is important if we want to use 
+# same RNGs to couple multiple chains.
 function rand_sync(rngs::AbstractVector{<:AbstractRNG}, args...)
     # Dummpy calles to sync RNGs
     foreach(rngs[2:end]) do rng
