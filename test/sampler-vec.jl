@@ -33,9 +33,12 @@ include("common.jl")
         @test show(metric) == nothing
         @test show(h) == nothing
         @test show(τ) == nothing
+
         # NoAdaptation
+        Random.seed!(100)
         samples, stats = sample(h, τ, θ_init_list[i_test], n_samples; verbose=false)
         @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL * n_chains
+
         # Adaptation
         for adaptor in [
             MassMatrixAdaptor(metric),
@@ -51,9 +54,12 @@ include("common.jl")
         ]
             τ isa HMCDA && continue
             @test show(adaptor) == nothing
+
+            Random.seed!(100)
             samples, stats = sample(h, τ, θ_init_list[i_test], n_samples, adaptor, n_adapts; verbose=false, progress=false)
             @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL * n_chains
         end
+
         # Passing a vector of same RNGs
         rng = [MersenneTwister(1) for _ in 1:n_chains]
         h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∂ℓπ∂θ)
