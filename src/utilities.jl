@@ -16,14 +16,18 @@ function Base.randn(rng::AbstractVector{<:AbstractRNG}, T, dim::Int, n_chains::I
     return cat(randn.(rng, T, dim)...; dims=2)
 end
 
-# Helper functions to sync RNGs that ensures coupling works properly and reproducible
+""" 
+`rand_coupled` produces coupled randomness given a vector of RNGs.  For example, 
+when a vector of RNGs is provided, `rand_coupled` returns the same value for all RNGs
+and keep all RNGs synchronised.  This is important if we want to couple multiple Markov chains.
+"""
 
-rand_sync(rng::AbstractRNG, args...) = rand(rng, args...)
+rand_coupled(rng::AbstractRNG, args...) = rand(rng, args...)
 
 # This function is needed to use only one RNG while a vector of RNGs are provided
 # in a way that RNGs are still synchronised. This is important if we want to use 
 # same RNGs to couple multiple chains.
-function rand_sync(rngs::AbstractVector{<:AbstractRNG}, args...)
+function rand_coupled(rngs::AbstractVector{<:AbstractRNG}, args...)
     # Dummpy calles to sync RNGs
     foreach(rngs[2:end]) do rng
         rand(rng, args...)
@@ -80,6 +84,6 @@ function randcat(
 ) where {T}
     u = rand(rng, T, size(P, 2))
     C = cumsum(P; dims=1)
-    is = convert.(Int, vec(sum(C .< u'; dims=1))) .+ 1
-    return max.(is, 1)  # prevent numerical issue for Float32
+    indices = convert.(Int, vec(sum(C .< u'; dims=1))) .+ 1
+    return max.(indices, 1)  # prevent numerical issue for Float32
 end
