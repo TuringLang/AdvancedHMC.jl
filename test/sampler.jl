@@ -10,7 +10,7 @@ include("common.jl")
 ϵ = 0.2
 n_steps = 10
 n_samples = 22_000
-n_adapts = 2_000
+n_adapts = 4_000
 
 function test_stats(::Union{StaticTrajectory,HMCDA}, stats, n_adapts)
     for name in (:step_size, :nom_step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :hamiltonian_energy_error, :is_adapt)
