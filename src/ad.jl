@@ -1,7 +1,7 @@
 const ADSUPPORT = (:ForwardDiff, :Zygote)
 const ADAVAILABLE = Dict{Module, Function}()
 
-Hamiltonian(metric::AbstractMetric, ℓπ, m::Module) = ADAVAILABLE[m](metric, ℓπ)
+Hamiltonian(metric::M, ℓπ::T, m::Module) where {M<:AbstractMetric,T} = ADAVAILABLE[m](metric, ℓπ)
 
 function Hamiltonian(metric::AbstractMetric, ℓπ)
     available = collect(keys(ADAVAILABLE))
