@@ -72,7 +72,7 @@ Then `C .< u'` is
     0 0
 ]
 ```
-and thus should have `convert.(Int, vec(sum(C .< u'; dims=1))) .+ 1` equals `[1, 2]`.
+thus `convert.(Int, vec(sum(C .< u'; dims=1))) .+ 1` equals `[1, 2]`.
 """
 function randcat(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
