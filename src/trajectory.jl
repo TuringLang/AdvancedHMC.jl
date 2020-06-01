@@ -294,9 +294,9 @@ end
 
 function sample_phasepoint(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
     n_steps = abs(τ.n_steps)
-    # FIXME: deal with multi-chain generically.
-    #        Currently the direction of multiple chains are always coupled
-    n_steps_fwd = rand_sync(rng, 0:n_steps) 
+    # TODO: Deal with vectorized-mode generically.
+    #       Currently the direction of multiple chains are always coupled
+    n_steps_fwd = rand_coupled(rng, 0:n_steps) 
     zs_fwd = step(τ.integrator, h, z, n_steps_fwd; fwd=true, full_trajectory=Val(true))
     n_steps_bwd = n_steps - n_steps_fwd
     zs_bwd = step(τ.integrator, h, z, n_steps_bwd; fwd=false, full_trajectory=Val(true))
