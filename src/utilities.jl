@@ -17,16 +17,14 @@ function Base.randn(rng::AbstractVector{<:AbstractRNG}, T, dim::Int, n_chains::I
 end
 
 """ 
-`rand_coupled` produces coupled randomness given a vector of RNGs.  For example, 
-when a vector of RNGs is provided, `rand_coupled` returns the same value for all RNGs
-and keep all RNGs synchronised.  This is important if we want to couple multiple Markov chains.
+`rand_coupled` produces coupled randomness given a vector of RNGs. For example, 
+when a vector of RNGs is provided, `rand_coupled` peforms a single `rand` call 
+(rather than a `rand` call for each RNG) while keep all RNGs synchronised. 
+This is important if we want to couple multiple Markov chains.
 """
 
 rand_coupled(rng::AbstractRNG, args...) = rand(rng, args...)
 
-# This function is needed to use only one RNG while a vector of RNGs are provided
-# in a way that RNGs are still synchronised. This is important if we want to use 
-# same RNGs to couple multiple chains.
 function rand_coupled(rngs::AbstractVector{<:AbstractRNG}, args...)
     # Dummpy calles to sync RNGs
     foreach(rngs[2:end]) do rng
