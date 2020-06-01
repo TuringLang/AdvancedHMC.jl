@@ -9,7 +9,7 @@ include("common.jl")
 θ_init = rand(MersenneTwister(1), D)
 ϵ = 0.2
 n_steps = 10
-n_samples = 12_000
+n_samples = 22_000
 n_adapts = 2_000
 
 function test_stats(::Union{StaticTrajectory,HMCDA}, stats, n_adapts)
