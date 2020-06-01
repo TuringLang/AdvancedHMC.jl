@@ -12,8 +12,8 @@ include("common.jl")
     lfi = Leapfrog(fill(ϵ, i_test))
     lfi_jittered = JitteredLeapfrog(fill(ϵ, i_test), 1.0)
     n_steps = 10
-    n_samples = 12_000
-    n_adapts = 2_000
+    n_samples = 20_000
+    n_adapts = 4_000
 
     for metricT in [
         UnitEuclideanMetric,
