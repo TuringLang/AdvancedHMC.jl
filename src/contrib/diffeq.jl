@@ -1,5 +1,3 @@
-@require OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed" begin
-
 import .OrdinaryDiffEq
 
 struct DiffEqIntegrator{T<:AbstractScalarOrVec{<:AbstractFloat}, DiffEqSolver} <: AbstractLeapfrog{T}
@@ -43,7 +41,3 @@ function step(
     end
     return res
 end
-
-export DiffEqIntegrator 
-
-end # @require

@@ -7,10 +7,10 @@ using Statistics: mean, var, cov
 include("common.jl")
 
 θ_init = rand(MersenneTwister(1), D)
-ϵ = 0.2
+ϵ = 0.1
 n_steps = 10
-n_samples = 12_000
-n_adapts = 2_000
+n_samples = 22_000
+n_adapts = 4_000
 
 function test_stats(::Union{StaticTrajectory,HMCDA}, stats, n_adapts)
     for name in (:step_size, :nom_step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :hamiltonian_energy_error, :is_adapt)
@@ -85,7 +85,7 @@ end
                     # For other adapatation methods that are able to adpat the step size, we use `find_good_stepsize`.
                     τ_used = adaptorsym == :MassMatrixAdaptorOnly ? τ : reconstruct(τ, integrator=reconstruct(lf, ϵ=find_good_stepsize(h, θ_init)))
                     samples, stats = sample(h, τ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
-                    @test mean(samples) ≈ zeros(D) atol=RNDATOL
+                    @test mean(samples[(n_adapts+1):end]) ≈ zeros(D) atol=RNDATOL
                     test_stats(τ_used, stats, n_adapts)
                 end
             end

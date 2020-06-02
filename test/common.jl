@@ -7,7 +7,7 @@ const TRATIO = Int == Int64 ? 1 : 2
 # Deterministic tolerance
 const DETATOL = 1e-3 * D * TRATIO
 # Random tolerance
-const RNDATOL = 5e-2 * D * TRATIO
+const RNDATOL = 5e-2 * D * TRATIO * 2
 
 # Hand-coded multivaite Gaussain
 
