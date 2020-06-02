@@ -6,14 +6,14 @@ include("common.jl")
     n_chains_max = 20
     n_chains_list = collect(1:n_chains_max)
     θ_init_list = [rand(D, n_chains) for n_chains in n_chains_list]
-    ϵ = 0.2
+    ϵ = 0.1
     lf = Leapfrog(ϵ)
     i_test = 5
     lfi = Leapfrog(fill(ϵ, i_test))
     lfi_jittered = JitteredLeapfrog(fill(ϵ, i_test), 1.0)
     n_steps = 10
-    n_samples = 12_000
-    n_adapts = 2_000
+    n_samples = 20_000
+    n_adapts = 4_000
 
     for metricT in [
         UnitEuclideanMetric,
@@ -33,9 +33,12 @@ include("common.jl")
         @test show(metric) == nothing
         @test show(h) == nothing
         @test show(τ) == nothing
+
         # NoAdaptation
+        Random.seed!(100)
         samples, stats = sample(h, τ, θ_init_list[i_test], n_samples; verbose=false)
         @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL * n_chains
+
         # Adaptation
         for adaptor in [
             MassMatrixAdaptor(metric),
@@ -51,9 +54,12 @@ include("common.jl")
         ]
             τ isa HMCDA && continue
             @test show(adaptor) == nothing
+
+            Random.seed!(100)
             samples, stats = sample(h, τ, θ_init_list[i_test], n_samples, adaptor, n_adapts; verbose=false, progress=false)
             @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL * n_chains
         end
+
         # Passing a vector of same RNGs
         rng = [MersenneTwister(1) for _ in 1:n_chains]
         h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∂ℓπ∂θ)
