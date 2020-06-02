@@ -87,7 +87,13 @@ function step(
         else
             res = z
         end
-        !isfinite(z) && break
+        if !isfinite(z)
+            # Remove undef
+            if FullTraj
+                res = res[isassigned.(Ref(res), 1:n_steps)]
+            end
+            break
+        end
     end
     return res
 end

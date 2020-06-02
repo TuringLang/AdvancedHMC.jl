@@ -213,9 +213,7 @@ function transition(
 )
     H0 = energy(z)
     integrator = jitter(rng, τ.integrator)
-    z′ = samplecand(rng, τ, h, z)
-    # Are we going to accept the `z′` via MH criteria?
-    is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
+    z′, is_accept, α = sample_phasepoint(rng, τ, h, z)
     # Do the actual accept / reject
     z = accept_phasepoint!(z, z′, is_accept)    # NOTE: this function changes `z′` in place in matrix-parallel mode
     # Reverse momentum variable to preserve reversibility
@@ -261,18 +259,27 @@ function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:Abs
     return z′
 end
 
-### Use end-point from trajectory as proposal 
+### Use end-point from the trajectory as a proposal and apply MH correction
 
-samplecand(rng, τ::StaticTrajectory{EndPointTS}, h, z) = step(τ.integrator, h, z, τ.n_steps)
+function sample_phasepoint(rng, τ::StaticTrajectory{EndPointTS}, h, z)
+    z′ = step(τ.integrator, h, z, τ.n_steps)
+    is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
+    return z′, is_accept, α
+end
 
 ### Multinomial sampling from trajectory
 
-randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_ℓp::AbstractVector) = zs[randcat_logp(rng, unnorm_ℓp)]
+function randcat(rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_ℓp::AbstractVector)
+    p = exp.(unnorm_ℓp .- logsumexp(unnorm_ℓp))
+    i = randcat(rng, p)
+    return zs[i]
+end
 
 # zs is in the form of Vector{PhasePoint{Matrix}} and has shape [n_steps][dim, n_chains]
 function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMatrix)
     z = similar(first(zs))
-    is = randcat_logp(rng, unnorm_ℓP)
+    P = exp.(unnorm_ℓP .- logsumexp(unnorm_ℓP; dims=2)) # (n_chains, n_steps)
+    is = randcat(rng, P')
     foreach(enumerate(is)) do (i_chain, i_step)
         zi = zs[i_step]
         z.θ[:,i_chain] = zi.θ[:,i_chain]
@@ -285,14 +292,27 @@ function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMat
     return z
 end
 
-function samplecand(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
-    zs = step(τ.integrator, h, z, τ.n_steps; full_trajectory = Val(true))
-    ℓws = -energy.(zs)
-    if eltype(ℓws) <: AbstractVector
-        ℓws = hcat(ℓws...)
+function sample_phasepoint(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
+    n_steps = abs(τ.n_steps)
+    # TODO: Deal with vectorized-mode generically.
+    #       Currently the direction of multiple chains are always coupled
+    n_steps_fwd = rand_coupled(rng, 0:n_steps) 
+    zs_fwd = step(τ.integrator, h, z, n_steps_fwd; fwd=true, full_trajectory=Val(true))
+    n_steps_bwd = n_steps - n_steps_fwd
+    zs_bwd = step(τ.integrator, h, z, n_steps_bwd; fwd=false, full_trajectory=Val(true))
+    zs = vcat(reverse(zs_bwd)..., z, zs_fwd...)
+    ℓweights = -energy.(zs)
+    if eltype(ℓweights) <: AbstractVector
+        ℓweights = cat(ℓweights...; dims=2)
     end
-    unnorm_ℓprob = ℓws
-    return randcat(rng, zs, unnorm_ℓprob)
+    unnorm_ℓprob = ℓweights
+    z′ = randcat(rng, zs, unnorm_ℓprob)
+    # Computing adaptation statistics for dual averaging as done in NUTS
+    Hs = -ℓweights
+    ΔH = Hs .- energy(z)
+    α = exp.(min.(0, -ΔH))  # this is a matrix for vectorized mode and a vector otherwise
+    α = typeof(α) <: AbstractVector ? mean(α) : vec(mean(α; dims=2))
+    return z′, true, α
 end
 
 abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end

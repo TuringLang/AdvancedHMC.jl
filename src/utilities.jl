@@ -16,10 +16,24 @@ function Base.randn(rng::AbstractVector{<:AbstractRNG}, T, dim::Int, n_chains::I
     return cat(randn.(rng, T, dim)...; dims=2)
 end
 
-# Sample from Categorical distributions
+""" 
+`rand_coupled` produces coupled randomness given a vector of RNGs. For example, 
+when a vector of RNGs is provided, `rand_coupled` peforms a single `rand` call 
+(rather than a `rand` call for each RNG) while keep all RNGs synchronised. 
+This is important if we want to couple multiple Markov chains.
+"""
 
-randcat_logp(rng::AbstractRNG, unnorm_ℓp::AbstractVector) =
-    randcat(rng, exp.(unnorm_ℓp .- logsumexp(unnorm_ℓp)))
+rand_coupled(rng::AbstractRNG, args...) = rand(rng, args...)
+
+function rand_coupled(rngs::AbstractVector{<:AbstractRNG}, args...)
+    # Dummpy calles to sync RNGs
+    foreach(rngs[2:end]) do rng
+        rand(rng, args...)
+    end
+    return res = rand(first(rngs), args...)
+end
+
+# Sample from Categorical distributions
 
 function randcat(rng::AbstractRNG, p::AbstractVector{T}) where {T}
     u = rand(rng, T)
@@ -31,17 +45,43 @@ function randcat(rng::AbstractRNG, p::AbstractVector{T}) where {T}
     return max(i, 1)
 end
 
-randcat_logp(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
-    unnorm_ℓP::AbstractMatrix
-) = randcat(rng, exp.(unnorm_ℓP .- logsumexp(unnorm_ℓP; dims=2)))
+"""
+    randcat(rng, P::AbstractMatrix)
 
+Generating Categorical random variables in a vectorized mode.
+`P` is supposed to be a matrix of (D, N) where each column is a probability vector.
+
+Example
+
+```
+P = [
+    0.5 0.3;
+    0.4 0.6;
+    0.1 0.1
+]
+u = [0.3, 0.4]
+C = [
+    0.5 0.3
+    0.9 0.9
+    1.0 1.0
+]
+```
+Then `C .< u'` is
+```
+[
+    0 1
+    0 0
+    0 0
+]
+```
+thus `convert.(Int, vec(sum(C .< u'; dims=1))) .+ 1` equals `[1, 2]`.
+"""
 function randcat(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
     P::AbstractMatrix{T}
 ) where {T}
-    u = rand(rng, T, size(P, 1))
-    C = cumsum(P; dims=2)
-    is = convert.(Int, vec(sum(C .< u; dims=2)))
-    return max.(is, 1)
+    u = rand(rng, T, size(P, 2))
+    C = cumsum(P; dims=1)
+    indices = convert.(Int, vec(sum(C .< u'; dims=1))) .+ 1
+    return max.(indices, 1)  # prevent numerical issue for Float32
 end
