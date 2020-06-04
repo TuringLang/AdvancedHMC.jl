@@ -71,23 +71,21 @@ It also supports vectorized sampling for static HMC and has been discussed in mo
 The below example utilizes the `@threads` macro to sample 4 chains across 4 threads.
 
 ```julia
-#Ensure that julia was launched with appropriate number of threads
+# Ensure that julia was launched with appropriate number of threads
 println(Threads.nthreads())
 
-#Number of chains to sample
+# Number of chains to sample
 nchains = 4
 
-#Cache to store the chains
+# Cache to store the chains
 chains = Vector{Any}(undef, nchains)
 
-#Adjust the `verbose` flag as per need
+# The `samples` from each parallel chain is stored in the `chains` vector 
+# Adjust the `verbose` flag as per need
 Threads.@threads for i in 1:nchains
-  chains[i] = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; verbose = false)
+  samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; verbose=false)
+  chains[i] = samples
 end
-
-#Each element of the `chains` vector contains a pair of `samples` and `stats` 
-#Concatenate the chains into a single chain
-aggregate_chain vcat([chain[1] for chain in chains]...)
 ```
 
 ## API and supported HMC algorithms
