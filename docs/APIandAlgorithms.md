@@ -6,9 +6,13 @@ leapfrog integrators, trajectories (static or dynamic), and adaption schemes etc
 
 ### Hamiltonian mass matrix (`metric`)
 
-- Unit metric: `UnitEuclideanMetric(dim)`
-- Diagonal metric: `DiagEuclideanMetric(dim)`
-- Dense metric: `DenseEuclideanMetric(dim)`
+The kinetic energy function is parameterized by a choice of a symmetric, positive-definite matrix known as a *mass matrix*.
+The inverse of the *mass matrix* is associated with the covariance of the target distribution and hence can be used to pass in correlation assumptions.
+AdvancedHMC supports the following choice of `metric`
+  
+- Unit metric (`UnitEuclideanMetric(dim)`): diagonal matrix of ones  
+- Diagonal metric (`DiagEuclideanMetric(dim)`): diagonal matrix with positive diagonal entries
+- Dense metric (`DenseEuclideanMetric(dim)`): dense, symmetric positive definite matrix
 
 where `dim` is the dimensionality of the sampling space.
 
