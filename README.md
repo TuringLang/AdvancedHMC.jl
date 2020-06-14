@@ -63,6 +63,31 @@ adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integra
 samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; progress=true)
 ```
 
+### Parallel sampling 
+
+AdvancedHMC enables parallel sampling (either distributed or multi-thread) via Julia's [parallel computing functions](https://docs.julialang.org/en/v1/manual/parallel-computing/).
+It also supports vectorized sampling for static HMC and has been discussed in more detail in the documentation [here](https://turing.ml/dev/docs/library/advancedhmc/parallel_sampling).
+
+The below example utilizes the `@threads` macro to sample 4 chains across 4 threads.
+
+```julia
+# Ensure that julia was launched with appropriate number of threads
+println(Threads.nthreads())
+
+# Number of chains to sample
+nchains = 4
+
+# Cache to store the chains
+chains = Vector{Any}(undef, nchains)
+
+# The `samples` from each parallel chain is stored in the `chains` vector 
+# Adjust the `verbose` flag as per need
+Threads.@threads for i in 1:nchains
+  samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; verbose=false)
+  chains[i] = samples
+end
+```
+
 ## API and supported HMC algorithms
 
 An important design goal of AdvancedHMC.jl is modularity; we would like to support algorithmic research on HMC.
