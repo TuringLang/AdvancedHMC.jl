@@ -70,3 +70,42 @@ function ℓπ_gdemo(θ)
     loglikelihood = logpdf(Normal(m, sqrt(s)), 1.5) + logpdf(Normal(m, sqrt(s)), 2.0)
     return logprior + loglikelihood
 end
+
+using Distributions: MvNormal
+import Turing
+
+Turing.@model function mvntest(θ, x)
+    θ ~ MvNormal(zeros(D), 2)
+    x ~ Normal(sum(θ), 1)
+    return θ, x
+end
+
+function get_primitives(x, modelgen)
+    spl_prior = Turing.SampleFromPrior()
+    function ℓπ(θ)
+        vi = Turing.VarInfo(model)
+        vi[spl_prior] = θ
+        model(vi, spl_prior)
+        Turing.getlogp(vi)
+    end
+    adbackend = Turing.Core.ForwardDiffAD{40}
+    alg_ad = Turing.HMC{adbackend}(0.1, 1)
+    model = modelgen(missing, x)
+    vi = Turing.VarInfo(model)
+    spl = Turing.Sampler(alg_ad, model)
+    Turing.Core.link!(vi, spl)
+    ∂ℓπ∂θ = θ -> Turing.Core.gradient_logp(adbackend(), θ, vi, model, spl)
+    θ₀ = Turing.VarInfo(model)[Turing.SampleFromPrior()]
+    return ℓπ, ∂ℓπ∂θ, θ₀
+end
+
+function rand_θ_given(x, modelgen, metric, τ; n_samples=20)
+    ℓπ, ∂ℓπ∂θ, θ₀ = get_primitives(x, modelgen)
+    h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+    samples, stats = sample(h, τ, θ₀, n_samples; verbose=false, progress=false)
+    s = samples[end]
+    return length(s) == 1 ? s[1] : s
+end
+
+# Test function
+g(θ, x) = cat(θ, x; dims=1)

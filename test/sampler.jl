@@ -1,9 +1,10 @@
 # Allow pass --progress when running this script individually to turn on progress meter
 const PROGRESS = length(ARGS) > 0 && ARGS[1] == "--progress" ? true : false
 
-using Test, AdvancedHMC, LinearAlgebra, Random
+using Test, AdvancedHMC, LinearAlgebra, Random, MCMCDebugging, Plots
 using Parameters: reconstruct
 using Statistics: mean, var, cov
+unicodeplots()
 include("common.jl")
 
 θ_init = rand(MersenneTwister(1), D)
@@ -59,6 +60,10 @@ end
                     Random.seed!(1)
                     samples, stats = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
                     @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
+                    res = perform(GewekeTest(5_000), mvntest, x -> rand_θ_given(x, mvntest, metric, τ), g)
+                    p = plot(res, mvntest)
+                    display(p)
+                    println()
                 end
 
                 # Skip adaptation tests with tempering
