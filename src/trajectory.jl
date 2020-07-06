@@ -549,14 +549,24 @@ function combine(treeleft::BinaryTree, treeright::BinaryTree)
 end
 
 """
-    isterminated(h::Hamiltonian, t::BinaryTree{<:ClassicNoUTurn})
+    isterminated(
+        h::Hamiltonian, 
+        t::BinaryTree{<:ClassicNoUTurn},
+        tleft::BinaryTree{<:ClassicNoUTurn}, 
+        tright::BinaryTree{<:ClassicNoUTurn}
+    )
 
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 using the (original) no-U-turn cirterion.
 
 Ref: https://arxiv.org/abs/1111.4246, https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, t::BinaryTree{<:ClassicNoUTurn})
+function isterminated(
+    h::Hamiltonian, 
+    t::BinaryTree{<:ClassicNoUTurn}, 
+    tleft::BinaryTree{<:ClassicNoUTurn}, 
+    tright::BinaryTree{<:ClassicNoUTurn}
+)
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
     Δθ = z1.θ - z0.θ
@@ -565,19 +575,39 @@ function isterminated(h::Hamiltonian, t::BinaryTree{<:ClassicNoUTurn})
 end
 
 """
-    isterminated(h::Hamiltonian, t::BinaryTree{<:GeneralisedNoUTurn})
+    isterminated(
+        h::Hamiltonian, 
+        t::BinaryTree{<:GeneralisedNoUTurn},
+        tleft::BinaryTree{<:GeneralisedNoUTurn}, 
+        tright::BinaryTree{<:GeneralisedNoUTurn}
+    )
 
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 using the generalised no-U-turn criterion.
 
-Ref: https://arxiv.org/abs/1701.02434
+Ref: https://arxiv.org/abs/1701.02434 https://github.com/stan-dev/stan/pull/2800
 """
-function isterminated(h::Hamiltonian, t::BinaryTree{<:GeneralisedNoUTurn})
+function isterminated(
+    h::Hamiltonian, 
+    t::BinaryTree{<:GeneralisedNoUTurn}, 
+    tleft::BinaryTree{<:GeneralisedNoUTurn}, 
+    tright::BinaryTree{<:GeneralisedNoUTurn}
+)
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
     rho = t.c.rho
-    s = (dot(rho, ∂H∂r(h, -z0.r)) >= 0) || (dot(-rho, ∂H∂r(h, z1.r)) >= 0)
-    return Termination(s, false)
+    s1 = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, t.zright.r))
+
+    rho = tleft.c.rho + tright.zleft.r
+    s2 = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, tright.zleft.r))
+
+    rho = tleft.zright.r + tright.c.rho
+    s3 = generalised_uturn_criterion(rho, ∂H∂r(h, tleft.zright.r), ∂H∂r(h, t.zright.r))
+    return Termination(s1 || s2 || s3, false)
+end
+
+function generalised_uturn_criterion(rho, p_sharp_minus, p_sharp_plus)
+    return (dot(rho, p_sharp_minus) <= 0) || (dot(rho, p_sharp_plus) <= 0)
 end
 
 """
@@ -617,7 +647,7 @@ function build_tree(
             end
             tree′ = combine(treeleft, treeright)
             sampler′ = combine(rng, sampler′, sampler′′)
-            termination′ = termination′ * termination′′ * isterminated(h, tree′)
+            termination′ = termination′ * termination′′ * isterminated(h, tree′, treeleft, treeright)
         end
         return tree′, sampler′, termination′
     end
@@ -663,7 +693,7 @@ function transition(
         # Update sampler
         sampler = combine(zcand, sampler, sampler′)
         # update termination
-        termination = termination * termination′ * isterminated(h, tree)
+        termination = termination * termination′ * isterminated(h, tree, treeleft, treeright)
     end
 
     H = energy(zcand)
