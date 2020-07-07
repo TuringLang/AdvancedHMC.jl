@@ -593,8 +593,6 @@ function isterminated(
     tleft::BinaryTree{<:GeneralisedNoUTurn}, 
     tright::BinaryTree{<:GeneralisedNoUTurn}
 )
-    # z0 is starting point and z1 is ending point
-    z0, z1 = t.zleft, t.zright
     rho = t.c.rho
     s1 = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, t.zright.r))
 
