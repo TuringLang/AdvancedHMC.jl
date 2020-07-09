@@ -203,6 +203,43 @@ end
 ahmc_isturn_generalised(z0, z1, rho, v=1) =
     AdvancedHMC.isterminated(h, AdvancedHMC.BinaryTree(z0, z1, GeneralisedNoUTurn(rho), 0, 0, 0.0)).dynamic
 
+function ahmc_isturn_strictgeneralised(z0, z1, rho, v=1)
+    t = AdvancedHMC.isterminated(
+        h, 
+        AdvancedHMC.BinaryTree(z0, z1, StrictGeneralisedNoUTurn(rho), 0, 0, 0.0),
+        AdvancedHMC.BinaryTree(z0, z0, StrictGeneralisedNoUTurn(rho - z1.r), 0, 0, 0.0), 
+        AdvancedHMC.BinaryTree(z1, z1, StrictGeneralisedNoUTurn(rho - z0.r), 0, 0, 0.0)
+    )
+    return t.dynamic
+end
+
+"""
+Check whether the subtree checks adequately detect U-turns.
+"""
+function check_subtree_u_turns(z0, z1, rho)
+    t = AdvancedHMC.BinaryTree(z0, z1, StrictGeneralisedNoUTurn(rho), 0, 0, 0.0)
+
+    # The left and right subtree are created in such a way that the 
+    # check_left_subtree and check_right_subtree checks should be equivalent 
+    # to the general no U-turn check.
+    tleft = AdvancedHMC.BinaryTree(z0, z0, StrictGeneralisedNoUTurn(rho - z1.r), 0, 0, 0.0)
+    tright = AdvancedHMC.BinaryTree(z1, z1, StrictGeneralisedNoUTurn(rho - z0.r), 0, 0, 0.0)
+
+    t_generalised = AdvancedHMC.BinaryTree(
+        t.zleft,
+        t.zright,
+        GeneralisedNoUTurn(t.c.rho),
+        t.sum_α,
+        t.nα,
+        t.ΔH_max
+    )
+    s1 = AdvancedHMC.isterminated(h, t_generalised)
+
+    s2 = AdvancedHMC.check_left_subtree(h, t, tleft, tright)
+    s3 = AdvancedHMC.check_right_subtree(h, t, tleft, tright)
+    @test s1 == s2 == s3
+end
+
 @testset "ClassicNoUTurn" begin
     n_tests = 4
     for _ = 1:n_tests
@@ -220,8 +257,16 @@ ahmc_isturn_generalised(z0, z1, rho, v=1) =
             ts_hand_isturn_generalised_fwd = hand_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
             ts_ahmc_isturn_generalised_fwd = ahmc_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
-            @test ts_hand_isturn_fwd[2:end] == ts_ahmc_isturn_fwd[2:end] == ts_hand_isturn_generalised_fwd[2:end] == ts_ahmc_isturn_generalised_fwd[2:end]
-            
+            ts_ahmc_isturn_strictgeneralised_fwd = ahmc_isturn_strictgeneralised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+
+            check_subtree_u_turns.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)])
+
+            @test ts_hand_isturn_fwd[2:end] == 
+                ts_ahmc_isturn_fwd[2:end] == 
+                ts_hand_isturn_generalised_fwd[2:end] == 
+                ts_ahmc_isturn_generalised_fwd[2:end] == 
+                ts_ahmc_isturn_strictgeneralised_fwd[2:end]
+
             if length(ARGS) > 0 && ARGS[1] == "--plot"
                 import PyPlot
                 fig = makeplot(
