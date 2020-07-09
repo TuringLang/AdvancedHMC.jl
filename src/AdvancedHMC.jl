@@ -38,6 +38,7 @@ include("trajectory.jl")
 export EndPointTS, SliceTS, MultinomialTS, 
        StaticTrajectory, HMCDA, NUTS, 
        ClassicNoUTurn, GeneralisedNoUTurn, 
+       StrictGeneralisedNoUTurn,
        find_good_stepsize
 
 include("adaptation/Adaptation.jl")
