@@ -427,7 +427,6 @@ struct StrictGeneralisedNoUTurn{T<:AbstractVector{<:Real}} <: AbstractTerminatio
 end
 
 StrictGeneralisedNoUTurn(z::PhasePoint) = StrictGeneralisedNoUTurn(z.r)
-convert(GeneralisedNoUTurn, c::StrictGeneralisedNoUTurn) = GeneralisedNoUTurn(c.rho)
 
 combine(::ClassicNoUTurn, ::ClassicNoUTurn) = ClassicNoUTurn()
 combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rho + cright.rho)
