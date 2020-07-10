@@ -602,11 +602,8 @@ end
 
 """
     isterminated(
-        h::Hamiltonian, 
-        t::BinaryTree{<:T},
-        tleft::BinaryTree{<:T}, 
-        tright::BinaryTree{<:T}
-    ) where {T<:StrictGeneralisedNoUTurn}
+        h::Hamiltonian, t::T, tleft::T, tright::T
+    ) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
 
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 using the generalised no-U-turn criterion with additional U-turn checks.
@@ -614,11 +611,8 @@ using the generalised no-U-turn criterion with additional U-turn checks.
 Ref: https://arxiv.org/abs/1701.02434 https://github.com/stan-dev/stan/pull/2800
 """
 function isterminated(
-    h::Hamiltonian, 
-    t::BinaryTree{<:StrictGeneralisedNoUTurn}, 
-    tleft::BinaryTree{<:StrictGeneralisedNoUTurn}, 
-    tright::BinaryTree{<:StrictGeneralisedNoUTurn}
-) 
+    h::Hamiltonian, t::T, tleft::T, tright::T
+) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
     # Classic generalised U-turn check
     t_generalised = BinaryTree(
         t.zleft,
@@ -640,21 +634,15 @@ end
 
 """
     check_left_subtree(
-        h::Hamiltonian, 
-        t::BinaryTree{<:StrictGeneralisedNoUTurn}, 
-        tleft::BinaryTree{<:StrictGeneralisedNoUTurn}, 
-        tright::BinaryTree{<:StrictGeneralisedNoUTurn}
-    )
+        h::Hamiltonian, t::T, tleft::T, tright::T
+    ) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
 
 Do a U-turn check between the leftmost phase point of `t` and the leftmost 
 phase point of `tright`, the right subtree.
 """
 function check_left_subtree(
-    h::Hamiltonian, 
-    t::BinaryTree{<:StrictGeneralisedNoUTurn}, 
-    tleft::BinaryTree{<:StrictGeneralisedNoUTurn}, 
-    tright::BinaryTree{<:StrictGeneralisedNoUTurn}
-)
+    h::Hamiltonian, t::T, tleft::T, tright::T
+) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
     rho = tleft.c.rho + tright.zleft.r
     s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, tright.zleft.r))
     return Termination(s, false)
@@ -662,21 +650,15 @@ end
 
 """
     check_left_subtree(
-        h::Hamiltonian, 
-        t::BinaryTree{<:StrictGeneralisedNoUTurn}, 
-        tleft::BinaryTree{<:StrictGeneralisedNoUTurn}, 
-        tright::BinaryTree{<:StrictGeneralisedNoUTurn}
-    )
+        h::Hamiltonian, t::T, tleft::T, tright::T
+    ) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
 
 Do a U-turn check between the rightmost phase point of `t` and the rightmost
 phase point of `tleft`, the left subtree.
 """
 function check_right_subtree(
-    h::Hamiltonian, 
-    t::BinaryTree{<:StrictGeneralisedNoUTurn}, 
-    tleft::BinaryTree{<:StrictGeneralisedNoUTurn}, 
-    tright::BinaryTree{<:StrictGeneralisedNoUTurn}
-)
+    h::Hamiltonian, t::T, tleft::T, tright::T
+) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
     rho = tleft.zright.r + tright.c.rho
     s = generalised_uturn_criterion(rho, ∂H∂r(h, tleft.zright.r), ∂H∂r(h, t.zright.r))
     return Termination(s, false)
