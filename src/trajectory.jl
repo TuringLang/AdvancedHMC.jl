@@ -407,8 +407,30 @@ end
 
 GeneralisedNoUTurn(z::PhasePoint) = GeneralisedNoUTurn(z.r)
 
+"""
+$(TYPEDEF)
+
+Generalised No-U-Turn criterion as described in Section A.4.2 in [1] with 
+added U-turn check as described in [2].
+
+# Fields
+
+$(TYPEDFIELDS)
+
+# References
+1. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
+2. [https://github.com/stan-dev/stan/pull/2800](https://github.com/stan-dev/stan/pull/2800)
+"""
+struct StrictGeneralisedNoUTurn{T<:AbstractVector{<:Real}} <: AbstractTerminationCriterion
+    "Integral or sum of momenta along the integration path."
+    rho::T
+end
+
+StrictGeneralisedNoUTurn(z::PhasePoint) = StrictGeneralisedNoUTurn(z.r)
+
 combine(::ClassicNoUTurn, ::ClassicNoUTurn) = ClassicNoUTurn()
 combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rho + cright.rho)
+combine(cleft::T, cright::T) where {T<:StrictGeneralisedNoUTurn} = T(cleft.rho + cright.rho)
 
 
 ##
@@ -573,11 +595,81 @@ using the generalised no-U-turn criterion.
 Ref: https://arxiv.org/abs/1701.02434
 """
 function isterminated(h::Hamiltonian, t::BinaryTree{<:GeneralisedNoUTurn})
-    # z0 is starting point and z1 is ending point
-    z0, z1 = t.zleft, t.zright
     rho = t.c.rho
-    s = (dot(rho, ∂H∂r(h, -z0.r)) >= 0) || (dot(-rho, ∂H∂r(h, z1.r)) >= 0)
+    s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, t.zright.r))
     return Termination(s, false)
+end
+
+"""
+    isterminated(
+        h::Hamiltonian, t::T, tleft::T, tright::T
+    ) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
+
+Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
+using the generalised no-U-turn criterion with additional U-turn checks.
+
+Ref: https://arxiv.org/abs/1701.02434 https://github.com/stan-dev/stan/pull/2800
+"""
+function isterminated(
+    h::Hamiltonian, t::T, tleft::T, tright::T
+) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
+    # Classic generalised U-turn check
+    t_generalised = BinaryTree(
+        t.zleft,
+        t.zright,
+        GeneralisedNoUTurn(t.c.rho),
+        t.sum_α,
+        t.nα,
+        t.ΔH_max
+    )
+    s1 = isterminated(h, t_generalised)
+
+    # U-turn checks for left and right subtree
+    # See https://discourse.mc-stan.org/t/nuts-misses-u-turns-runs-in-circles-until-max-treedepth/9727/33
+    # for a visualisation.
+    s2 = check_left_subtree(h, t, tleft, tright)
+    s3 = check_right_subtree(h, t, tleft, tright)
+    return s1 * s2 * s3
+end
+
+"""
+    check_left_subtree(
+        h::Hamiltonian, t::T, tleft::T, tright::T
+    ) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
+
+Do a U-turn check between the leftmost phase point of `t` and the leftmost 
+phase point of `tright`, the right subtree.
+"""
+function check_left_subtree(
+    h::Hamiltonian, t::T, tleft::T, tright::T
+) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
+    rho = tleft.c.rho + tright.zleft.r
+    s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, tright.zleft.r))
+    return Termination(s, false)
+end
+
+"""
+    check_left_subtree(
+        h::Hamiltonian, t::T, tleft::T, tright::T
+    ) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
+
+Do a U-turn check between the rightmost phase point of `t` and the rightmost
+phase point of `tleft`, the left subtree.
+"""
+function check_right_subtree(
+    h::Hamiltonian, t::T, tleft::T, tright::T
+) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
+    rho = tleft.zright.r + tright.c.rho
+    s = generalised_uturn_criterion(rho, ∂H∂r(h, tleft.zright.r), ∂H∂r(h, t.zright.r))
+    return Termination(s, false)
+end
+
+function generalised_uturn_criterion(rho, p_sharp_minus, p_sharp_plus)
+    return (dot(rho, p_sharp_minus) <= 0) || (dot(rho, p_sharp_plus) <= 0)
+end
+
+function isterminated(h::Hamiltonian, t::BinaryTree{T}, args...) where {T<:Union{ClassicNoUTurn, GeneralisedNoUTurn}}
+    return isterminated(h, t)
 end
 
 """
@@ -617,7 +709,7 @@ function build_tree(
             end
             tree′ = combine(treeleft, treeright)
             sampler′ = combine(rng, sampler′, sampler′′)
-            termination′ = termination′ * termination′′ * isterminated(h, tree′)
+            termination′ = termination′ * termination′′ * isterminated(h, tree′, treeleft, treeright)
         end
         return tree′, sampler′, termination′
     end
@@ -663,7 +755,7 @@ function transition(
         # Update sampler
         sampler = combine(zcand, sampler, sampler′)
         # update termination
-        termination = termination * termination′ * isterminated(h, tree)
+        termination = termination * termination′ * isterminated(h, tree, treeleft, treeright)
     end
 
     H = energy(zcand)
