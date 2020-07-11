@@ -31,12 +31,12 @@ Bijectors = "76274a88-744f-5084-9051-94815aaf08c4"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+MCMCDebugging = "6d524b87-5f90-4494-b601-374a5b87a94b"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"
-MCMCDebugging = "6d524b87-5f90-4494-b601-374a5b87a94b"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["Distributed", "Distributions", "ForwardDiff", "Test", "Turing", "UnicodePlots", "Bijectors", "OrdinaryDiffEq", "Zygote"]
+test = ["Distributed", "Distributions", "ForwardDiff", "MCMCDebugging", "Test", "Turing", "UnicodePlots", "Bijectors", "OrdinaryDiffEq", "Zygote"]
