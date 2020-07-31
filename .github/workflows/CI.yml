@@ -1,4 +1,4 @@
-name: AdvancedHMC-CI
+name: CI
 
 on:
   push:
@@ -27,8 +27,6 @@ jobs:
           - os: macOS-latest
             arch: x86
     steps:
-      - env:
-        GEWEKE_TEST: 1
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
         with:
@@ -36,3 +34,5 @@ jobs:
           arch: ${{ matrix.arch }}
       - uses: julia-actions/julia-buildpkg@latest
       - uses: julia-actions/julia-runtest@latest
+        env:
+          GEWEKE_TEST: 1
