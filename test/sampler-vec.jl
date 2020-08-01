@@ -30,9 +30,9 @@ include("common.jl")
         n_chains = n_chains_list[i_test]
         metric = metricT((D, n_chains))
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-        @test show(metric) == nothing
-        @test show(h) == nothing
-        @test show(κ) == nothing
+        @test show(metric) == nothing; println()
+        @test show(h) == nothing; println()
+        @test show(κ) == nothing; println()
 
         # NoAdaptation
         Random.seed!(100)
@@ -52,8 +52,8 @@ include("common.jl")
                 StepSizeAdaptor(0.8, lfi),
             ),
         ]
-            κ isa HMCDA && continue
-            @test show(adaptor) == nothing
+            @test show(adaptor) == nothing; println()
+            κ.τ.term_criterion isa FixedLength && continue
 
             Random.seed!(100)
             samples, stats = sample(h, κ, θ_init_list[i_test], n_samples, adaptor, n_adapts; verbose=false, progress=false)
@@ -73,40 +73,40 @@ include("common.jl")
         end
         @test all_same
     end
-    @info "Adaptation tests for HMCDA with StepSizeAdaptor are skipped"
+    @info "Adaptation tests for `FixedLength` with `StepSizeAdaptor` are skipped."
 
     # Simple time benchmark
     let metricT=UnitEuclideanMetric
-        κ = StaticTrajectory(lf, n_steps)
+        κ = StaticTrajectory{MetropolisTS}(lf, n_steps)
 
-        time_mat = Vector{Float64}(undef, n_chains_max)
+        # Time for multiple runs via vectorization
+        time_vec = Vector{Float64}(undef, n_chains_max)
         for (i, n_chains) in enumerate(n_chains_list)
             h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∂ℓπ∂θ)
             t = @elapsed samples, stats = sample(h, κ, θ_init_list[i], n_samples; verbose=false)
-            time_mat[i] = t
+            time_vec[i] = t
         end
 
         # Time for multiple runs of single chain
-        time_seperate = Vector{Float64}(undef, n_chains_max)
-
+        time_seq = Vector{Float64}(undef, n_chains_max)
         for (i, n_chains) in enumerate(n_chains_list)
             t = @elapsed for j in 1:n_chains
                 h = Hamiltonian(metricT(D), ℓπ, ∂ℓπ∂θ)
                 samples, stats = sample(h, κ, θ_init_list[i][:,j], n_samples; verbose=false)
             end
-            time_seperate[i] = t
+            time_seq[i] = t
         end
 
         # Make plot
-        fig = lineplot(
+        p = lineplot(
             collect(1:n_chains_max),
-            time_mat;
+            time_vec;
             title="Scalabiliry of multiple chains",
             name="vectorization",
             xlabel="Num of chains",
             ylabel="Time (s)"
         )
-        lineplot!(fig, collect(n_chains_list), time_seperate; color=:blue, name="seperate")
-        println(); show(fig); println(); println()
+        lineplot!(p, collect(n_chains_list), time_seq; color=:blue, name="seperate")
+        println(); show(p); println(); println()
     end
 end

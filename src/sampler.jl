@@ -1,4 +1,4 @@
-# Update of hamiltonian and proposal
+# Update of hamiltonian and kernel
 
 reconstruct(h::Hamiltonian, ::AbstractAdaptor) = h
 function reconstruct(
@@ -12,14 +12,13 @@ reconstruct(κ::AbstractKernel, ::AbstractAdaptor) = κ
 function reconstruct(
     κ::AbstractKernel, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
 )
-    return reconstruct(κ::AbstractKernel, getϵ(adaptor))
+    return reconstruct(κ, getϵ(adaptor))
 end
-function reconstruct(κ::AbstractKernel, ϵ::Real)
-    @unpack refreshment, τ, TS = κ
+function reconstruct(κ::AbstractKernel, ϵ::AbstractScalarOrVec{<:Real})
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
     # FIXME: this is buggy for `JitteredLeapfrog`
     τ = reconstruct(
-        τ, integrator=reconstruct(τ.integrator, ϵ=ϵ)
+        κ.τ, integrator=reconstruct(κ.τ.integrator, ϵ=ϵ)
     )
     return reconstruct(κ, τ=τ)
 end

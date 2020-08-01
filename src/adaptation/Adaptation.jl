@@ -32,7 +32,7 @@ struct NaiveHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: AbstractA
     pc  :: M
     ssa :: Tssa
 end
-Base.show(io::IO, a::NaiveHMCAdaptor) = print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
+Base.show(io::IO, a::NaiveHMCAdaptor) = print(io, "NaiveHMCAdaptor(\n    pc=$(a.pc), \n    ssa=$(a.ssa)\n)")
 
 getM⁻¹(ca::NaiveHMCAdaptor) = getM⁻¹(ca.pc)
 getϵ(ca::NaiveHMCAdaptor) = getϵ(ca.ssa)

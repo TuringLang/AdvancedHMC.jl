@@ -38,20 +38,20 @@ function propose_phasepoint(rng, integrator, tc, ::Type{MetropolisTS}, h, z)
 end
 
 "Perform MH acceptance based on energy, i.e. negative log probability"
-function mh_accept_ratio(rng, Horiginal::T, Hproposal::T) where {T<:Real}
-    α = min(one(T), exp(Horiginal - Hproposal))
-    accept = rand(rng, T) < α
+function mh_accept_ratio(rng, H::R, H′::R) where {R<:Real}
+    α = min(one(R), exp(H - H′))
+    accept = rand(rng, R) < α
     return accept, α
 end
 
-function mh_accept_ratio(rng, Horiginal::T, Hproposal::T) where {T<:AbstractVector{<:Real}}
-    α = min.(one(T), exp.(Horiginal .- Hproposal))
+function mh_accept_ratio(rng, H::V, H′::V) where {R<:Real, V<:AbstractVector{R}}
+    α = min.(one(R), exp.(H .- H′))
     # NOTE: There is a chance that sharing the RNG over multiple
     #       chains for accepting / rejecting might couple
     #       the chains. We need to revisit this more rigirously 
     #       in the future. See discussions at 
     #       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
-    accept = rand(rng, T, length(Horiginal)) .< α
+    accept = rand(rng, R, length(H)) .< α
     return accept, α
 end
 
