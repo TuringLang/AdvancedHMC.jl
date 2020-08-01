@@ -75,10 +75,10 @@ end
 
     r1 = randn(D)
     z1 = AdvancedHMC.phasepoint(h, θ_init, r1)
-    c1 = AdvancedHMC.GeneralisedNoUTurn(z1) 
+    c1 = AdvancedHMC.NoUTurn(z1) 
     r2 = randn(D)
     z2 = AdvancedHMC.phasepoint(h, θ_init, r2)
-    c2 = AdvancedHMC.GeneralisedNoUTurn(z2) 
+    c2 = AdvancedHMC.NoUTurn(z2) 
     c3 = AdvancedHMC.combine(c1, c2)
     @test c3.rho == r1 + r2
 end
@@ -132,7 +132,7 @@ end
     @test t5.ΔH_max == 3.0
 end
 
-### Test ClassicNoUTurn and GeneralisedNoUTurn
+### Test ClassicNoUTurn and NoUTurn
 
 function makeplot(
     plt,
@@ -201,7 +201,7 @@ function hand_isturn_generalised(z0, z1, rho, v=1)
 end
 
 ahmc_isturn_generalised(z0, z1, rho, v=1) =
-    AdvancedHMC.isterminated(h, AdvancedHMC.BinaryTree(z0, z1, GeneralisedNoUTurn(rho), 0, 0, 0.0)).dynamic
+    AdvancedHMC.isterminated(h, AdvancedHMC.BinaryTree(z0, z1, NoUTurn(rho), 0, 0, 0.0)).dynamic
 
 function ahmc_isturn_strictgeneralised(z0, z1, rho, v=1)
     t = AdvancedHMC.isterminated(
@@ -228,7 +228,7 @@ function check_subtree_u_turns(z0, z1, rho)
     t_generalised = AdvancedHMC.BinaryTree(
         t.zleft,
         t.zright,
-        GeneralisedNoUTurn(t.c.rho),
+        NoUTurn(t.c.rho),
         t.sum_α,
         t.nα,
         t.ΔH_max

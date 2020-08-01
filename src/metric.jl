@@ -42,7 +42,7 @@ DiagEuclideanMetric(sz) = DiagEuclideanMetric(Float64, sz)
 DiagEuclideanMetric(::Type{T}, dim::Int) where {T} = DiagEuclideanMetric(ones(T, dim))
 DiagEuclideanMetric(dim::Int) = DiagEuclideanMetric(Float64, dim)
 
-renew(ue::DiagEuclideanMetric, M⁻¹) = DiagEuclideanMetric(M⁻¹)
+renew(::DiagEuclideanMetric, M⁻¹) = DiagEuclideanMetric(M⁻¹)
 
 Base.size(e::DiagEuclideanMetric, dim...) = size(e.M⁻¹, dim...)
 Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
@@ -71,7 +71,7 @@ DenseEuclideanMetric(D::Int) = DenseEuclideanMetric(Float64, D)
 DenseEuclideanMetric(::Type{T}, sz::Tuple{Int}) where {T} = DenseEuclideanMetric(Matrix{T}(I, first(sz), first(sz)))
 DenseEuclideanMetric(sz::Tuple{Int}) = DenseEuclideanMetric(Float64, sz)
 
-renew(ue::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
+renew(::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
 
 Base.size(e::DenseEuclideanMetric, dim...) = size(e._temp, dim...)
 Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DenseEuclideanMetric(diag=$(_string_M⁻¹(dem.M⁻¹)))")

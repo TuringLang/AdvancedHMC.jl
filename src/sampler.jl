@@ -8,14 +8,17 @@ function reconstruct(
     return reconstruct(h, metric=metric)
 end
 
-reconstruct(τ::AbstractKernel, ::AbstractAdaptor) = τ
+reconstruct(κ::AbstractKernel, ::AbstractAdaptor) = κ
 function reconstruct(
-    τ::AbstractKernel, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
+    κ::AbstractKernel, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
 )
+    @unpack refreshment, trajectory, TS = κ
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
     # FIXME: this is buggy for `JitteredLeapfrog`
-    integrator = reconstruct(τ.integrator, ϵ=getϵ(adaptor))
-    return reconstruct(τ, integrator=integrator)
+    trajectory = reconstruct(
+        trajectory, integrator=reconstruct(trajectory.integrator, ϵ=getϵ(adaptor))
+    )
+    return reconstruct(κ, trajectory=trajectory)
 end
 
 function resize(h::Hamiltonian, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}

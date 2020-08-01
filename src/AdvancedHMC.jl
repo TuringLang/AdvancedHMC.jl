@@ -18,11 +18,18 @@ import Parameters: reconstruct
 include("utilities.jl")
 
 # Notations
-# ℓπ: log density of the target distribution
 # θ: position variables / model parameters
-# ∂ℓπ∂θ: gradient of the log density of the target distribution w.r.t θ
 # r: momentum variables
 # z: phase point / a pair of θ and r
+# θ₀: initial position
+# r₀: initial momentum
+# z₀: initial phase point
+# ℓπ: log density of the target distribution
+# ∇ℓπ: gradient of the log density of the target distribution w.r.t θ
+# κ: kernel
+# τ: trajectory
+# ε: step size
+# L: step number
 
 include("metric.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
@@ -41,6 +48,13 @@ export Trajectory, HMCKernel, MixtureKernel,
        ClassicNoUTurn, NoUTurn, StrictNoUTurn,
        MetropolisTS, SliceTS, MultinomialTS,
        find_good_stepsize
+struct StaticTrajectory{TS} end
+struct HMCDA{TS} end
+struct NUTS{TS, TC} end
+@deprecate StaticTrajectory{TS}(lf, n_steps) where {TS} HMCKernel(FullRefreshment(), Trajectory(lf, FixedNSteps(n_steps)), TS)
+@deprecate HMCDA{TS}(lf, λ) where {TS} HMCKernel(FullRefreshment(), Trajectory(lf, FixedLength(λ)), TS)
+@deprecate NUTS{TS, TC}(lf) where {TS, TC} HMCKernel(FullRefreshment(), Trajectory(lf, TC()), TS)
+export StaticTrajectory, HMCDA, NUTS
 
 include("adaptation/Adaptation.jl")
 using .Adaptation

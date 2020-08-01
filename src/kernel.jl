@@ -66,7 +66,7 @@ struct FixedNSteps{T<:Int} <: StaticTerminationCriterion
 end
 
 struct FixedLength{F<:AbstractFloat} <: StaticTerminationCriterion
-    length::F
+    λ::F
 end
 
 """
@@ -226,8 +226,8 @@ struct HMCKernel{
     TS::Type{TS}
 end
 
-function transition(rng, h, hmc::HMCKernel, z)
-    @unpack refreshment, trajectory, TS = hmc
+function transition(rng, h, κ::HMCKernel, z)
+    @unpack refreshment, trajectory, TS = κ
     integrator = jitter(rng, trajectory.integrator)
     z = refresh(rng, z, h, refreshment)
     return transition(rng, h, Trajectory(integrator, trajectory.term_criterion), TS, z)
@@ -241,8 +241,8 @@ struct MixtureKernel{
     τ2::K2
 end
 
-function transition(rng, h, mix::MixtureKernel, z)
-    @unpack γ, τ1, τ2 = mix
+function transition(rng, h, κ::MixtureKernel, z)
+    @unpack γ, τ1 , τ2 = κ
     τ = rand(rng) < γ ? τ1 : τ2
     return transition(rng, h, τ, z)
 end
