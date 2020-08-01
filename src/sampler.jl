@@ -8,9 +8,9 @@ function reconstruct(
     return reconstruct(h, metric=metric)
 end
 
-reconstruct(τ::AbstractProposal, ::AbstractAdaptor) = τ
+reconstruct(τ::AbstractKernel, ::AbstractAdaptor) = τ
 function reconstruct(
-    τ::AbstractProposal, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
+    τ::AbstractKernel, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
 )
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
     # FIXME: this is buggy for `JitteredLeapfrog`
@@ -43,22 +43,9 @@ function sample_init(
     return h, t
 end
 
-# A step is a momentum refreshment plus a transition
-function step(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
-    h::Hamiltonian, 
-    τ::AbstractProposal, 
-    z::PhasePoint
-)
-    # Refresh momentum
-    z = refresh(rng, z, h)
-    # Make transition
-    return transition(rng, τ, h, z)
-end
-
 Adaptation.adapt!(
     h::Hamiltonian,
-    τ::AbstractProposal,
+    τ::AbstractKernel,
     adaptor::Adaptation.NoAdaptation,
     i::Int,
     n_adapts::Int,
@@ -68,7 +55,7 @@ Adaptation.adapt!(
 
 function Adaptation.adapt!(
     h::Hamiltonian,
-    τ::AbstractProposal,
+    τ::AbstractKernel,
     adaptor::AbstractAdaptor,
     i::Int,
     n_adapts::Int,
@@ -105,7 +92,7 @@ simple_pm_next!(pm, stat::NamedTuple) = ProgressMeter.next!(pm)
 
 sample(
     h::Hamiltonian,
-    τ::AbstractProposal,
+    τ::AbstractKernel,
     θ::AbstractVecOrMat{<:AbstractFloat},
     n_samples::Int,
     adaptor::AbstractAdaptor=NoAdaptation(),
@@ -132,7 +119,7 @@ sample(
     sample(
         rng::AbstractRNG,
         h::Hamiltonian,
-        τ::AbstractProposal,
+        τ::AbstractKernel,
         θ::AbstractVecOrMat{T},
         n_samples::Int,
         adaptor::AbstractAdaptor=NoAdaptation(),
@@ -155,7 +142,7 @@ Sample `n_samples` samples using the proposal `τ` under Hamiltonian `h`.
 function sample(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
-    τ::AbstractProposal,
+    τ::AbstractKernel,
     θ::T,
     n_samples::Int,
     adaptor::AbstractAdaptor=NoAdaptation(),
@@ -175,7 +162,7 @@ function sample(
     pm = progress ? ProgressMeter.Progress(n_samples, desc="Sampling", barlen=31) : nothing
     time = @elapsed for i = 1:n_samples
         # Make a step
-        t = step(rng, h, τ, t.z)
+        t = transition(rng, h, τ, t.z)
         # Adapt h and τ; what mutable is the adaptor
         tstat = stat(t)
         h, τ, isadapted = adapt!(h, τ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)

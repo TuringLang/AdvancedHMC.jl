@@ -33,12 +33,13 @@ export Hamiltonian
 include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 
-include("trajectory.jl")
+include("kernel.jl")
 @deprecate find_good_eps find_good_stepsize
-export EndPointTS, SliceTS, MultinomialTS, 
-       StaticTrajectory, HMCDA, NUTS, 
-       ClassicNoUTurn, GeneralisedNoUTurn, 
-       StrictGeneralisedNoUTurn,
+export Trajectory, HMCKernel, MixtureKernel,
+       FullRefreshment, PartialRefreshment,
+       FixedNSteps, FixedLength, 
+       ClassicNoUTurn, NoUTurn, StrictNoUTurn,
+       MetropolisTS, SliceTS, MultinomialTS,
        find_good_stepsize
 
 include("adaptation/Adaptation.jl")

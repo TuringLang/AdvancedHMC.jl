@@ -80,6 +80,12 @@ phasepoint(
     ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, r))
 ) where {T1<:AbstractVecOrMat,T2<:AbstractVecOrMat} = PhasePoint(θ, r, ℓπ, ℓκ)
 
+phasepoint(
+    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
+    θ::AbstractVecOrMat{T},
+    h::Hamiltonian
+) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric))
+
 Base.isfinite(v::DualValue) = all(isfinite, v.value) && all(isfinite, v.gradient)
 Base.isfinite(v::AbstractVecOrMat) = all(isfinite, v)
 Base.isfinite(z::PhasePoint) = isfinite(z.ℓπ) && isfinite(z.ℓκ)
@@ -127,26 +133,3 @@ function neg_energy(
 end
 
 energy(args...) = -neg_energy(args...)
-
-####
-#### Momentum refreshment
-####
-
-phasepoint(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    θ::AbstractVecOrMat{T},
-    h::Hamiltonian
-) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric))
-
-refresh(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    z::PhasePoint,
-    h::Hamiltonian
-) = phasepoint(h, z.θ, rand(rng, h.metric))
-
-# refresh(
-#     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-#     z::PhasePoint,
-#     h::Hamiltonian,
-#     α::AbstractFloat
-# ) = phasepoint(h, z.θ, α * z.r + (1 - α^2) * rand(rng, h.metric))
