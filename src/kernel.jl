@@ -58,12 +58,14 @@ refresh(rng, z, h, ref::PartialRefreshment) =
 ####################################
 
 abstract type AbstractTerminationCriterion end
+abstract type StaticTerminationCriterion <: AbstractTerminationCriterion end
+abstract type DynamicTerminationCriterion <: AbstractTerminationCriterion end
 
-struct FixedNSteps{T<:Int} <: AbstractTerminationCriterion
+struct FixedNSteps{T<:Int} <: StaticTerminationCriterion
     n_steps::T
 end
 
-struct FixedLength{F<:AbstractFloat} <: AbstractTerminationCriterion
+struct FixedLength{F<:AbstractFloat} <: StaticTerminationCriterion
     length::F
 end
 
@@ -72,14 +74,19 @@ $(TYPEDEF)
 
 Classic No-U-Turn criterion as described in Eq. (9) in [1].
 
-Informally, this will terminate the trajectory expansion if continuing the simulation either forwards or 
+Informally, 
+this will terminate the trajectory expansion if continuing the simulation either forwards or
 backwards in time will decrease the distance between the left-most and right-most positions.
+
+## Fields
+
+$(TYPEDFIELDS)
 
 ## References
 
 1. Hoffman, M. D., & Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623. ([arXiv](http://arxiv.org/abs/1111.4246))
 """
-struct ClassicNoUTurn{F<:Real} <: AbstractTerminationCriterion 
+Base.@kwdef struct ClassicNoUTurn{F<:Real} <: DynamicTerminationCriterion 
     max_depth::Int=10
     Δ_max::F=1000
 end
@@ -97,15 +104,16 @@ $(TYPEDFIELDS)
 
 1. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
 """
-struct NoUTurn{T<:AbstractVector{<:Real}} <: AbstractTerminationCriterion
-    "Integral or sum of momenta along the integration path."
-    rho::T
+Base.@kwdef struct NoUTurn{F<:Real} <: DynamicTerminationCriterion 
+    max_depth::Int=10
+    Δ_max::F=1000
 end
 
 """
 $(TYPEDEF)
 
-Generalised No-U-Turn criterion as described in Section A.4.2 in [1] with  added U-turn check as described in [2].
+Generalised No-U-Turn criterion as described in Section A.4.2 in [1] with 
+added U-turn check as described in [2].
 
 ## Fields
 
@@ -116,9 +124,9 @@ $(TYPEDFIELDS)
 1. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
 2. [https://github.com/stan-dev/stan/pull/2800](https://github.com/stan-dev/stan/pull/2800)
 """
-struct StrictNoUTurn{T<:AbstractVector{<:Real}} <: AbstractTerminationCriterion
-    "Integral or sum of momenta along the integration path."
-    rho::T
+Base.@kwdef struct StrictNoUTurn{F<:Real} <: DynamicTerminationCriterion 
+    max_depth::Int=10
+    Δ_max::F=1000
 end
 
 ######################
@@ -139,6 +147,28 @@ $(TYPEDFIELDS)
 """
 struct MetropolisTS <: AbstractTrajectorySampler end
 
+
+"""
+$(TYPEDEF)
+
+Trajectory slice sampler carried during the building of the tree.
+It contains the slice variable and the number of acceptable condidates in the tree.
+
+## Fields
+
+$(TYPEDFIELDS)
+"""
+struct SliceTS{F<:AbstractFloat} <: AbstractTrajectorySampler
+    "Sampled candidate `PhasePoint`."
+    zcand   ::  PhasePoint
+    "Slice variable in log-space."
+    ℓu      ::  F
+    "Number of acceptable candidates, i.e. those with probability larger than slice variable."
+    n       ::  Int
+end
+
+Base.show(io::IO, s::SliceTS) = print(io, "SliceTS(ℓu=$(s.ℓu), n=$(s.n))")
+
 """
 $(TYPEDEF)
 
@@ -157,27 +187,6 @@ struct MultinomialTS{F<:AbstractFloat} <: AbstractTrajectorySampler
 end
 
 Base.show(io::IO, s::MultinomialTS) = print(io, "MultinomialTS(ℓw=$(s.ℓw))")
-
-"""
-$(TYPEDEF)
-
-Trajectory slice sampler carried during the building of the tree.
-It contains the slice variable and the number of acceptable condidates in the tree.
-
-## Fields
-
-$(TYPEDFIELDS)
-"""
-struct SliceTS{F<:AbstractFloat} <: AbstractTrajectorySampler
-    "Sampled candidate `PhasePoint`."
-    zcand   ::  PhasePoint
-    "Slice variable in log-space."
-    ℓu      ::  F
-    "Number of acceptable candidates, i.e. those with probability larger than slice variable `u`."
-    n       ::  Int
-end
-
-Base.show(io::IO, s::SliceTS) = print(io, "SliceTS(ℓu=$(s.ℓu), n=$(s.n))")
 
 ################################################
 # Numerically simulated Hamiltonian trajectory #
@@ -219,8 +228,9 @@ end
 
 function transition(rng, h, hmc::HMCKernel, z)
     @unpack refreshment, trajectory, TS = hmc
+    integrator = jitter(rng, trajectory.integrator)
     z = refresh(rng, z, h, refreshment)
-    return transition(rng, h, trajectory, TS, z)
+    return transition(rng, h, Trajectory(integrator, trajectory.term_criterion), TS, z)
 end
 
 struct MixtureKernel{

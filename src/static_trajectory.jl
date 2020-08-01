@@ -1,10 +1,7 @@
-function transition(
-    rng, h, trajectory::Trajectory{I, <:FixedNSteps}, ::Type{TS}, z
-) where {I, TS}
-    @unpack integrator, term_criterion = trajectory
+function transition(rng, h, τ::Trajectory{I, <:FixedNSteps}, ::Type{TS}, z) where {I, TS}
+    @unpack integrator, term_criterion = τ
     H0 = energy(z)
-    integrator = jitter(rng, integrator)
-    z′, is_accept, α = propose_phasepoint(rng, integrator, term_criterion.n_steps, TS, h, z)
+    z′, is_accept, α = propose_phasepoint(rng, integrator, term_criterion, TS, h, z)
     # Do the actual accept / reject
     # NOTE: this function changes `z′` in-place in the vectorized mode
     z = accept_phasepoint!(z, z′, is_accept)
@@ -25,35 +22,29 @@ function transition(
     return Transition(z, tstat)
 end
 
-function transition(
-    rng, h, trajectory::Trajectory{I, <:FixedLength}, ::Type{TS}, z
-) where {I, TS}
-    @unpack integrator, term_criterion = trajectory
+function transition(rng, h, τ::Trajectory{I, <:FixedLength}, ::Type{TS}, z) where {I, TS}
+    @unpack integrator, term_criterion = τ
     # Create the corresponding `FixedNSteps` term_criterion
     n_steps = max(1, floor(Int, term_criterion.λ / nom_step_size(integrator)))
-    trajectory = Trajectory(integrator, FixedNSteps(n_steps))
-    return transition(rng, trajectory, TS, h, z)
+    τ = Trajectory(integrator, FixedNSteps(n_steps))
+    return transition(rng, τ, TS, h, z)
 end
 
 "Use end-point from the trajectory as a proposal and apply MH correction"
-function propose_phasepoint(rng, integrator, n_steps, ::Type{MetropolisTS}, h, z)
-    z′ = step(integrator, h, z, n_steps)
+function propose_phasepoint(rng, integrator, tc, ::Type{MetropolisTS}, h, z)
+    z′ = step(integrator, h, z, tc.n_steps)
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
     return z′, is_accept, α
 end
 
 "Perform MH acceptance based on energy, i.e. negative log probability"
-function mh_accept_ratio(
-    rng::AbstractRNG, Horiginal::T, Hproposal::T
-) where {T<:AbstractFloat}
+function mh_accept_ratio(rng, Horiginal::T, Hproposal::T) where {T<:Real}
     α = min(one(T), exp(Horiginal - Hproposal))
     accept = rand(rng, T) < α
     return accept, α
 end
 
-function mh_accept_ratio(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, Horiginal::T, Hproposal::T
-) where {T<:AbstractVector{<:AbstractFloat}}
+function mh_accept_ratio(rng, Horiginal::T, Hproposal::T) where {T<:AbstractVector{<:Real}}
     α = min.(one(T), exp.(Horiginal .- Hproposal))
     # NOTE: There is a chance that sharing the RNG over multiple
     #       chains for accepting / rejecting might couple
@@ -65,8 +56,8 @@ function mh_accept_ratio(
 end
 
 "Propose a point from the trajectory using Multinomial sampling"
-function propose_phasepoint(rng, integrator, n_steps, ::Type{MultinomialTS}, h, z)
-    n_steps = abs(n_steps)
+function propose_phasepoint(rng, integrator, tc, ::Type{MultinomialTS}, h, z)
+    n_steps = abs(tc.n_steps)
     # TODO: Deal with vectorized-mode generically.
     #       Currently the direction of multiple chains are always coupled
     n_steps_fwd = rand_coupled(rng, 0:n_steps) 

@@ -21,7 +21,7 @@ integrator = Leapfrog(initial_ϵ)
 #   - multinomial sampling scheme,
 #   - generalised No-U-Turn criteria, and
 #   - windowed adaption for step-size and diagonal mass matrix
-trajectory = Trajectory(integrator, FixedNSteps(10))
+# trajectory = Trajectory(integrator, FixedNSteps(10))
 trajectory = Trajectory(integrator, NoUTurn())
 kernel = HMCKernel(FullRefreshment(), trajectory, MultinomialTS)
 
