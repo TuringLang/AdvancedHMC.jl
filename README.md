@@ -18,6 +18,7 @@ If you are interested in using AdvancedHMC.jl through a probabilistic programmin
 - We presented a poster for AdvancedHMC.jl at [StanCon 2019](https://mc-stan.org/events/stancon2019Cambridge/) in Cambridge, UK. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
 **API CHANGES**
+- [v0.2.26] A new struct `Kinetic` is introduced to support different momentum refreshment methods. `Hamiltonian(m::AbstractMetric, args...)` is now lowered to `Hamiltonian(Kinetic(m, FullRefreshment()), args...)` and still supported.
 - [v0.2.22] Three functions are renamed.
   - `Preconditioner(metric::AbstractMetric)` -> `MassMatrixAdaptor(metric)` and 
   - `NesterovDualAveraging(δ, integrator::AbstractIntegrator)` -> `StepSizeAdaptor(δ, integrator)`

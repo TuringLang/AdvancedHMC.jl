@@ -6,7 +6,7 @@ lf = Leapfrog(ϵ)
 
 θ_init = randn(D)
 h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
-r_init = AdvancedHMC.rand(h.kenetic.metric)
+r_init = AdvancedHMC.rand(h.kinetic.metric)
 
 n_steps = 10
 
@@ -82,7 +82,7 @@ using Statistics: mean
     ]
         q_init = randn(D)
         h = Hamiltonian(UnitEuclideanMetric(D), negU, ForwardDiff)
-        p_init = AdvancedHMC.rand(h.kenetic.metric)
+        p_init = AdvancedHMC.rand(h.kinetic.metric)
 
         q, p = copy(q_init), copy(p_init)
         z = AdvancedHMC.phasepoint(h, q, p)

@@ -9,7 +9,7 @@ lf = Leapfrog(ϵ)
 θ_init = randn(D)
 h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
 τ = NUTS(Leapfrog(find_good_stepsize(h, θ_init)))
-r_init = AdvancedHMC.rand(h.kenetic.metric)
+r_init = AdvancedHMC.rand(h.kinetic.metric)
 
 @testset "Passing random number generator" begin
     τ_with_jittered_lf = NUTS(JitteredLeapfrog(find_good_stepsize(h, θ_init), 1.0))
@@ -174,7 +174,7 @@ function gettraj(rng, ϵ=0.1, n_steps=50)
     lf = Leapfrog(ϵ)
     
     q_init = randn(rng, D)
-    p_init = AdvancedHMC.rand(rng, h.kenetic.metric)
+    p_init = AdvancedHMC.rand(rng, h.kinetic.metric)
     z = AdvancedHMC.phasepoint(h, q_init, p_init)
 
     traj_z = Vector(undef, n_steps)

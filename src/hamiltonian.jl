@@ -1,19 +1,22 @@
 abstract type AbstractRefreshment end
 
-struct Kenetic{M<:AbstractMetric, R<:AbstractRefreshment}
+struct Kinetic{M<:AbstractMetric, R<:AbstractRefreshment}
     metric::M
     refreshment::R
 end
 
-Base.show(io::IO, k::Kenetic) = 
-    print(io, "Kenetic(metric=$(k.metric), refreshment=$(k.refreshment))")
+Base.show(io::IO, k::Kinetic) = 
+    print(io, "Kinetic(metric=$(k.metric), refreshment=$(k.refreshment))")
 
-struct Hamiltonian{K<:Kenetic, Tlogπ, T∂logπ∂θ}
-    kenetic::K
+struct Hamiltonian{K<:Kinetic, Tlogπ, T∂logπ∂θ}
+    kinetic::K
     ℓπ::Tlogπ
     ∂ℓπ∂θ::T∂logπ∂θ
 end
-Base.show(io::IO, h::Hamiltonian) = print(io, "Hamiltonian(kenetic=$(h.kenetic))")
+Base.show(io::IO, h::Hamiltonian) = print(io, "Hamiltonian(kinetic=$(h.kinetic))")
+
+# Support the old syntax by using full refreshment
+Hamiltonian(m::AbstractMetric, args...) = Hamiltonian(Kinetic(m, FullRefreshment()), args...)
 
 struct DualValue{V<:AbstractScalarOrVec{<:AbstractFloat}, G<:AbstractVecOrMat{<:AbstractFloat}}
     value::V    # cached value, e.g. logπ(θ)
@@ -40,10 +43,10 @@ function ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat)
     return DualValue(res[1], -res[2])
 end
 
-∂H∂r(k::Kenetic{<:UnitEuclideanMetric}, r::AbstractVecOrMat) = copy(r)
-∂H∂r(k::Kenetic{<:DiagEuclideanMetric}, r::AbstractVecOrMat) = k.metric.M⁻¹ .* r
-∂H∂r(k::Kenetic{<:DenseEuclideanMetric}, r::AbstractVecOrMat) = k.metric.M⁻¹ * r
-∂H∂r(h::Hamiltonian, r) = ∂H∂r(h.kenetic, r)
+∂H∂r(k::Kinetic{<:UnitEuclideanMetric}, r::AbstractVecOrMat) = copy(r)
+∂H∂r(k::Kinetic{<:DiagEuclideanMetric}, r::AbstractVecOrMat) = k.metric.M⁻¹ .* r
+∂H∂r(k::Kinetic{<:DenseEuclideanMetric}, r::AbstractVecOrMat) = k.metric.M⁻¹ * r
+∂H∂r(h::Hamiltonian, r) = ∂H∂r(h.kinetic, r)
 
 struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
     θ::T  # Position variables / model parameters.
@@ -74,7 +77,7 @@ phasepoint(
     θ::T,
     r::T;
     ℓπ=∂H∂θ(h, θ),
-    ℓκ=DualValue(neg_energy(h.kenetic, r, θ), ∂H∂r(h, r))
+    ℓκ=DualValue(neg_energy(h.kinetic, r, θ), ∂H∂r(h, r))
 ) where {T<:AbstractVecOrMat} = PhasePoint(θ, r, ℓπ, ℓκ)
 
 # If position variable and momentum variable are in different containers,
@@ -86,7 +89,7 @@ phasepoint(
     _r::T2;
     r=T1(_r),
     ℓπ=∂H∂θ(h, θ),
-    ℓκ=DualValue(neg_energy(h.kenetic, r, θ), ∂H∂r(h, r))
+    ℓκ=DualValue(neg_energy(h.kinetic, r, θ), ∂H∂r(h, r))
 ) where {T1<:AbstractVecOrMat,T2<:AbstractVecOrMat} = PhasePoint(θ, r, ℓπ, ℓκ)
 
 Base.isfinite(v::DualValue) = all(isfinite, v.value) && all(isfinite, v.gradient)
@@ -101,31 +104,31 @@ Base.isfinite(z::PhasePoint) = isfinite(z.ℓπ) && isfinite(z.ℓκ)
 neg_energy(z::PhasePoint) = z.ℓπ.value + z.ℓκ.value
 
 neg_energy(
-    k::Kenetic{<:UnitEuclideanMetric},
+    k::Kinetic{<:UnitEuclideanMetric},
     r::T,
     θ::T
 ) where {T<:AbstractVector} = -sum(abs2, r) / 2
 
 neg_energy(
-    k::Kenetic{<:UnitEuclideanMetric},
+    k::Kinetic{<:UnitEuclideanMetric},
     r::T,
     θ::T
 ) where {T<:AbstractMatrix} = -vec(sum(abs2, r; dims=1)) / 2
 
 neg_energy(
-    k::Kenetic{<:DiagEuclideanMetric},
+    k::Kinetic{<:DiagEuclideanMetric},
     r::T,
     θ::T
 ) where {T<:AbstractVector} = -sum(abs2.(r) .* k.metric.M⁻¹) / 2
 
 neg_energy(
-    k::Kenetic{<:DiagEuclideanMetric},
+    k::Kinetic{<:DiagEuclideanMetric},
     r::T,
     θ::T
 ) where {T<:AbstractMatrix} = -vec(sum(abs2.(r) .* k.metric.M⁻¹; dims=1) ) / 2
 
 function neg_energy(
-    k::Kenetic{<:DenseEuclideanMetric},
+    k::Kinetic{<:DenseEuclideanMetric},
     r::T,
     θ::T
 ) where {T<:AbstractVecOrMat}
@@ -140,7 +143,7 @@ phasepoint(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     θ::AbstractVecOrMat{T},
     h::Hamiltonian
-) where {T<:Real} = phasepoint(h, θ, rand(rng, h.kenetic.metric))
+) where {T<:Real} = phasepoint(h, θ, rand(rng, h.kinetic.metric))
 
 ########################
 # Momentum refreshment #
@@ -151,8 +154,8 @@ struct FullRefreshment <: AbstractRefreshment end
 refresh(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     z::PhasePoint,
-    h::Hamiltonian{<:Kenetic{M, R}}
-) where {M, R<:FullRefreshment} = phasepoint(h, z.θ, rand(rng, h.kenetic.metric))
+    h::Hamiltonian{<:Kinetic{M, R}}
+) where {M, R<:FullRefreshment} = phasepoint(h, z.θ, rand(rng, h.kinetic.metric))
 
 struct PartialRefreshment{T<:AbstractFloat} <: AbstractRefreshment
     α::T
@@ -166,10 +169,8 @@ Ref: Neal, Radford M. "MCMC using Hamiltonian dynamics." Handbook of markov chai
 function refresh(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     z::PhasePoint,
-    h::Hamiltonian{<:Kenetic{M, R}}
+    h::Hamiltonian{<:Kinetic{M, R}}
 ) where {M, R<:PartialRefreshment}
-    @unpack α = h.kenetic.refreshment
-    return phasepoint(h, z.θ, α * z.r + (1 - α^2) * rand(rng, h.kenetic.metric))
+    @unpack α = h.kinetic.refreshment
+    return phasepoint(h, z.θ, α * z.r + (1 - α^2) * rand(rng, h.kinetic.metric))
 end
-
-@deprecate Hamiltonian(m::AbstractMetric, args...) Hamiltonian(Kenetic(m, FullRefreshment()), args...)
