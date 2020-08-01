@@ -212,7 +212,7 @@ struct Trajectory{I<:AbstractIntegrator, TC<:AbstractTerminationCriterion}
     term_criterion::TC
 end
 
-Base.show(io::IO, τ::Trajectory) = 
+Base.show(io::IO, τ::Trajectory) =
     print(io, "Trajectory(integrator=$(τ.integrator), term_criterion=$(τ.term_criterion))")
 
 ###############
@@ -229,8 +229,8 @@ struct HMCKernel{
     TS::Type{TS}
 end
 
-Base.show(io::IO, κ::HMCKernel) = 
-    print(io, "HMCKernel(refreshment=$(κ.refreshment), τ=$(κ.τ), TS=$(κ.TS))")
+Base.show(io::IO, κ::HMCKernel) =
+    print(io, "HMCKernel(\n    refreshment=$(κ.refreshment),\n    τ=$(κ.τ),\n    TS=$(κ.TS)\n)")
 
 function transition(rng, h, κ::HMCKernel, z)
     @unpack refreshment, τ, TS = κ

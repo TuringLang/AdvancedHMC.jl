@@ -272,15 +272,15 @@ function transition(
     H = energy(zcand)
     tstat = merge(
         (
-            n_steps=tree.nα,
-            is_accept=true,
-            acceptance_rate=tree.sum_α / tree.nα,
-            log_density=zcand.ℓπ.value,
-            hamiltonian_energy=H,
-            hamiltonian_energy_error=H - H0,
-            max_hamiltonian_energy_error=tree.ΔH_max,
-            tree_depth=j,
-            numerical_error=termination.numerical,
+            n_steps = tree.nα,
+            is_accept = true,
+            acceptance_rate = tree.sum_α / tree.nα,
+            log_density = zcand.ℓπ.value,
+            hamiltonian_energy = H,
+            hamiltonian_energy_error = H - H0,
+            max_hamiltonian_energy_error = tree.ΔH_max,
+            tree_depth = j,
+            numerical_error = termination.numerical,
         ),
         stat(integrator),
     )
@@ -288,8 +288,5 @@ function transition(
     return Transition(zcand, tstat)
 end
 
-mh_accept(rng::AbstractRNG, s::SliceTS, s′::SliceTS) = rand(rng) < min(1, s′.n / s.n)
-
-function mh_accept(rng::AbstractRNG, s::MultinomialTS, s′::MultinomialTS)
-    return rand(rng) < min(1, exp(s′.ℓw - s.ℓw))
-end
+mh_accept(rng, s::TS, s′::TS) where {TS<:SliceTS} = rand(rng) < min(1, s′.n / s.n)
+mh_accept(rng, s::TS, s′::TS) where {TS<:MultinomialTS} = rand(rng) < min(1, exp(s′.ℓw - s.ℓw))
