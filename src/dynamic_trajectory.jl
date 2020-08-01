@@ -77,21 +77,7 @@ isterminated(t::Termination) = t.dynamic || t.numerical
 Termination(s::SliceTS, tc, H0, H′) = Termination(false, !(s.ℓu < tc.Δ_max + -H′))
 Termination(s::MultinomialTS, tc, H0, H′) = Termination(false, !(-H0 < tc.Δ_max + -H′))
 
-############################
-# TODO: Remove this method #
-############################
-
-"""
-    transition(τ, h::Hamiltonian, z::PhasePoint)
-
-Make a MCMC transition from phase point `z` using the trajectory `τ` under Hamiltonian `h`.
-
-NOTE: This is a RNG-implicit fallback function for `transition(GLOBAL_RNG, τ, h, z)`
-"""
-function transition(τ, h::Hamiltonian, z::PhasePoint)
-    return transition(GLOBAL_RNG, τ, h, z)
-end
-
+"Check U-turn."
 check_uturn(rho, pleft, pright) = (dot(rho, pleft) <= 0) || (dot(rho, pright) <= 0)
 
 """
