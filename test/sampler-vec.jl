@@ -18,7 +18,7 @@ include("common.jl")
     for metricT in [
         UnitEuclideanMetric,
         DiagEuclideanMetric,
-        # DenseEuclideanMetric  # not supported at the moment
+        DenseEuclideanMetric,
     ], κ in [
         StaticTrajectory{MetropolisTS}(lfi, n_steps),
         StaticTrajectory{MultinomialTS}(lfi, n_steps),
@@ -27,6 +27,8 @@ include("common.jl")
         HMCDA{MetropolisTS}(lf, ϵ * n_steps),
         HMCDA{MultinomialTS}(lf, ϵ * n_steps),
     ]
+        metricT <: DenseEuclideanMetric && continue
+
         n_chains = n_chains_list[i_test]
         metric = metricT((D, n_chains))
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
@@ -52,8 +54,9 @@ include("common.jl")
                 StepSizeAdaptor(0.8, lfi),
             ),
         ]
-            @test show(adaptor) == nothing; println()
             κ.τ.term_criterion isa FixedLength && continue
+
+            @test show(adaptor) == nothing; println()
 
             Random.seed!(100)
             samples, stats = sample(h, κ, θ_init_list[i_test], n_samples, adaptor, n_adapts; verbose=false, progress=false)
@@ -73,6 +76,7 @@ include("common.jl")
         end
         @test all_same
     end
+    @info "Tests for `DenseEuclideanMetric` are skipped."
     @info "Adaptation tests for `FixedLength` with `StepSizeAdaptor` are skipped."
 
     # Simple time benchmark
