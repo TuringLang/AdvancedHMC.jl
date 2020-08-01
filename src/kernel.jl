@@ -212,6 +212,9 @@ struct Trajectory{I<:AbstractIntegrator, TC<:AbstractTerminationCriterion}
     term_criterion::TC
 end
 
+Base.show(io::IO, τ::Trajectory) = 
+    print(io, "Trajectory(integrator=$(τ.integrator), term_criterion=$(τ.term_criterion))")
+
 ###############
 # MCMC Kernel #
 ###############
@@ -222,15 +225,18 @@ struct HMCKernel{
     R<:AbstractRefreshment, T<:Trajectory, TS<:AbstractTrajectorySampler
 } <: AbstractKernel
     refreshment::R
-    trajectory::T
+    τ::T
     TS::Type{TS}
 end
 
+Base.show(io::IO, κ::HMCKernel) = 
+    print(io, "HMCKernel(refreshment=$(κ.refreshment), τ=$(κ.τ), TS=$(κ.TS))")
+
 function transition(rng, h, κ::HMCKernel, z)
-    @unpack refreshment, trajectory, TS = κ
-    integrator = jitter(rng, trajectory.integrator)
+    @unpack refreshment, τ, TS = κ
+    integrator = jitter(rng, τ.integrator)
     z = refresh(rng, z, h, refreshment)
-    return transition(rng, h, Trajectory(integrator, trajectory.term_criterion), TS, z)
+    return transition(rng, h, Trajectory(integrator, τ.term_criterion), TS, z)
 end
 
 struct MixtureKernel{

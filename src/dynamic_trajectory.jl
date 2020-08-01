@@ -10,7 +10,7 @@ Create a slice sampler for a single leaf tree:
 - The slice variable is copied from the passed-in sampler `s`.
 - The number of acceptable candicates is computed by comparing the slice variable against the current energy.
 """
-function SliceTS{T}(ts::SliceTS, H0::T, zcand::PhasePoint) where {T<:Real}
+function SliceTS{T}(ts::SliceTS, H0::T, zcand::PhasePoint) where {T<:AbstractFloat}
     return SliceTS(zcand, ts.ℓu, (ts.ℓu <= -energy(zcand)) ? 1 : 0)
 end
 
@@ -41,7 +41,7 @@ MultinomialTS(rng::AbstractRNG, z0::PhasePoint) = MultinomialTS(z0, zero(energy(
 Multinomial sampler for a trajectory consisting only a leaf node.
 - The tree weight is the (unnormalised) energy of the leaf.
 """
-function MultinomialTS{T}(::MultinomialTS, H0::T, zcand::PhasePoint) where {T<:Real}
+function MultinomialTS{T}(::MultinomialTS, H0::T, zcand::PhasePoint) where {T<:AbstractFloat}
     return MultinomialTS(zcand, H0 - energy(zcand))
 end
 

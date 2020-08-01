@@ -12,13 +12,16 @@ reconstruct(κ::AbstractKernel, ::AbstractAdaptor) = κ
 function reconstruct(
     κ::AbstractKernel, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
 )
-    @unpack refreshment, trajectory, TS = κ
+    return reconstruct(κ::AbstractKernel, getϵ(adaptor))
+end
+function reconstruct(κ::AbstractKernel, ϵ::Real)
+    @unpack refreshment, τ, TS = κ
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
     # FIXME: this is buggy for `JitteredLeapfrog`
-    trajectory = reconstruct(
-        trajectory, integrator=reconstruct(trajectory.integrator, ϵ=getϵ(adaptor))
+    τ = reconstruct(
+        τ, integrator=reconstruct(τ.integrator, ϵ=ϵ)
     )
-    return reconstruct(κ, trajectory=trajectory)
+    return reconstruct(κ, τ=τ)
 end
 
 function resize(h::Hamiltonian, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
@@ -48,17 +51,17 @@ end
 
 Adaptation.adapt!(
     h::Hamiltonian,
-    τ::AbstractKernel,
+    κ::AbstractKernel,
     adaptor::Adaptation.NoAdaptation,
     i::Int,
     n_adapts::Int,
     θ::AbstractVecOrMat{<:AbstractFloat},
     α::AbstractScalarOrVec{<:AbstractFloat}
-) = h, τ, false
+) = h, κ, false
 
 function Adaptation.adapt!(
     h::Hamiltonian,
-    τ::AbstractKernel,
+    κ::AbstractKernel,
     adaptor::AbstractAdaptor,
     i::Int,
     n_adapts::Int,
@@ -71,10 +74,10 @@ function Adaptation.adapt!(
         adapt!(adaptor, θ, α)
         i == n_adapts && finalize!(adaptor)
         h = reconstruct(h, adaptor)
-        τ = reconstruct(τ, adaptor)
+        κ = reconstruct(κ, adaptor)
         isadapted = true
     end
-    return h, τ, isadapted
+    return h, κ, isadapted
 end
 
 """
@@ -95,7 +98,7 @@ simple_pm_next!(pm, stat::NamedTuple) = ProgressMeter.next!(pm)
 
 sample(
     h::Hamiltonian,
-    τ::AbstractKernel,
+    κ::AbstractKernel,
     θ::AbstractVecOrMat{<:AbstractFloat},
     n_samples::Int,
     adaptor::AbstractAdaptor=NoAdaptation(),
@@ -107,7 +110,7 @@ sample(
 ) = sample(
     GLOBAL_RNG,
     h,
-    τ,
+    κ,
     θ,
     n_samples,
     adaptor,
@@ -122,7 +125,7 @@ sample(
     sample(
         rng::AbstractRNG,
         h::Hamiltonian,
-        τ::AbstractKernel,
+        κ::AbstractKernel,
         θ::AbstractVecOrMat{T},
         n_samples::Int,
         adaptor::AbstractAdaptor=NoAdaptation(),
@@ -132,7 +135,7 @@ sample(
         progress::Bool=false
     )
 
-Sample `n_samples` samples using the proposal `τ` under Hamiltonian `h`.
+Sample `n_samples` samples using the proposal `κ` under Hamiltonian `h`.
 - The randomness is controlled by `rng`. 
     - If `rng` is not provided, `GLOBAL_RNG` will be used.
 - The initial point is given by `θ`.
@@ -145,7 +148,7 @@ Sample `n_samples` samples using the proposal `τ` under Hamiltonian `h`.
 function sample(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
-    τ::AbstractKernel,
+    κ::AbstractKernel,
     θ::T,
     n_samples::Int,
     adaptor::AbstractAdaptor=NoAdaptation(),
@@ -165,10 +168,10 @@ function sample(
     pm = progress ? ProgressMeter.Progress(n_samples, desc="Sampling", barlen=31) : nothing
     time = @elapsed for i = 1:n_samples
         # Make a step
-        t = transition(rng, h, τ, t.z)
-        # Adapt h and τ; what mutable is the adaptor
+        t = transition(rng, h, κ, t.z)
+        # Adapt h and κ; what mutable is the adaptor
         tstat = stat(t)
-        h, τ, isadapted = adapt!(h, τ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
+        h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
         tstat = merge(tstat, (is_adapt=isadapted,))
         # Update progress meter
         if progress
@@ -176,7 +179,7 @@ function sample(
             pm_next!(pm, (iterations=i, tstat..., mass_matrix=h.metric))
         # Report finish of adapation
         elseif verbose && isadapted && i == n_adapts
-            @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
+            @info "Finished $n_adapts adapation steps" adaptor κ.τ.integrator h.metric
         end
         # Store sample
         if !drop_warmup || i > n_adapts
@@ -195,7 +198,7 @@ function sample(
             EBFMI_est = "[" * join(EBFMI_est, ", ") * "]"
             average_acceptance_rate = "[" * join(average_acceptance_rate, ", ") * "]"
         end
-        @info "Finished $n_samples sampling steps for $n_chains chains in $time (s)" h τ EBFMI_est average_acceptance_rate
+        @info "Finished $n_samples sampling steps for $n_chains chains in $time (s)" h κ EBFMI_est average_acceptance_rate
     end
     return θs, stats
 end

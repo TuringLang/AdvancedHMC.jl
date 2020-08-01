@@ -27,7 +27,7 @@ function transition(rng, h, τ::Trajectory{I, <:FixedLength}, ::Type{TS}, z) whe
     # Create the corresponding `FixedNSteps` term_criterion
     n_steps = max(1, floor(Int, term_criterion.λ / nom_step_size(integrator)))
     τ = Trajectory(integrator, FixedNSteps(n_steps))
-    return transition(rng, τ, TS, h, z)
+    return transition(rng, h, τ, TS, z)
 end
 
 "Use end-point from the trajectory as a proposal and apply MH correction"

@@ -54,6 +54,8 @@ struct NUTS{TS, TC} end
 @deprecate StaticTrajectory{TS}(lf, n_steps) where {TS} HMCKernel(FullRefreshment(), Trajectory(lf, FixedNSteps(n_steps)), TS)
 @deprecate HMCDA{TS}(lf, λ) where {TS} HMCKernel(FullRefreshment(), Trajectory(lf, FixedLength(λ)), TS)
 @deprecate NUTS{TS, TC}(lf) where {TS, TC} HMCKernel(FullRefreshment(), Trajectory(lf, TC()), TS)
+@deprecate NUTS(lf::AbstractIntegrator) HMCKernel(FullRefreshment(), Trajectory(lf, NoUTurn()), MultinomialTS)
+
 export StaticTrajectory, HMCDA, NUTS
 
 include("adaptation/Adaptation.jl")
@@ -66,12 +68,9 @@ StepSizeAdaptor(δ::AbstractFloat, stepsize::AbstractScalarOrVec{<:AbstractFloat
     NesterovDualAveraging(δ, stepsize)
 StepSizeAdaptor(δ::AbstractFloat, i::AbstractIntegrator) = StepSizeAdaptor(δ, nom_step_size(i))
 
-MassMatrixAdaptor(m::UnitEuclideanMetric{T}) where {T} =
-    UnitMassMatrix{T}()
-MassMatrixAdaptor(m::DiagEuclideanMetric{T}) where {T} =
-    WelfordVar{T}(size(m); var=copy(m.M⁻¹))
-MassMatrixAdaptor(m::DenseEuclideanMetric{T}) where {T} =
-    WelfordCov{T}(size(m); cov=copy(m.M⁻¹))
+MassMatrixAdaptor(m::UnitEuclideanMetric{T}) where {T} = UnitMassMatrix{T}()
+MassMatrixAdaptor(m::DiagEuclideanMetric{T}) where {T} = WelfordVar{T}(size(m); var=copy(m.M⁻¹))
+MassMatrixAdaptor(m::DenseEuclideanMetric{T}) where {T} =WelfordCov{T}(size(m); cov=copy(m.M⁻¹))
 
 MassMatrixAdaptor(
     m::Type{TM},
