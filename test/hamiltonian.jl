@@ -27,18 +27,18 @@ end
         r_init = randn(D)
 
         h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
-        @test -AdvancedHMC.neg_energy(h, r_init, θ_init) == sum(abs2, r_init) / 2
+        @test -AdvancedHMC.neg_energy(h.kenetic, r_init, θ_init) == sum(abs2, r_init) / 2
         @test AdvancedHMC.∂H∂r(h, r_init) == r_init
 
         M⁻¹ = ones(D) + abs.(randn(D))
         h = Hamiltonian(DiagEuclideanMetric(M⁻¹), ℓπ, ∂ℓπ∂θ)
-        @test -AdvancedHMC.neg_energy(h, r_init, θ_init) ≈ r_init' * diagm(0 => M⁻¹) * r_init / 2
+        @test -AdvancedHMC.neg_energy(h.kenetic, r_init, θ_init) ≈ r_init' * diagm(0 => M⁻¹) * r_init / 2
         @test AdvancedHMC.∂H∂r(h, r_init) == M⁻¹ .* r_init
 
         m = randn(D, D)
         M⁻¹ = m' * m
         h = Hamiltonian(DenseEuclideanMetric(M⁻¹), ℓπ, ∂ℓπ∂θ)
-        @test -AdvancedHMC.neg_energy(h, r_init, θ_init) ≈ r_init' * M⁻¹ * r_init / 2
+        @test -AdvancedHMC.neg_energy(h.kenetic, r_init, θ_init) ≈ r_init' * M⁻¹ * r_init / 2
         @test AdvancedHMC.∂H∂r(h, r_init) == M⁻¹ * r_init
     end
 end

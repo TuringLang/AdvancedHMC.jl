@@ -1,3 +1,4 @@
 .vscode
+.history
 Manifest.toml
 test/Project.toml

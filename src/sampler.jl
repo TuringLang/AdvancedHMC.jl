@@ -4,8 +4,9 @@ reconstruct(h::Hamiltonian, ::AbstractAdaptor) = h
 function reconstruct(
     h::Hamiltonian, adaptor::Union{MassMatrixAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
 )
-    metric = renew(h.metric, getM⁻¹(adaptor))
-    return reconstruct(h, metric=metric)
+    @unpack metric, refreshment = h.kenetic
+    metric = renew(metric, getM⁻¹(adaptor))
+    return reconstruct(h, kenetic=Kenetic(metric, refreshment))
 end
 
 reconstruct(τ::AbstractProposal, ::AbstractAdaptor) = τ
@@ -19,10 +20,10 @@ function reconstruct(
 end
 
 function resize(h::Hamiltonian, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
-    metric = h.metric
+    @unpack metric, refreshment = h.kenetic
     if size(metric) != size(θ)
         metric = typeof(metric)(size(θ))
-        h = reconstruct(h, metric=metric)
+        h = reconstruct(h, kenetic=Kenetic(metric, refreshment))
     end
     return h
 end
@@ -36,7 +37,7 @@ function sample_init(
     h::Hamiltonian, 
     θ::AbstractVecOrMat{<:AbstractFloat}
 )
-    # Ensure h.metric has the same dim as θ.
+    # Ensure h.kenetic.metric has the same dim as θ.
     h = resize(h, θ)
     # Initial transition
     t = Transition(phasepoint(rng, θ, h), NamedTuple())
@@ -183,10 +184,10 @@ function sample(
         # Update progress meter
         if progress
             # Do include current iteration and mass matrix
-            pm_next!(pm, (iterations=i, tstat..., mass_matrix=h.metric))
+            pm_next!(pm, (iterations=i, tstat..., mass_matrix=h.kenetic.metric))
         # Report finish of adapation
         elseif verbose && isadapted && i == n_adapts
-            @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.metric
+            @info "Finished $n_adapts adapation steps" adaptor τ.integrator h.kenetic.metric
         end
         # Store sample
         if !drop_warmup || i > n_adapts

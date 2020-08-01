@@ -28,7 +28,7 @@ include("metric.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
 
 include("hamiltonian.jl")
-export Hamiltonian
+export Kenetic, FullRefreshment, PartialRefreshment, Hamiltonian
 
 include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
