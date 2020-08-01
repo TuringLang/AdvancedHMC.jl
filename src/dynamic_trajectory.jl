@@ -131,20 +131,28 @@ using the generalised no-U-turn criterion with additional U-turn checks.
 2. https://github.com/stan-dev/stan/pull/2800
 3. https://discourse.mc-stan.org/t/nuts-misses-u-turns-runs-in-circles-until-max-treedepth/9727/33
 """
-function isterminated(tc::StrictNoUTurn, h, t, tleft, tright)
+function isterminated(tc::StrictNoUTurn, h, t, tleft, tright, testmode=Val(false))
     # Step 0: original generalised U-turn check
     s = isterminated(tc, h, t)
 
     # Step 1 & 2: U-turn checks for left and right subtree; see [3] for a visualisation.
     # Step 1: Check U-turn between the leftmost phase point of `t` and 
     #         the leftmost  phase point of `tright`, the right subtree.
-    rho_1 = tleft.rho + tright.zleft.r
-    s_1 = Termination(check_uturn(rho_1, ∂H∂r(h, t.zleft.r), ∂H∂r(h, tright.zleft.r)), false)
+    rho_left = tleft.rho + tright.zleft.r
+    s_left = Termination(
+        check_uturn(rho_left, ∂H∂r(h, t.zleft.r), ∂H∂r(h, tright.zleft.r)), false
+    )
     # Step 2: Check U-turn between the rightmost phase point of `t` and
     #         the rightmost phase point of `tleft`, the left subtree.
-    rho_2 = tleft.zright.r + tright.rho
-    s_2 = Termination(check_uturn(rho_2, ∂H∂r(h, tleft.zright.r), ∂H∂r(h, t.zright.r)), false)
-    return s * s_1 * s_2
+    rho_right = tleft.zright.r + tright.rho
+    s_right = Termination(
+        check_uturn(rho_right, ∂H∂r(h, tleft.zright.r), ∂H∂r(h, t.zright.r)), false
+    )
+    if testmode isa Val{false}
+        return s * s_left * s_right
+    else
+        return (s, s_left, s_right)
+    end
 end
 
 ######################
@@ -152,7 +160,7 @@ end
 ######################
 
 "A trajectory stored as a binary tree with only necessary leaves and information."
-struct BinaryTree{R}
+struct BinaryTree{R<:Union{Nothing, AbstractVecOrMat}}
     zleft   # left most leaf node
     zright  # right most leaf node
     rho::R  # termination statistic
@@ -164,6 +172,11 @@ end
 "Initialize termination statistic"
 rho_init(::ClassicNoUTurn, z) = nothing
 rho_init(::Union{NoUTurn, StrictNoUTurn}, z) = z.r
+
+function BinaryTree(zleft, zright, tc::C, sum_α, nα, ΔH_max) where {C<:Union{ClassicNoUTurn, NoUTurn, StrictNoUTurn}}
+    @assert zleft == zright
+    return BinaryTree(zleft, zright, rho_init(tc, zleft), sum_α, nα, ΔH_max)
+end
 
 "Merge two termination statistics"
 rho_merge(::T, ::T) where {T<:Nothing} = nothing
@@ -196,7 +209,7 @@ function build_tree(rng, int, tc, h, z, sampler::TS, v, j, H0) where {I, C, TS}
         ΔH = H′ - H0
         α′ = exp(min(0, -ΔH))
         sampler′ = TS(sampler, H0, z′)
-        return BinaryTree(z′, z′, rho_init(tc, z′), α′, 1, ΔH), sampler′, Termination(sampler′, tc, H0, H′)
+        return BinaryTree(z′, z′, tc, α′, 1, ΔH), sampler′, Termination(sampler′, tc, H0, H′)
     else
         # Recursion - build the left and right subtrees.
         tree′, sampler′, termination′ = build_tree(rng, int, tc, h, z, sampler, v, j - 1, H0)
@@ -224,7 +237,7 @@ function transition(
 ) where {I, C<:DynamicTerminationCriterion, TS}
     @unpack integrator, term_criterion = τ
     H0 = energy(z0)
-    tree = BinaryTree(z0, z0, rho_init(term_criterion, z0), zero(H0), zero(Int), zero(H0))
+    tree = BinaryTree(z0, z0, term_criterion, zero(H0), zero(Int), zero(H0))
     sampler = TS(rng, z0)
     termination = Termination(false, false)
     zcand = z0
