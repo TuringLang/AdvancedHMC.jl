@@ -61,7 +61,7 @@ end
                     samples, stats = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
                     @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
                     if "GEWEKE_TEST" in keys(ENV) && ENV["GEWEKE_TEST"] == "1"
-                        res = perform(GewekeTest(5_000), mvntest, x -> rand_θ_given(x, mvntest, metric, τ), g)
+                        res = perform(GewekeTest(5_000), mvntest, x -> rand_θ_given(x, mvntest, metric, τ), g; progress=false)
                         p = plot(res, mvntest)
                         display(p)
                         println()
