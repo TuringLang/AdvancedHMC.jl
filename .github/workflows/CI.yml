@@ -33,6 +33,7 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/julia-buildpkg@latest
-      - uses: julia-actions/julia-runtest@latest
+      - name: Run tests
+        uses: julia-actions/julia-runtest@latest
         env:
           GEWEKE_TEST: 1

@@ -1,5 +1,8 @@
 using Distributed, Test
 
+println("Envronment variables for testing")
+println(ENV)
+
 @testset "AdvancedHMC" begin
     tests = [
         "metric",
