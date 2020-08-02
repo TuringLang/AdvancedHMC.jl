@@ -209,11 +209,11 @@ struct Trajectory{I<:AbstractIntegrator, TC<:AbstractTerminationCriterion}
     "Integrator used to simulate trajectory."
     integrator::I
     "Criterion to terminate the simulation."
-    term_criterion::TC
+    criterion::TC
 end
 
 Base.show(io::IO, τ::Trajectory) =
-    print(io, "Trajectory(integrator=$(τ.integrator), term_criterion=$(τ.term_criterion))")
+    print(io, "Trajectory(integrator=$(τ.integrator), criterion=$(τ.criterion))")
 
 ###############
 # MCMC Kernel #
@@ -258,9 +258,9 @@ end
 ##########
 
 function transition(rng, h, τ::Trajectory{I, <:FixedNSteps}, ::Type{TS}, z) where {I, TS}
-    @unpack integrator, term_criterion = τ
+    @unpack integrator, criterion = τ
     H0 = energy(z)
-    z′, is_accept, α = propose_phasepoint(rng, integrator, term_criterion, TS, h, z)
+    z′, is_accept, α = propose_phasepoint(rng, integrator, criterion, TS, h, z)
     # Do the actual accept / reject
     # NOTE: this function changes `z′` in-place in the vectorized mode
     z = accept_phasepoint!(z, z′, is_accept)
@@ -269,7 +269,7 @@ function transition(rng, h, τ::Trajectory{I, <:FixedNSteps}, ::Type{TS}, z) whe
     H = energy(z)
     tstat = merge(
         (
-            n_steps = term_criterion.L,
+            n_steps = criterion.L,
             is_accept = is_accept,
             acceptance_rate = α,
             log_density = z.ℓπ.value,
@@ -282,9 +282,9 @@ function transition(rng, h, τ::Trajectory{I, <:FixedNSteps}, ::Type{TS}, z) whe
 end
 
 function transition(rng, h, τ::Trajectory{I, <:FixedLength}, ::Type{TS}, z) where {I, TS}
-    @unpack integrator, term_criterion = τ
-    # Create the corresponding `FixedNSteps` term_criterion
-    L = max(1, floor(Int, term_criterion.t / nom_step_size(integrator)))
+    @unpack integrator, criterion = τ
+    # Create the corresponding `FixedNSteps` criterion
+    L = max(1, floor(Int, criterion.t / nom_step_size(integrator)))
     τ = Trajectory(integrator, FixedNSteps(L))
     return transition(rng, h, τ, TS, z)
 end
@@ -609,23 +609,23 @@ end
 function transition(
     rng, h, τ::Trajectory{I, C}, ::Type{TS}, z0
 ) where {I, C<:DynamicTerminationCriterion, TS}
-    @unpack integrator, term_criterion = τ
+    @unpack integrator, criterion = τ
     H0 = energy(z0)
-    tree = BinaryTree(z0, z0, term_criterion, zero(H0), zero(Int), zero(H0))
+    tree = BinaryTree(z0, z0, criterion, zero(H0), zero(Int), zero(H0))
     sampler = TS(rng, z0)
     termination = Termination(false, false)
     zcand = z0
     j = 0
-    while !isterminated(termination) && j < term_criterion.max_depth
+    while !isterminated(termination) && j < criterion.max_depth
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
         if v == -1
             # Create a tree with depth `j` on the left
-            tree′, sampler′, termination′ = build_tree(rng, integrator, term_criterion, h, tree.zleft, sampler, v, j, H0)
+            tree′, sampler′, termination′ = build_tree(rng, integrator, criterion, h, tree.zleft, sampler, v, j, H0)
             treeleft, treeright = tree′, tree
         else
             # Create a tree with depth `j` on the right
-            tree′, sampler′, termination′ = build_tree(rng, integrator, term_criterion, h, tree.zright, sampler, v, j, H0)
+            tree′, sampler′, termination′ = build_tree(rng, integrator, criterion, h, tree.zright, sampler, v, j, H0)
             treeleft, treeright = tree, tree′
         end
         # Perform a MH step and increse depth if not terminated
@@ -640,7 +640,7 @@ function transition(
         # Update sampler
         sampler = combine(zcand, sampler, sampler′)
         # update termination
-        termination = termination * termination′ * isterminated(term_criterion, h, tree, treeleft, treeright)
+        termination = termination * termination′ * isterminated(criterion, h, tree, treeleft, treeright)
     end
 
     H = energy(zcand)

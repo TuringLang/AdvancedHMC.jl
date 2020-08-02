@@ -12,7 +12,7 @@ n_steps = 10
 n_samples = 22_000
 n_adapts = 4_000
 
-function test_stats(::HMCKernel, stats, n_adapts)
+function test_stats(::AdvancedHMC.StaticTerminationCriterion, stats, n_adapts)
     for name in (:step_size, :nom_step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :hamiltonian_energy_error, :is_adapt)
         @test all(map(s -> in(name, propertynames(s)), stats))
     end
@@ -21,7 +21,7 @@ function test_stats(::HMCKernel, stats, n_adapts)
     @test is_adapts[(n_adapts+1):end] == zeros(Bool, length(stats) - n_adapts)
 end
 
-function test_stats(::NUTS, stats, n_adapts)
+function test_stats(::AdvancedHMC.DynamicTerminationCriterion, stats, n_adapts)
     for name in (:step_size, :nom_step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :hamiltonian_energy_error, :is_adapt, :max_hamiltonian_energy_error, :tree_depth, :numerical_error)
         @test all(map(s -> in(name, propertynames(s)), stats))
     end
@@ -83,7 +83,7 @@ end
                     κ_used = adaptorsym == :MassMatrixAdaptorOnly ? κ : reconstruct(κ, find_good_stepsize(h, θ_init))
                     samples, stats = sample(h, κ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
                     @test mean(samples[(n_adapts+1):end]) ≈ zeros(D) atol=RNDATOL
-                    test_stats(κ_used, stats, n_adapts)
+                    test_stats(κ_used.τ.criterion, stats, n_adapts)
                 end
             end
         end
