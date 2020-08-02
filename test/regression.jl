@@ -27,7 +27,7 @@ function simulate_and_compare(hmc_variant)
 
     adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, ϵ₀))
 
-    samples, stats = sample(hamiltonian, κ, θ₀, n_samples, adaptor, n_adapts; progress=true)
+    samples, stats = sample(hamiltonian, κ, θ₀, n_samples, adaptor, n_adapts; progress=false)
 
     old = BSON.load("$(@__DIR__)/regression/ef6de39/$hmc_variant.bson")
 
