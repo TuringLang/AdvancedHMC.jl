@@ -41,7 +41,7 @@ export Hamiltonian
 include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 
-include("kernel.jl")
+include("trajectory.jl")
 @deprecate find_good_eps find_good_stepsize
 export Trajectory, HMCKernel, MixtureKernel,
        FullRefreshment, PartialRefreshment,

@@ -5,7 +5,7 @@ using Distributed, Test
         "metric",
         "hamiltonian",
         "integrator",
-        "kernel",
+        "trajectory",
         "adaptation",
         "sampler",
         "sampler-vec",
