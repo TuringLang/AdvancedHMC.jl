@@ -84,9 +84,12 @@ StepSizeAdaptor(δ::AbstractFloat, stepsize::AbstractScalarOrVec{<:AbstractFloat
     NesterovDualAveraging(δ, stepsize)
 StepSizeAdaptor(δ::AbstractFloat, i::AbstractIntegrator) = StepSizeAdaptor(δ, nom_step_size(i))
 
-MassMatrixAdaptor(m::UnitEuclideanMetric{T}) where {T} = UnitMassMatrix{T}()
-MassMatrixAdaptor(m::DiagEuclideanMetric{T}) where {T} = WelfordVar{T}(size(m); var=copy(m.M⁻¹))
-MassMatrixAdaptor(m::DenseEuclideanMetric{T}) where {T} =WelfordCov{T}(size(m); cov=copy(m.M⁻¹))
+MassMatrixAdaptor(m::UnitEuclideanMetric{T}) where {T} =
+    UnitMassMatrix{T}()
+MassMatrixAdaptor(m::DiagEuclideanMetric{T}) where {T} =
+    WelfordVar{T}(size(m); var=copy(m.M⁻¹))
+MassMatrixAdaptor(m::DenseEuclideanMetric{T}) where {T} =
+    WelfordCov{T}(size(m); cov=copy(m.M⁻¹))
 
 MassMatrixAdaptor(
     m::Type{TM},
@@ -102,7 +105,7 @@ MassMatrixAdaptor(
 # Deprecations
 
 @deprecate StanHMCAdaptor(n_adapts, pc, ssa) initialize!(StanHMCAdaptor(pc, ssa), n_adapts)
-@deprecate NesterovDualAveraging(δ::AbstractFloat, int::AbstractIntegrator) StepSizeAdaptor(δ, int)
+@deprecate NesterovDualAveraging(δ::AbstractFloat, i::AbstractIntegrator) StepSizeAdaptor(δ, i)
 @deprecate Preconditioner(args...) MassMatrixAdaptor(args...)
 
 export StepSizeAdaptor, NesterovDualAveraging, 

@@ -23,8 +23,7 @@ renew(ue::UnitEuclideanMetric, M⁻¹) = UnitEuclideanMetric(M⁻¹, ue.size)
 
 Base.size(e::UnitEuclideanMetric) = e.size
 Base.size(e::UnitEuclideanMetric, dim::Int) = e.size[dim]
-Base.show(io::IO, uem::UnitEuclideanMetric) =
-    print(io, "UnitEuclideanMetric($(_string_M⁻¹(ones(uem.size))))")
+Base.show(io::IO, uem::UnitEuclideanMetric) = print(io, "UnitEuclideanMetric($(_string_M⁻¹(ones(uem.size))))")
 
 struct DiagEuclideanMetric{T,A<:AbstractVecOrMat{T}} <: AbstractMetric
     # Diagnal of the inverse of the mass matrix
@@ -46,8 +45,7 @@ DiagEuclideanMetric(dim::Int) = DiagEuclideanMetric(Float64, dim)
 renew(::DiagEuclideanMetric, M⁻¹) = DiagEuclideanMetric(M⁻¹)
 
 Base.size(e::DiagEuclideanMetric, dim...) = size(e.M⁻¹, dim...)
-Base.show(io::IO, dem::DiagEuclideanMetric) =
-    print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
+Base.show(io::IO, dem::DiagEuclideanMetric) = print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
 
 struct DenseEuclideanMetric{
     T,
@@ -76,8 +74,7 @@ DenseEuclideanMetric(sz::Tuple{Int}) = DenseEuclideanMetric(Float64, sz)
 renew(::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
 
 Base.size(e::DenseEuclideanMetric, dim...) = size(e._temp, dim...)
-Base.show(io::IO, dem::DenseEuclideanMetric) =
-    print(io, "DenseEuclideanMetric(diag=$(_string_M⁻¹(dem.M⁻¹)))")
+Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DenseEuclideanMetric(diag=$(_string_M⁻¹(dem.M⁻¹)))")
 
 # `rand` functions for `metric` types.
 
