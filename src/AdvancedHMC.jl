@@ -7,7 +7,7 @@ using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, chol
 using StatsFuns: logaddexp, logsumexp
 using Random: GLOBAL_RNG, AbstractRNG
 using ProgressMeter: ProgressMeter
-using Parameters: @unpack, reconstruct
+using Parameters: @with_kw, @unpack, reconstruct
 using ArgCheck: @argcheck
 
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS
