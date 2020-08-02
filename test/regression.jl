@@ -27,7 +27,9 @@ function simulate_and_compare(hmc_variant)
 
     adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, ϵ₀))
 
-    samples, stats = sample(hamiltonian, κ, θ₀, n_samples, adaptor, n_adapts; progress=false)
+    samples, stats = sample(
+        hamiltonian, κ, θ₀, n_samples, adaptor, n_adapts; verbose=false, progress=false
+    )
 
     old = BSON.load("$(@__DIR__)/regression/ef6de39/$hmc_variant.bson")
 
@@ -35,8 +37,10 @@ function simulate_and_compare(hmc_variant)
     @test stats == old[:stats]
 end
 
-@testset "Regression" begin
-    for hmc_variant in ["hmc_mh", "hmc_multi", "nuts_slice", "nuts_multi"]
-        simulate_and_compare(hmc_variant)
+if "REGRESSION_TEST" in keys(ENV) && ENV["REGRESSION_TEST"] == "1"
+    @testset "Regression" begin
+        for hmc_variant in ["hmc_mh", "hmc_multi", "nuts_slice", "nuts_multi"]
+            simulate_and_compare(hmc_variant)
+        end
     end
 end
