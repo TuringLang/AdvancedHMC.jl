@@ -1,7 +1,7 @@
-struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
+struct Hamiltonian{M<:AbstractMetric, Tℓπ, T∇ℓπ}
     metric::M
-    ℓπ::Tlogπ
-    ∂ℓπ∂θ::T∂logπ∂θ
+    ℓπ::Tℓπ
+    ∇ℓπ::T∇ℓπ
 end
 Base.show(io::IO, h::Hamiltonian) = print(io, "Hamiltonian(metric=$(h.metric))")
 
@@ -24,9 +24,9 @@ end
 Base.similar(dv::DualValue{<:AbstractVecOrMat{T}}) where {T<:AbstractFloat} = 
     DualValue(zeros(T, size(dv.value)...), zeros(T, size(dv.gradient)...))
 
-# `∂H∂θ` now returns `(logprob, -∂ℓπ∂θ)`
+# `∂H∂θ` now returns `(logprob, -∇ℓπ)`
 function ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat)
-    res = h.∂ℓπ∂θ(θ)
+    res = h.∇ℓπ(θ)
     return DualValue(res[1], -res[2])
 end
 

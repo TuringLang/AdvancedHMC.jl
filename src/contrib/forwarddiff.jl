@@ -1,13 +1,13 @@
 import .ForwardDiff, .ForwardDiff.DiffResults
 
-function ∂ℓπ∂θ_forwarddiff(ℓπ, θ::AbstractVector)
+function ∇ℓπ_forwarddiff(ℓπ, θ::AbstractVector)
     res = DiffResults.GradientResult(θ)
     ForwardDiff.gradient!(res, ℓπ, θ)
     return DiffResults.value(res), DiffResults.gradient(res)
 end
 
 # Implementation 1
-function ∂ℓπ∂θ_forwarddiff(ℓπ, θ::AbstractMatrix)
+function ∇ℓπ_forwarddiff(ℓπ, θ::AbstractMatrix)
     jacob = similar(θ)
     res = DiffResults.JacobianResult(similar(θ, size(θ, 2)), jacob)
     ForwardDiff.jacobian!(res, ℓπ, θ)
@@ -21,7 +21,7 @@ function ∂ℓπ∂θ_forwarddiff(ℓπ, θ::AbstractMatrix)
 end
 
 # Implementation 2
-# function ∂ℓπ∂θ_forwarddiff(ℓπ, θ::AbstractMatrix)
+# function ∇ℓπ_forwarddiff(ℓπ, θ::AbstractMatrix)
 #     local densities
 #     f(x) = (densities = ℓπ(x); sum(densities))
 #     res = DiffResults.GradientResult(θ)
@@ -30,7 +30,7 @@ end
 # end
 
 # Implementation 3
-# function ∂ℓπ∂θ_forwarddiff(ℓπ, θ::AbstractMatrix)
+# function ∇ℓπ_forwarddiff(ℓπ, θ::AbstractMatrix)
 #     v = similar(θ, size(θ, 2))
 #     g = similar(θ)
 #     for i in 1:size(θ, 2)
@@ -43,8 +43,8 @@ end
 # end
 
 function ForwardDiffHamiltonian(metric::AbstractMetric, ℓπ)
-    ∂ℓπ∂θ(θ::AbstractVecOrMat) = ∂ℓπ∂θ_forwarddiff(ℓπ, θ)
-    return Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+    ∇ℓπ(θ::AbstractVecOrMat) = ∇ℓπ_forwarddiff(ℓπ, θ)
+    return Hamiltonian(metric, ℓπ, ∇ℓπ)
 end
 
 ADAVAILABLE[ForwardDiff] = ForwardDiffHamiltonian

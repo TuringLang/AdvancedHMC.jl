@@ -26,7 +26,7 @@ function ℓπ(θ::AbstractMatrix)
     return dropdims(sum(ℓπ(gaussian_m, gaussian_s, θ); dims=1); dims=1)
 end
 
-function ∂ℓπ∂θ(m, s, x::AbstractVecOrMat{T}) where {T}
+function ∇ℓπ(m, s, x::AbstractVecOrMat{T}) where {T}
     diff = x .- m
     v = s.^2
     v = -(log(2 * T(pi)) .+ log.(v) .+ diff .* diff ./ v) / 2
@@ -34,13 +34,13 @@ function ∂ℓπ∂θ(m, s, x::AbstractVecOrMat{T}) where {T}
     return v, g
 end
 
-function ∂ℓπ∂θ(θ::AbstractVector)
-    v, g = ∂ℓπ∂θ(gaussian_m, gaussian_s, θ)
+function ∇ℓπ(θ::AbstractVector)
+    v, g = ∇ℓπ(gaussian_m, gaussian_s, θ)
     return sum(v), g
 end
 
-function ∂ℓπ∂θ(θ::AbstractMatrix)
-    v, g = ∂ℓπ∂θ(gaussian_m, gaussian_s, θ)
+function ∇ℓπ(θ::AbstractMatrix)
+    v, g = ∇ℓπ(gaussian_m, gaussian_s, θ)
     return dropdims(sum(v; dims=1); dims=1), g
 end
 

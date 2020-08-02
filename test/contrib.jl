@@ -5,13 +5,13 @@ include("common.jl")
 @testset "contrib" begin
     @testset "ad" begin
         metric = UnitEuclideanMetric(D)
-        h_hand = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+        h_hand = Hamiltonian(metric, ℓπ, ∇ℓπ)
         h_forwarddiff = Hamiltonian(metric, ℓπ, ForwardDiff)
         h_zygote = Hamiltonian(metric, ℓπ, Zygote)
         for x in [rand(D), rand(D, 10)]
-            v_hand, g_hand = h_hand.∂ℓπ∂θ(x)
-            v_forwarddiff, g_forwarddiff = h_forwarddiff.∂ℓπ∂θ(x)
-            v_zygote, g_zygote = h_hand.∂ℓπ∂θ(x)
+            v_hand, g_hand = h_hand.∇ℓπ(x)
+            v_forwarddiff, g_forwarddiff = h_forwarddiff.∇ℓπ(x)
+            v_zygote, g_zygote = h_hand.∇ℓπ(x)
             @test v_hand ≈ v_forwarddiff
             @test v_hand ≈ v_zygote
             @test g_hand ≈ g_forwarddiff

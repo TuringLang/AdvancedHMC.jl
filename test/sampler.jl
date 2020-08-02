@@ -37,7 +37,7 @@ end
         :DenseEuclideanMetric => DenseEuclideanMetric(D),
     )
         @test show(metric) == nothing; println()
-        h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+        h = Hamiltonian(metric, ℓπ, ∇ℓπ)
         @testset "$lfsym" for (lfsym, lf) in Dict(
             :Leapfrog => Leapfrog(ϵ),
             :JitteredLeapfrog => JitteredLeapfrog(ϵ, 1.0),
@@ -93,7 +93,7 @@ end
 
 @testset "drop_warmup" begin
     metric = DiagEuclideanMetric(D)
-    h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+    h = Hamiltonian(metric, ℓπ, ∇ℓπ)
     κ = NUTS(Leapfrog(ϵ))
     adaptor = StanHMCAdaptor(
         MassMatrixAdaptor(metric),

@@ -7,7 +7,7 @@ include("common.jl")
 lf = Leapfrog(ϵ)
 
 θ_init = randn(D)
-h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
+h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∇ℓπ)
 trajectory = NUTS(Leapfrog(find_good_stepsize(h, θ_init)))
 r_init = AdvancedHMC.rand(h.metric)
 

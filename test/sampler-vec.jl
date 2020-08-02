@@ -31,7 +31,7 @@ include("common.jl")
 
         n_chains = n_chains_list[i_test]
         metric = metricT((D, n_chains))
-        h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+        h = Hamiltonian(metric, ℓπ, ∇ℓπ)
         @test show(metric) == nothing; println()
         @test show(h) == nothing; println()
         @test show(κ) == nothing; println()
@@ -65,7 +65,7 @@ include("common.jl")
 
         # Passing a vector of same RNGs
         rng = [MersenneTwister(1) for _ in 1:n_chains]
-        h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∂ℓπ∂θ)
+        h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∇ℓπ)
         θ_init = repeat(rand(D), 1, n_chains)
         samples, stats = sample(rng, h, κ, θ_init, n_samples; verbose=false)
         all_same = true
@@ -86,7 +86,7 @@ include("common.jl")
         # Time for multiple runs via vectorization
         time_vec = Vector{Float64}(undef, n_chains_max)
         for (i, n_chains) in enumerate(n_chains_list)
-            h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∂ℓπ∂θ)
+            h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∇ℓπ)
             t = @elapsed samples, stats = sample(h, κ, θ_init_list[i], n_samples; verbose=false)
             time_vec[i] = t
         end
@@ -95,7 +95,7 @@ include("common.jl")
         time_seq = Vector{Float64}(undef, n_chains_max)
         for (i, n_chains) in enumerate(n_chains_list)
             t = @elapsed for j in 1:n_chains
-                h = Hamiltonian(metricT(D), ℓπ, ∂ℓπ∂θ)
+                h = Hamiltonian(metricT(D), ℓπ, ∇ℓπ)
                 samples, stats = sample(h, κ, θ_init_list[i][:,j], n_samples; verbose=false)
             end
             time_seq[i] = t

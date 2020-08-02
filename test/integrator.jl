@@ -5,7 +5,7 @@ include("common.jl")
 lf = Leapfrog(ϵ)
 
 θ_init = randn(D)
-h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
+h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∇ℓπ)
 r_init = AdvancedHMC.rand(h.metric)
 
 n_steps = 10
