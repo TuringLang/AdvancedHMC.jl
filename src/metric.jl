@@ -63,7 +63,7 @@ struct DenseEuclideanMetric{
     _temp::AV
 end
 
-# TODO: make dense mass matrix support matrix-mode parallel
+# TODO: Make dense mass matrix support matrix-mode parallel
 function DenseEuclideanMetric(M⁻¹::Union{AbstractMatrix{T},AbstractArray{T,3}}) where {T<:AbstractFloat}
     _temp = Vector{T}(undef, Base.front(size(M⁻¹)))
     return DenseEuclideanMetric(M⁻¹, cholesky(Symmetric(M⁻¹)).U, _temp)

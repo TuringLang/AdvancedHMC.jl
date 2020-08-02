@@ -23,10 +23,10 @@ export StepSizeAdaptor, NesterovDualAveraging
 include("massmatrix.jl")
 export MassMatrixAdaptor, UnitMassMatrix, WelfordVar, WelfordCov
 
-##
-## Composite adaptors
-## TODO: generalise this to a list of adaptors
-##
+#
+# Composite adaptors
+# TODO: Generalise this to a list of adaptors
+#
 
 struct NaiveHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
     pc  :: M
@@ -37,7 +37,7 @@ Base.show(io::IO, a::NaiveHMCAdaptor) = print(io, "NaiveHMCAdaptor(\n    pc=$(a.
 getM⁻¹(ca::NaiveHMCAdaptor) = getM⁻¹(ca.pc)
 getϵ(ca::NaiveHMCAdaptor) = getϵ(ca.ssa)
 
-# TODO: implement consensus adaptor
+# TODO: Implement consensus adaptor
 function adapt!(
     nca::NaiveHMCAdaptor,
     θ::AbstractVecOrMat{<:AbstractFloat},

@@ -1,5 +1,3 @@
-# TODO: add more target distributions and make them iteratable
-
 # Dimension of testing distribution
 const D = 5
 # Tolerance ratio

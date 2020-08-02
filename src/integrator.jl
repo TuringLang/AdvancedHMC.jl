@@ -12,7 +12,7 @@ $(TYPEDEF)
 
 Represents an integrator used to simulate the Hamiltonian system.
 
-# Implementation
+## Implementation
 A `AbstractIntegrator` is expected to have the following implementations:
 - `stat`(@ref)
 - `nom_step_size`(@ref)
@@ -103,7 +103,7 @@ $(TYPEDEF)
 
 Leapfrog integrator with fixed step size `ϵ`.
 
-# Fields
+## Fields
 
 $(TYPEDFIELDS)
 """
@@ -120,16 +120,17 @@ $(TYPEDEF)
 
 Leapfrog integrator with randomly "jittered" step size `ϵ` for every trajectory.
 
-# Fields
+## Fields
 
 $(TYPEDFIELDS)
 
-# Description
+## Description
+
 This is the same as `LeapFrog`(@ref) but with a "jittered" step size. This means 
 that at the beginning of each trajectory we sample a step size `ϵ` by adding or 
 subtracting from the nominal/base step size `ϵ0` some random proportion of `ϵ0`, 
 with the proportion specified by `jitter`, i.e. `ϵ = ϵ0 - jitter * ϵ0 * rand()`.
-p
+
 Jittering might help alleviate issues related to poor interactions with a fixed step size:
 - In regions with high "curvature" the current choice of step size might mean over-shoot 
   leading to almost all steps being rejected. Randomly sampling the step size at the 
@@ -142,7 +143,8 @@ Jittering might help alleviate issues related to poor interactions with a fixed 
   can still be an issue in practice. Randomly choosing the step-size `ϵ` might help
   alleviate such problems.
 
-# References
+## References
+
 1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
 """
 struct JitteredLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractLeapfrog{T}
@@ -178,18 +180,16 @@ jitter(
     lf::JitteredLeapfrog{FT,T}
 ) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} = _jitter(rng, lf)
 
-### Tempering
-# TODO: add ref or at least explain what exactly we're doing
 """
 $(TYPEDEF)
 
 Tempered leapfrog integrator with fixed step size `ϵ` and "temperature" `α`.
 
-# Fields
+## Fields
 
 $(TYPEDFIELDS)
 
-# Description
+## Description
 
 Tempering can potentially allow greater exploration of the posterior, e.g. 
 in a multi-modal posterior jumps between the modes can be more likely to occur.
