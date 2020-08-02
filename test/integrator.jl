@@ -43,9 +43,9 @@ end
     @test lf.ϵ0 == ϵ0
     @test lf.ϵ == ϵ0
 
-    lf2 = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
-    @test lf2.ϵ0 == ϵ0
-    @test lf2.ϵ != ϵ0
+    lf_jittered = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
+    @test lf_jittered.ϵ0 == ϵ0
+    @test lf_jittered.ϵ != ϵ0
 end
 
 @testset "temper" begin

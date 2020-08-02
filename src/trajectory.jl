@@ -234,9 +234,9 @@ Base.show(io::IO, κ::HMCKernel) =
 
 function transition(rng, h, κ::HMCKernel, z)
     @unpack refreshment, τ, TS = κ
-    integrator = jitter(rng, τ.integrator)
+    τ = reconstruct(τ, integrator=jitter(rng, τ.integrator))
     z = refresh(rng, z, h, refreshment)
-    return transition(rng, h, Trajectory(integrator, τ.term_criterion), TS, z)
+    return transition(rng, h, τ, TS, z)
 end
 
 struct MixtureKernel{
