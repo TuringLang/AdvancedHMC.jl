@@ -7,6 +7,7 @@ using Distributed, Test
         "integrator",
         "trajectory",
         "adaptation",
+        "regression",
         "sampler",
         "sampler-vec",
         "demo",
