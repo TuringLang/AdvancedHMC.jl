@@ -30,7 +30,7 @@ function test_stats(::NUTS, stats, n_adapts)
     @test is_adapts[(n_adapts+1):end] == zeros(Bool, length(stats) - n_adapts)
 end
 
-@testset "HMC and NUTS" begin
+@testset "All HMC variants" begin
     @testset "$metricsym" for (metricsym, metric) in Dict(
         :UnitEuclideanMetric => UnitEuclideanMetric(D),
         :DiagEuclideanMetric => DiagEuclideanMetric(D),
@@ -62,10 +62,7 @@ end
                 end
 
                 # Skip adaptation tests with tempering
-                if lf isa TemperedLeapfrog
-                    @info "Adaptation tests for $τsym with $lfsym on $metricsym are skipped"
-                    continue
-                end
+                lf isa TemperedLeapfrog && continue
 
                 @testset "$adaptorsym" for (adaptorsym, adaptor) in Dict(
                     :MassMatrixAdaptorOnly => MassMatrixAdaptor(metric),
@@ -91,6 +88,7 @@ end
             end
         end
     end
+    @info "Adaptation tests for `TemperedLeapfrog` are skipped."
 end
 
 @testset "drop_warmup" begin

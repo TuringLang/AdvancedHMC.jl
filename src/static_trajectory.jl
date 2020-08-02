@@ -10,7 +10,7 @@ function transition(rng, h, τ::Trajectory{I, <:FixedNSteps}, ::Type{TS}, z) whe
     H = energy(z)
     tstat = merge(
         (
-            n_steps = term_criterion.n_steps,
+            n_steps = term_criterion.L,
             is_accept = is_accept,
             acceptance_rate = α,
             log_density = z.ℓπ.value,
@@ -25,14 +25,14 @@ end
 function transition(rng, h, τ::Trajectory{I, <:FixedLength}, ::Type{TS}, z) where {I, TS}
     @unpack integrator, term_criterion = τ
     # Create the corresponding `FixedNSteps` term_criterion
-    n_steps = max(1, floor(Int, term_criterion.λ / nom_step_size(integrator)))
-    τ = Trajectory(integrator, FixedNSteps(n_steps))
+    L = max(1, floor(Int, term_criterion.t / nom_step_size(integrator)))
+    τ = Trajectory(integrator, FixedNSteps(L))
     return transition(rng, h, τ, TS, z)
 end
 
 "Use end-point from the trajectory as a proposal and apply MH correction"
 function propose_phasepoint(rng, integrator, tc, ::Type{MetropolisTS}, h, z)
-    z′ = step(integrator, h, z, tc.n_steps)
+    z′ = step(integrator, h, z, tc.L)
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
     return z′, is_accept, α
 end
@@ -57,13 +57,13 @@ end
 
 "Propose a point from the trajectory using Multinomial sampling"
 function propose_phasepoint(rng, integrator, tc, ::Type{MultinomialTS}, h, z)
-    n_steps = abs(tc.n_steps)
+    L = abs(tc.L)
     # TODO: Deal with vectorized-mode generically.
     #       Currently the direction of multiple chains are always coupled
-    n_steps_fwd = rand_coupled(rng, 0:n_steps) 
-    zs_fwd = step(integrator, h, z, n_steps_fwd; fwd=true,  full_trajectory=Val(true))
-    n_steps_bwd = n_steps - n_steps_fwd
-    zs_bwd = step(integrator, h, z, n_steps_bwd; fwd=false, full_trajectory=Val(true))
+    L_fwd = rand_coupled(rng, 0:L)
+    L_bwd = L - L_fwd
+    zs_fwd = step(integrator, h, z, L_fwd; fwd=true,  full_trajectory=Val(true))
+    zs_bwd = step(integrator, h, z, L_bwd; fwd=false, full_trajectory=Val(true))
     zs = vcat(reverse(zs_bwd)..., z, zs_fwd...)
     ℓweights = -energy.(zs)
     if eltype(ℓweights) <: AbstractVector

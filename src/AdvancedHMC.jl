@@ -28,8 +28,9 @@ include("utilities.jl")
 # ∇ℓπ: gradient of the log density of the target distribution w.r.t θ
 # κ: kernel
 # τ: trajectory
-# ε: step size
+# ϵ: step size
 # L: step number
+# t: integration time
 
 include("metric.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
@@ -48,15 +49,30 @@ export Trajectory, HMCKernel, MixtureKernel,
        ClassicNoUTurn, NoUTurn, StrictNoUTurn,
        MetropolisTS, SliceTS, MultinomialTS,
        find_good_stepsize
-struct StaticTrajectory{TS} end
-struct HMCDA{TS} end
-struct NUTS{TS, TC} end
-@deprecate StaticTrajectory{TS}(lf, n_steps) where {TS} HMCKernel(FullRefreshment(), Trajectory(lf, FixedNSteps(n_steps)), TS)
-@deprecate HMCDA{TS}(lf, λ) where {TS} HMCKernel(FullRefreshment(), Trajectory(lf, FixedLength(λ)), TS)
-@deprecate NUTS{TS, TC}(lf) where {TS, TC} HMCKernel(FullRefreshment(), Trajectory(lf, TC()), TS)
-@deprecate NUTS(lf::AbstractIntegrator) HMCKernel(FullRefreshment(), Trajectory(lf, NoUTurn()), MultinomialTS)
 
-export StaticTrajectory, HMCDA, NUTS
+struct HMC{TS} end
+HMC{TS}(int::AbstractIntegrator, L) where {TS} =
+    HMCKernel(FullRefreshment(), Trajectory(int, FixedNSteps(L)), TS)
+HMC(int::AbstractIntegrator, L) = HMC{MetropolisTS}(int, L)
+HMC(ϵ::AbstractScalarOrVec{<:Real}, L) = HMC{MetropolisTS}(Leapfrog(ϵ), L)
+
+struct StaticTrajectory{TS} end
+@deprecate StaticTrajectory{TS}(args...) where {TS} HMC{TS}(args...)
+@deprecate StaticTrajectory(args...) HMC(args...)
+
+struct HMCDA{TS} end
+HMCDA{TS}(int::AbstractIntegrator, λ) where {TS} =
+    HMCKernel(FullRefreshment(), Trajectory(int, FixedLength(λ)), TS)
+HMCDA(int::AbstractIntegrator, λ) = HMCDA{MetropolisTS}(int, λ)
+HMCDA(ϵ::AbstractScalarOrVec{<:Real}, λ) = HMCDA{MetropolisTS}(Leapfrog(ϵ), λ)
+
+struct NUTS{TS, TC} end
+NUTS{TS, TC}(int::AbstractIntegrator) where {TS, TC} =
+    HMCKernel(FullRefreshment(), Trajectory(int, TC()), TS)
+NUTS(int::AbstractIntegrator) = NUTS{MultinomialTS, NoUTurn}(int)
+NUTS(ϵ::AbstractScalarOrVec{<:Real}) = NUTS{MultinomialTS, NoUTurn}(Leapfrog(ϵ))
+
+export HMC, StaticTrajectory, HMCDA, NUTS
 
 include("adaptation/Adaptation.jl")
 using .Adaptation
@@ -86,7 +102,7 @@ MassMatrixAdaptor(
 # Deprecations
 
 @deprecate StanHMCAdaptor(n_adapts, pc, ssa) initialize!(StanHMCAdaptor(pc, ssa), n_adapts)
-@deprecate NesterovDualAveraging(δ::AbstractFloat, i::AbstractIntegrator) StepSizeAdaptor(δ, i)
+@deprecate NesterovDualAveraging(δ::AbstractFloat, int::AbstractIntegrator) StepSizeAdaptor(δ, int)
 @deprecate Preconditioner(args...) MassMatrixAdaptor(args...)
 
 export StepSizeAdaptor, NesterovDualAveraging, 

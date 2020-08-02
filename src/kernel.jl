@@ -61,12 +61,12 @@ abstract type AbstractTerminationCriterion end
 abstract type StaticTerminationCriterion <: AbstractTerminationCriterion end
 abstract type DynamicTerminationCriterion <: AbstractTerminationCriterion end
 
-struct FixedNSteps{T<:Int} <: StaticTerminationCriterion
-    n_steps::T
+struct FixedNSteps{T<:Integer} <: StaticTerminationCriterion
+    L::T
 end
 
 struct FixedLength{F<:AbstractFloat} <: StaticTerminationCriterion
-    λ::F
+    t::F
 end
 
 """

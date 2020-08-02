@@ -1,30 +1,31 @@
 using AdvancedHMC, Distributions, ForwardDiff
 
-# Choose parameter dimensionality and initial parameter value
-D = 10; initial_θ = rand(D)
+# Set parameter dimensionality and initial parameter value
+dim = 10; θ₀ = rand(dim)
 
 # Define the target distribution
-ℓπ(θ) = logpdf(MvNormal(zeros(D), ones(D)), θ)
+ℓπ(θ) = logpdf(MvNormal(zeros(dim), ones(dim)), θ)
 
-# Set the number of samples to draw and warmup iterations
+# Set the number of samples to draw and iterations for warmup
 n_samples, n_adapts = 2_000, 1_000
 
 # Define a Hamiltonian system
-metric = DiagEuclideanMetric(D)
+metric = DiagEuclideanMetric(dim)
 hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
 
 # Define a leapfrog solver, with initial step size chosen heuristically
-initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
-integrator = Leapfrog(initial_ϵ)
+ϵ₀ = find_good_stepsize(hamiltonian, θ₀)
+integrator = Leapfrog(ϵ₀)
 
-# Define an HMC sampler, with the following components
-#   - multinomial sampling scheme,
-#   - generalised No-U-Turn criteria, and
-#   - windowed adaption for step-size and diagonal mass matrix
+# Define an HMC sampler with the following components
+#   - Complete momemtum refreshment 
+#   - (Generalised) no-U-turn criteria simulated by the defined integrator
+#   - Multinomial trajectory sampling scheme
+#   - Windowed adaption for (diagonal) mass matrix and step size
 kernel = HMCKernel(FullRefreshment(), Trajectory(integrator, NoUTurn()), MultinomialTS)
-adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
+adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, ϵ₀))
 
 # Run the sampler to draw samples from the specified Gaussian, where
 #   - `samples` will store the samples
 #   - `stats` will store diagnostic statistics for each sample
-samples, stats = sample(hamiltonian, kernel, initial_θ, n_samples, adaptor, n_adapts; progress=true)
+samples, stats = sample(hamiltonian, kernel, θ₀, n_samples, adaptor, n_adapts; progress=true)
