@@ -400,12 +400,12 @@ $(TYPEDFIELDS)
 # References
 1. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
 """
-struct GeneralisedNoUTurn{T<:AbstractVector{<:Real}} <: AbstractTerminationCriterion
+struct NoUTurn{T<:AbstractVector{<:Real}} <: AbstractTerminationCriterion
     "Integral or sum of momenta along the integration path."
     rho::T
 end
 
-GeneralisedNoUTurn(z::PhasePoint) = GeneralisedNoUTurn(z.r)
+NoUTurn(z::PhasePoint) = NoUTurn(z.r)
 
 """
 $(TYPEDEF)
@@ -421,16 +421,16 @@ $(TYPEDFIELDS)
 1. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
 2. [https://github.com/stan-dev/stan/pull/2800](https://github.com/stan-dev/stan/pull/2800)
 """
-struct StrictGeneralisedNoUTurn{T<:AbstractVector{<:Real}} <: AbstractTerminationCriterion
+struct StrictNoUTurn{T<:AbstractVector{<:Real}} <: AbstractTerminationCriterion
     "Integral or sum of momenta along the integration path."
     rho::T
 end
 
-StrictGeneralisedNoUTurn(z::PhasePoint) = StrictGeneralisedNoUTurn(z.r)
+StrictNoUTurn(z::PhasePoint) = StrictNoUTurn(z.r)
 
 combine(::ClassicNoUTurn, ::ClassicNoUTurn) = ClassicNoUTurn()
-combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rho + cright.rho)
-combine(cleft::T, cright::T) where {T<:StrictGeneralisedNoUTurn} = T(cleft.rho + cright.rho)
+combine(cleft::T, cright::T) where {T<:NoUTurn} = T(cleft.rho + cright.rho)
+combine(cleft::T, cright::T) where {T<:StrictNoUTurn} = T(cleft.rho + cright.rho)
 
 
 ##
@@ -454,13 +454,13 @@ end
 function Base.show(io::IO, τ::NUTS{<:SliceTS, <:ClassicNoUTurn})
     print(io, "NUTS{SliceTS}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 end
-function Base.show(io::IO, τ::NUTS{<:SliceTS, <:GeneralisedNoUTurn})
+function Base.show(io::IO, τ::NUTS{<:SliceTS, <:NoUTurn})
     print(io, "NUTS{SliceTS,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 end
 function Base.show(io::IO, τ::NUTS{<:MultinomialTS, <:ClassicNoUTurn})
     print(io, "NUTS{MultinomialTS}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 end
-function Base.show(io::IO, τ::NUTS{<:MultinomialTS, <:GeneralisedNoUTurn})
+function Base.show(io::IO, τ::NUTS{<:MultinomialTS, <:NoUTurn})
     print(io, "NUTS{MultinomialTS,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
 end
 
@@ -485,7 +485,7 @@ function NUTS{S,C}(
 end
 
 """
-    NUTS(args...) = NUTS{MultinomialTS,GeneralisedNoUTurn}(args...)
+    NUTS(args...) = NUTS{MultinomialTS,NoUTurn}(args...)
 
 Create an instance for the No-U-Turn sampling algorithm
 with multinomial sampling and original no U-turn criterion.
@@ -494,7 +494,7 @@ Below is the doc for NUTS{S,C}.
 
 $NUTS_DOCSTR
 """
-NUTS(args...) = NUTS{MultinomialTS, GeneralisedNoUTurn}(args...)
+NUTS(args...) = NUTS{MultinomialTS, NoUTurn}(args...)
 
 ###
 ### The doubling tree algorithm for expanding trajectory.
@@ -587,14 +587,14 @@ function isterminated(h::Hamiltonian, t::BinaryTree{<:ClassicNoUTurn})
 end
 
 """
-    isterminated(h::Hamiltonian, t::BinaryTree{<:GeneralisedNoUTurn})
+    isterminated(h::Hamiltonian, t::BinaryTree{<:NoUTurn})
 
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 using the generalised no-U-turn criterion.
 
 Ref: https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, t::BinaryTree{<:GeneralisedNoUTurn})
+function isterminated(h::Hamiltonian, t::BinaryTree{<:NoUTurn})
     rho = t.c.rho
     s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, t.zright.r))
     return Termination(s, false)
@@ -603,7 +603,7 @@ end
 """
     isterminated(
         h::Hamiltonian, t::T, tleft::T, tright::T
-    ) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
+    ) where {T<:BinaryTree{<:StrictNoUTurn}}
 
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 using the generalised no-U-turn criterion with additional U-turn checks.
@@ -612,12 +612,12 @@ Ref: https://arxiv.org/abs/1701.02434 https://github.com/stan-dev/stan/pull/2800
 """
 function isterminated(
     h::Hamiltonian, t::T, tleft::T, tright::T
-) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
+) where {T<:BinaryTree{<:StrictNoUTurn}}
     # Classic generalised U-turn check
     t_generalised = BinaryTree(
         t.zleft,
         t.zright,
-        GeneralisedNoUTurn(t.c.rho),
+        NoUTurn(t.c.rho),
         t.sum_α,
         t.nα,
         t.ΔH_max
@@ -635,14 +635,14 @@ end
 """
     check_left_subtree(
         h::Hamiltonian, t::T, tleft::T, tright::T
-    ) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
+    ) where {T<:BinaryTree{<:StrictNoUTurn}}
 
 Do a U-turn check between the leftmost phase point of `t` and the leftmost 
 phase point of `tright`, the right subtree.
 """
 function check_left_subtree(
     h::Hamiltonian, t::T, tleft::T, tright::T
-) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
+) where {T<:BinaryTree{<:StrictNoUTurn}}
     rho = tleft.c.rho + tright.zleft.r
     s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, tright.zleft.r))
     return Termination(s, false)
@@ -651,14 +651,14 @@ end
 """
     check_left_subtree(
         h::Hamiltonian, t::T, tleft::T, tright::T
-    ) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
+    ) where {T<:BinaryTree{<:StrictNoUTurn}}
 
 Do a U-turn check between the rightmost phase point of `t` and the rightmost
 phase point of `tleft`, the left subtree.
 """
 function check_right_subtree(
     h::Hamiltonian, t::T, tleft::T, tright::T
-) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
+) where {T<:BinaryTree{<:StrictNoUTurn}}
     rho = tleft.zright.r + tright.c.rho
     s = generalised_uturn_criterion(rho, ∂H∂r(h, tleft.zright.r), ∂H∂r(h, t.zright.r))
     return Termination(s, false)
@@ -668,7 +668,7 @@ function generalised_uturn_criterion(rho, p_sharp_minus, p_sharp_plus)
     return (dot(rho, p_sharp_minus) <= 0) || (dot(rho, p_sharp_plus) <= 0)
 end
 
-function isterminated(h::Hamiltonian, t::BinaryTree{T}, args...) where {T<:Union{ClassicNoUTurn, GeneralisedNoUTurn}}
+function isterminated(h::Hamiltonian, t::BinaryTree{T}, args...) where {T<:Union{ClassicNoUTurn, NoUTurn}}
     return isterminated(h, t)
 end
 

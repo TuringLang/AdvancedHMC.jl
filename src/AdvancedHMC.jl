@@ -37,8 +37,8 @@ include("trajectory.jl")
 @deprecate find_good_eps find_good_stepsize
 export MetropolisTS, SliceTS, MultinomialTS, 
        StaticTrajectory, HMCDA, NUTS, 
-       ClassicNoUTurn, GeneralisedNoUTurn, 
-       StrictGeneralisedNoUTurn,
+       ClassicNoUTurn, NoUTurn, 
+       StrictNoUTurn,
        find_good_stepsize
 
 include("adaptation/Adaptation.jl")
