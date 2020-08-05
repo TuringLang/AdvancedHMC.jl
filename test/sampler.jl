@@ -45,9 +45,9 @@ end
             :TemperedLeapfrog => TemperedLeapfrog(ϵ, 1.05),
         )
             @testset "$τsym" for (τsym, τ) in Dict(
-                :(StaticTrajectory{EndPointTS}) => StaticTrajectory{EndPointTS}(lf, n_steps),
+                :(StaticTrajectory{MetropolisTS}) => StaticTrajectory{MetropolisTS}(lf, n_steps),
                 :(StaticTrajectory{MultinomialTS}) => StaticTrajectory{MultinomialTS}(lf, n_steps),
-                :(HMCDA{EndPointTS}) => HMCDA{EndPointTS}(lf, ϵ * n_steps),
+                :(HMCDA{MetropolisTS}) => HMCDA{MetropolisTS}(lf, ϵ * n_steps),
                 :(HMCDA{MultinomialTS}) => HMCDA{MultinomialTS}(lf, ϵ * n_steps),
                 :(NUTS{SliceTS,Original}) => NUTS{SliceTS,ClassicNoUTurn}(lf),
                 :(NUTS{SliceTS,Generalised}) => NUTS{SliceTS,GeneralisedNoUTurn}(lf),

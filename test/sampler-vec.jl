@@ -20,11 +20,11 @@ include("common.jl")
         DiagEuclideanMetric,
         # DenseEuclideanMetric  # not supported at the moment
     ], τ in [
-        StaticTrajectory{EndPointTS}(lfi, n_steps),
+        StaticTrajectory{MetropolisTS}(lfi, n_steps),
         StaticTrajectory{MultinomialTS}(lfi, n_steps),
-        StaticTrajectory{EndPointTS}(lfi_jittered, n_steps),
+        StaticTrajectory{MetropolisTS}(lfi_jittered, n_steps),
         StaticTrajectory{MultinomialTS}(lfi_jittered, n_steps),
-        HMCDA{EndPointTS}(lf, ϵ * n_steps),
+        HMCDA{MetropolisTS}(lf, ϵ * n_steps),
         HMCDA{MultinomialTS}(lf, ϵ * n_steps),
     ]
         n_chains = n_chains_list[i_test]

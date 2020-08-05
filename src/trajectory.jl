@@ -51,7 +51,7 @@ $(TYPEDEF)
 
 Samples the end-point of the trajectory.
 """
-struct EndPointTS <: AbstractTrajectorySampler end
+struct MetropolisTS <: AbstractTrajectorySampler end
 
 """
 $(TYPEDEF)
@@ -194,8 +194,8 @@ struct StaticTrajectory{S<:AbstractTrajectorySampler, I<:AbstractIntegrator} <: 
     n_steps     ::  Int
 end
 
-function Base.show(io::IO, τ::StaticTrajectory{<:EndPointTS})
-    print(io, "StaticTrajectory{EndPointTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
+function Base.show(io::IO, τ::StaticTrajectory{<:MetropolisTS})
+    print(io, "StaticTrajectory{MetropolisTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
 end
 
 function Base.show(io::IO, τ::StaticTrajectory{<:MultinomialTS})
@@ -203,7 +203,7 @@ function Base.show(io::IO, τ::StaticTrajectory{<:MultinomialTS})
 end
 
 StaticTrajectory{S}(integrator::I, n_steps::Int) where {S,I} = StaticTrajectory{S,I}(integrator, n_steps)
-StaticTrajectory(args...) = StaticTrajectory{EndPointTS}(args...) # default StaticTrajectory using last point from trajectory
+StaticTrajectory(args...) = StaticTrajectory{MetropolisTS}(args...) # default StaticTrajectory using last point from trajectory
 
 function transition(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
@@ -261,7 +261,7 @@ end
 
 ### Use end-point from the trajectory as a proposal and apply MH correction
 
-function sample_phasepoint(rng, τ::StaticTrajectory{EndPointTS}, h, z)
+function sample_phasepoint(rng, τ::StaticTrajectory{MetropolisTS}, h, z)
     z′ = step(τ.integrator, h, z, τ.n_steps)
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
     return z′, is_accept, α
@@ -340,15 +340,15 @@ struct HMCDA{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: DynamicTraje
     λ           ::  AbstractFloat
 end
 
-function Base.show(io::IO, τ::HMCDA{<:EndPointTS})
-    print(io, "HMCDA{EndPointTS}(integrator=$(τ.integrator), λ=$(τ.λ)))")
+function Base.show(io::IO, τ::HMCDA{<:MetropolisTS})
+    print(io, "HMCDA{MetropolisTS}(integrator=$(τ.integrator), λ=$(τ.λ)))")
 end
 function Base.show(io::IO, τ::HMCDA{<:MultinomialTS})
     print(io, "HMCDA{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.λ)))")
 end
 
 HMCDA{S}(integrator::I, λ::AbstractFloat) where {S,I} = HMCDA{S,I}(integrator, λ)
-HMCDA(args...) = HMCDA{EndPointTS}(args...) # default HMCDA using last point from trajectory
+HMCDA(args...) = HMCDA{MetropolisTS}(args...) # default HMCDA using last point from trajectory
 
 function transition(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},

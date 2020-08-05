@@ -35,7 +35,7 @@ export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 
 include("trajectory.jl")
 @deprecate find_good_eps find_good_stepsize
-export EndPointTS, SliceTS, MultinomialTS, 
+export MetropolisTS, SliceTS, MultinomialTS, 
        StaticTrajectory, HMCDA, NUTS, 
        ClassicNoUTurn, GeneralisedNoUTurn, 
        StrictGeneralisedNoUTurn,
