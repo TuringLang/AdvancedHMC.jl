@@ -68,8 +68,10 @@ HMCDA(int::AbstractIntegrator, λ) = HMCDA{MetropolisTS}(int, λ)
 HMCDA(ϵ::AbstractScalarOrVec{<:Real}, λ) = HMCDA{MetropolisTS}(Leapfrog(ϵ), λ)
 
 struct NUTS{TS, TC} end
-NUTS{TS, TC}(int::AbstractIntegrator) where {TS, TC} = HMCKernel(Trajectory(int, TC()), TS)
-NUTS(int::AbstractIntegrator) = NUTS{MultinomialTS, NoUTurn}(int)
+NUTS{TS, TC}(int::AbstractIntegrator, args...; kwargs...) where {TS, TC} = 
+    HMCKernel(Trajectory(int, TC(args...; kwargs...)), TS)
+NUTS(int::AbstractIntegrator, args...; kwargs...) = 
+    NUTS{MultinomialTS, NoUTurn}(int, args...; kwargs...)
 NUTS(ϵ::AbstractScalarOrVec{<:Real}) = NUTS{MultinomialTS, NoUTurn}(Leapfrog(ϵ))
 
 export AbstractTrajectory, HMC, StaticTrajectory, HMCDA, NUTS
