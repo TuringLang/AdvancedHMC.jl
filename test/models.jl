@@ -12,11 +12,11 @@ include("common.jl")
 
     metric = DiagEuclideanMetric(2)
     h = Hamiltonian(metric, ℓπ_gdemo, ForwardDiff)
-    init_eps = Leapfrog(0.1)
-    prop = NUTS(init_eps)
-    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, prop.integrator))
+    integrator = Leapfrog(0.1)
+    κ = NUTS(integrator)
+    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, κ.τ.integrator))
 
-    samples, _ = sample(rng, h, prop, θ_init, n_samples, adaptor, n_adapts)
+    samples, _ = sample(rng, h, κ, θ_init, n_samples, adaptor, n_adapts)
 
     m_est = mean(map(invlink_gdemo, samples[1000:end]))
 

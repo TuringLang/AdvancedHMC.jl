@@ -8,20 +8,20 @@ lf = Leapfrog(ϵ)
 
 θ_init = randn(D)
 h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
-τ = NUTS(Leapfrog(find_good_stepsize(h, θ_init)))
+κ = NUTS(Leapfrog(find_good_stepsize(h, θ_init)))
 r_init = AdvancedHMC.rand(h.metric)
 
 @testset "Passing random number generator" begin
-    τ_with_jittered_lf = NUTS(JitteredLeapfrog(find_good_stepsize(h, θ_init), 1.0))
-    for τ_test in [τ, τ_with_jittered_lf],
+    κ_with_jittered_lf = NUTS(JitteredLeapfrog(find_good_stepsize(h, θ_init), 1.0))
+    for κ_test in [κ, κ_with_jittered_lf],
         seed in [1234, 5678, 90]
         rng = MersenneTwister(seed)
         z = AdvancedHMC.phasepoint(h, θ_init, r_init)
-        z1′ = AdvancedHMC.transition(rng, τ_test, h, z).z
+        z1′ = AdvancedHMC.transition(rng, h, κ_test, z).z
 
         rng = MersenneTwister(seed)
         z = AdvancedHMC.phasepoint(h, θ_init, r_init)
-        z2′ = AdvancedHMC.transition(rng, τ_test, h, z).z
+        z2′ = AdvancedHMC.transition(rng, h, κ_test, z).z
 
         @test z1′.θ == z2′.θ
         @test z1′.r == z2′.r
@@ -67,20 +67,20 @@ end
 
 @testset "TerminationCriterion" begin
     z1 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
-    c1 = AdvancedHMC.ClassicNoUTurn(z1)
+    rho1 = AdvancedHMC.rho_init(AdvancedHMC.ClassicNoUTurn(), z1)
     z2 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
-    c2 = AdvancedHMC.ClassicNoUTurn(z2)
-    c3 = AdvancedHMC.combine(c1, c2)
-    @test c1 == c2 == c3
+    rho2 = AdvancedHMC.rho_init(AdvancedHMC.ClassicNoUTurn(), z1)
+    rho3 = AdvancedHMC.rho_merge(rho1, rho2)
+    @test rho1 == rho2 == rho3 == nothing
 
     r1 = randn(D)
     z1 = AdvancedHMC.phasepoint(h, θ_init, r1)
-    c1 = AdvancedHMC.NoUTurn(z1) 
+    rho1 = AdvancedHMC.rho_init(AdvancedHMC.NoUTurn(), z1)
     r2 = randn(D)
     z2 = AdvancedHMC.phasepoint(h, θ_init, r2)
-    c2 = AdvancedHMC.NoUTurn(z2) 
-    c3 = AdvancedHMC.combine(c1, c2)
-    @test c3.rho == r1 + r2
+    rho2 = AdvancedHMC.rho_init(AdvancedHMC.NoUTurn(), z2)
+    rho3 = AdvancedHMC.rho_merge(rho1, rho2)
+    @test rho3 == rho1 + rho2 == r1 + r2
 end
 
 @testset "Termination" begin
@@ -186,29 +186,33 @@ function gettraj(rng, ϵ=0.1, n_steps=50)
     return traj_z
 end
 
-function hand_isturn(z0, z1, rho, v=1)
+function hand_isturn_classic(z0, z1, rho, v=1)
     θ0minusθ1 = z0.θ - z1.θ
     s = (dot(-θ0minusθ1, -z0.r) >= 0) || (dot(θ0minusθ1, z1.r) >= 0)
     return s
 end
 
-ahmc_isturn(z0, z1, rho, v=1) =
-    AdvancedHMC.isterminated(h, AdvancedHMC.BinaryTree(z0, z1, ClassicNoUTurn(), 0, 0, 0.0)).dynamic
+function ahmc_isturn_classic(z0, z1, rho, v=1)
+    tree = AdvancedHMC.BinaryTree(z0, z1, nothing, 0, 0, 0.0)
+    return AdvancedHMC.isterminated(ClassicNoUTurn(), h, tree).dynamic
+end
 
-function hand_isturn_generalised(z0, z1, rho, v=1)
+function hand_isturn(z0, z1, rho, v=1)
     s = (dot(rho, -z0.r) >= 0) || (dot(-rho, z1.r) >= 0)
     return s
 end
 
-ahmc_isturn_generalised(z0, z1, rho, v=1) =
-    AdvancedHMC.isterminated(h, AdvancedHMC.BinaryTree(z0, z1, NoUTurn(rho), 0, 0, 0.0)).dynamic
+function ahmc_isturn(z0, z1, rho, v=1)
+    tree = AdvancedHMC.BinaryTree(z0, z1, rho, 0, 0, 0.0)
+    return AdvancedHMC.isterminated(NoUTurn(), h, tree).dynamic
+end
 
-function ahmc_isturn_strictgeneralised(z0, z1, rho, v=1)
+function ahmc_isturn_strict(z0, z1, rho, v=1)
     t = AdvancedHMC.isterminated(
-        h, 
-        AdvancedHMC.BinaryTree(z0, z1, StrictNoUTurn(rho), 0, 0, 0.0),
-        AdvancedHMC.BinaryTree(z0, z0, StrictNoUTurn(rho - z1.r), 0, 0, 0.0), 
-        AdvancedHMC.BinaryTree(z1, z1, StrictNoUTurn(rho - z0.r), 0, 0, 0.0)
+        StrictNoUTurn(), h, 
+        AdvancedHMC.BinaryTree(z0, z1, rho, 0, 0, 0.0),
+        AdvancedHMC.BinaryTree(z0, z0, rho - z1.r, 0, 0, 0.0),
+        AdvancedHMC.BinaryTree(z1, z1, rho - z0.r, 0, 0, 0.0),
     )
     return t.dynamic
 end
@@ -217,26 +221,23 @@ end
 Check whether the subtree checks adequately detect U-turns.
 """
 function check_subtree_u_turns(z0, z1, rho)
-    t = AdvancedHMC.BinaryTree(z0, z1, StrictNoUTurn(rho), 0, 0, 0.0)
+    tc = StrictNoUTurn()
 
-    # The left and right subtree are created in such a way that the 
-    # check_left_subtree and check_right_subtree checks should be equivalent 
-    # to the general no U-turn check.
-    tleft = AdvancedHMC.BinaryTree(z0, z0, StrictNoUTurn(rho - z1.r), 0, 0, 0.0)
-    tright = AdvancedHMC.BinaryTree(z1, z1, StrictNoUTurn(rho - z0.r), 0, 0, 0.0)
+    t = AdvancedHMC.BinaryTree(z0, z1, rho, 0, 0, 0.0)
+    tleft = AdvancedHMC.BinaryTree(z0, z0, rho - z1.r, 0, 0, 0.0)
+    tright = AdvancedHMC.BinaryTree(z1, z1, rho - z0.r, 0, 0, 0.0)
 
-    t_generalised = AdvancedHMC.BinaryTree(
-        t.zleft,
-        t.zright,
-        NoUTurn(t.c.rho),
-        t.sum_α,
-        t.nα,
-        t.ΔH_max
-    )
-    s1 = AdvancedHMC.isterminated(h, t_generalised)
+    # Step 0: original generalised U-turn check
+    s1 = AdvancedHMC.isterminated(tc, h, t)
 
+    # Step 1 & 2: U-turn checks for left and right subtree; see [3] for a visualisation.
+    # Step 1: Check U-turn between the leftmost phase point of `t` and 
+    #         the leftmost  phase point of `tright`, the right subtree.
     s2 = AdvancedHMC.check_left_subtree(h, t, tleft, tright)
+    # Step 2: Check U-turn between the rightmost phase point of `t` and
+    #         the rightmost phase point of `tleft`, the left subtree.
     s3 = AdvancedHMC.check_right_subtree(h, t, tleft, tright)
+    return s1 * s2 * s3
     @test s1 == s2 == s3
 end
 
@@ -251,13 +252,13 @@ end
             traj_r = hcat(map(z -> z.r, traj_z)...)
             rho = cumsum(traj_r, dims=2)
             
-            ts_hand_isturn_fwd = hand_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
-            ts_ahmc_isturn_fwd = ahmc_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+            ts_hand_isturn_fwd = hand_isturn_classic.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+            ts_ahmc_isturn_fwd = ahmc_isturn_classic.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
-            ts_hand_isturn_generalised_fwd = hand_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
-            ts_ahmc_isturn_generalised_fwd = ahmc_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+            ts_hand_isturn_generalised_fwd = hand_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+            ts_ahmc_isturn_generalised_fwd = ahmc_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
-            ts_ahmc_isturn_strictgeneralised_fwd = ahmc_isturn_strictgeneralised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+            ts_ahmc_isturn_strictgeneralised_fwd = ahmc_isturn_strict.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
             check_subtree_u_turns.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)])
 

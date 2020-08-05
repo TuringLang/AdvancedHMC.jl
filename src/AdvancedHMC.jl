@@ -18,11 +18,19 @@ import Parameters: reconstruct
 include("utilities.jl")
 
 # Notations
-# ℓπ: log density of the target distribution
 # θ: position variables / model parameters
-# ∂ℓπ∂θ: gradient of the log density of the target distribution w.r.t θ
 # r: momentum variables
 # z: phase point / a pair of θ and r
+# θ₀: initial position
+# r₀: initial momentum
+# z₀: initial phase point
+# ℓπ: log density of the target distribution
+# ∇ℓπ: gradient of the log density of the target distribution w.r.t θ
+# κ: kernel
+# τ: trajectory
+# ϵ: step size
+# L: step number
+# λ: integration time
 
 include("metric.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
@@ -40,6 +48,31 @@ export Trajectory, HMCKernel,
        ClassicNoUTurn, NoUTurn, StrictNoUTurn,
        MetropolisTS, SliceTS, MultinomialTS,
        find_good_stepsize
+
+# Deprecations for trajectory.jl
+
+abstract type AbstractTrajectory end
+
+struct HMC{TS} end
+HMC{TS}(int::AbstractIntegrator, L) where {TS} = HMCKernel(Trajectory(int, FixedNSteps(L)), TS)
+HMC(int::AbstractIntegrator, L) = HMC{MetropolisTS}(int, L)
+HMC(ϵ::AbstractScalarOrVec{<:Real}, L) = HMC{MetropolisTS}(Leapfrog(ϵ), L)
+
+struct StaticTrajectory{TS} end
+@deprecate StaticTrajectory{TS}(args...) where {TS} HMC{TS}(args...)
+@deprecate StaticTrajectory(args...) HMC(args...)
+
+struct HMCDA{TS} end
+HMCDA{TS}(int::AbstractIntegrator, λ) where {TS} = HMCKernel(Trajectory(int, FixedLength(λ)), TS)
+HMCDA(int::AbstractIntegrator, λ) = HMCDA{MetropolisTS}(int, λ)
+HMCDA(ϵ::AbstractScalarOrVec{<:Real}, λ) = HMCDA{MetropolisTS}(Leapfrog(ϵ), λ)
+
+struct NUTS{TS, TC} end
+NUTS{TS, TC}(int::AbstractIntegrator) where {TS, TC} = HMCKernel(Trajectory(int, TC()), TS)
+NUTS(int::AbstractIntegrator) = NUTS{MultinomialTS, NoUTurn}(int)
+NUTS(ϵ::AbstractScalarOrVec{<:Real}) = NUTS{MultinomialTS, NoUTurn}(Leapfrog(ϵ))
+
+export AbstractTrajectory, HMC, StaticTrajectory, HMCDA, NUTS
 
 include("adaptation/Adaptation.jl")
 using .Adaptation
