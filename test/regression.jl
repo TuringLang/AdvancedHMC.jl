@@ -56,7 +56,10 @@ end
 
 if "REGRESSION_TEST" in keys(ENV) && ENV["REGRESSION_TEST"] == "1"
     @testset "Regression" begin
-        for hmc_variant in ["hmc_mh", "hmc_multi", "nuts_slice", "nuts_multi"]
+        for hmc_variant in [
+            "hmc_mh", "hmc_multi", 
+            # "nuts_slice", "nuts_multi"
+        ]
             simulate_and_compare(hmc_variant)
         end
     end

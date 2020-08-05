@@ -33,9 +33,45 @@ Abstract Markov chain Monte Carlo proposal.
 abstract type AbstractProposal end
 
 """
-Hamiltonian dynamics numerical simulation trajectories.
+Abstract termination criteria.
 """
-abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
+abstract type AbstractTerminationCriterion end
+
+abstract type StaticTerminationCriterion <: AbstractTerminationCriterion end
+
+abstract type DynamicTerminationCriterion <: AbstractTerminationCriterion end
+
+"""
+$(TYPEDEF)
+
+Static HMC with a fixed number of leapfrog steps.
+
+# Fields
+
+$(TYPEDFIELDS)
+
+# References
+1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
+"""
+struct FixedNSteps{T<:Integer} <: StaticTerminationCriterion
+    L::T
+end
+
+"""
+$(TYPEDEF)
+
+Standard HMC implementation with fixed total trajectory length.
+
+# Fields
+
+$(TYPEDFIELDS)
+
+# References
+1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901)) 
+"""
+struct FixedLength{F<:AbstractFloat} <: StaticTerminationCriterion
+    t::F
+end
 
 ##
 ## Sampling methods for trajectories.
@@ -161,59 +197,51 @@ function mh_accept(rng::AbstractRNG, s::MultinomialTS, s′::MultinomialTS)
 end
 
 """
-    transition(τ::AbstractTrajectory{I}, h::Hamiltonian, z::PhasePoint)
+Hamiltonian dynamics numerical simulation trajectories.
+"""
+struct Trajectory{I<:AbstractIntegrator,TC<:AbstractTerminationCriterion}
+    "Integrator used to simulate trajectory."
+    integrator::I
+    "Criterion to terminate the simulation."
+    criterion::TC
+end
+
+Base.show(io::IO, τ::Trajectory) = print(io, "Trajectory(integrator=$(τ.integrator), criterion=$(τ.criterion))")
+
+struct HMCKernel{T<:Trajectory, TS<:AbstractTrajectorySampler} <: AbstractProposal
+    τ::T
+    TS::Type{TS}
+end
+
+Base.show(io::IO, κ::HMCKernel) = print(io, "HMCKernel(\n    τ=$(κ.τ),\n    TS=$(κ.TS)\n)")
+
+function transition(rng, h, κ::HMCKernel, z)
+    @unpack τ, TS = κ
+    τ = reconstruct(τ, integrator=jitter(rng, τ.integrator))
+    z = refresh(rng, z, h)
+    return transition(rng, h, τ, TS, z)
+end
+
+"""
+    transition(τ::AbstractProposal, h::Hamiltonian, z::PhasePoint)
 
 Make a MCMC transition from phase point `z` using the trajectory `τ` under Hamiltonian `h`.
 
 NOTE: This is a RNG-implicit fallback function for `transition(GLOBAL_RNG, τ, h, z)`
 """
-function transition(τ::AbstractTrajectory, h::Hamiltonian, z::PhasePoint)
-    return transition(GLOBAL_RNG, τ, h, z)
+function transition(h::Hamiltonian, κ::AbstractProposal, z::PhasePoint)
+    return transition(GLOBAL_RNG, h, κ, z)
 end
 
 ###
 ### Actual trajectory implementations
 ###
 
-"""
-$(TYPEDEF)
-
-Static HMC with a fixed number of leapfrog steps.
-
-# Fields
-
-$(TYPEDFIELDS)
-
-# References
-1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
-"""
-struct StaticTrajectory{S<:AbstractTrajectorySampler, I<:AbstractIntegrator} <: AbstractTrajectory{I}
-    "Integrator used to simulate trajectory."
-    integrator  ::  I
-    "Number of steps to simulate, i.e. length of trajectory will be `n_steps + 1`."
-    n_steps     ::  Int
-end
-
-function Base.show(io::IO, τ::StaticTrajectory{<:MetropolisTS})
-    print(io, "StaticTrajectory{MetropolisTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
-end
-
-function Base.show(io::IO, τ::StaticTrajectory{<:MultinomialTS})
-    print(io, "StaticTrajectory{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.n_steps)))")
-end
-
-StaticTrajectory{S}(integrator::I, n_steps::Int) where {S,I} = StaticTrajectory{S,I}(integrator, n_steps)
-StaticTrajectory(args...) = StaticTrajectory{MetropolisTS}(args...) # default StaticTrajectory using last point from trajectory
-
-function transition(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    τ::StaticTrajectory,
-    h::Hamiltonian,
-    z::PhasePoint,
-)
+function transition(rng, h, τ::Trajectory{I, <:FixedNSteps}, ::Type{TS}, z) where {I, TS}
+    @unpack integrator, criterion = τ
     H0 = energy(z)
     integrator = jitter(rng, τ.integrator)
-    z′, is_accept, α = sample_phasepoint(rng, τ, h, z)
+    z′, is_accept, α = sample_phasepoint(rng, integrator, criterion, TS, h, z)
     # Do the actual accept / reject
     z = accept_phasepoint!(z, z′, is_accept)    # NOTE: this function changes `z′` in place in matrix-parallel mode
     # Reverse momentum variable to preserve reversibility
@@ -221,7 +249,7 @@ function transition(
     H = energy(z)
     tstat = merge(
         (
-            n_steps=τ.n_steps,
+            n_steps=criterion.L,
             is_accept=is_accept,
             acceptance_rate=α,
             log_density=z.ℓπ.value,
@@ -231,6 +259,14 @@ function transition(
         stat(integrator),
     )
     return Transition(z, tstat)
+end
+
+function transition(rng, h, τ::Trajectory{I, <:FixedLength}, ::Type{TS}, z) where {I, TS}
+    @unpack integrator, criterion = τ
+    # Create the corresponding `FixedNSteps` criterion
+    L = max(1, floor(Int, criterion.t / nom_step_size(integrator)))
+    τ = Trajectory(integrator, FixedNSteps(L))
+    return transition(rng, h, τ, TS, z)
 end
 
 # Return the accepted phase point
@@ -261,8 +297,8 @@ end
 
 ### Use end-point from the trajectory as a proposal and apply MH correction
 
-function sample_phasepoint(rng, τ::StaticTrajectory{MetropolisTS}, h, z)
-    z′ = step(τ.integrator, h, z, τ.n_steps)
+function sample_phasepoint(rng, integrator, tc, ::Type{MetropolisTS}, h, z)
+    z′ = step(integrator, h, z, tc.L)
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
     return z′, is_accept, α
 end
@@ -292,14 +328,14 @@ function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMat
     return z
 end
 
-function sample_phasepoint(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
-    n_steps = abs(τ.n_steps)
+function sample_phasepoint(rng, integrator, tc, ::Type{MultinomialTS}, h, z)
+    n_steps = abs(tc.L)
     # TODO: Deal with vectorized-mode generically.
     #       Currently the direction of multiple chains are always coupled
     n_steps_fwd = rand_coupled(rng, 0:n_steps) 
-    zs_fwd = step(τ.integrator, h, z, n_steps_fwd; fwd=true, full_trajectory=Val(true))
+    zs_fwd = step(integrator, h, z, n_steps_fwd; fwd=true, full_trajectory=Val(true))
     n_steps_bwd = n_steps - n_steps_fwd
-    zs_bwd = step(τ.integrator, h, z, n_steps_bwd; fwd=false, full_trajectory=Val(true))
+    zs_bwd = step(integrator, h, z, n_steps_bwd; fwd=false, full_trajectory=Val(true))
     zs = vcat(reverse(zs_bwd)..., z, zs_fwd...)
     ℓweights = -energy.(zs)
     if eltype(ℓweights) <: AbstractVector
@@ -315,53 +351,6 @@ function sample_phasepoint(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
     return z′, true, α
 end
 
-abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
-
-###
-### Standard HMC implementation with fixed total trajectory length.
-###
-
-"""
-$(TYPEDEF)
-
-Standard HMC implementation with fixed total trajectory length.
-
-# Fields
-
-$(TYPEDFIELDS)
-
-# References
-1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901)) 
-"""
-struct HMCDA{S<:AbstractTrajectorySampler,I<:AbstractIntegrator} <: DynamicTrajectory{I}
-    "Integrator used to simulate trajectory."
-    integrator  ::  I
-    "Total length of the trajectory, i.e. take `floor(λ / integrator_step)` number of leapfrog steps."
-    λ           ::  AbstractFloat
-end
-
-function Base.show(io::IO, τ::HMCDA{<:MetropolisTS})
-    print(io, "HMCDA{MetropolisTS}(integrator=$(τ.integrator), λ=$(τ.λ)))")
-end
-function Base.show(io::IO, τ::HMCDA{<:MultinomialTS})
-    print(io, "HMCDA{MultinomialTS}(integrator=$(τ.integrator), λ=$(τ.λ)))")
-end
-
-HMCDA{S}(integrator::I, λ::AbstractFloat) where {S,I} = HMCDA{S,I}(integrator, λ)
-HMCDA(args...) = HMCDA{MetropolisTS}(args...) # default HMCDA using last point from trajectory
-
-function transition(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    τ::HMCDA{S},
-    h::Hamiltonian,
-    z::PhasePoint,
-) where {S}
-    # Create the corresponding static τ
-    n_steps = max(1, floor(Int, τ.λ / nom_step_size(τ.integrator)))
-    static_τ = StaticTrajectory{S}(τ.integrator, n_steps)
-    return transition(rng, static_τ, h, z)
-end
-
 ###
 ### Advanced HMC implementation with (adaptive) dynamic trajectory length.
 ###
@@ -369,8 +358,6 @@ end
 ##
 ## Variants of no-U-turn criteria
 ##
-
-abstract type AbstractTerminationCriterion end
 
 """
 $(TYPEDEF)
@@ -384,7 +371,10 @@ distance between the left-most and right-most positions.
 # References
 1. Hoffman, M. D., & Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623. ([arXiv](http://arxiv.org/abs/1111.4246))
 """
-struct ClassicNoUTurn <: AbstractTerminationCriterion end
+@with_kw struct ClassicNoUTurn{F<:Real} <: DynamicTerminationCriterion
+    max_depth::Int=10
+    Δ_max::F=1000
+end
 
 ClassicNoUTurn(::PhasePoint) = ClassicNoUTurn()
 
@@ -400,9 +390,9 @@ $(TYPEDFIELDS)
 # References
 1. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
 """
-struct NoUTurn{T<:AbstractVector{<:Real}} <: AbstractTerminationCriterion
-    "Integral or sum of momenta along the integration path."
-    rho::T
+@with_kw struct NoUTurn{F<:Real} <: DynamicTerminationCriterion
+    max_depth::Int=10
+    Δ_max::F=1000
 end
 
 NoUTurn(z::PhasePoint) = NoUTurn(z.r)
@@ -421,9 +411,9 @@ $(TYPEDFIELDS)
 1. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
 2. [https://github.com/stan-dev/stan/pull/2800](https://github.com/stan-dev/stan/pull/2800)
 """
-struct StrictNoUTurn{T<:AbstractVector{<:Real}} <: AbstractTerminationCriterion
-    "Integral or sum of momenta along the integration path."
-    rho::T
+@with_kw struct StrictNoUTurn{F<:Real} <: DynamicTerminationCriterion
+    max_depth::Int=10
+    Δ_max::F=1000
 end
 
 StrictNoUTurn(z::PhasePoint) = StrictNoUTurn(z.r)
@@ -445,7 +435,7 @@ struct NUTS{
     C<:AbstractTerminationCriterion,
     I<:AbstractIntegrator,
     F<:AbstractFloat
-} <: DynamicTrajectory{I}
+}
     integrator      ::  I
     max_depth       ::  Int
     Δ_max           ::  F

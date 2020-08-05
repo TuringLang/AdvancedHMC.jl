@@ -7,7 +7,7 @@ using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, chol
 using StatsFuns: logaddexp, logsumexp
 using Random: GLOBAL_RNG, AbstractRNG
 using ProgressMeter: ProgressMeter
-using Parameters: @unpack, reconstruct
+using Parameters: @with_kw, @unpack, reconstruct
 using ArgCheck: @argcheck
 
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS
@@ -35,10 +35,10 @@ export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 
 include("trajectory.jl")
 @deprecate find_good_eps find_good_stepsize
-export MetropolisTS, SliceTS, MultinomialTS, 
-       StaticTrajectory, HMCDA, NUTS, 
-       ClassicNoUTurn, NoUTurn, 
-       StrictNoUTurn,
+export Trajectory, HMCKernel,
+       FixedNSteps, FixedLength, 
+       ClassicNoUTurn, NoUTurn, StrictNoUTurn,
+       MetropolisTS, SliceTS, MultinomialTS,
        find_good_stepsize
 
 include("adaptation/Adaptation.jl")
