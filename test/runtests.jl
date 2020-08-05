@@ -10,6 +10,7 @@ println(ENV)
         "integrator",
         "trajectory",
         "adaptation",
+        "regression",
         "sampler",
         "sampler-vec",
         "demo",
