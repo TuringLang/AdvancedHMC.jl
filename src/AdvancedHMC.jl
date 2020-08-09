@@ -28,9 +28,9 @@ include("utilities.jl")
 # ∇ℓπ: gradient of the log density of the target distribution w.r.t θ
 # κ: kernel
 # τ: trajectory
-# ϵ: step size
-# L: step number
-# λ: integration time
+# ϵ: leap-frog integration step size
+# L: leap-frog integration step number
+# λ: leap-frog integration  time
 
 include("metric.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric

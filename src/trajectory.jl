@@ -60,7 +60,7 @@ end
 """
 $(TYPEDEF)
 
-Standard HMC implementation with fixed total trajectory length.
+Standard HMC implementation with a fixed number of leap-frog integration steps.
 
 # Fields
 
@@ -197,7 +197,7 @@ function mh_accept(rng::AbstractRNG, s::MultinomialTS, s′::MultinomialTS)
 end
 
 """
-Hamiltonian dynamics numerical simulation trajectories.
+Hamiltonian dynamics numerically simulated trajectories.
 """
 struct Trajectory{I<:AbstractIntegrator,TC<:AbstractTerminationCriterion}
     "Integrator used to simulate trajectory."
@@ -215,15 +215,15 @@ end
 
 Base.show(io::IO, κ::HMCKernel) = print(io, "HMCKernel(\n    τ=$(κ.τ),\n    TS=$(κ.TS)\n)")
 
-function transition(rng, h, κ::HMCKernel, z)
+function transition(rng, h::Hamiltonian, κ::HMCKernel, z::PhasePoint)
     @unpack τ, TS = κ
     τ = reconstruct(τ, integrator=jitter(rng, τ.integrator))
-    z = refresh(rng, z, h)
+    z = refresh(rng, z, h). # refresh momentum variable
     return transition(rng, h, τ, TS, z)
 end
 
 """
-    transition(τ::AbstractProposal, h::Hamiltonian, z::PhasePoint)
+    $(SIGNATURES)
 
 Make a MCMC transition from phase point `z` using the trajectory `τ` under Hamiltonian `h`.
 
@@ -442,7 +442,7 @@ Base.:*(d1::Termination, d2::Termination) = Termination(d1.dynamic || d2.dynamic
 isterminated(d::Termination) = d.dynamic || d.numerical
 
 """
-    Termination(s::SliceTS, tc, H0::F, H′::F) where {F<:AbstractFloat}
+     $(SIGNATURES)
 
 Check termination of a Hamiltonian trajectory.
 """
@@ -509,7 +509,7 @@ function combine(treeleft::BinaryTree, treeright::BinaryTree)
 end
 
 """
-    isterminated(h::Hamiltonian, t::BinaryTree)
+     $(SIGNATURES)
 
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 using the (original) no-U-turn cirterion.
@@ -525,7 +525,7 @@ function isterminated(::ClassicNoUTurn, h::Hamiltonian, t::BinaryTree)
 end
 
 """
-    isterminated(h::Hamiltonian, t::BinaryTree)
+    $(SIGNATURES)
 
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 using the generalised no-U-turn criterion.
@@ -541,7 +541,7 @@ end
 isterminated(tc::Union{ClassicNoUTurn, NoUTurn}, h, t, tleft, tright) = isterminated(tc, h, t)
 
 """
-    isterminated(tc::StrictNoUTurn, h, t, tleft, tright)
+    $(SIGNATURES)
 
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 using the generalised no-U-turn criterion with additional U-turn checks.
@@ -567,7 +567,7 @@ function isterminated(tc::StrictNoUTurn, h, t, tleft, tright)
 end
 
 """
-    check_left_subtree(h::Hamiltonian, t::T, tleft::T, tright::T) where {T<:BinaryTree}
+    $(SIGNATURES)
 
 Do a U-turn check between the leftmost phase point of `t` and the leftmost 
 phase point of `tright`, the right subtree.
@@ -579,7 +579,7 @@ function check_left_subtree(h::Hamiltonian, t::T, tleft::T, tright::T) where {T<
 end
 
 """
-    check_right_subtree(h::Hamiltonian, t::T, tleft::T, tright::T) where {T<:BinaryTree}
+    $(SIGNATURES)
 
 Do a U-turn check between the rightmost phase point of `t` and the rightmost
 phase point of `tleft`, the left subtree.

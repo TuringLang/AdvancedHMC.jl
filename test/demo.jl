@@ -18,7 +18,7 @@ hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
 integrator = Leapfrog(ϵ₀)
 
 # Define an HMC sampler, with the following components
-#   - (Generalised) no-U-turn criteria simulated by the defined integrator
+#   - (Generalised) no-U-turn criteria for terminating Hamiltonian simulation
 #   - Multinomial trajectory sampling scheme
 #   - Windowed adaption for (diagonal) mass matrix and step size
 kernel = HMCKernel(Trajectory(integrator, NoUTurn()), MultinomialTS)
