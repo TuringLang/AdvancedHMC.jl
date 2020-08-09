@@ -89,13 +89,12 @@ function get_primitives(x, modelgen)
         Turing.getlogp(vi)
     end
     adbackend = Turing.Core.ForwardDiffAD{40}
-    alg_ad = Turing.HMC{adbackend}(0.1, 1)
     model = modelgen(missing, x)
     vi = Turing.VarInfo(model)
-    spl = Turing.Sampler(alg_ad, model)
+    spl = Turing.SampleFromPrior()
     Turing.Core.link!(vi, spl)
     ∂ℓπ∂θ = θ -> Turing.Core.gradient_logp(adbackend(), θ, vi, model, spl)
-    θ₀ = Turing.VarInfo(model)[Turing.SampleFromPrior()]
+    θ₀ = copy(vi[spl])
     return ℓπ, ∂ℓπ∂θ, θ₀
 end
 
