@@ -218,7 +218,7 @@ Base.show(io::IO, κ::HMCKernel) = print(io, "HMCKernel(\n    τ=$(κ.τ),\n    
 function transition(rng, h::Hamiltonian, κ::HMCKernel, z::PhasePoint)
     @unpack τ, TS = κ
     τ = reconstruct(τ, integrator=jitter(rng, τ.integrator))
-    z = refresh(rng, z, h). # refresh momentum variable
+    z = refresh(rng, z, h)  # refresh momentum variable
     return transition(rng, h, τ, TS, z)
 end
 
