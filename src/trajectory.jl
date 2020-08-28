@@ -225,7 +225,7 @@ end
 """
     $(SIGNATURES)
 
-Make a MCMC transition from phase point `z` using the trajectory `τ` under Hamiltonian `h`.
+Make an MCMC transition from phase point `z` using the trajectory `τ` under Hamiltonian `h`.
 
 NOTE: This is a RNG-implicit fallback function for `transition(GLOBAL_RNG, τ, h, z)`
 """
