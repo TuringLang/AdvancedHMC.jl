@@ -12,9 +12,6 @@ reconstruct(κ::AbstractProposal, ::AbstractAdaptor) = κ
 function reconstruct(
     κ::AbstractProposal, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
 )
-    return reconstruct(κ, getϵ(adaptor))
-end
-function reconstruct(κ::AbstractProposal, ϵ::AbstractScalarOrVec{<:Real})
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
     # FIXME: this is buggy for `JitteredLeapfrog`
     τ = reconstruct(
