@@ -389,12 +389,14 @@ $(TYPEDFIELDS)
 # References
 1. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
 """
-@with_kw struct NoUTurn{F<:Real} <: DynamicTerminationCriterion
+@with_kw struct GeneralisedNoUTurn{F<:Real} <: DynamicTerminationCriterion
     max_depth::Int=10
     Δ_max::F=1000
 end
 
-NoUTurn(z::PhasePoint) = NoUTurn(z.r)
+const NoUTurn = GeneralisedNoUTurn
+
+GeneralisedNoUTurn(z::PhasePoint) = GeneralisedNoUTurn(z.r)
 
 """
 $(TYPEDEF)
@@ -410,16 +412,18 @@ $(TYPEDFIELDS)
 1. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
 2. [https://github.com/stan-dev/stan/pull/2800](https://github.com/stan-dev/stan/pull/2800)
 """
-@with_kw struct StrictNoUTurn{F<:Real} <: DynamicTerminationCriterion
+@with_kw struct StrictGeneralisedNoUTurn{F<:Real} <: DynamicTerminationCriterion
     max_depth::Int=10
     Δ_max::F=1000
 end
 
-StrictNoUTurn(z::PhasePoint) = StrictNoUTurn(z.r)
+const StrictNoUTurn = StrictGeneralisedNoUTurn
+
+StrictGeneralisedNoUTurn(z::PhasePoint) = StrictGeneralisedNoUTurn(z.r)
 
 combine(::ClassicNoUTurn, ::ClassicNoUTurn) = ClassicNoUTurn()
-combine(cleft::T, cright::T) where {T<:NoUTurn} = T(cleft.rho + cright.rho)
-combine(cleft::T, cright::T) where {T<:StrictNoUTurn} = T(cleft.rho + cright.rho)
+combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rho + cright.rho)
+combine(cleft::T, cright::T) where {T<:StrictGeneralisedNoUTurn} = T(cleft.rho + cright.rho)
 
 ###
 ### The doubling tree algorithm for expanding trajectory.
@@ -473,9 +477,9 @@ end
 
 "Initialize termination statistic"
 rho_init(::ClassicNoUTurn, z) = nothing
-rho_init(::Union{NoUTurn, StrictNoUTurn}, z) = z.r
+rho_init(::Union{GeneralisedNoUTurn, StrictGeneralisedNoUTurn}, z) = z.r
 
-function BinaryTree(zleft, zright, tc::C, sum_α, nα, ΔH_max) where {C<:Union{ClassicNoUTurn, NoUTurn, StrictNoUTurn}}
+function BinaryTree(zleft, zright, tc::C, sum_α, nα, ΔH_max) where {C<:Union{ClassicNoUTurn, GeneralisedNoUTurn, StrictGeneralisedNoUTurn}}
     @assert zleft == zright
     return BinaryTree(zleft, zright, rho_init(tc, zleft), sum_α, nα, ΔH_max)
 end
@@ -532,13 +536,13 @@ using the generalised no-U-turn criterion.
 
 Ref: https://arxiv.org/abs/1701.02434
 """
-function isterminated(::Union{NoUTurn, StrictNoUTurn}, h::Hamiltonian, t::BinaryTree)
+function isterminated(::Union{GeneralisedNoUTurn, StrictGeneralisedNoUTurn}, h::Hamiltonian, t::BinaryTree)
     rho = t.rho
     s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, t.zright.r))
     return Termination(s, false)
 end
 
-isterminated(tc::Union{ClassicNoUTurn, NoUTurn}, h, t, tleft, tright) = isterminated(tc, h, t)
+isterminated(tc::Union{ClassicNoUTurn, GeneralisedNoUTurn}, h, t, tleft, tright) = isterminated(tc, h, t)
 
 """
     $(SIGNATURES)
@@ -552,7 +556,7 @@ using the generalised no-U-turn criterion with additional U-turn checks.
 2. https://github.com/stan-dev/stan/pull/2800
 3. https://discourse.mc-stan.org/t/nuts-misses-u-turns-runs-in-circles-until-max-treedepth/9727/33
 """
-function isterminated(tc::StrictNoUTurn, h, t, tleft, tright)
+function isterminated(tc::StrictGeneralisedNoUTurn, h, t, tleft, tright)
     # Step 0: original generalised U-turn check
     s1 = isterminated(tc, h, t)
 

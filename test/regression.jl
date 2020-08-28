@@ -35,9 +35,9 @@ function simulate_and_compare(hmc_variant)
         elseif hmc_variant == "hmc_multi"
             HMCKernel(Trajectory(integrator, FixedNSteps(10)), MultinomialTS)
         elseif hmc_variant == "nuts_slice"
-            HMCKernel(Trajectory(integrator, NoUTurn()), SliceTS)
+            HMCKernel(Trajectory(integrator, GeneralisedNoUTurn()), SliceTS)
         elseif hmc_variant == "nuts_multi"
-            HMCKernel(Trajectory(integrator, NoUTurn()), MultinomialTS)
+            HMCKernel(Trajectory(integrator, GeneralisedNoUTurn()), MultinomialTS)
         end
     end
 

@@ -21,7 +21,7 @@ integrator = Leapfrog(ϵ₀)
 #   - (Generalised) no-U-turn criteria for terminating Hamiltonian simulation
 #   - Multinomial trajectory sampling scheme
 #   - Windowed adaption for (diagonal) mass matrix and step size
-kernel = HMCKernel(Trajectory(integrator, NoUTurn()), MultinomialTS)
+kernel = HMCKernel(Trajectory(integrator, GeneralisedNoUTurn()), MultinomialTS)
 adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, ϵ₀))
 
 # Run the sampler to draw samples from the specified Gaussian, where

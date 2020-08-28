@@ -50,9 +50,9 @@ end
                 :(HMCDA{MetropolisTS}) => HMCDA{MetropolisTS}(lf, ϵ * n_steps),
                 :(HMCDA{MultinomialTS}) => HMCDA{MultinomialTS}(lf, ϵ * n_steps),
                 :(NUTS{SliceTS,ClassicNoUTurn}) => NUTS{SliceTS,ClassicNoUTurn}(lf),
-                :(NUTS{SliceTS,NoUTurn}) => NUTS{SliceTS,NoUTurn}(lf),
+                :(NUTS{SliceTS,GeneralisedNoUTurn}) => NUTS{SliceTS,GeneralisedNoUTurn}(lf),
                 :(NUTS{MultinomialTS,ClassicNoUTurn}) => NUTS{MultinomialTS,ClassicNoUTurn}(lf),
-                :(NUTS{MultinomialTS,NoUTurn}) => NUTS{MultinomialTS,NoUTurn}(lf),
+                :(NUTS{MultinomialTS,GeneralisedNoUTurn}) => NUTS{MultinomialTS,GeneralisedNoUTurn}(lf),
             )
                 @test show(h) == nothing; println()
                 @test show(κ) == nothing; println()

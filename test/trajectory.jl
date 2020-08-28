@@ -75,10 +75,10 @@ end
 
     r1 = randn(D)
     z1 = AdvancedHMC.phasepoint(h, θ_init, r1)
-    rho1 = AdvancedHMC.rho_init(AdvancedHMC.NoUTurn(), z1)
+    rho1 = AdvancedHMC.rho_init(AdvancedHMC.GeneralisedNoUTurn(), z1)
     r2 = randn(D)
     z2 = AdvancedHMC.phasepoint(h, θ_init, r2)
-    rho2 = AdvancedHMC.rho_init(AdvancedHMC.NoUTurn(), z2)
+    rho2 = AdvancedHMC.rho_init(AdvancedHMC.GeneralisedNoUTurn(), z2)
     rho3 = AdvancedHMC.rho_merge(rho1, rho2)
     @test rho3 == rho1 + rho2 == r1 + r2
 end
@@ -132,7 +132,7 @@ end
     @test t5.ΔH_max == 3.0
 end
 
-### Test ClassicNoUTurn and NoUTurn
+### Test ClassicNoUTurn and GeneralisedNoUTurn
 
 function makeplot(
     plt,
@@ -204,12 +204,12 @@ end
 
 function ahmc_isturn(z0, z1, rho, v=1)
     tree = AdvancedHMC.BinaryTree(z0, z1, rho, 0, 0, 0.0)
-    return AdvancedHMC.isterminated(NoUTurn(), h, tree).dynamic
+    return AdvancedHMC.isterminated(GeneralisedNoUTurn(), h, tree).dynamic
 end
 
 function ahmc_isturn_strict(z0, z1, rho, v=1)
     t = AdvancedHMC.isterminated(
-        StrictNoUTurn(), h, 
+        StrictGeneralisedNoUTurn(), h, 
         AdvancedHMC.BinaryTree(z0, z1, rho, 0, 0, 0.0),
         AdvancedHMC.BinaryTree(z0, z0, rho - z1.r, 0, 0, 0.0),
         AdvancedHMC.BinaryTree(z1, z1, rho - z0.r, 0, 0, 0.0),
@@ -221,7 +221,7 @@ end
 Check whether the subtree checks adequately detect U-turns.
 """
 function check_subtree_u_turns(z0, z1, rho)
-    tc = StrictNoUTurn()
+    tc = StrictGeneralisedNoUTurn()
 
     t = AdvancedHMC.BinaryTree(z0, z1, rho, 0, 0, 0.0)
     tleft = AdvancedHMC.BinaryTree(z0, z0, rho - z1.r, 0, 0, 0.0)

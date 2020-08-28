@@ -45,7 +45,7 @@ include("trajectory.jl")
 @deprecate find_good_eps find_good_stepsize
 export Trajectory, HMCKernel,
        FixedNSteps, FixedLength, 
-       ClassicNoUTurn, NoUTurn, StrictNoUTurn,
+       ClassicNoUTurn, GeneralisedNoUTurn, NoUTurn, StrictGeneralisedNoUTurn, StrictNoUTurn,
        MetropolisTS, SliceTS, MultinomialTS,
        find_good_stepsize
 
@@ -71,8 +71,8 @@ struct NUTS{TS, TC} end
 NUTS{TS, TC}(int::AbstractIntegrator, args...; kwargs...) where {TS, TC} = 
     HMCKernel(Trajectory(int, TC(args...; kwargs...)), TS)
 NUTS(int::AbstractIntegrator, args...; kwargs...) = 
-    NUTS{MultinomialTS, NoUTurn}(int, args...; kwargs...)
-NUTS(ϵ::AbstractScalarOrVec{<:Real}) = NUTS{MultinomialTS, NoUTurn}(Leapfrog(ϵ))
+    NUTS{MultinomialTS, GeneralisedNoUTurn}(int, args...; kwargs...)
+NUTS(ϵ::AbstractScalarOrVec{<:Real}) = NUTS{MultinomialTS, GeneralisedNoUTurn}(Leapfrog(ϵ))
 
 export AbstractTrajectory, HMC, StaticTrajectory, HMCDA, NUTS
 
