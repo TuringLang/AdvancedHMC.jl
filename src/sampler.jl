@@ -14,6 +14,7 @@ function reconstruct(
 )
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
     # FIXME: this is buggy for `JitteredLeapfrog`
+    ϵ = getϵ(adaptor)
     τ = reconstruct(
         κ.τ, integrator=reconstruct(κ.τ.integrator, ϵ=ϵ)
     )

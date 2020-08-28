@@ -422,8 +422,10 @@ const StrictNoUTurn = StrictGeneralisedNoUTurn
 StrictGeneralisedNoUTurn(z::PhasePoint) = StrictGeneralisedNoUTurn(z.r)
 
 combine(::ClassicNoUTurn, ::ClassicNoUTurn) = ClassicNoUTurn()
-combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rho + cright.rho)
-combine(cleft::T, cright::T) where {T<:StrictGeneralisedNoUTurn} = T(cleft.rho + cright.rho)
+combine(criterion_left::T, criterion_right::T) where {T<:GeneralisedNoUTurn} = 
+    T(criterion_left.rho + criterion_right.rho)
+combine(criterion_left::T, criterion_right::T) where {T<:StrictGeneralisedNoUTurn} = 
+    T(criterion_left.rho + criterion_right.rho)
 
 ###
 ### The doubling tree algorithm for expanding trajectory.
@@ -601,10 +603,10 @@ end
 """
 Recursivly build a tree for a given depth `j`.
 """
-function build_tree(rng, int, tc, h, z, sampler, v, j, H0)
+function build_tree(rng, integrator, tc, h, z, sampler, v, j, H0)
     if j == 0
         # Base case - take one leapfrog step in the direction v.
-        z′ = step(int, h, z, v)
+        z′ = step(integrator, h, z, v)
         H′ = energy(z′)
         ΔH = H′ - H0
         α′ = exp(min(0, -ΔH))
@@ -612,16 +614,16 @@ function build_tree(rng, int, tc, h, z, sampler, v, j, H0)
         return BinaryTree(z′, z′, tc, α′, 1, ΔH), sampler′, Termination(sampler′, tc, H0, H′)
     else
         # Recursion - build the left and right subtrees.
-        tree′, sampler′, termination′ = build_tree(rng, int, tc, h, z, sampler, v, j - 1, H0)
+        tree′, sampler′, termination′ = build_tree(rng, integrator, tc, h, z, sampler, v, j - 1, H0)
         # Expand tree if not terminated
         if !isterminated(termination′)
             # Expand left
             if v == -1
-                tree′′, sampler′′, termination′′ = build_tree(rng, int, tc, h, tree′.zleft, sampler, v, j - 1, H0) # left tree
+                tree′′, sampler′′, termination′′ = build_tree(rng, integrator, tc, h, tree′.zleft, sampler, v, j - 1, H0) # left tree
                 treeleft, treeright = tree′′, tree′
             # Expand right
             else
-                tree′′, sampler′′, termination′′ = build_tree(rng, int, tc, h, tree′.zright, sampler, v, j - 1, H0) # right tree
+                tree′′, sampler′′, termination′′ = build_tree(rng, integrator, tc, h, tree′.zright, sampler, v, j - 1, H0) # right tree
                 treeleft, treeright = tree′, tree′′
             end
             tree′ = combine(treeleft, treeright)

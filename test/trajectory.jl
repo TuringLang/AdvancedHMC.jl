@@ -237,7 +237,7 @@ function check_subtree_u_turns(z0, z1, rho)
     # Step 2: Check U-turn between the rightmost phase point of `t` and
     #         the rightmost phase point of `tleft`, the left subtree.
     s3 = AdvancedHMC.check_right_subtree(h, t, tleft, tright)
-    return s1 * s2 * s3
+    
     @test s1 == s2 == s3
 end
 

@@ -92,14 +92,14 @@ include("common.jl")
         end
 
         # Time for multiple runs of single chain
-        time_sep = Vector{Float64}(undef, n_chains_max)
+        time_loop = Vector{Float64}(undef, n_chains_max)
 
         for (i, n_chains) in enumerate(n_chains_list)
             t = @elapsed for j in 1:n_chains
                 h = Hamiltonian(metricT(D), ℓπ, ∂ℓπ∂θ)
                 samples, stats = sample(h, κ, θ_init_list[i][:,j], n_samples; verbose=false)
             end
-            time_sep[i] = t
+            time_loop[i] = t
         end
 
         # Make plot
@@ -107,11 +107,11 @@ include("common.jl")
             collect(1:n_chains_max),
             time_vec;
             title="Scalabiliry of multiple chains",
-            name="vectorization",
+            name="Vectorization",
             xlabel="Num of chains",
             ylabel="Time (s)"
         )
-        lineplot!(p, collect(n_chains_list), time_sep; color=:blue, name="seperate")
+        lineplot!(p, collect(n_chains_list), time_loop; color=:blue, name="Loop")
         println(); show(p); println(); println()
     end
 end
