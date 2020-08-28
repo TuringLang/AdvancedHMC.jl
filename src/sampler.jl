@@ -8,9 +8,9 @@ function reconstruct(
     return reconstruct(h, metric=metric)
 end
 
-reconstruct(κ::AbstractProposal, ::AbstractAdaptor) = κ
+reconstruct(κ::AbstractKernel, ::AbstractAdaptor) = κ
 function reconstruct(
-    κ::AbstractProposal, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
+    κ::AbstractKernel, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
 )
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
     # FIXME: this is buggy for `JitteredLeapfrog`
@@ -49,7 +49,7 @@ end
 function step(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
     h::Hamiltonian, 
-    κ::AbstractProposal, 
+    κ::AbstractKernel, 
     z::PhasePoint
 )
     # Refresh momentum
@@ -60,7 +60,7 @@ end
 
 Adaptation.adapt!(
     h::Hamiltonian,
-    κ::AbstractProposal,
+    κ::AbstractKernel,
     adaptor::Adaptation.NoAdaptation,
     i::Int,
     n_adapts::Int,
@@ -70,7 +70,7 @@ Adaptation.adapt!(
 
 function Adaptation.adapt!(
     h::Hamiltonian,
-    κ::AbstractProposal,
+    κ::AbstractKernel,
     adaptor::AbstractAdaptor,
     i::Int,
     n_adapts::Int,
@@ -107,7 +107,7 @@ simple_pm_next!(pm, stat::NamedTuple) = ProgressMeter.next!(pm)
 
 sample(
     h::Hamiltonian,
-    κ::AbstractProposal,
+    κ::AbstractKernel,
     θ::AbstractVecOrMat{<:AbstractFloat},
     n_samples::Int,
     adaptor::AbstractAdaptor=NoAdaptation(),
@@ -134,7 +134,7 @@ sample(
     sample(
         rng::AbstractRNG,
         h::Hamiltonian,
-        κ::AbstractProposal,
+        κ::AbstractKernel,
         θ::AbstractVecOrMat{T},
         n_samples::Int,
         adaptor::AbstractAdaptor=NoAdaptation(),
@@ -157,7 +157,7 @@ Sample `n_samples` samples using the proposal `κ` under Hamiltonian `h`.
 function sample(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
-    κ::AbstractProposal,
+    κ::AbstractKernel,
     θ::T,
     n_samples::Int,
     adaptor::AbstractAdaptor=NoAdaptation(),

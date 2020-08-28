@@ -30,7 +30,7 @@ stat(t::Transition) = t.stat
 """
 Abstract Markov chain Monte Carlo proposal.
 """
-abstract type AbstractProposal end
+abstract type AbstractKernel end
 
 """
 Abstract termination criteria.
@@ -208,7 +208,7 @@ end
 
 Base.show(io::IO, τ::Trajectory) = print(io, "Trajectory(integrator=$(τ.integrator), criterion=$(τ.criterion))")
 
-struct HMCKernel{T<:Trajectory, TS<:AbstractTrajectorySampler} <: AbstractProposal
+struct HMCKernel{T<:Trajectory, TS<:AbstractTrajectorySampler} <: AbstractKernel
     τ::T
     TS::Type{TS}
 end
@@ -229,7 +229,7 @@ Make a MCMC transition from phase point `z` using the trajectory `τ` under Hami
 
 NOTE: This is a RNG-implicit fallback function for `transition(GLOBAL_RNG, τ, h, z)`
 """
-function transition(h::Hamiltonian, κ::AbstractProposal, z::PhasePoint)
+function transition(h::Hamiltonian, κ::AbstractKernel, z::PhasePoint)
     return transition(GLOBAL_RNG, h, κ, z)
 end
 

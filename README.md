@@ -139,7 +139,7 @@ All the combinations are tested in [this file](https://github.com/TuringLang/Adv
 function sample(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
-    τ::AbstractProposal,
+    τ::AbstractKernel,
     θ::AbstractVector{<:AbstractFloat},
     n_samples::Int,
     adaptor::AbstractAdaptor=NoAdaptation(),
