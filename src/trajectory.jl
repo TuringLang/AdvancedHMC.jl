@@ -69,7 +69,7 @@ $(TYPEDFIELDS)
 # References
 1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901)) 
 """
-struct FixedLength{F<:AbstractFloat} <: StaticTerminationCriterion
+struct FixedIntegrationTime{F<:AbstractFloat} <: StaticTerminationCriterion
     λ::F
 end
 
@@ -260,7 +260,7 @@ function transition(rng, h, τ::Trajectory{I, <:FixedNSteps}, ::Type{TS}, z) whe
     return Transition(z, tstat)
 end
 
-function transition(rng, h, τ::Trajectory{I, <:FixedLength}, ::Type{TS}, z) where {I, TS}
+function transition(rng, h, τ::Trajectory{I, <:FixedIntegrationTime}, ::Type{TS}, z) where {I, TS}
     @unpack integrator, criterion = τ
     # Create the corresponding `FixedNSteps` criterion
     L = max(1, floor(Int, criterion.λ / nom_step_size(integrator)))

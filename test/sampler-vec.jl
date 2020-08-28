@@ -24,8 +24,8 @@ include("common.jl")
         HMCKernel(Trajectory(lfi, FixedNSteps(n_steps)), MultinomialTS),
         HMCKernel(Trajectory(lfi_jittered, FixedNSteps(n_steps)), MetropolisTS),
         HMCKernel(Trajectory(lfi_jittered, FixedNSteps(n_steps)), MultinomialTS),
-        HMCKernel(Trajectory(lf, FixedLength(ϵ * n_steps)), MetropolisTS),
-        HMCKernel(Trajectory(lf, FixedLength(ϵ * n_steps)), MultinomialTS),
+        HMCKernel(Trajectory(lf, FixedIntegrationTime(ϵ * n_steps)), MetropolisTS),
+        HMCKernel(Trajectory(lf, FixedIntegrationTime(ϵ * n_steps)), MultinomialTS),
     ]
         metricT <: DenseEuclideanMetric && continue
 
@@ -54,7 +54,7 @@ include("common.jl")
                 StepSizeAdaptor(0.8, lfi),
             ),
         ]
-            κ.τ.criterion isa FixedLength && continue
+            κ.τ.criterion isa FixedIntegrationTime && continue
 
             @test show(adaptor) == nothing; println()
 
@@ -77,8 +77,8 @@ include("common.jl")
         @test all_same
     end
     @info "Tests for `DenseEuclideanMetric` are skipped."
-    @info "`FixedLength` is NOT compatible with `JitteredLeapfrog`."
-    @info "Adaptation tests for `FixedLength` with `StepSizeAdaptor` are skipped."
+    @info "`FixedIntegrationTime` is NOT compatible with `JitteredLeapfrog`."
+    @info "Adaptation tests for `FixedIntegrationTime` with `StepSizeAdaptor` are skipped."
 
     # Simple time benchmark
     let metricT=UnitEuclideanMetric

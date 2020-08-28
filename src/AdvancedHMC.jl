@@ -44,7 +44,7 @@ export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 include("trajectory.jl")
 @deprecate find_good_eps find_good_stepsize
 export Trajectory, HMCKernel,
-       FixedNSteps, FixedLength, 
+       FixedNSteps, FixedIntegrationTime, 
        ClassicNoUTurn, GeneralisedNoUTurn, NoUTurn, StrictGeneralisedNoUTurn, StrictNoUTurn,
        MetropolisTS, SliceTS, MultinomialTS,
        find_good_stepsize
@@ -63,7 +63,7 @@ struct StaticTrajectory{TS} end
 @deprecate StaticTrajectory(args...) HMC(args...)
 
 struct HMCDA{TS} end
-HMCDA{TS}(int::AbstractIntegrator, λ) where {TS} = HMCKernel(Trajectory(int, FixedLength(λ)), TS)
+HMCDA{TS}(int::AbstractIntegrator, λ) where {TS} = HMCKernel(Trajectory(int, FixedIntegrationTime(λ)), TS)
 HMCDA(int::AbstractIntegrator, λ) = HMCDA{MetropolisTS}(int, λ)
 HMCDA(ϵ::AbstractScalarOrVec{<:Real}, λ) = HMCDA{MetropolisTS}(Leapfrog(ϵ), λ)
 
