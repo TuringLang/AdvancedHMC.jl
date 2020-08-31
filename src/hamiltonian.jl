@@ -1,3 +1,5 @@
+# TODO: add a type for kinetic energy
+
 struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
     metric::M
     ℓπ::Tlogπ
