@@ -54,7 +54,7 @@ include("common.jl")
                 StepSizeAdaptor(0.8, lfi),
             ),
         ]
-            κ.τ.criterion isa FixedIntegrationTime && continue
+            κ.τ.termination_criterion isa FixedIntegrationTime && continue
 
             @test show(adaptor) == nothing; println()
 

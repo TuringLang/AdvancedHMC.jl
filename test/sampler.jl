@@ -96,7 +96,7 @@ end
                     end
                     samples, stats = sample(h, κ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
                     @test mean(samples[(n_adapts+1):end]) ≈ zeros(D) atol=RNDATOL
-                    test_stats(κ_used.τ.criterion, stats, n_adapts)
+                    test_stats(κ_used.τ.termination_criterion, stats, n_adapts)
                 end
             end
         end

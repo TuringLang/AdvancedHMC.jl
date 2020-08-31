@@ -197,17 +197,17 @@ function ahmc_isturn_classic(z0, z1, rho, v=1)
     return AdvancedHMC.isterminated(ClassicNoUTurn(), h, tree).dynamic
 end
 
-function hand_isturn(z0, z1, rho, v=1)
+function hand_isturn_generalised(z0, z1, rho, v=1)
     s = (dot(rho, -z0.r) >= 0) || (dot(-rho, z1.r) >= 0)
     return s
 end
 
-function ahmc_isturn(z0, z1, rho, v=1)
+function ahmc_isturn_generalised(z0, z1, rho, v=1)
     tree = AdvancedHMC.BinaryTree(z0, z1, rho, 0, 0, 0.0)
     return AdvancedHMC.isterminated(GeneralisedNoUTurn(), h, tree).dynamic
 end
 
-function ahmc_isturn_strict(z0, z1, rho, v=1)
+function ahmc_isturn_strict_generalised(z0, z1, rho, v=1)
     t = AdvancedHMC.isterminated(
         StrictGeneralisedNoUTurn(), h, 
         AdvancedHMC.BinaryTree(z0, z1, rho, 0, 0, 0.0),
@@ -255,10 +255,10 @@ end
             ts_hand_isturn_fwd = hand_isturn_classic.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
             ts_ahmc_isturn_fwd = ahmc_isturn_classic.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
-            ts_hand_isturn_generalised_fwd = hand_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
-            ts_ahmc_isturn_generalised_fwd = ahmc_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+            ts_hand_isturn_generalised_fwd = hand_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+            ts_ahmc_isturn_generalised_fwd = ahmc_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
-            ts_ahmc_isturn_strictgeneralised_fwd = ahmc_isturn_strict.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+            ts_ahmc_isturn_strictgeneralised_fwd = ahmc_isturn_strict_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
             check_subtree_u_turns.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)])
 
