@@ -146,23 +146,23 @@ Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/base_n
 MultinomialTS(rng::AbstractRNG, z0::PhasePoint) = MultinomialTS(z0, zero(energy(z0)))
 
 """
-    init_leafsampler(s::SliceTS, H0::AbstractFloat, zcand::PhasePoint)
+    SliceTS{F}(s::SliceTS, H0::F, zcand::PhasePoint) where {F<:AbstractFloat}
 
 Create a slice sampler for a single leaf tree:
 - the slice variable is copied from the passed-in sampler `s` and
 - the number of acceptable candicates is computed by comparing the slice variable against the current energy.
 """
-function init_leafsampler(s::SliceTS, H0::AbstractFloat, zcand::PhasePoint)
+function SliceTS{F}(s::SliceTS, H0::F, zcand::PhasePoint) where {F<:AbstractFloat}
     return SliceTS(zcand, s.ℓu, (s.ℓu <= -energy(zcand)) ? 1 : 0)
 end
 
 """
-    init_leafsampler(s::MultinomialTS, H0::AbstractFloat, zcand::PhasePoint)
+    MultinomialTS{F}(s::MultinomialTS, H0::F, zcand::PhasePoint) where {F<:AbstractFloat}
 
 Multinomial sampler for a trajectory consisting only a leaf node.
 - tree weight is the (unnormalised) energy of the leaf.
 """
-function init_leafsampler(s::MultinomialTS, H0::AbstractFloat, zcand::PhasePoint)
+function MultinomialTS{F}(s::MultinomialTS, H0::F, zcand::PhasePoint) where {F<:AbstractFloat}
     return MultinomialTS(zcand, H0 - energy(zcand))
 end
 
@@ -210,10 +210,10 @@ Base.show(io::IO, τ::Trajectory) = print(io, "Trajectory(integrator=$(τ.integr
 
 struct HMCKernel{T<:Trajectory, TS<:AbstractTrajectorySampler} <: AbstractKernel
     τ::T
-    TS::Type{TS}
+    trajectory_sampler_type::Type{TS}
 end
 
-Base.show(io::IO, κ::HMCKernel) = print(io, "HMCKernel(\n    τ=$(κ.τ),\n    TS=$(κ.TS)\n)")
+Base.show(io::IO, κ::HMCKernel) = print(io, "HMCKernel(\n    τ=$(κ.τ),\n    trajectory_sampler_type=$(κ.trajectory_sampler_type)\n)")
 
 function transition(rng, h::Hamiltonian, κ::HMCKernel, z::PhasePoint)
     @unpack τ, TS = κ
@@ -603,14 +603,14 @@ end
 """
 Recursivly build a tree for a given depth `j`.
 """
-function build_tree(rng, integrator, tc, h, z, sampler, v, j, H0)
+function build_tree(rng, integrator, tc, h, z, sampler::TS, v, j, H0) where {TS}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
         z′ = step(integrator, h, z, v)
         H′ = energy(z′)
         ΔH = H′ - H0
         α′ = exp(min(0, -ΔH))
-        sampler′ = init_leafsampler(sampler, H0, z′)
+        sampler′ = TS(sampler, H0, z′)
         return BinaryTree(z′, z′, tc, α′, 1, ΔH), sampler′, Termination(sampler′, tc, H0, H′)
     else
         # Recursion - build the left and right subtrees.
