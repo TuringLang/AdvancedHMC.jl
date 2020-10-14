@@ -38,14 +38,33 @@ end
 # end
 
 @testset "jitter" begin
-    ϵ0 = 0.1
-    lf = JitteredLeapfrog(ϵ0, 0.5)
-    @test lf.ϵ0 == ϵ0
-    @test lf.ϵ == ϵ0
+    @testset "Leapfrog" begin
+        ϵ0 = 0.1
+        lf = Leapfrog(ϵ0)
+        @test lf.ϵ == ϵ0
+        @test AdvancedHMC.nom_step_size(lf) == ϵ0
+        @test AdvancedHMC.step_size(lf) == ϵ0
 
-    lf2 = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
-    @test lf2.ϵ0 == ϵ0
-    @test lf2.ϵ != ϵ0
+        lf2 = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
+        @test lf2 === lf
+        @test AdvancedHMC.nom_step_size(lf2) == ϵ0
+        @test AdvancedHMC.step_size(lf2) == ϵ0
+    end
+
+    @testset "JitteredLeapfrog" begin
+        ϵ0 = 0.1
+        lf = JitteredLeapfrog(ϵ0, 0.5)
+        @test lf.ϵ0 == ϵ0
+        @test AdvancedHMC.nom_step_size(lf) == ϵ0
+        @test lf.ϵ == ϵ0
+        @test AdvancedHMC.step_size(lf) == lf.ϵ
+
+        lf2 = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
+        @test lf2.ϵ0 == ϵ0
+        @test AdvancedHMC.nom_step_size(lf2) == ϵ0
+        @test lf2.ϵ != ϵ0
+        @test AdvancedHMC.step_size(lf2) == lf2.ϵ
+    end
 end
 
 @testset "temper" begin
