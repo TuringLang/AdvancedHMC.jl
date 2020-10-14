@@ -67,6 +67,30 @@ end
     end
 end
 
+@testset "update_nom_step_size" begin
+    @testset "Leapfrog" begin
+        ϵ0 = 0.1
+        lf = Leapfrog(ϵ0)
+        @test AdvancedHMC.nom_step_size(lf) == ϵ0
+
+        lf2 = AdvancedHMC.update_nom_step_size(lf, 0.5)
+        @test lf2 !== lf
+        @test AdvancedHMC.nom_step_size(lf2) == 0.5
+        @test AdvancedHMC.step_size(lf2) == 0.5
+    end
+
+    @testset "JitteredLeapfrog" begin
+        ϵ0 = 0.1
+        lf = JitteredLeapfrog(ϵ0, 0.5)
+        @test AdvancedHMC.nom_step_size(lf) == ϵ0
+
+        lf2 = AdvancedHMC.update_nom_step_size(lf, 0.2)
+        @test lf2 !== lf
+        @test AdvancedHMC.nom_step_size(lf2) == 0.2
+        @test AdvancedHMC.step_size(lf2) == 0.2
+    end
+end
+
 @testset "temper" begin
     αsqrt = 2.0
     lf = TemperedLeapfrog(ϵ, αsqrt ^ 2)
