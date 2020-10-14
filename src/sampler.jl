@@ -13,8 +13,7 @@ function reconstruct(
     τ::AbstractProposal, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
 )
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
-    # FIXME: this is buggy for `JitteredLeapfrog`
-    integrator = reconstruct(τ.integrator, ϵ=getϵ(adaptor))
+    integrator = update_nom_step_size(τ.integrator, getϵ(adaptor))
     return reconstruct(τ, integrator=integrator)
 end
 
