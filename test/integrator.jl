@@ -87,7 +87,8 @@ end
         lf2 = AdvancedHMC.update_nom_step_size(lf, 0.2)
         @test lf2 !== lf
         @test AdvancedHMC.nom_step_size(lf2) == 0.2
-        @test AdvancedHMC.step_size(lf2) == 0.2
+        # check that we've only updated nominal step size
+        @test AdvancedHMC.step_size(lf2) == ϵ0
     end
 end
 
