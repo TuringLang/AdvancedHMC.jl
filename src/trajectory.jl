@@ -212,7 +212,10 @@ function transition(
     z::PhasePoint,
 )
     H0 = energy(z)
+
     integrator = jitter(rng, τ.integrator)
+    τ = reconstruct(τ, integrator=integrator)
+
     z′, is_accept, α = sample_phasepoint(rng, τ, h, z)
     # Do the actual accept / reject
     z = accept_phasepoint!(z, z′, is_accept)    # NOTE: this function changes `z′` in place in matrix-parallel mode
