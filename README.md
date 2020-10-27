@@ -11,7 +11,7 @@ AdvancedHMC.jl provides a robust, modular and efficient implementation of advanc
 If you are interested in using AdvancedHMC.jl through a probabilistic programming language, please check it out!
 
 **Interfaces**
-- [Python interface](https://github.com/salilab/hmc) for AdvancedHMC 
+- [`IMP.hmc`](https://github.com/salilab/hmc): an experimental Python module for the Integrative Modeling Platform, which uses AdvancedHMC in its backend to sample protein structures.
 
 **NEWS**
 - We presented a paper for AdvancedHMC.jl at [AABI](http://approximateinference.org/) 2019 in Vancouver, Canada. ([abs](http://proceedings.mlr.press/v118/xu20a.html), [pdf](http://proceedings.mlr.press/v118/xu20a/xu20a.pdf), [OpenReview](https://openreview.net/forum?id=rJgzckn4tH))
