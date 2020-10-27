@@ -600,7 +600,7 @@ function generalised_uturn_criterion(rho, p_sharp_minus, p_sharp_plus)
     return (dot(rho, p_sharp_minus) <= 0) || (dot(rho, p_sharp_plus) <= 0)
 end
 
-"Recursivly build a tree for a given depth `j`."
+"Recursively build a tree for a given depth `j`."
 function build_tree(
     rng::AbstractRNG,
     integrator::AbstractIntegrator,
