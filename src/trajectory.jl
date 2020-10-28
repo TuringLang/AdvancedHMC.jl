@@ -60,7 +60,7 @@ end
 """
 $(TYPEDEF)
 
-Standard HMC implementation with a fixed number of leap-frog integration steps.
+Standard HMC implementation with a fixed integration time.
 
 # Fields
 
