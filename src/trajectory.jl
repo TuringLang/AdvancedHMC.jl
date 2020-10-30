@@ -682,6 +682,28 @@ function isterminated(h::Hamiltonian, t::BinaryTree{T}, args...) where {T<:Union
     return isterminated(h, t)
 end
 
+struct TreeState{T,S,TC}
+    tree::T
+    sampler::S
+    termination::TC
+end
+
+@inline isterminated(state::TreeState) = isterminated(state.termination)
+
+function combine(rng::AbstractRNG, h::Hamiltonian, state::TreeState, state′::TreeState, v::Integer)
+    # TODO: vectorize this branch
+    if v == -1
+        treeleft, treeright = state′.tree, state.tree
+    else
+        treeleft, treeright = state.tree, state′.tree
+    end
+    tree′ = combine(treeleft, treeright)
+    sampler′ = combine(rng, state.sampler, state′.sampler)
+    termination′ = state.termination * state′.termination * isterminated(h, tree′, treeleft, treeright)
+    state′ = TreeState(tree′, sampler′, termination′)
+    return state′
+end
+
 """
 Recursivly build a tree for a given depth `j`.
 """
