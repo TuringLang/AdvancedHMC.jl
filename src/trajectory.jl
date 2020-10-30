@@ -780,6 +780,61 @@ function build_tree(
     end
 end
 
+"""
+Iteratively build a tree for a given depth `j`.
+"""
+function build_tree(
+    rng::AbstractRNG,
+    nt::IterativeNUTS{S,C,I,F},
+    h::Hamiltonian,
+    z::PhasePoint,
+    sampler::AbstractTrajectorySampler,
+    v::Int,
+    j::Int,
+    H0::AbstractFloat,
+) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
+    ileaf_max = 2^j
+    state_cache_size = j - 1
+
+    if j == 0
+        z′, state′ = build_one_leaf_tree(nt, h, z, sampler, v, H0)
+        return state′.tree, state′.sampler, state′.termination
+    end
+    z′, state′ = build_two_leaf_tree(rng, nt, h, z, sampler, v, H0)
+
+    if j == 1 || isterminated(state′)
+        return state′.tree, state′.sampler, state′.termination
+    end
+
+    # TODO: allocate state_cache in `transition` and reuse for all subtrees
+    state_cache = Vector{typeof(state′)}(undef, state_cache_size)
+    @inbounds state_cache[1] = state′
+    for ileaf in 4:2:ileaf_max
+        # take two steps (build tree with two leaves)
+        z′, state′ = build_two_leaf_tree(rng, nt, h, z′, state′.sampler, v, H0)
+
+        # combine with cached subtrees with same number of leaves
+        combine_range = subtree_cache_combine_range(ileaf)
+        for i in combine_range
+            @inbounds state′ = combine(rng, h, state_cache[i], state′, v)
+        end
+        icache = last(combine_range)
+
+        # if we have terminated, combine even if not same number of leaves
+        # TODO: vectorize this branch
+        if isterminated(state′)
+            for i in (icache - 1):-1:1
+                @inbounds state′ = combine(rng, h, state_cache[i], state′, v)
+            end
+            break
+        end
+
+        # cache state for future checks
+        @inbounds state_cache[icache] = state′
+    end
+    return state′.tree, state′.sampler, state′.termination
+end
+
 function transition(
     rng::AbstractRNG,
     τ::NUTS{S,C,I,F},
