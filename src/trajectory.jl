@@ -854,6 +854,7 @@ function transition(
     while !isterminated(termination) && j < τ.max_depth
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
+        # TODO: vectorize this branch
         if v == -1
             # Create a tree with depth `j` on the left
             tree′, sampler′, termination′ = build_tree(rng, τ, h, tree.zleft, sampler, v, j, H0)
@@ -864,6 +865,7 @@ function transition(
             treeleft, treeright = tree, tree′
         end
         # Perform a MH step and increse depth if not terminated
+        # TODO: vectorize this branch
         if !isterminated(termination′)
             j = j + 1   # increment tree depth
             if mh_accept(rng, sampler, sampler′)
