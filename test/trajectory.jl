@@ -1,6 +1,8 @@
 using Test, AdvancedHMC, Random
 using Statistics: mean
 using LinearAlgebra: dot
+using Distributions
+using ForwardDiff
 include("common.jl")
 
 ϵ = 0.01
@@ -279,6 +281,84 @@ end
                 )
                 fig.savefig("seed=$seed.png")
             end
+        end
+    end
+end
+
+@testset "iterative/recursive NUTS regression" begin
+    @testset "standard normal" begin
+        D = 10; initial_θ = rand(D)
+        n_samples, n_adapts = 2_000, 1_000
+        metric = UnitEuclideanMetric(D)
+        ℓπ(x) = logpdf(MvNormal(ones(D)), x)
+        hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
+        initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+        integrator = Leapfrog(initial_ϵ)
+        adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
+
+        seeds = rand(UInt, 100)
+        for seed in seeds
+            rng = MersenneTwister(seed)
+            proposal_recur = NUTS{MultinomialTS,StrictGeneralisedNoUTurn,typeof(integrator),Float64,AdvancedHMC.RecursiveTreeBuilding}(integrator, 10, 1000.0)
+            samples_recur, stats_recur = sample(rng, hamiltonian, proposal_recur, initial_θ, n_samples, deepcopy(adaptor), n_adapts, verbose = false)
+
+            rng = MersenneTwister(seed)
+            proposal_iter = NUTS{MultinomialTS,StrictGeneralisedNoUTurn,typeof(integrator),Float64,AdvancedHMC.IterativeTreeBuilding}(integrator, 10, 1000.0)
+            samples_iter, stats_iter = sample(rng, hamiltonian, proposal_iter, initial_θ, n_samples, deepcopy(adaptor), n_adapts, verbose = false)
+            @test samples_iter == samples_recur
+            @test stats_iter == stats_recur
+        end
+    end
+
+    @testset "high curvature" begin
+        # Neal's funnel
+        D = 10; initial_θ = rand(D)
+        n_samples, n_adapts = 2_000, 1_000
+        metric = UnitEuclideanMetric(D)
+        function ℓπ(x)
+            σ = clamp(exp(x[1] / 2), sqrt(eps()), Inf)
+            return logpdf(Normal(0, 3), x[1]) + sum(logpdf.(Normal(0, σ), x[2:end]))
+        end
+        hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
+        initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+        integrator = Leapfrog(initial_ϵ)
+        adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
+
+        seeds = rand(UInt, 10)
+        for seed in seeds
+            rng = MersenneTwister(seed)
+            proposal_recur = NUTS{MultinomialTS,StrictGeneralisedNoUTurn,typeof(integrator),Float64,AdvancedHMC.RecursiveTreeBuilding}(integrator, 10, 1000.0)
+            samples_recur, stats_recur = sample(rng, hamiltonian, proposal_recur, initial_θ, n_samples, deepcopy(adaptor), n_adapts, verbose = false)
+
+            rng = MersenneTwister(seed)
+            proposal_iter = NUTS{MultinomialTS,StrictGeneralisedNoUTurn,typeof(integrator),Float64,AdvancedHMC.IterativeTreeBuilding}(integrator, 10, 1000.0)
+            samples_iter, stats_iter = sample(rng, hamiltonian, proposal_iter, initial_θ, n_samples, deepcopy(adaptor), n_adapts, verbose = false)
+            @test samples_iter == samples_recur
+            @test stats_iter == stats_recur
+        end
+    end
+
+    @testset "heavy-tailed" begin
+        D = 10; initial_θ = rand(D)
+        n_samples, n_adapts = 2_000, 1_000
+        metric = UnitEuclideanMetric(D)
+        ℓπ(x) = sum(logpdf.(TDist(1.0), x))
+        hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
+        initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+        integrator = Leapfrog(initial_ϵ)
+        adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
+
+        seeds = rand(UInt, 10)
+        for seed in seeds
+            rng = MersenneTwister(seed)
+            proposal_recur = NUTS{MultinomialTS,StrictGeneralisedNoUTurn,typeof(integrator),Float64,AdvancedHMC.RecursiveTreeBuilding}(integrator, 10, 1000.0)
+            samples_recur, stats_recur = sample(rng, hamiltonian, proposal_recur, initial_θ, n_samples, deepcopy(adaptor), n_adapts, verbose = false)
+
+            rng = MersenneTwister(seed)
+            proposal_iter = NUTS{MultinomialTS,StrictGeneralisedNoUTurn,typeof(integrator),Float64,AdvancedHMC.IterativeTreeBuilding}(integrator, 10, 1000.0)
+            samples_iter, stats_iter = sample(rng, hamiltonian, proposal_iter, initial_θ, n_samples, deepcopy(adaptor), n_adapts, verbose = false)
+            @test samples_iter == samples_recur
+            @test stats_iter == stats_recur
         end
     end
 end
