@@ -704,6 +704,27 @@ function combine(rng::AbstractRNG, h::Hamiltonian, state::TreeState, state′::T
     return state′
 end
 
+function build_one_leaf_tree(nt::NUTS{S,C}, h, z, sampler, v, H0) where {S,C}
+    z′ = step(nt.integrator, h, z, v)
+    H′ = energy(z′)
+    ΔH = H′ - H0
+    α′ = exp(min(0, -ΔH))
+    tree′ = BinaryTree(z′, z′, C(z′), α′, 1, ΔH)
+    sampler′ = S(sampler, H0, z′)
+    termination′ = Termination(sampler′, nt, H0, H′)
+    return z′, TreeState(tree′, sampler′, termination′)
+end
+
+function build_two_leaf_tree(rng, nt::NUTS, h, z, sampler, v, H0)
+    z′, state′ = build_one_leaf_tree(nt, h, z, sampler, v, H0)
+    # TODO: vectorize this branch
+    if !isterminated(state′)
+        z′, state′′ = build_one_leaf_tree(nt, h, z′, state′.sampler, v, H0)
+        state′ = combine(rng, h, state′, state′′, v)
+    end
+    return z′, state′
+end
+
 """
 Recursivly build a tree for a given depth `j`.
 """
