@@ -726,6 +726,18 @@ function build_two_leaf_tree(rng, nt::NUTS, h, z, sampler, v, H0)
 end
 
 """
+    subtree_cache_combine_range(ileaf::Integer) -> UnitRange
+
+Get the indices of the cached trees that need to be combined with the two-leaf tree produced
+at even leaf number `ileaf`.
+"""
+@inline function subtree_cache_combine_range(ileaf)
+    imin = count_ones(ileaf)
+    inum = trailing_zeros(ileaf)
+    return (imin + inum - 2):-1:imin
+end
+
+"""
 Recursivly build a tree for a given depth `j`.
 """
 function build_tree(
