@@ -435,6 +435,9 @@ combine(::ClassicNoUTurn, ::ClassicNoUTurn) = ClassicNoUTurn()
 combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rho + cright.rho)
 combine(cleft::T, cright::T) where {T<:StrictGeneralisedNoUTurn} = T(cleft.rho + cright.rho)
 
+abstract type TreeBuildingAlgorithm end
+abstract type RecursiveTreeBuilding <: TreeBuildingAlgorithm end
+abstract type IterativeTreeBuilding <: TreeBuildingAlgorithm end
 
 ##
 ## NUTS
@@ -447,12 +450,16 @@ struct NUTS{
     S<:AbstractTrajectorySampler,
     C<:AbstractTerminationCriterion,
     I<:AbstractIntegrator,
-    F<:AbstractFloat
+    F<:AbstractFloat,
+    M<:TreeBuildingAlgorithm
 } <: DynamicTrajectory{I}
     integrator      ::  I
     max_depth       ::  Int
     Δ_max           ::  F
 end
+
+RecursiveNUTS{S,C,I,F} = NUTS{S,C,I,F,RecursiveTreeBuilding}
+IterativeNUTS{S,C,I,F} = NUTS{S,C,I,F,IterativeTreeBuilding}
 
 function Base.show(io::IO, τ::NUTS{<:SliceTS, <:ClassicNoUTurn})
     print(io, "NUTS{SliceTS}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
@@ -484,7 +491,7 @@ function NUTS{S,C}(
     max_depth::Int=10,
     Δ_max::F=1000.0,
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
-    return NUTS{S,C,I,F}(integrator, max_depth, Δ_max)
+    return NUTS{S,C,I,F,IterativeTreeBuilding}(integrator, max_depth, Δ_max)
 end
 
 """
@@ -680,7 +687,7 @@ Recursivly build a tree for a given depth `j`.
 """
 function build_tree(
     rng::AbstractRNG,
-    nt::NUTS{S,C,I,F},
+    nt::RecursiveNUTS{S,C,I,F},
     h::Hamiltonian,
     z::PhasePoint,
     sampler::AbstractTrajectorySampler,
