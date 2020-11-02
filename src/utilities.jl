@@ -85,3 +85,13 @@ function randcat(
     indices = convert.(Int, vec(sum(C .< u'; dims=1))) .+ 1
     return max.(indices, 1)  # prevent numerical issue for Float32
 end
+
+@inline colwise_dot(x::AbstractVector, y::AbstractVector) = dot(x, y)
+function colwise_dot(x::AbstractMatrix, y::AbstractMatrix)
+    T = Base.promote_eltypeof(x, y)
+    z = similar(x, T, size(x, 2))
+    @inbounds @simd for i in eachindex(z)
+        z[i] = dot(@view(x[:, i]), @view(y[:, i]))
+    end
+    return z
+end
