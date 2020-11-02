@@ -866,7 +866,10 @@ function transition(
         # TODO: vectorize this branch
         if !all(isterminated(termination′))
             j = j + 1   # increment tree depth
-            if mh_accept(rng, sampler, sampler′)
+            if z0 isa PhasePoint{<:AbstractMatrix}
+                zcand′ = deepcopy(sampler′.zcand)
+                zcand = accept_phasepoint!(zcand, zcand′, mh_accept(rng, sampler, sampler′))
+            elseif mh_accept(rng, sampler, sampler′)
                 zcand = sampler′.zcand
             end
         end
