@@ -126,7 +126,7 @@ end
 Multinomial sampler for a trajectory consisting only a leaf node.
 - tree weight is the (unnormalised) energy of the leaf.
 """
-function MultinomialTS(s::MultinomialTS, H0::AbstractFloat, zcand::PhasePoint)
+function MultinomialTS(s::MultinomialTS, H0::AbstractScalarOrVec{<:AbstractFloat}, zcand::PhasePoint)
     return MultinomialTS(zcand, H0 .- energy(zcand))
 end
 
