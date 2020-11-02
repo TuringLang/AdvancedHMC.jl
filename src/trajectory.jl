@@ -63,11 +63,11 @@ It contains the slice variable and the number of acceptable condidates in the tr
 
 $(TYPEDFIELDS)
 """
-struct SliceTS{F<:AbstractFloat} <: AbstractTrajectorySampler
+struct SliceTS{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractTrajectorySampler
     "Sampled candidate `PhasePoint`."
     zcand   ::  PhasePoint
     "Slice variable in log-space."
-    ℓu      ::  F
+    ℓu      ::  T
     "Number of acceptable candidates, i.e. those with probability larger than slice variable `u`."
     n       ::  Int
 end
@@ -84,11 +84,11 @@ It contains the weight of the tree, defined as the total probabilities of the le
 
 $(TYPEDFIELDS)
 """
-struct MultinomialTS{F<:AbstractFloat} <: AbstractTrajectorySampler
+struct MultinomialTS{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractTrajectorySampler
     "Sampled candidate `PhasePoint`."
     zcand   ::  PhasePoint
     "Total energy for the given tree, i.e. the sum of energies of all leaves."
-    ℓw      ::  F
+    ℓw      ::  T
 end
 
 """
@@ -110,27 +110,27 @@ Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/base_n
 MultinomialTS(rng::AbstractRNG, z0::PhasePoint) = MultinomialTS(z0, zero(energy(z0)))
 
 """
-    SliceTS(s::SliceTS, H0::AbstractFloat, zcand::PhasePoint)
+    SliceTS(s::SliceTS, H0::AbstractScalarOrVec{<:AbstractFloat}, zcand::PhasePoint)
 
 Create a slice sampler for a single leaf tree:
 - the slice variable is copied from the passed-in sampler `s` and
 - the number of acceptable candicates is computed by comparing the slice variable against the current energy.
 """
-function SliceTS(s::SliceTS, H0::AbstractFloat, zcand::PhasePoint)
     return SliceTS(zcand, s.ℓu, (s.ℓu <= -energy(zcand)) ? 1 : 0)
+function SliceTS(s::SliceTS, H0::AbstractScalarOrVec{<:AbstractFloat}, zcand::PhasePoint)
 end
 
 """
-    MultinomialTS(s::MultinomialTS, H0::AbstractFloat, zcand::PhasePoint)
+    MultinomialTS(s::MultinomialTS, H0::AbstractScalarOrVec{<:AbstractFloat}, zcand::PhasePoint)
 
 Multinomial sampler for a trajectory consisting only a leaf node.
 - tree weight is the (unnormalised) energy of the leaf.
 """
 function MultinomialTS(s::MultinomialTS, H0::AbstractFloat, zcand::PhasePoint)
-    return MultinomialTS(zcand, H0 - energy(zcand))
+    return MultinomialTS(zcand, H0 .- energy(zcand))
 end
 
-function combine(rng::AbstractRNG, s1::SliceTS, s2::SliceTS)
+function combine(rng::AbstractRNG, s1::SliceTS{FT,FT}, s2::SliceTS{FT,FT}) where {FT<:AbstractFloat}
     @assert s1.ℓu == s2.ℓu "Cannot combine two slice sampler with different slice variable"
     n = s1.n + s2.n
     zcand = rand(rng) < s1.n / n ? s1.zcand : s2.zcand
@@ -143,7 +143,7 @@ function combine(zcand::PhasePoint, s1::SliceTS, s2::SliceTS)
     return SliceTS(zcand, s1.ℓu, n)
 end
 
-function combine(rng::AbstractRNG, s1::MultinomialTS, s2::MultinomialTS)
+function combine(rng::AbstractRNG, s1::MultinomialTS{FT,FT}, s2::MultinomialTS{FT,FT}) where {FT<:AbstractFloat}
     ℓw = logaddexp(s1.ℓw, s2.ℓw)
     zcand = rand(rng) < exp(s1.ℓw - ℓw) ? s1.zcand : s2.zcand
     return MultinomialTS(zcand, ℓw)
@@ -403,7 +403,7 @@ $(TYPEDFIELDS)
 # References
 1. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
 """
-struct GeneralisedNoUTurn{T<:AbstractVector{<:Real}} <: AbstractTerminationCriterion
+struct GeneralisedNoUTurn{T<:AbstractVecOrMat{<:Real}} <: AbstractTerminationCriterion
     "Integral or sum of momenta along the integration path."
     rho::T
 end
@@ -424,7 +424,7 @@ $(TYPEDFIELDS)
 1. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
 2. [https://github.com/stan-dev/stan/pull/2800](https://github.com/stan-dev/stan/pull/2800)
 """
-struct StrictGeneralisedNoUTurn{T<:AbstractVector{<:Real}} <: AbstractTerminationCriterion
+struct StrictGeneralisedNoUTurn{T<:AbstractVecOrMat{<:Real}} <: AbstractTerminationCriterion
     "Integral or sum of momenta along the integration path."
     rho::T
 end
@@ -510,9 +510,9 @@ Termination reasons
 - `dynamic`: due to stoping criteria
 - `numerical`: due to large energy deviation from starting (possibly numerical errors)
 """
-struct Termination
-    dynamic::Bool
-    numerical::Bool
+struct Termination{T<:Union{Bool,AbstractVector{Bool}}}
+    dynamic::T
+    numerical::T
 end
 
 Base.show(io::IO, d::Termination) = print(io, "Termination(dynamic=$(d.dynamic), numerical=$(d.numerical))")
@@ -520,21 +520,21 @@ Base.:*(d1::Termination, d2::Termination) = Termination(d1.dynamic || d2.dynamic
 isterminated(d::Termination) = d.dynamic || d.numerical
 
 """
-    Termination(s::SliceTS, nt::NUTS, H0::F, H′::F) where {F<:AbstractFloat}
+    Termination(s::SliceTS, nt::NUTS, H0, H′)
 
 Check termination of a Hamiltonian trajectory.
 """
-function Termination(s::SliceTS, nt::NUTS, H0::F, H′::F) where {F<:AbstractFloat}
     return Termination(false, !(s.ℓu < nt.Δ_max + -H′))
+function Termination(s::SliceTS, nt::NUTS, H0, H′)
 end
 
 """
-    Termination(s::MultinomialTS, nt::NUTS, H0::F, H′::F) where {F<:AbstractFloat}
+    Termination(s::MultinomialTS, nt::NUTS, H0, H′)
 
 Check termination of a Hamiltonian trajectory.
 """
-function Termination(s::MultinomialTS, nt::NUTS, H0::F, H′::F) where {F<:AbstractFloat}
     return Termination(false, !(-H0 < nt.Δ_max + -H′))
+function Termination(s::MultinomialTS, nt::NUTS, H0, H′)
 end
 
 """
@@ -768,13 +768,13 @@ Iteratively build a tree for a given depth `j`.
 """
 function build_tree(
     rng::AbstractRNG,
-    nt::IterativeNUTS{S,C,I,F},
+    nt::NUTS{S,C,I,F},
     h::Hamiltonian,
-    z::PhasePoint,
+    z::PhasePoint{<:AbstractMatrix},
     sampler::AbstractTrajectorySampler,
     v::Int,
     j::Int,
-    H0::AbstractFloat,
+    H0::AbstractVector{<:AbstractFloat},
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
     ileaf_max = 2^j
     state_cache_size = j
