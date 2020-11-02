@@ -136,6 +136,18 @@ function combine(rng::AbstractRNG, s1::SliceTS{FT,FT}, s2::SliceTS{FT,FT}) where
     zcand = rand(rng) < s1.n / n ? s1.zcand : s2.zcand
     return SliceTS(zcand, s1.ℓu, n)
 end
+function combine(rng::AbstractRNG, s1::SliceTS, s2::SliceTS)
+    @assert s1.ℓu == s2.ℓu "Cannot combine two slice sampler with different slice variable"
+    n = s1.n + s2.n
+    # ensure is_accept size matches s1.ℓu
+    α = s1.n / n
+    is_accept = broadcast(s1.ℓu) do _
+        rand(rng) < α
+    end
+    zcand = deepcopy(s1.zcand)
+    zcand = accept_phasepoint!(s2.zcand, zcand, is_accept)
+    return SliceTS(zcand, s1.ℓu, n)
+end
 
 function combine(zcand::PhasePoint, s1::SliceTS, s2::SliceTS)
     @assert s1.ℓu == s2.ℓu "Cannot combine two slice sampler with different slice variable"
@@ -146,6 +158,13 @@ end
 function combine(rng::AbstractRNG, s1::MultinomialTS{FT,FT}, s2::MultinomialTS{FT,FT}) where {FT<:AbstractFloat}
     ℓw = logaddexp(s1.ℓw, s2.ℓw)
     zcand = rand(rng) < exp(s1.ℓw - ℓw) ? s1.zcand : s2.zcand
+    return MultinomialTS(zcand, ℓw)
+end
+function combine(rng::AbstractRNG, s1::MultinomialTS, s2::MultinomialTS)
+    ℓw = logaddexp.(s1.ℓw, s2.ℓw)
+    is_accept = rand.(rng) .< exp.(s1.ℓw .- ℓw)
+    zcand = deepcopy(s1.zcand)
+    zcand = accept_phasepoint!(s2.zcand, zcand, is_accept)
     return MultinomialTS(zcand, ℓw)
 end
 
