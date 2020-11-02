@@ -116,8 +116,8 @@ Create a slice sampler for a single leaf tree:
 - the slice variable is copied from the passed-in sampler `s` and
 - the number of acceptable candicates is computed by comparing the slice variable against the current energy.
 """
-    return SliceTS(zcand, s.ℓu, (s.ℓu <= -energy(zcand)) ? 1 : 0)
 function SliceTS(s::SliceTS, H0::AbstractScalarOrVec{<:AbstractFloat}, zcand::PhasePoint)
+    return SliceTS(zcand, s.ℓu, ifelse.(s.ℓu .<= .-energy(zcand), 1, 0))
 end
 
 """
@@ -150,14 +150,14 @@ function combine(rng::AbstractRNG, s1::MultinomialTS{FT,FT}, s2::MultinomialTS{F
 end
 
 function combine(zcand::PhasePoint, s1::MultinomialTS, s2::MultinomialTS)
-    ℓw = logaddexp(s1.ℓw, s2.ℓw)
+    ℓw = logaddexp.(s1.ℓw, s2.ℓw)
     return MultinomialTS(zcand, ℓw)
 end
 
-mh_accept(rng::AbstractRNG, s::SliceTS, s′::SliceTS) = rand(rng) < min(1, s′.n / s.n)
+mh_accept(rng::AbstractRNG, s::SliceTS, s′::SliceTS) = rand.(rng) .< min(1, s′.n / s.n)
 
 function mh_accept(rng::AbstractRNG, s::MultinomialTS, s′::MultinomialTS)
-    return rand(rng) < min(1, exp(s′.ℓw - s.ℓw))
+    return rand.(rng) .< min.(1, exp.(s′.ℓw .- s.ℓw))
 end
 
 """
@@ -516,16 +516,17 @@ struct Termination{T<:Union{Bool,AbstractVector{Bool}}}
 end
 
 Base.show(io::IO, d::Termination) = print(io, "Termination(dynamic=$(d.dynamic), numerical=$(d.numerical))")
-Base.:*(d1::Termination, d2::Termination) = Termination(d1.dynamic || d2.dynamic, d1.numerical || d2.numerical)
-isterminated(d::Termination) = d.dynamic || d.numerical
+Base.:*(d1::Termination, d2::Termination) = Termination(d1.dynamic .| d2.dynamic, d1.numerical .| d2.numerical)
+isterminated(d::Termination) = d.dynamic .| d.numerical
 
 """
     Termination(s::SliceTS, nt::NUTS, H0, H′)
 
 Check termination of a Hamiltonian trajectory.
 """
-    return Termination(false, !(s.ℓu < nt.Δ_max + -H′))
 function Termination(s::SliceTS, nt::NUTS, H0, H′)
+    numerical = (!).(s.ℓu .< nt.Δ_max .- H′)
+    return Termination(zero(numerical), numerical)
 end
 
 """
@@ -533,8 +534,9 @@ end
 
 Check termination of a Hamiltonian trajectory.
 """
-    return Termination(false, !(-H0 < nt.Δ_max + -H′))
 function Termination(s::MultinomialTS, nt::NUTS, H0, H′)
+    numerical = (!).(.-H0 .< nt.Δ_max .- H′)
+    return Termination(zero(numerical), numerical)
 end
 
 """
@@ -569,7 +571,7 @@ function combine(treeleft::BinaryTree, treeright::BinaryTree)
         combine(treeleft.c, treeright.c),
         treeleft.sum_α + treeright.sum_α,
         treeleft.nα + treeright.nα,
-        maxabs(treeleft.ΔH_max, treeright.ΔH_max),
+        maxabs.(treeleft.ΔH_max, treeright.ΔH_max),
     )
 end
 
@@ -585,8 +587,8 @@ function isterminated(h::Hamiltonian, t::BinaryTree{<:ClassicNoUTurn})
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
     Δθ = z1.θ - z0.θ
-    s = (dot(Δθ, ∂H∂r(h, -z0.r)) >= 0) || (dot(-Δθ, ∂H∂r(h, z1.r)) >= 0)
-    return Termination(s, false)
+    s = (colwise_dot(Δθ, ∂H∂r(h, -z0.r)) .>= 0) .| (colwise_dot(-Δθ, ∂H∂r(h, z1.r)) .>= 0)
+    return Termination(s, zero(s))
 end
 
 """
@@ -600,7 +602,7 @@ Ref: https://arxiv.org/abs/1701.02434
 function isterminated(h::Hamiltonian, t::BinaryTree{<:GeneralisedNoUTurn})
     rho = t.c.rho
     s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, t.zright.r))
-    return Termination(s, false)
+    return Termination(s, zero(s))
 end
 
 """
@@ -648,7 +650,7 @@ function check_left_subtree(
 ) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
     rho = tleft.c.rho + tright.zleft.r
     s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, tright.zleft.r))
-    return Termination(s, false)
+    return Termination(s, zero(s))
 end
 
 """
@@ -664,11 +666,11 @@ function check_right_subtree(
 ) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
     rho = tleft.zright.r + tright.c.rho
     s = generalised_uturn_criterion(rho, ∂H∂r(h, tleft.zright.r), ∂H∂r(h, t.zright.r))
-    return Termination(s, false)
+    return Termination(s, zero(s))
 end
 
 function generalised_uturn_criterion(rho, p_sharp_minus, p_sharp_plus)
-    return (dot(rho, p_sharp_minus) <= 0) || (dot(rho, p_sharp_plus) <= 0)
+    return (colwise_dot(rho, p_sharp_minus) .<= 0) .| (colwise_dot(rho, p_sharp_plus) .<= 0)
 end
 
 function isterminated(h::Hamiltonian, t::BinaryTree{T}, args...) where {T<:Union{ClassicNoUTurn, GeneralisedNoUTurn}}
@@ -701,7 +703,7 @@ function build_one_leaf_tree(nt::NUTS{S,C}, h, z, sampler, v, H0) where {S,C}
     z′ = step(nt.integrator, h, z, v)
     H′ = energy(z′)
     ΔH = H′ - H0
-    α′ = exp(min(0, -ΔH))
+    α′ = exp.(min.(0, .-ΔH))
     tree′ = BinaryTree(z′, z′, C(z′), α′, 1, ΔH)
     sampler′ = S(sampler, H0, z′)
     termination′ = Termination(sampler′, nt, H0, H′)
@@ -786,7 +788,7 @@ function build_tree(
     state_cache = Vector{typeof(state′)}(undef, state_cache_size)
     icache = 1
     ileaf = 1
-    while ileaf < ileaf_max && !isterminated(state′)
+    while ileaf < ileaf_max && !all(isterminated(state′))
         # cache previous state for future checks
         @inbounds state_cache[icache] = state′
 
@@ -819,7 +821,7 @@ function transition(
     z0::PhasePoint,
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
     H0 = energy(z0)
-    tree = BinaryTree(z0, z0, C(z0), zero(F), zero(Int), zero(H0))
+    tree = BinaryTree(z0, z0, C(z0), zero(H0), zero(Int), zero(H0))
     sampler = S(rng, z0)
     termination = Termination(false, false)
     zcand = z0
@@ -828,7 +830,7 @@ function transition(
     τ = reconstruct(τ, integrator=integrator)
 
     j = 0
-    while !isterminated(termination) && j < τ.max_depth
+    while !all(isterminated(termination)) && j < τ.max_depth
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
         # TODO: vectorize this branch
@@ -843,7 +845,7 @@ function transition(
         end
         # Perform a MH step and increse depth if not terminated
         # TODO: vectorize this branch
-        if !isterminated(termination′)
+        if !all(isterminated(termination′))
             j = j + 1   # increment tree depth
             if mh_accept(rng, sampler, sampler′)
                 zcand = sampler′.zcand
