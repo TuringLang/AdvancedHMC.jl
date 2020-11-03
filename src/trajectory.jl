@@ -920,7 +920,7 @@ function transition(
 )
     state = init_tree_state(rng, τ, z0)
     H0 = energy(z0)
-    zcand = z0
+    zcand = deepcopy(z0)
 
     integrator = jitter(rng, τ.integrator)
     τ = reconstruct(τ, integrator=integrator)
@@ -937,16 +937,16 @@ function transition(
         state′ = build_tree(rng, τ, h, zextend, state.sampler, v, j, H0)
         j = j + 1   # increment tree depth
 
-        has_terminated .|= isterminated(state′)
+        has_terminated = _or!(has_terminated, isterminated(state′))
         # increase tree depth if still hasn't yet terminated
         tree_depth .+= .!has_terminated
         # never accept a proposal from a subtree that has already terminated
-        is_accept = .!has_terminated .& mh_accept(rng, state.sampler, state′.sampler)
-        zcand′ = deepcopy(state′.sampler.zcand)
-        zcand = accept_phasepoint!(zcand, zcand′, is_accept)
+        is_reject = has_terminated .| .!mh_accept(rng, state.sampler, state′.sampler)
+        zcand′ = state′.sampler.zcand
+        zcand = accept_phasepoint!(zcand′, zcand, is_reject)
 
         state = combine(zcand, h, state, state′, v, has_terminated)
-        has_terminated .|= isterminated(state)
+        has_terminated = _or!(has_terminated, isterminated(state))
     end
 
     H = energy(zcand)
