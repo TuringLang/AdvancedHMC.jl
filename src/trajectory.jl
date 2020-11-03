@@ -774,12 +774,8 @@ function build_tree(
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
-        z′ = step(nt.integrator, h, z, v)
-        H′ = energy(z′)
-        ΔH = H′ - H0
-        α′ = exp(min(0, -ΔH))
-        sampler′ = S(sampler, H0, z′)
-        return BinaryTree(z′, z′, C(z′), α′, 1, ΔH), sampler′, Termination(sampler′, nt, H0, H′)
+        z′, state′ = build_one_leaf_tree(nt, h, z, sampler, v, H0)
+        return state′.tree, state′.sampler, state′.termination
     else
         # Recursion - build the left and right subtrees.
         tree′, sampler′, termination′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
