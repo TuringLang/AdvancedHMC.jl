@@ -791,9 +791,9 @@ function build_tree(
     rng::AbstractRNG,
     nt::NUTS{S,C,I,F},
     h::Hamiltonian,
-    z::PhasePoint{<:AbstractMatrix},
+    z::PhasePoint{<:AbstractMatrix{<:AbstractFloat}},
     sampler::AbstractTrajectorySampler,
-    v::Int,
+    v::AbstractVector{Int},
     j::Int,
     H0::AbstractVector{<:AbstractFloat},
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
