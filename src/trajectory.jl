@@ -920,7 +920,7 @@ function transition(
 
     j = 0
     tree_depth = map(_ -> j, H0)
-    while any(!, has_terminated) && j < τ.max_depth
+    while j < τ.max_depth && any(!, has_terminated)
         # Sample a direction; `-1` means left and `1` means right
         v = map(_ -> rand(rng, [-1, 1]), H0)
         isright = isone.(v)
