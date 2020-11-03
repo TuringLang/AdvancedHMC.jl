@@ -902,6 +902,76 @@ function transition(
     return Transition(zcand, tstat)
 end
 
+function transition(
+    rng::AbstractRNG,
+    τ::NUTS{S,C,I,F},
+    h::Hamiltonian,
+    z0::PhasePoint{<:AbstractMatrix{<:AbstractFloat}},
+) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
+    H0 = energy(z0)
+    tree = BinaryTree(z0, z0, C(z0), zero(H0), zero(Int), zero(H0))
+    sampler = S(rng, z0)
+    has_terminated = map(_ -> false, H0)
+    termination = Termination(copy(has_terminated), copy(has_terminated))
+    zcand = z0
+
+    integrator = jitter(rng, τ.integrator)
+    τ = reconstruct(τ, integrator=integrator)
+
+    j = 0
+    tree_depth = map(_ -> j, H0)
+    while any(!, has_terminated) && j < τ.max_depth
+        # Sample a direction; `-1` means left and `1` means right
+        v = map(_ -> rand(rng, (-1, 1)), H0)
+        isright = isone.(v)
+        # get point from which next tree is extended
+        zbegin = deepcopy(tree.zright)
+        zbegin = accept_phasepoint!(tree.zleft, zbegin, isright)
+        tree′, sampler′, termination′ = build_tree(rng, τ, h, zbegin, sampler, v, j, H0)
+        j = j + 1   # increment tree depth
+
+        has_terminated .*= isterminated(termination′)
+        # increase tree depth if still hasn't yet terminated
+        tree_depth .+= .!has_terminated
+        # never accept a proposal from a subtree that has already terminated
+        is_accept = .!has_terminated .* mh_accept(rng, sampler, sampler′)
+        zcand′ = deepcopy(sampler′.zcand)
+        zcand = accept_phasepoint!(zcand, zcand′, is_accept)
+
+        # TODO: vectorize all of this
+        # Combine the proposed tree and the current tree (no matter terminated or not)
+        if first(v) == -1
+            treeleft, treeright = tree′, tree
+        else
+            treeleft, treeright = tree, tree′
+        end
+        tree = combine(treeleft, treeright)
+        # Update sampler
+        sampler = combine(zcand, sampler, sampler′)
+        # update termination
+        termination = termination * termination′ * isterminated(h, tree, treeleft, treeright)
+        has_terminated .*= isterminated(termination)
+    end
+
+    H = energy(zcand)
+    tstat = merge(
+        (
+            n_steps=tree.nα,
+            is_accept=map(_ -> true, H0),
+            acceptance_rate=tree.sum_α ./ tree.nα,
+            log_density=zcand.ℓπ.value,
+            hamiltonian_energy=H,
+            hamiltonian_energy_error=H - H0,
+            max_hamiltonian_energy_error=tree.ΔH_max,
+            tree_depth=tree_depth,
+            numerical_error=termination.numerical,
+        ),
+        stat(τ.integrator),
+    )
+
+    return Transition(zcand, tstat)
+end
+
 ###
 ### Initialisation of step size
 ###
