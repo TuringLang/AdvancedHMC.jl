@@ -937,7 +937,7 @@ function transition(
         state′ = build_tree(rng, τ, h, zextend, state.sampler, v, j, H0)
         j = j + 1   # increment tree depth
 
-        has_terminated = _or!(has_terminated, isterminated(state′))
+        has_terminated = or!(has_terminated, isterminated(state′))
         # increase tree depth if still hasn't yet terminated
         tree_depth .+= .!has_terminated
         # never accept a proposal from a subtree that has already terminated
@@ -946,7 +946,7 @@ function transition(
         zcand = accept_phasepoint!(zcand′, zcand, is_reject)
 
         state = combine(zcand, h, state, state′, v, has_terminated)
-        has_terminated = _or!(has_terminated, isterminated(state))
+        has_terminated = or!(has_terminated, isterminated(state))
     end
 
     H = energy(zcand)
