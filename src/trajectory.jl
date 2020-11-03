@@ -723,7 +723,7 @@ function build_one_leaf_tree(nt::NUTS{S,C}, h, z, sampler, v, H0) where {S,C}
     H′ = energy(z′)
     ΔH = H′ - H0
     α′ = exp.(min.(0, .-ΔH))
-    tree′ = BinaryTree(z′, z′, C(z′), α′, 1, ΔH)
+    tree′ = BinaryTree(z′, z′, C(z′), α′, map(_ -> 1, v), ΔH)
     sampler′ = S(sampler, H0, z′)
     termination′ = Termination(sampler′, nt, H0, H′)
     return z′, TreeState(tree′, sampler′, termination′)
@@ -909,7 +909,7 @@ function transition(
     z0::PhasePoint{<:AbstractMatrix{<:AbstractFloat}},
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
     H0 = energy(z0)
-    tree = BinaryTree(z0, z0, C(z0), zero(H0), zero(Int), zero(H0))
+    tree = BinaryTree(z0, z0, C(z0), zero(H0), map(_ -> 0, H0), zero(H0))
     sampler = S(rng, z0)
     has_terminated = map(_ -> false, H0)
     termination = Termination(copy(has_terminated), copy(has_terminated))
