@@ -544,7 +544,7 @@ isterminated(d::Termination) = d.dynamic .| d.numerical
 Check termination of a Hamiltonian trajectory.
 """
 function Termination(s::SliceTS, nt::NUTS, H0, H′)
-    numerical = (!).(s.ℓu .< nt.Δ_max .- H′)
+    numerical = .!(s.ℓu .< nt.Δ_max .- H′)
     return Termination(zero(numerical), numerical)
 end
 
@@ -554,7 +554,7 @@ end
 Check termination of a Hamiltonian trajectory.
 """
 function Termination(s::MultinomialTS, nt::NUTS, H0, H′)
-    numerical = (!).(.-H0 .< nt.Δ_max .- H′)
+    numerical = .!(.-H0 .< nt.Δ_max .- H′)
     return Termination(zero(numerical), numerical)
 end
 
