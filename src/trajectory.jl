@@ -867,6 +867,7 @@ function transition(
             treeleft, treeright = tree, tree′
         end
         # Perform a MH step and increse depth if not terminated
+        # this check is performed even if unneeded for consistency with iterative NUTS
         is_accept = mh_accept(rng, sampler, sampler′)
         if !isterminated(termination′)
             j = j + 1   # increment tree depth
