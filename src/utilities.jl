@@ -86,6 +86,16 @@ function randcat(
     return max.(indices, 1)  # prevent numerical issue for Float32
 end
 
+"""
+    or!(x, y)
+
+Compute elementwise OR between `x` and `y` (i.e. `x .| y`), updating `x` in-place if
+possible. Note that if `x` is an `AbstractArray`, then `x .| y` must have the same size as
+`x`.
+"""
+or!(x, y) = x .| y
+or!(x::AbstractArray, y) = x .|= y
+
 @inline colwise_dot(x::AbstractVector, y::AbstractVector) = dot(x, y)
 function colwise_dot(x::AbstractMatrix, y::AbstractMatrix)
     T = Base.promote_eltypeof(x, y)
