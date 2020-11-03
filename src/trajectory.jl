@@ -704,9 +704,9 @@ end
 
 @inline isterminated(state::TreeState) = isterminated(state.termination)
 
-function combine(rng::AbstractRNG, h::Hamiltonian, state::TreeState, state′::TreeState, v::Integer)
+function combine(rng::AbstractRNG, h::Hamiltonian, state::TreeState, state′::TreeState, v::Union{Int,AbstractVector{Int}})
     # TODO: vectorize this branch
-    if v == -1
+    if first(v) == -1
         treeleft, treeright = state′.tree, state.tree
     else
         treeleft, treeright = state.tree, state′.tree
