@@ -741,6 +741,24 @@ at even leaf number `ileaf`.
     return (imin + inum - 1):-1:imin
 end
 
+function tree_extension_phasepoint(tree, v::Int)
+    return v == -1 ? tree.zleft : tree.zright
+end
+function tree_extension_phasepoint(tree, v)
+    isright = isone.(v)
+    z′ = deepcopy(tree.zright)
+    z′ = accept_phasepoint!(tree.zleft, z′, isright)
+    return z′
+end
+
+function left_right_subtrees(tree, tree′, v::Int)
+    return v == -1 ? (tree′, tree) : (tree, tree′)
+end
+function left_right_subtrees(tree, tree′, v)
+    # TODO: vectorize this for multiple values of v
+    return first(v) == -1 ? (tree′, tree) : (tree, tree′)
+end
+
 """
 Recursivly build a tree for a given depth `j`.
 """
@@ -767,15 +785,9 @@ function build_tree(
         tree′, sampler′, termination′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
         # Expand tree if not terminated
         if !isterminated(termination′)
-            # Expand left
-            if v == -1
-                tree′′, sampler′′, termination′′ = build_tree(rng, nt, h, tree′.zleft, sampler, v, j - 1, H0) # left tree
-                treeleft, treeright = tree′′, tree′
-            # Expand right
-            else
-                tree′′, sampler′′, termination′′ = build_tree(rng, nt, h, tree′.zright, sampler, v, j - 1, H0) # right tree
-                treeleft, treeright = tree′, tree′′
-            end
+            zextend = tree_extension_phasepoint(tree′, v)
+            tree′′, sampler′′, termination′′ = build_tree(rng, nt, h, zextend, sampler, v, j - 1, H0)
+            treeleft, treeright = left_right_subtrees(tree′, tree′′, v)
             tree′ = combine(treeleft, treeright)
             sampler′ = combine(rng, sampler′, sampler′′)
             termination′ = termination′ * termination′′ * isterminated(h, tree′, treeleft, treeright)
@@ -857,15 +869,11 @@ function transition(
     while !isterminated(termination) && j < τ.max_depth
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
-        if v == -1
-            # Create a tree with depth `j` on the left
-            tree′, sampler′, termination′ = build_tree(rng, τ, h, tree.zleft, sampler, v, j, H0)
-            treeleft, treeright = tree′, tree
-        else
-            # Create a tree with depth `j` on the right
-            tree′, sampler′, termination′ = build_tree(rng, τ, h, tree.zright, sampler, v, j, H0)
-            treeleft, treeright = tree, tree′
-        end
+        # get point from which next tree is extended
+        zextend = tree_extension_phasepoint(tree, v)
+        # Create a tree with depth `j` from `zextend`
+        tree′, sampler′, termination′ = build_tree(rng, τ, h, zextend, sampler, v, j, H0)
+
         # Perform a MH step and increse depth if not terminated
         # this check is performed even if unneeded for consistency with iterative NUTS
         is_accept = mh_accept(rng, sampler, sampler′)
@@ -875,7 +883,9 @@ function transition(
                 zcand = sampler′.zcand
             end
         end
+
         # Combine the proposed tree and the current tree (no matter terminated or not)
+        treeleft, treeright = left_right_subtrees(tree, tree′, v)
         tree = combine(treeleft, treeright)
         # Update sampler
         sampler = combine(zcand, sampler, sampler′)
@@ -923,11 +933,10 @@ function transition(
     while j < τ.max_depth && any(!, has_terminated)
         # Sample a direction; `-1` means left and `1` means right
         v = map(_ -> rand(rng, [-1, 1]), H0)
-        isright = isone.(v)
         # get point from which next tree is extended
-        zbegin = deepcopy(tree.zright)
-        zbegin = accept_phasepoint!(tree.zleft, zbegin, isright)
-        tree′, sampler′, termination′ = build_tree(rng, τ, h, zbegin, sampler, v, j, H0)
+        zextend = tree_extension_phasepoint(tree, v)
+        # Create a tree with depth `j` from `zextend`
+        tree′, sampler′, termination′ = build_tree(rng, τ, h, zextend, sampler, v, j, H0)
         j = j + 1   # increment tree depth
 
         has_terminated .|= isterminated(termination′)
@@ -940,11 +949,7 @@ function transition(
 
         # TODO: vectorize all of this
         # Combine the proposed tree and the current tree (no matter terminated or not)
-        if first(v) == -1
-            treeleft, treeright = tree′, tree
-        else
-            treeleft, treeright = tree, tree′
-        end
+        treeleft, treeright = left_right_subtrees(tree, tree′, v)
         tree = combine(treeleft, treeright)
         # Update sampler
         sampler = combine(zcand, sampler, sampler′)
