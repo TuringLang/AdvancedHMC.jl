@@ -704,15 +704,20 @@ end
 
 @inline isterminated(state::TreeState) = isterminated(state.termination)
 
-function combine(rng::AbstractRNG, h::Hamiltonian, state::TreeState, state′::TreeState, v::Union{Int,AbstractVector{Int}})
-    # TODO: vectorize this branch
-    if first(v) == -1
-        treeleft, treeright = state′.tree, state.tree
-    else
-        treeleft, treeright = state.tree, state′.tree
-    end
+function combine(rng::AbstractRNG, h::Hamiltonian, state::TreeState, state′::TreeState, v)
+    treeleft, treeright = left_right_subtrees(state.tree, state′.tree, v)
     tree′ = combine(treeleft, treeright)
     sampler′ = combine(rng, state.sampler, state′.sampler)
+    termination′ = state.termination * state′.termination * isterminated(h, tree′, treeleft, treeright)
+    state′ = TreeState(tree′, sampler′, termination′)
+    return state′
+end
+
+# TODO: add vectorized method for vector `has_terminated`
+function combine(zcand::PhasePoint, h::Hamiltonian, state::TreeState, state′::TreeState, v, has_terminated)
+    treeleft, treeright = left_right_subtrees(state.tree, state′.tree, v)
+    tree′ = combine(treeleft, treeright)
+    sampler′ = combine(zcand, state.sampler, state′.sampler)
     termination′ = state.termination * state′.termination * isterminated(h, tree′, treeleft, treeright)
     state′ = TreeState(tree′, sampler′, termination′)
     return state′
@@ -764,31 +769,28 @@ Recursivly build a tree for a given depth `j`.
 """
 function build_tree(
     rng::AbstractRNG,
-    nt::NUTS{S,C,I,F},
+    nt::NUTS,
     h::Hamiltonian,
     z::PhasePoint,
     sampler::AbstractTrajectorySampler,
     v::Int,
     j::Int,
     H0::AbstractFloat,
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
+)
     if j == 0
         # Base case - take one leapfrog step in the direction v.
-        z′, state′ = build_one_leaf_tree(nt, h, z, sampler, v, H0)
-        return state′.tree, state′.sampler, state′.termination
+        _, state′ = build_one_leaf_tree(nt, h, z, sampler, v, H0)
+        return state′
     else
         # Recursion - build the left and right subtrees.
-        tree′, sampler′, termination′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
+        state′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
         # Expand tree if not terminated
-        if !isterminated(termination′)
-            zextend = tree_extension_phasepoint(tree′, v)
-            tree′′, sampler′′, termination′′ = build_tree(rng, nt, h, zextend, sampler, v, j - 1, H0)
-            treeleft, treeright = left_right_subtrees(tree′, tree′′, v)
-            tree′ = combine(treeleft, treeright)
-            sampler′ = combine(rng, sampler′, sampler′′)
-            termination′ = termination′ * termination′′ * isterminated(h, tree′, treeleft, treeright)
+        if !isterminated(state′)
+            zextend = tree_extension_phasepoint(state′.tree, v)
+            state′′ = build_tree(rng, nt, h, zextend, sampler, v, j - 1, H0)
+            state′ = combine(rng, h, state′, state′′, v)
         end
-        return tree′, sampler′, termination′
+        return state′
     end
 end
 
@@ -797,19 +799,19 @@ Iteratively build a tree for a given depth `j`.
 """
 function build_tree(
     rng::AbstractRNG,
-    nt::NUTS{S,C,I,F},
+    nt::NUTS,
     h::Hamiltonian,
     z::PhasePoint{<:AbstractMatrix{<:AbstractFloat}},
     sampler::AbstractTrajectorySampler,
     v::AbstractVector{Int},
     j::Int,
     H0::AbstractVector{<:AbstractFloat},
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
+)
     ileaf_max = 2^j
     state_cache_size = j
 
     z′, state′ = build_one_leaf_tree(nt, h, z, sampler, v, H0)
-    j == 0 && return state′.tree, state′.sampler, state′.termination
+    j == 0 && return state′
 
     has_terminated = isterminated(state′)
 
@@ -843,64 +845,66 @@ function build_tree(
         @inbounds state′ = combine(rng, h, state_cache[i], state′, v)
     end
 
-    return state′.tree, state′.sampler, state′.termination
+    return state′
+end
+
+function init_tree_state(rng::AbstractRNG, τ::NUTS{S,C}, z0::PhasePoint) where {S,C}
+    H0 = energy(z0)
+    tree = BinaryTree(z0, z0, C(z0), zero(H0), map(_ -> 0, H0), zero(H0))
+    sampler = S(rng, z0)
+    term = map(_ -> false, H0)
+    termination = Termination(term, copy(term))
+    state = TreeState(tree, sampler, termination)
 end
 
 function transition(
     rng::AbstractRNG,
-    τ::NUTS{S,C,I,F},
+    τ::NUTS,
     h::Hamiltonian,
     z0::PhasePoint,
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
+)
+    state = init_tree_state(rng, τ, z0)
     H0 = energy(z0)
-    tree = BinaryTree(z0, z0, C(z0), zero(H0), zero(Int), zero(H0))
-    sampler = S(rng, z0)
-    termination = Termination(false, false)
     zcand = z0
 
     integrator = jitter(rng, τ.integrator)
     τ = reconstruct(τ, integrator=integrator)
 
     j = 0
-    while !isterminated(termination) && j < τ.max_depth
+    while !isterminated(state) && j < τ.max_depth
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
         # get point from which next tree is extended
-        zextend = tree_extension_phasepoint(tree, v)
+        zextend = tree_extension_phasepoint(state.tree, v)
         # Create a tree with depth `j` from `zextend`
-        tree′, sampler′, termination′ = build_tree(rng, τ, h, zextend, sampler, v, j, H0)
+        state′ = build_tree(rng, τ, h, zextend, state.sampler, v, j, H0)
 
         # Perform a MH step and increse depth if not terminated
         # this check is performed even if unneeded for consistency with iterative NUTS
-        is_accept = mh_accept(rng, sampler, sampler′)
-        if !isterminated(termination′)
+        is_accept = mh_accept(rng, state.sampler, state′.sampler)
+        if !isterminated(state′)
             j = j + 1   # increment tree depth
             if is_accept
-                zcand = sampler′.zcand
+                zcand = state′.sampler.zcand
             end
         end
 
-        # Combine the proposed tree and the current tree (no matter terminated or not)
-        treeleft, treeright = left_right_subtrees(tree, tree′, v)
-        tree = combine(treeleft, treeright)
-        # Update sampler
-        sampler = combine(zcand, sampler, sampler′)
-        # update termination
-        termination = termination * termination′ * isterminated(h, tree, treeleft, treeright)
+        # Combine the proposed state and the current state (no matter terminated or not)
+        state = combine(zcand, h, state, state′, v, false)
     end
 
     H = energy(zcand)
     tstat = merge(
         (
-            n_steps=tree.nα,
+            n_steps=state.tree.nα,
             is_accept=true,
-            acceptance_rate=tree.sum_α / tree.nα,
+            acceptance_rate=state.tree.sum_α / state.tree.nα,
             log_density=zcand.ℓπ.value,
             hamiltonian_energy=H,
             hamiltonian_energy_error=H - H0,
-            max_hamiltonian_energy_error=tree.ΔH_max,
+            max_hamiltonian_energy_error=state.tree.ΔH_max,
             tree_depth=j,
-            numerical_error=termination.numerical,
+            numerical_error=state.termination.numerical,
         ),
         stat(τ.integrator),
     )
@@ -910,15 +914,12 @@ end
 
 function transition(
     rng::AbstractRNG,
-    τ::NUTS{S,C,I,F},
+    τ::NUTS,
     h::Hamiltonian,
     z0::PhasePoint{<:AbstractMatrix{<:AbstractFloat}},
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:AbstractTerminationCriterion}
+)
+    state = init_tree_state(rng, τ, z0)
     H0 = energy(z0)
-    tree = BinaryTree(z0, z0, C(z0), zero(H0), map(_ -> 0, H0), zero(H0))
-    sampler = S(rng, z0)
-    has_terminated = map(_ -> false, H0)
-    termination = Termination(copy(has_terminated), copy(has_terminated))
     zcand = z0
 
     integrator = jitter(rng, τ.integrator)
@@ -926,46 +927,40 @@ function transition(
 
     j = 0
     tree_depth = map(_ -> j, H0)
+    has_terminated = isterminated(state)
     while j < τ.max_depth && any(!, has_terminated)
         # Sample a direction; `-1` means left and `1` means right
         v = map(_ -> rand(rng, [-1, 1]), H0)
         # get point from which next tree is extended
-        zextend = tree_extension_phasepoint(tree, v)
+        zextend = tree_extension_phasepoint(state.tree, v)
         # Create a tree with depth `j` from `zextend`
-        tree′, sampler′, termination′ = build_tree(rng, τ, h, zextend, sampler, v, j, H0)
+        state′ = build_tree(rng, τ, h, zextend, state.sampler, v, j, H0)
         j = j + 1   # increment tree depth
 
-        has_terminated .|= isterminated(termination′)
+        has_terminated .|= isterminated(state′)
         # increase tree depth if still hasn't yet terminated
         tree_depth .+= .!has_terminated
         # never accept a proposal from a subtree that has already terminated
-        is_accept = .!has_terminated .& mh_accept(rng, sampler, sampler′)
-        zcand′ = deepcopy(sampler′.zcand)
+        is_accept = .!has_terminated .& mh_accept(rng, state.sampler, state′.sampler)
+        zcand′ = deepcopy(state′.sampler.zcand)
         zcand = accept_phasepoint!(zcand, zcand′, is_accept)
 
-        # TODO: vectorize all of this
-        # Combine the proposed tree and the current tree (no matter terminated or not)
-        treeleft, treeright = left_right_subtrees(tree, tree′, v)
-        tree = combine(treeleft, treeright)
-        # Update sampler
-        sampler = combine(zcand, sampler, sampler′)
-        # update termination
-        termination = termination * termination′ * isterminated(h, tree, treeleft, treeright)
-        has_terminated .|= isterminated(termination)
+        state = combine(zcand, h, state, state′, v, has_terminated)
+        has_terminated .|= isterminated(state)
     end
 
     H = energy(zcand)
     tstat = merge(
         (
-            n_steps=tree.nα,
+            n_steps=state.tree.nα,
             is_accept=true,
-            acceptance_rate=tree.sum_α ./ tree.nα,
+            acceptance_rate=state.tree.sum_α ./ state.tree.nα,
             log_density=zcand.ℓπ.value,
             hamiltonian_energy=H,
             hamiltonian_energy_error=H - H0,
-            max_hamiltonian_energy_error=tree.ΔH_max,
+            max_hamiltonian_energy_error=state.tree.ΔH_max,
             tree_depth=tree_depth,
-            numerical_error=termination.numerical,
+            numerical_error=state.termination.numerical,
         ),
         stat(τ.integrator),
     )
