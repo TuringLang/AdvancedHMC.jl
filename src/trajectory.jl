@@ -922,7 +922,7 @@ function transition(
     tree_depth = map(_ -> j, H0)
     while any(!, has_terminated) && j < τ.max_depth
         # Sample a direction; `-1` means left and `1` means right
-        v = map(_ -> rand(rng, (-1, 1)), H0)
+        v = map(_ -> rand(rng, [-1, 1]), H0)
         isright = isone.(v)
         # get point from which next tree is extended
         zbegin = deepcopy(tree.zright)
