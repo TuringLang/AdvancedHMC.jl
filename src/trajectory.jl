@@ -719,7 +719,7 @@ function combine(rng::AbstractRNG, h::Hamiltonian, state::TreeState, state′::T
 end
 
 function build_one_leaf_tree(nt::NUTS{S,C}, h, z, sampler, v, H0) where {S,C}
-    z′ = step(nt.integrator, h, z, v)
+    z′ = step(nt.integrator, h, z, 1; fwd = v .> 0)
     H′ = energy(z′)
     ΔH = H′ - H0
     α′ = exp.(min.(0, .-ΔH))
