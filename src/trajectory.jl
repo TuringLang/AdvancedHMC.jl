@@ -803,11 +803,13 @@ function build_tree(
     z′, state′ = build_one_leaf_tree(nt, h, z, sampler, v, H0)
     j == 0 && return state′.tree, state′.sampler, state′.termination
 
+    has_terminated = isterminated(state′)
+
     # TODO: allocate state_cache in `transition` and reuse for all subtrees
     state_cache = Vector{typeof(state′)}(undef, state_cache_size)
     icache = 1
     ileaf = 1
-    while ileaf < ileaf_max && !all(isterminated(state′))
+    while ileaf < ileaf_max && any(!, has_terminated)
         # cache previous state for future checks
         @inbounds state_cache[icache] = state′
 
@@ -818,15 +820,18 @@ function build_tree(
         # combine with cached subtrees with same number of leaves
         combine_range = subtree_cache_combine_range(ileaf)
         for i in combine_range
+            # TODO: vectorize state combination based on termination
             @inbounds state′ = combine(rng, h, state_cache[i], state′, v)
         end
         icache = last(combine_range)
+        has_terminated .*= isterminated(state′)
     end
 
     # combine even if not same number of leaves
     # this only executes if the above loop was terminated prematurely
     # TODO: vectorize this branch
     for i in (icache - 1):-1:1
+        # TODO: vectorize state combination based on termination
         @inbounds state′ = combine(rng, h, state_cache[i], state′, v)
     end
 
