@@ -824,7 +824,7 @@ function build_tree(
             @inbounds state′ = combine(rng, h, state_cache[i], state′, v)
         end
         icache = last(combine_range)
-        has_terminated .*= isterminated(state′)
+        has_terminated .|= isterminated(state′)
     end
 
     # combine even if not same number of leaves
@@ -930,11 +930,11 @@ function transition(
         tree′, sampler′, termination′ = build_tree(rng, τ, h, zbegin, sampler, v, j, H0)
         j = j + 1   # increment tree depth
 
-        has_terminated .*= isterminated(termination′)
+        has_terminated .|= isterminated(termination′)
         # increase tree depth if still hasn't yet terminated
         tree_depth .+= .!has_terminated
         # never accept a proposal from a subtree that has already terminated
-        is_accept = .!has_terminated .* mh_accept(rng, sampler, sampler′)
+        is_accept = .!has_terminated .& mh_accept(rng, sampler, sampler′)
         zcand′ = deepcopy(sampler′.zcand)
         zcand = accept_phasepoint!(zcand, zcand′, is_accept)
 
@@ -950,14 +950,14 @@ function transition(
         sampler = combine(zcand, sampler, sampler′)
         # update termination
         termination = termination * termination′ * isterminated(h, tree, treeleft, treeright)
-        has_terminated .*= isterminated(termination)
+        has_terminated .|= isterminated(termination)
     end
 
     H = energy(zcand)
     tstat = merge(
         (
             n_steps=tree.nα,
-            is_accept=map(_ -> true, H0),
+            is_accept=true,
             acceptance_rate=tree.sum_α ./ tree.nα,
             log_density=zcand.ℓπ.value,
             hamiltonian_energy=H,
