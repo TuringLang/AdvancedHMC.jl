@@ -841,8 +841,11 @@ function left_right_subtrees(tree, tree′, v::Int)
     return v == -1 ? (tree′, tree) : (tree, tree′)
 end
 function left_right_subtrees(tree, tree′, v)
-    # TODO: vectorize this for multiple values of v
-    return first(v) == -1 ? (tree′, tree) : (tree, tree′)
+    tree_left, tree_right = deepcopy(tree), deepcopy(tree′)
+    is_accept = isone.(v)
+    tree_right = accept!(tree, tree_right, is_accept)
+    tree_left = accept!(tree′, tree_left, is_accept)
+    return tree_left, tree_right
 end
 
 """
