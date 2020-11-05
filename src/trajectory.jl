@@ -928,7 +928,6 @@ function build_tree(
         # combine with cached subtrees with same number of leaves
         combine_range = subtree_cache_combine_range(ileaf)
         for i in combine_range
-            # TODO: vectorize state combination based on termination
             @inbounds state′ = combine(rng, h, state_cache[i], state′, v)
         end
         icache = last(combine_range)
@@ -937,9 +936,7 @@ function build_tree(
 
     # combine even if not same number of leaves
     # this only executes if the above loop was terminated prematurely
-    # TODO: vectorize this branch
     for i in (icache - 1):-1:1
-        # TODO: vectorize state combination based on termination
         @inbounds state′ = combine(rng, h, state_cache[i], state′, v)
     end
 
