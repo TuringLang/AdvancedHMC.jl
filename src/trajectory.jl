@@ -804,6 +804,20 @@ function combine(zcand::PhasePoint, h::Hamiltonian, state::TreeState, state′::
     return state′
 end
 
+"""
+Create a level 0 `TreeState` at the initial point `z0`.
+"""
+function init_tree_state(rng::AbstractRNG, τ::NUTS{S,C}, z0::PhasePoint) where {S,C}
+    H0 = energy(z0)
+    tree = BinaryTree(z0, z0, C(z0), zero(H0), map(_ -> 0, H0), zero(H0))
+    sampler = S(rng, z0)
+    # to get same type of array as boolean check
+    term = H0 .> Inf
+    termination = Termination(term, deepcopy(term))
+    state = TreeState(tree, sampler, termination)
+    return state
+end
+
 function build_one_leaf_tree(nt::NUTS{S,C}, h, z, sampler, v, H0) where {S,C}
     z′ = step(nt.integrator, h, z, 1; fwd = v .> 0)
     H′ = energy(z′)
@@ -930,15 +944,6 @@ function build_tree(
     end
 
     return state′
-end
-
-function init_tree_state(rng::AbstractRNG, τ::NUTS{S,C}, z0::PhasePoint) where {S,C}
-    H0 = energy(z0)
-    tree = BinaryTree(z0, z0, C(z0), zero(H0), map(_ -> 0, H0), zero(H0))
-    sampler = S(rng, z0)
-    term = map(_ -> false, H0)
-    termination = Termination(term, copy(term))
-    state = TreeState(tree, sampler, termination)
 end
 
 function transition(
