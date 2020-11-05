@@ -775,22 +775,32 @@ function accept!(
     return state′
 end
 
+"""
+Combine `state` and `state′` for all chains where `state` has not terminated.
+"""
 function combine(rng::AbstractRNG, h::Hamiltonian, state::TreeState, state′::TreeState, v)
     treeleft, treeright = left_right_subtrees(state.tree, state′.tree, v)
     tree′ = combine(treeleft, treeright)
     sampler′ = combine(rng, state.sampler, state′.sampler)
     termination′ = state.termination * state′.termination * isterminated(h, tree′, treeleft, treeright)
     state′ = TreeState(tree′, sampler′, termination′)
+    is_accept = .!isterminated(state)
+    state′ = accept!(state, state′, is_accept)
     return state′
 end
 
-# TODO: add vectorized method for vector `has_terminated`
-function combine(zcand::PhasePoint, h::Hamiltonian, state::TreeState, state′::TreeState, v, has_terminated)
+"""
+Combine `state` and `state′` with candidate point `zcand` for all chains where `state` has
+not terminated.
+"""
+function combine(zcand::PhasePoint, h::Hamiltonian, state::TreeState, state′::TreeState, v)
     treeleft, treeright = left_right_subtrees(state.tree, state′.tree, v)
     tree′ = combine(treeleft, treeright)
     sampler′ = combine(zcand, state.sampler, state′.sampler)
     termination′ = state.termination * state′.termination * isterminated(h, tree′, treeleft, treeright)
     state′ = TreeState(tree′, sampler′, termination′)
+    is_accept = .!isterminated(state)
+    state′ = accept!(state, state′, is_accept)
     return state′
 end
 
@@ -961,7 +971,7 @@ function transition(
         end
 
         # Combine the proposed state and the current state (no matter terminated or not)
-        state = combine(zcand, h, state, state′, v, false)
+        state = combine(zcand, h, state, state′, v)
     end
 
     H = energy(zcand)
@@ -1016,7 +1026,7 @@ function transition(
         zcand′ = state′.sampler.zcand
         zcand = accept!(zcand′, zcand, is_reject)
 
-        state = combine(zcand, h, state, state′, v, has_terminated)
+        state = combine(zcand, h, state, state′, v)
         has_terminated = or!(has_terminated, isterminated(state))
     end
 
