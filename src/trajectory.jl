@@ -155,6 +155,17 @@ function combine(zcand::PhasePoint, s1::SliceTS, s2::SliceTS)
     return SliceTS(zcand, s1.ℓu, n)
 end
 
+function accept!(
+    s::SliceTS,
+    s′::SliceTS,
+    is_accept::AbstractVector{Bool}
+)
+    zcand = accept!(s.zcand, s′.zcand, is_accept)
+    ℓu = accept!(s.ℓu, s′.ℓu, is_accept)
+    n = accept!(s.n, s′.n, is_accept)
+    return SliceTS(zcand, ℓu, n)
+end
+
 function combine(rng::AbstractRNG, s1::MultinomialTS{FT,FT}, s2::MultinomialTS{FT,FT}) where {FT<:AbstractFloat}
     ℓw = logaddexp(s1.ℓw, s2.ℓw)
     zcand = rand(rng) < exp(s1.ℓw - ℓw) ? s1.zcand : s2.zcand
@@ -170,6 +181,16 @@ end
 
 function combine(zcand::PhasePoint, s1::MultinomialTS, s2::MultinomialTS)
     ℓw = logaddexp.(s1.ℓw, s2.ℓw)
+    return MultinomialTS(zcand, ℓw)
+end
+
+function accept!(
+    s::MultinomialTS,
+    s′::MultinomialTS,
+    is_accept::AbstractVector{Bool}
+)
+    zcand = accept!(s.zcand, s′.zcand, is_accept)
+    ℓw = accept!(s.ℓw, s′.ℓw, is_accept)
     return MultinomialTS(zcand, ℓw)
 end
 
@@ -447,6 +468,19 @@ combine(::ClassicNoUTurn, ::ClassicNoUTurn) = ClassicNoUTurn()
 combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rho + cright.rho)
 combine(cleft::T, cright::T) where {T<:StrictGeneralisedNoUTurn} = T(cleft.rho + cright.rho)
 
+@inline accept!(::ClassicNoUTurn, ::ClassicNoUTurn, is_accept::AbstractVector{Bool}) = ClassicNoUTurn()
+
+function accept!(
+    c::CT,
+    c′::CT,
+    is_accept::AbstractVector{Bool}
+) where {T<:AbstractMatrix{<:Real},CT<:Union{GeneralisedNoUTurn{T},StrictGeneralisedNoUTurn{T}}}
+    is_reject = (!).(is_accept)
+    @views if any(is_reject)
+        c′.rho[:, is_reject] .= c.rho[:, is_reject]
+    end
+    return c′
+end
 
 ##
 ## NUTS
@@ -551,6 +585,19 @@ function Termination(s::MultinomialTS, nt::NUTS, H0, H′)
     return Termination(zero(numerical), numerical)
 end
 
+function accept!(
+    termination::TT,
+    termination′::TT,
+    is_accept::AbstractVector{Bool}
+) where {T<:AbstractVector{Bool},TT<:Termination{T}}
+    is_reject = (!).(is_accept)
+    @views if any(is_reject)
+        termination′.dynamic[is_reject] = termination.dynamic[is_reject]
+        termination′.numerical[is_reject] = termination.numerical[is_reject]
+    end
+    return termination′
+end
+
 """
 A full binary tree trajectory with only necessary leaves and information stored.
 """
@@ -585,6 +632,23 @@ function combine(treeleft::BinaryTree, treeright::BinaryTree)
         treeleft.nα + treeright.nα,
         maxabs.(treeleft.ΔH_max, treeright.ΔH_max),
     )
+end
+
+function accept!(
+    tree::BinaryTree,
+    tree′::BinaryTree,
+    is_accept::AbstractVector{Bool}
+)
+    if any(!, is_accept)
+        zleft = accept!(tree.zleft, tree′.zleft, is_accept)
+        zright = accept!(tree.zright, tree′.zright, is_accept)
+        c = accept!(tree.c, tree′.c, is_accept)
+        sum_α = accept!(tree.sum_α, tree′.sum_α, is_accept)
+        nα = accept!(tree.nα, tree′.nα, is_accept)
+        ΔH_max = accept!(tree.ΔH_max, tree′.ΔH_max, is_accept)
+        tree′ = BinaryTree(zleft, zright, c, sum_α, nα, ΔH_max)
+    end
+    return tree′
 end
 
 """
@@ -696,6 +760,20 @@ struct TreeState{T,S,TC}
 end
 
 @inline isterminated(state::TreeState) = isterminated(state.termination)
+
+function accept!(
+    state::TreeState,
+    state′::TreeState,
+    is_accept::AbstractVector{Bool}
+)
+    if any(!, is_accept)
+        tree′ = accept!(state.tree, state′.tree, is_accept)
+        sampler′ = accept!(state.sampler, state′.sampler, is_accept)
+        termination′ = accept!(state.termination, state′.termination, is_accept)
+        state′ = TreeState(tree′, sampler′, termination′)
+    end
+    return state′
+end
 
 function combine(rng::AbstractRNG, h::Hamiltonian, state::TreeState, state′::TreeState, v)
     treeleft, treeright = left_right_subtrees(state.tree, state′.tree, v)
