@@ -145,7 +145,7 @@ function combine(rng::AbstractRNG, s1::SliceTS, s2::SliceTS)
         rand(rng) < α
     end
     zcand = deepcopy(s1.zcand)
-    zcand = accept_phasepoint!(s2.zcand, zcand, is_accept)
+    zcand = accept!(s2.zcand, zcand, is_accept)
     return SliceTS(zcand, s1.ℓu, n)
 end
 
@@ -164,7 +164,7 @@ function combine(rng::AbstractRNG, s1::MultinomialTS, s2::MultinomialTS)
     ℓw = logaddexp.(s1.ℓw, s2.ℓw)
     is_accept = rand.(rng) .< exp.(s1.ℓw .- ℓw)
     zcand = deepcopy(s1.zcand)
-    zcand = accept_phasepoint!(s2.zcand, zcand, is_accept)
+    zcand = accept!(s2.zcand, zcand, is_accept)
     return MultinomialTS(zcand, ℓw)
 end
 
@@ -237,7 +237,7 @@ function transition(
 
     z′, is_accept, α = sample_phasepoint(rng, τ, h, z)
     # Do the actual accept / reject
-    z = accept_phasepoint!(z, z′, is_accept)    # NOTE: this function changes `z′` in place in matrix-parallel mode
+    z = accept!(z, z′, is_accept)    # NOTE: this function changes `z′` in place in matrix-parallel mode
     # Reverse momentum variable to preserve reversibility
     z = PhasePoint(z.θ, -z.r, z.ℓπ, z.ℓκ)
     H = energy(z)
@@ -256,14 +256,7 @@ function transition(
 end
 
 # Return the accepted phase point
-function accept_phasepoint!(z::T, z′::T, is_accept::Bool) where {T<:PhasePoint{<:AbstractVector}}
-    if is_accept
-        return z′
-    else
-        return z
-    end
-end
-function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:AbstractMatrix}}
+function accept!(z::T, z′::T, is_accept::AbstractVector{Bool}) where {T<:PhasePoint{<:AbstractMatrix}}
     # Revert unaccepted proposals in `z′`
     is_reject = (!).(is_accept)
     if any(is_reject)
@@ -752,7 +745,7 @@ end
 function tree_extension_phasepoint(tree, v)
     isright = isone.(v)
     z′ = deepcopy(tree.zright)
-    z′ = accept_phasepoint!(tree.zleft, z′, isright)
+    z′ = accept!(tree.zleft, z′, isright)
     return z′
 end
 
@@ -943,7 +936,7 @@ function transition(
         # never accept a proposal from a subtree that has already terminated
         is_reject = has_terminated .| .!mh_accept(rng, state.sampler, state′.sampler)
         zcand′ = state′.sampler.zcand
-        zcand = accept_phasepoint!(zcand′, zcand, is_reject)
+        zcand = accept!(zcand′, zcand, is_reject)
 
         state = combine(zcand, h, state, state′, v, has_terminated)
         has_terminated = or!(has_terminated, isterminated(state))
