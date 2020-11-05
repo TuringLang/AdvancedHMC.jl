@@ -105,3 +105,15 @@ function colwise_dot(x::AbstractMatrix, y::AbstractMatrix)
     end
     return z
 end
+
+@inline accept!(x, x′, is_accept::Bool) = is_accept ? x′ : x
+@inline function accept!(val::AbstractVector, val′::AbstractVector, is_accept::AbstractVector{Bool})
+    is_reject = (!).(is_accept)
+    @views val′[is_reject] .= val[is_reject]
+    return val′
+end
+@inline function accept!(val::AbstractMatrix, val′::AbstractMatrix, is_accept::AbstractVector{Bool})
+    is_reject = (!).(is_accept)
+    @views val′[:, is_reject] .= val[:, is_reject]
+    return val′
+end
