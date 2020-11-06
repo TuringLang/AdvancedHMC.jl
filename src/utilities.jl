@@ -96,6 +96,28 @@ possible. Note that if `x` is an `AbstractArray`, then `x .| y` must have the sa
 or!(x, y) = x .| y
 or!(x::AbstractArray, y) = x .|= y
 
+"""
+    eitheror!(a, b, tf)
+
+Given a number or array `a`, a number or array `b`, and a boolean or array of booleans `tf`,
+return a number or container containing values of `a` wherever `tf` is true and values of
+`b` wherever `tf` is false.
+
+If `a` is an `AbstractArray`, then the result is stored in `a`, and the dimensions of `a`,
+`b`, and `tf` must be compatible with the output being stored in `a`.
+"""
+@inline eitheror!(a, b, tf) = ifelse.(tf, a, b)
+@inline function eitheror!(a::AbstractArray, b, tf)
+    a .= ifelse.(tf, a, b)
+    return a
+end
+
+@inline accept!(x, x′, is_accept::Bool) = ifelse(is_accept, x′, x)
+@inline accept!(x, x′, is_accept) = eitheror!(x′, x, is_accept)
+@inline function accept!(x::AbstractMatrix, x′::AbstractMatrix, is_accept::AbstractVector)
+    return eitheror!(x′, x, is_accept')
+end
+
 @inline colwise_dot(x::AbstractVector, y::AbstractVector) = dot(x, y)
 function colwise_dot(x::AbstractMatrix, y::AbstractMatrix)
     T = Base.promote_eltypeof(x, y)
@@ -104,16 +126,4 @@ function colwise_dot(x::AbstractMatrix, y::AbstractMatrix)
         z[i] = dot(@view(x[:, i]), @view(y[:, i]))
     end
     return z
-end
-
-@inline accept!(x, x′, is_accept::Bool) = is_accept ? x′ : x
-@inline function accept!(val::AbstractVector, val′::AbstractVector, is_accept::AbstractVector{Bool})
-    is_reject = (!).(is_accept)
-    @views val′[is_reject] .= val[is_reject]
-    return val′
-end
-@inline function accept!(val::AbstractMatrix, val′::AbstractMatrix, is_accept::AbstractVector{Bool})
-    is_reject = (!).(is_accept)
-    @views val′[:, is_reject] .= val[:, is_reject]
-    return val′
 end
