@@ -5,6 +5,7 @@ println(ENV)
 
 @testset "AdvancedHMC" begin
     tests = [
+        "utilities",
         "metric",
         "hamiltonian",
         "integrator",
