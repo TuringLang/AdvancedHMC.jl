@@ -119,6 +119,7 @@ end
 end
 
 @inline colwise_dot(x::AbstractVector, y::AbstractVector) = dot(x, y)
+# TODO: this function needs a custom GPU kernel, e.g. using KernelAbstractions
 function colwise_dot(x::AbstractMatrix, y::AbstractMatrix)
     T = Base.promote_eltypeof(x, y)
     z = similar(x, T, size(x, 2))
