@@ -276,25 +276,6 @@ function transition(
     return Transition(z, tstat)
 end
 
-# Return the accepted phase point
-function accept!(z::T, z′::T, is_accept::AbstractVector{Bool}) where {T<:PhasePoint{<:AbstractMatrix}}
-    # Revert unaccepted proposals in `z′`
-    is_reject = (!).(is_accept)
-    if any(is_reject)
-        z′.θ[:,is_reject] = z.θ[:,is_reject]
-        z′.r[:,is_reject] = z.r[:,is_reject]
-        z′.ℓπ.value[is_reject] = z.ℓπ.value[is_reject]
-        z′.ℓπ.gradient[:,is_reject] = z.ℓπ.gradient[:,is_reject]
-        z′.ℓκ.value[is_reject] = z.ℓκ.value[is_reject]
-        z′.ℓκ.gradient[:,is_reject] = z.ℓκ.gradient[:,is_reject]
-    end
-    # Always return `z′` as any unaccepted proposal is already reverted
-    # NOTE: This in place treatment of `z′` is for memory efficient consideration.
-    #       We can also copy `z′ and avoid mutating the original `z′`. But this is
-    #       not efficient and immutability of `z′` is not important in this local scope.
-    return z′
-end
-
 ### Use end-point from the trajectory as a proposal and apply MH correction
 
 function sample_phasepoint(rng, τ::StaticTrajectory{EndPointTS}, h, z)
@@ -468,17 +449,18 @@ combine(::ClassicNoUTurn, ::ClassicNoUTurn) = ClassicNoUTurn()
 combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rho + cright.rho)
 combine(cleft::T, cright::T) where {T<:StrictGeneralisedNoUTurn} = T(cleft.rho + cright.rho)
 
-@inline accept!(::ClassicNoUTurn, ::ClassicNoUTurn, is_accept::AbstractVector{Bool}) = ClassicNoUTurn()
+@inline accept!(
+    ::ClassicNoUTurn,
+    ::ClassicNoUTurn,
+    is_accept::AbstractVector{Bool},
+) = ClassicNoUTurn()
 
-function accept!(
+@inline function accept!(
     c::CT,
     c′::CT,
     is_accept::AbstractVector{Bool}
 ) where {T<:AbstractMatrix{<:Real},CT<:Union{GeneralisedNoUTurn{T},StrictGeneralisedNoUTurn{T}}}
-    is_reject = (!).(is_accept)
-    @views if any(is_reject)
-        c′.rho[:, is_reject] .= c.rho[:, is_reject]
-    end
+    accept!(c.rho, c′.rho, is_accept)
     return c′
 end
 
@@ -585,16 +567,13 @@ function Termination(s::MultinomialTS, nt::NUTS, H0, H′)
     return Termination(zero(numerical), numerical)
 end
 
-function accept!(
+@inline function accept!(
     termination::TT,
     termination′::TT,
     is_accept::AbstractVector{Bool}
 ) where {T<:AbstractVector{Bool},TT<:Termination{T}}
-    is_reject = (!).(is_accept)
-    @views if any(is_reject)
-        termination′.dynamic[is_reject] = termination.dynamic[is_reject]
-        termination′.numerical[is_reject] = termination.numerical[is_reject]
-    end
+    accept!(termination.dynamic, termination′.dynamic, is_accept)
+    accept!(termination.numerical, termination′.numerical, is_accept)
     return termination′
 end
 

@@ -26,6 +26,12 @@ end
 Base.similar(dv::DualValue{<:AbstractVecOrMat{T}}) where {T<:AbstractFloat} = 
     DualValue(zeros(T, size(dv.value)...), zeros(T, size(dv.gradient)...))
 
+function accept!(d::T, d′::T, is_accept::AbstractVector{Bool}) where {T<:DualValue{<:AbstractVector}}
+    accept!(d.value, d′.value, is_accept)
+    accept!(d.gradient, d′.gradient, is_accept)
+    return d
+end
+
 # `∂H∂θ` now returns `(logprob, -∂ℓπ∂θ)`
 function ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat)
     res = h.∂ℓπ∂θ(θ)
@@ -83,6 +89,22 @@ phasepoint(
 Base.isfinite(v::DualValue) = all(isfinite, v.value) && all(isfinite, v.gradient)
 Base.isfinite(v::AbstractVecOrMat) = all(isfinite, v)
 Base.isfinite(z::PhasePoint) = isfinite(z.ℓπ) && isfinite(z.ℓκ)
+
+# Return the accepted phase point
+function accept!(z::T, z′::T, is_accept::AbstractVector{Bool}) where {T<:PhasePoint{<:AbstractMatrix}}
+    # Revert unaccepted proposals in `z′`
+    if any(!, is_accept)
+        accept!(z.θ, z′.θ, is_accept)
+        accept!(z.r, z′.r, is_accept)
+        accept!(z.ℓπ, z′.ℓπ, is_accept)
+        accept!(z.ℓκ, z′.ℓκ, is_accept)
+    end
+    # Always return `z′` as any unaccepted proposal is already reverted
+    # NOTE: This in place treatment of `z′` is for memory efficient consideration.
+    #       We can also copy `z′ and avoid mutating the original `z′`. But this is
+    #       not efficient and immutability of `z′` is not important in this local scope.
+    return z′
+end
 
 ###
 ### Negative energy (or log probability) functions.
