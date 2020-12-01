@@ -20,7 +20,7 @@ end
 function resize(h::Hamiltonian, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
     metric = h.metric
     if size(metric) != size(θ)
-        metric = typeof(metric)(size(θ))
+        metric = getname(metric)(size(θ))
         h = reconstruct(h, metric=metric)
     end
     return h
