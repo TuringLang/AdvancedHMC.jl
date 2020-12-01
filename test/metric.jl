@@ -17,3 +17,19 @@ using Test, Random, AdvancedHMC
         @test all_same
     end
 end
+
+@testset "Resize metric" begin
+    D = 10
+    rng = MersenneTwister(1)
+    θ = randn(rng, D)
+    ℓπ(θ) = 1
+    for metric in [
+        UnitEuclideanMetric(1),
+        DiagEuclideanMetric(1),
+        DenseEuclideanMetric(1)
+    ]
+        h = Hamiltonian(metric, ℓπ, ℓπ)
+        h = AdvancedHMC.resize(h, θ)
+        @test size(h.metric) == size(θ)
+    end
+end

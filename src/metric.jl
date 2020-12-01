@@ -76,6 +76,11 @@ renew(ue::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
 Base.size(e::DenseEuclideanMetric, dim...) = size(e._temp, dim...)
 Base.show(io::IO, dem::DenseEuclideanMetric) = print(io, "DenseEuclideanMetric(diag=$(_string_M⁻¹(dem.M⁻¹)))")
 
+# getname functions
+for T in (UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric)
+    @eval getname(::Type{<:$T}) = $T
+end
+
 # `rand` functions for `metric` types.
 
 function _rand(
