@@ -161,6 +161,8 @@ Draw `n_samples` samples using the proposal `τ` under the Hamiltonian system `h
 - `verbose` controls the verbosity.
 - `progress` controls whether to show the progress meter or not.
 
+Note that the function signature of the `sample` function exported by `AdvancedHMC.jl` differs from the `sample` function used by `Turing.jl`. We refer to the documentation of `Turing.jl` for more details on the latter.
+
 ## Citing AdvancedHMC.jl ##
 If you use AdvancedHMC.jl for your own research, please consider citing the following publication:
 
