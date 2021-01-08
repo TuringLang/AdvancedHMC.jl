@@ -46,9 +46,9 @@ $(TYPEDFIELDS)
 # References
 1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
 """
-struct FixedNSteps{T<:Integer} <: StaticTerminationCriterion
+struct FixedNSteps <: StaticTerminationCriterion
     "Number of steps to simulate, i.e. length of trajectory will be `L + 1`."
-    L::T
+    L::Int
 end
 
 """
@@ -419,9 +419,10 @@ distance between the left-most and right-most positions.
 # References
 1. Hoffman, M. D., & Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623. ([arXiv](http://arxiv.org/abs/1111.4246))
 """
-struct ClassicNoUTurn <: DynamicTerminationCriterion end
-
-ClassicNoUTurn(::PhasePoint) = ClassicNoUTurn()
+Base.@kwdef struct ClassicNoUTurn{F<:AbstractFloat} <: DynamicTerminationCriterion
+    max_depth::Int=10
+    Δ_max::F=1000.0
+end
 
 """
 $(TYPEDEF)
@@ -435,12 +436,10 @@ $(TYPEDFIELDS)
 # References
 1. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
 """
-struct GeneralisedNoUTurn{T<:AbstractVector{<:Real}} <: DynamicTerminationCriterion
-    "Integral or sum of momenta along the integration path."
-    rho::T
+Base.@kwdef struct GeneralisedNoUTurn{F<:AbstractFloat} <: DynamicTerminationCriterion
+    max_depth::Int=10
+    Δ_max::F=1000.0
 end
-
-GeneralisedNoUTurn(z::PhasePoint) = GeneralisedNoUTurn(z.r)
 
 """
 $(TYPEDEF)
@@ -456,17 +455,24 @@ $(TYPEDFIELDS)
 1. Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. [arXiv preprint arXiv:1701.02434](https://arxiv.org/abs/1701.02434).
 2. [https://github.com/stan-dev/stan/pull/2800](https://github.com/stan-dev/stan/pull/2800)
 """
-struct StrictGeneralisedNoUTurn{T<:AbstractVector{<:Real}} <: DynamicTerminationCriterion
+Base.@kwdef struct StrictGeneralisedNoUTurn{F<:AbstractFloat} <: DynamicTerminationCriterion
+    max_depth::Int=10
+    Δ_max::F=1000.0
+end
+GeneralisedNoUTurn(tc::StrictGeneralisedNoUTurn) = GeneralisedNoUTurn(tc.max_depth, tc.Δ_max)
+
+struct TurnStatistic{T}
     "Integral or sum of momenta along the integration path."
     rho::T
 end
+TurnStatistic() = TurnStatistic(undef)
 
-StrictGeneralisedNoUTurn(z::PhasePoint) = StrictGeneralisedNoUTurn(z.r)
+TurnStatistic(::ClassicNoUTurn, ::PhasePoint) = TurnStatistic()
+TurnStatistic(::Union{GeneralisedNoUTurn, StrictGeneralisedNoUTurn}, z::PhasePoint) = 
+    TurnStatistic(z.r)
 
-combine(::ClassicNoUTurn, ::ClassicNoUTurn) = ClassicNoUTurn()
-combine(cleft::T, cright::T) where {T<:GeneralisedNoUTurn} = T(cleft.rho + cright.rho)
-combine(cleft::T, cright::T) where {T<:StrictGeneralisedNoUTurn} = T(cleft.rho + cright.rho)
-
+combine(ts::TurnStatistic{T}, ::TurnStatistic{T}) where {T<:UndefInitializer} = ts
+combine(tsl::T, tsr::T) where {T<:TurnStatistic} = TurnStatistic(tsl.rho + tsr.rho)
 
 ##
 ## NUTS
@@ -479,24 +485,22 @@ struct NUTS{
     S<:AbstractTrajectorySampler,
     C<:DynamicTerminationCriterion,
     I<:AbstractIntegrator,
-    F<:AbstractFloat
 } <: DynamicTrajectory{I}
-    integrator      ::  I
-    max_depth       ::  Int
-    Δ_max           ::  F
+    integrator              ::  I
+    termination_criterion   ::  C
 end
 
 function Base.show(io::IO, τ::NUTS{<:SliceTS, <:ClassicNoUTurn})
-    print(io, "NUTS{SliceTS}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+    print(io, "NUTS{SliceTS}(integrator=$(τ.integrator), termination_criterion=$(τ.termination_criterion))")
 end
 function Base.show(io::IO, τ::NUTS{<:SliceTS, <:GeneralisedNoUTurn})
-    print(io, "NUTS{SliceTS,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+    print(io, "NUTS{SliceTS,Generalised}(integrator=$(τ.integrator), termination_criterion=$(τ.termination_criterion))")
 end
 function Base.show(io::IO, τ::NUTS{<:MultinomialTS, <:ClassicNoUTurn})
-    print(io, "NUTS{MultinomialTS}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+    print(io, "NUTS{MultinomialTS}(integrator=$(τ.integrator), termination_criterion=$(τ.termination_criterion))")
 end
 function Base.show(io::IO, τ::NUTS{<:MultinomialTS, <:GeneralisedNoUTurn})
-    print(io, "NUTS{MultinomialTS,Generalised}(integrator=$(τ.integrator), max_depth=$(τ.max_depth)), Δ_max=$(τ.Δ_max))")
+    print(io, "NUTS{MultinomialTS,Generalised}(integrator=$(τ.integrator), termination_criterion=$(τ.termination_criterion))")
 end
 
 
@@ -516,7 +520,7 @@ function NUTS{S,C}(
     max_depth::Int=10,
     Δ_max::F=1000.0,
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:DynamicTerminationCriterion}
-    return NUTS{S,C,I,F}(integrator, max_depth, Δ_max)
+    return NUTS{S,C,I}(integrator, C(max_depth, Δ_max))
 end
 
 """
@@ -557,7 +561,7 @@ isterminated(d::Termination) = d.dynamic || d.numerical
 Check termination of a Hamiltonian trajectory.
 """
 function Termination(s::SliceTS, nt::NUTS, H0::F, H′::F) where {F<:AbstractFloat}
-    return Termination(false, !(s.ℓu < nt.Δ_max + -H′))
+    return Termination(false, !(s.ℓu < nt.termination_criterion.Δ_max + -H′))
 end
 
 """
@@ -566,16 +570,16 @@ end
 Check termination of a Hamiltonian trajectory.
 """
 function Termination(s::MultinomialTS, nt::NUTS, H0::F, H′::F) where {F<:AbstractFloat}
-    return Termination(false, !(-H0 < nt.Δ_max + -H′))
+    return Termination(false, !(-H0 < nt.termination_criterion.Δ_max + -H′))
 end
 
 """
 A full binary tree trajectory with only necessary leaves and information stored.
 """
-struct BinaryTree{C<:DynamicTerminationCriterion}
+struct BinaryTree
     zleft   # left most leaf node
     zright  # right most leaf node
-    c::C    # termination criterion
+    ts      # turn statistics
     sum_α   # MH stats, i.e. sum of MH accept prob for all leapfrog steps
     nα      # total # of leap frog steps, i.e. phase points in a trajectory
     ΔH_max  # energy in tree with largest absolute different from initial energy
@@ -589,8 +593,7 @@ Return the value with the largest absolute value.
 maxabs(a, b) = abs(a) > abs(b) ? a : b
 
 """
-    combine(treeleft::BinaryTree, treeright::BinaryTree)
-
+$(SIGNATURES)
 Merge a left tree `treeleft` and a right tree `treeright` under given Hamiltonian `h`,
 then draw a new candidate sample and update related statistics for the resulting tree.
 """
@@ -598,7 +601,7 @@ function combine(treeleft::BinaryTree, treeright::BinaryTree)
     return BinaryTree(
         treeleft.zleft,
         treeright.zright,
-        combine(treeleft.c, treeright.c),
+        combine(treeleft.ts, treeright.ts),
         treeleft.sum_α + treeright.sum_α,
         treeleft.nα + treeright.nα,
         maxabs(treeleft.ΔH_max, treeright.ΔH_max),
@@ -606,14 +609,13 @@ function combine(treeleft::BinaryTree, treeright::BinaryTree)
 end
 
 """
-    isterminated(h::Hamiltonian, t::BinaryTree{<:ClassicNoUTurn})
-
+$(SIGNATURES)
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 using the (original) no-U-turn cirterion.
 
 Ref: https://arxiv.org/abs/1111.4246, https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, t::BinaryTree{<:ClassicNoUTurn})
+function isterminated(::ClassicNoUTurn, h::Hamiltonian, t::BinaryTree)
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
     Δθ = z1.θ - z0.θ
@@ -622,42 +624,30 @@ function isterminated(h::Hamiltonian, t::BinaryTree{<:ClassicNoUTurn})
 end
 
 """
-    isterminated(h::Hamiltonian, t::BinaryTree{<:GeneralisedNoUTurn})
-
+$(SIGNATURES)
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 using the generalised no-U-turn criterion.
 
 Ref: https://arxiv.org/abs/1701.02434
 """
-function isterminated(h::Hamiltonian, t::BinaryTree{<:GeneralisedNoUTurn})
-    rho = t.c.rho
+function isterminated(::GeneralisedNoUTurn, h::Hamiltonian, t::BinaryTree)
+    rho = t.ts.rho
     s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, t.zright.r))
     return Termination(s, false)
 end
 
 """
-    isterminated(
-        h::Hamiltonian, t::T, tleft::T, tright::T
-    ) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
-
+$(SIGNATURES)
 Detect U turn for two phase points (`zleft` and `zright`) under given Hamiltonian `h`
 using the generalised no-U-turn criterion with additional U-turn checks.
 
 Ref: https://arxiv.org/abs/1701.02434 https://github.com/stan-dev/stan/pull/2800
 """
 function isterminated(
-    h::Hamiltonian, t::T, tleft::T, tright::T
-) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
-    # Classic generalised U-turn check
-    t_generalised = BinaryTree(
-        t.zleft,
-        t.zright,
-        GeneralisedNoUTurn(t.c.rho),
-        t.sum_α,
-        t.nα,
-        t.ΔH_max
-    )
-    s1 = isterminated(h, t_generalised)
+    tc::StrictGeneralisedNoUTurn, h::Hamiltonian, t, tleft, tright
+)
+    # (Non-strict) generalised U-turn check
+    s1 = isterminated(GeneralisedNoUTurn(tc), h, t)
 
     # U-turn checks for left and right subtree
     # See https://discourse.mc-stan.org/t/nuts-misses-u-turns-runs-in-circles-until-max-treedepth/9727/33
@@ -668,33 +658,27 @@ function isterminated(
 end
 
 """
-    check_left_subtree(
-        h::Hamiltonian, t::T, tleft::T, tright::T
-    ) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
-
+$(SIGNATURES)
 Do a U-turn check between the leftmost phase point of `t` and the leftmost 
 phase point of `tright`, the right subtree.
 """
 function check_left_subtree(
     h::Hamiltonian, t::T, tleft::T, tright::T
-) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
-    rho = tleft.c.rho + tright.zleft.r
+) where {T<:BinaryTree}
+    rho = tleft.ts.rho + tright.zleft.r
     s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, tright.zleft.r))
     return Termination(s, false)
 end
 
 """
-    check_left_subtree(
-        h::Hamiltonian, t::T, tleft::T, tright::T
-    ) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
-
+$(SIGNATURES)
 Do a U-turn check between the rightmost phase point of `t` and the rightmost
 phase point of `tleft`, the left subtree.
 """
 function check_right_subtree(
     h::Hamiltonian, t::T, tleft::T, tright::T
-) where {T<:BinaryTree{<:StrictGeneralisedNoUTurn}}
-    rho = tleft.zright.r + tright.c.rho
+) where {T<:BinaryTree}
+    rho = tleft.zright.r + tright.ts.rho
     s = generalised_uturn_criterion(rho, ∂H∂r(h, tleft.zright.r), ∂H∂r(h, t.zright.r))
     return Termination(s, false)
 end
@@ -703,8 +687,8 @@ function generalised_uturn_criterion(rho, p_sharp_minus, p_sharp_plus)
     return (dot(rho, p_sharp_minus) <= 0) || (dot(rho, p_sharp_plus) <= 0)
 end
 
-function isterminated(h::Hamiltonian, t::BinaryTree{T}, args...) where {T<:Union{ClassicNoUTurn, GeneralisedNoUTurn}}
-    return isterminated(h, t)
+function isterminated(tc::TC, h::Hamiltonian, t::BinaryTree, _tleft, _tright) where {TC<:Union{ClassicNoUTurn, GeneralisedNoUTurn}}
+    return isterminated(tc, h, t)
 end
 
 """
@@ -712,14 +696,14 @@ Recursivly build a tree for a given depth `j`.
 """
 function build_tree(
     rng::AbstractRNG,
-    nt::NUTS{S,C,I,F},
+    nt::NUTS{S,C,I},
     h::Hamiltonian,
     z::PhasePoint,
     sampler::AbstractTrajectorySampler,
     v::Int,
     j::Int,
     H0::AbstractFloat,
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:DynamicTerminationCriterion}
+) where {I<:AbstractIntegrator,S<:AbstractTrajectorySampler,C<:DynamicTerminationCriterion}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
         z′ = step(nt.integrator, h, z, v)
@@ -727,7 +711,7 @@ function build_tree(
         ΔH = H′ - H0
         α′ = exp(min(0, -ΔH))
         sampler′ = S(sampler, H0, z′)
-        return BinaryTree(z′, z′, C(z′), α′, 1, ΔH), sampler′, Termination(sampler′, nt, H0, H′)
+        return BinaryTree(z′, z′, TurnStatistic(nt.termination_criterion, z′), α′, 1, ΔH), sampler′, Termination(sampler′, nt, H0, H′)
     else
         # Recursion - build the left and right subtrees.
         tree′, sampler′, termination′ = build_tree(rng, nt, h, z, sampler, v, j - 1, H0)
@@ -744,7 +728,7 @@ function build_tree(
             end
             tree′ = combine(treeleft, treeright)
             sampler′ = combine(rng, sampler′, sampler′′)
-            termination′ = termination′ * termination′′ * isterminated(h, tree′, treeleft, treeright)
+            termination′ = termination′ * termination′′ * isterminated(nt.termination_criterion, h, tree′, treeleft, treeright)
         end
         return tree′, sampler′, termination′
     end
@@ -752,12 +736,12 @@ end
 
 function transition(
     rng::AbstractRNG,
-    τ::NUTS{S,C,I,F},
+    τ::NUTS{S,C,I},
     h::Hamiltonian,
     z0::PhasePoint,
 ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:DynamicTerminationCriterion}
     H0 = energy(z0)
-    tree = BinaryTree(z0, z0, C(z0), zero(F), zero(Int), zero(H0))
+    tree = BinaryTree(z0, z0, TurnStatistic(τ.termination_criterion, z0), zero(H0), zero(Int), zero(H0))
     sampler = S(rng, z0)
     termination = Termination(false, false)
     zcand = z0
@@ -766,7 +750,7 @@ function transition(
     τ = reconstruct(τ, integrator=integrator)
 
     j = 0
-    while !isterminated(termination) && j < τ.max_depth
+    while !isterminated(termination) && j < τ.termination_criterion.max_depth
         # Sample a direction; `-1` means left and `1` means right
         v = rand(rng, [-1, 1])
         if v == -1
@@ -790,7 +774,7 @@ function transition(
         # Update sampler
         sampler = combine(zcand, sampler, sampler′)
         # update termination
-        termination = termination * termination′ * isterminated(h, tree, treeleft, treeright)
+        termination = termination * termination′ * isterminated(τ.termination_criterion, h, tree, treeleft, treeright)
     end
 
     H = energy(zcand)
