@@ -33,6 +33,8 @@ Abstract Markov chain Monte Carlo proposal.
 abstract type AbstractKernel end
 
 """
+$(TYPEDEF)
+
 Abstract termination criteria.
 """
 abstract type AbstractTerminationCriterion end
@@ -146,7 +148,7 @@ Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/base_n
 MultinomialTS(rng::AbstractRNG, z0::PhasePoint) = MultinomialTS(z0, zero(energy(z0)))
 
 """
-    SliceTS{F}(s::SliceTS, H0::F, zcand::PhasePoint) where {F<:AbstractFloat}
+    $(SIGNATURES)
 
 Create a slice sampler for a single leaf tree:
 - the slice variable is copied from the passed-in sampler `s` and
@@ -457,7 +459,7 @@ function Termination(s::SliceTS, tc, H0::F, H′::F) where {F<:AbstractFloat}
 end
 
 """
-    Termination(s::MultinomialTS, tc, H0::F, H′::F) where {F<:AbstractFloat}
+     $(SIGNATURES)
 
 Check termination of a Hamiltonian trajectory.
 """
@@ -600,7 +602,12 @@ function generalised_uturn_criterion(rho, p_sharp_minus, p_sharp_plus)
     return (dot(rho, p_sharp_minus) <= 0) || (dot(rho, p_sharp_plus) <= 0)
 end
 
-"Recursively build a tree for a given depth `j`."
+
+"""
+    $(SIGNATURES)
+
+Recursively build a tree for a given depth `j`.
+"""
 function build_tree(
     rng::AbstractRNG,
     integrator::AbstractIntegrator,
@@ -611,7 +618,7 @@ function build_tree(
     v::Int,
     j::Int,
     H0::AbstractFloat,
-) where {TS}
+) where {TS <: AbstractTrajectorySampler}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
         z′ = step(integrator, h, z, v)
@@ -648,7 +655,7 @@ function transition(
     τ::Trajectory{I, C},
     ::Type{TS},
     z0::PhasePoint,
-) where {I, C<:DynamicTerminationCriterion, TS}
+) where {I<:AbstractIntegrator, C<:DynamicTerminationCriterion, TS<:AbstractTrajectorySampler}
     @unpack integrator, termination_criterion = τ
     H0 = energy(z0)
     tree = BinaryTree(z0, z0, termination_criterion, zero(H0), zero(Int), zero(H0))

@@ -74,7 +74,7 @@ NUTS(int::AbstractIntegrator, args...; kwargs...) =
     NUTS{MultinomialTS, GeneralisedNoUTurn}(int, args...; kwargs...)
 NUTS(ϵ::AbstractScalarOrVec{<:Real}) = NUTS{MultinomialTS, GeneralisedNoUTurn}(Leapfrog(ϵ))
 
-export AbstractTrajectory, HMC, StaticTrajectory, HMCDA, NUTS
+export HMC, StaticTrajectory, HMCDA, NUTS
 
 include("adaptation/Adaptation.jl")
 using .Adaptation
