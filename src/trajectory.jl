@@ -9,12 +9,10 @@
 
 """
 $(TYPEDEF)
-
 A transition that contains the phase point and
 other statistics of the transition.
 
 # Fields
-
 $(TYPEDFIELDS)
 """
 struct Transition{P<:PhasePoint, NT<:NamedTuple}
@@ -27,9 +25,6 @@ end
 "Returns the statistics for transition `t`."
 stat(t::Transition) = t.stat
 
-"""
-Abstract Markov chain Monte Carlo proposal.
-"""
 abstract type AbstractProposal end
 
 abstract type AbstractTerminationCriterion end
@@ -41,8 +36,10 @@ abstract type DynamicTerminationCriterion <: AbstractTerminationCriterion end
 """
 $(TYPEDEF)
 Static HMC with a fixed number of leapfrog steps.
+
 # Fields
 $(TYPEDFIELDS)
+
 # References
 1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
 """
@@ -54,8 +51,10 @@ end
 """
 $(TYPEDEF)
 Standard HMC implementation with a fixed integration time.
+
 # Fields
 $(TYPEDFIELDS)
+
 # References
 1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901)) 
 """
@@ -64,25 +63,17 @@ struct FixedIntegrationTime{F<:AbstractFloat} <: StaticTerminationCriterion
     λ::F
 end
 
-"""
-Hamiltonian dynamics numerical simulation trajectories.
-"""
+"Hamiltonian dynamics numerical simulation trajectories."
 abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
 
 ##
 ## Sampling methods for trajectories.
 ##
 
-"""
-Defines how to sample a phase-point from the simulated trajectory.
-"""
+"How to sample a phase-point from the simulated trajectory."
 abstract type AbstractTrajectorySampler end
 
-"""
-$(TYPEDEF)
-
-Samples the end-point of the trajectory.
-"""
+"Samples the end-point of the trajectory."
 struct EndPointTS <: AbstractTrajectorySampler end
 
 """
@@ -124,7 +115,7 @@ struct MultinomialTS{F<:AbstractFloat} <: AbstractTrajectorySampler
 end
 
 """
-    SliceTS(rng::AbstractRNG, z0::PhasePoint)
+$(TYPEDEF)
 
 Slice sampler for the starting single leaf tree.
 Slice variable is initialized.
@@ -132,7 +123,7 @@ Slice variable is initialized.
 SliceTS(rng::AbstractRNG, z0::PhasePoint) = SliceTS(z0, log(rand(rng)) - energy(z0), 1)
 
 """
-    MultinomialTS(rng::AbstractRNG, z0::PhasePoint)
+$(TYPEDEF)
 
 Multinomial sampler for the starting single leaf tree.
 (Log) weights for leaf nodes are their (unnormalised) Hamiltonian energies.
@@ -142,7 +133,7 @@ Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/base_n
 MultinomialTS(rng::AbstractRNG, z0::PhasePoint) = MultinomialTS(z0, zero(energy(z0)))
 
 """
-    SliceTS(s::SliceTS, H0::AbstractFloat, zcand::PhasePoint)
+$(TYPEDEF)
 
 Create a slice sampler for a single leaf tree:
 - the slice variable is copied from the passed-in sampler `s` and
@@ -153,7 +144,7 @@ function SliceTS(s::SliceTS, H0::AbstractFloat, zcand::PhasePoint)
 end
 
 """
-    MultinomialTS(s::MultinomialTS, H0::AbstractFloat, zcand::PhasePoint)
+$(TYPEDEF)
 
 Multinomial sampler for a trajectory consisting only a leaf node.
 - tree weight is the (unnormalised) energy of the leaf.
@@ -193,7 +184,7 @@ function mh_accept(rng::AbstractRNG, s::MultinomialTS, s′::MultinomialTS)
 end
 
 """
-    transition(τ::AbstractTrajectory{I}, h::Hamiltonian, z::PhasePoint)
+$(SIGNATURES)
 
 Make a MCMC transition from phase point `z` using the trajectory `τ` under Hamiltonian `h`.
 
@@ -209,11 +200,9 @@ end
 
 """
 $(TYPEDEF)
-
 Static HMC with a fixed number of leapfrog steps.
 
 # Fields
-
 $(TYPEDFIELDS)
 
 # References
@@ -359,11 +348,9 @@ abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} 
 
 """
 $(TYPEDEF)
-
 Standard HMC implementation with fixed total trajectory length.
 
 # Fields
-
 $(TYPEDFIELDS)
 
 # References
@@ -409,12 +396,14 @@ end
 
 """
 $(TYPEDEF)
-
 Classic No-U-Turn criterion as described in Eq. (9) in [1].
 
 Informally, this will terminate the trajectory expansion if continuing
 the simulation either forwards or backwards in time will decrease the
 distance between the left-most and right-most positions.
+
+# Fields
+$(TYPEDFIELDS)
 
 # References
 1. Hoffman, M. D., & Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623. ([arXiv](http://arxiv.org/abs/1111.4246))
@@ -426,11 +415,9 @@ end
 
 """
 $(TYPEDEF)
-
 Generalised No-U-Turn criterion as described in Section A.4.2 in [1].
 
 # Fields
-
 $(TYPEDFIELDS)
 
 # References
@@ -443,12 +430,10 @@ end
 
 """
 $(TYPEDEF)
-
 Generalised No-U-Turn criterion as described in Section A.4.2 in [1] with 
 added U-turn check as described in [2].
 
 # Fields
-
 $(TYPEDFIELDS)
 
 # References
@@ -479,7 +464,11 @@ combine(tsl::T, tsr::T) where {T<:TurnStatistic} = TurnStatistic(tsl.rho + tsr.r
 ##
 
 """
-Dynamic trajectory HMC using the no-U-turn termination criteria algorithm.
+$(TYPEDEF)
+Dynamic HMC using the no-U-turn termination criteria algorithm.
+
+# Fields
+$(TYPEDFIELDS)
 """
 struct NUTS{
     S<:AbstractTrajectorySampler,
@@ -514,7 +503,7 @@ const NUTS_DOCSTR = """
 Create an instance for the No-U-Turn sampling algorithm.
 """
 
-"$NUTS_DOCSTR"
+"$(SIGNATURES)"
 function NUTS{S,C}(
     integrator::I,
     max_depth::Int=10,
@@ -523,16 +512,7 @@ function NUTS{S,C}(
     return NUTS{S,C,I}(integrator, C(max_depth, Δ_max))
 end
 
-"""
-    NUTS(args...) = NUTS{MultinomialTS,GeneralisedNoUTurn}(args...)
-
-Create an instance for the No-U-Turn sampling algorithm
-with multinomial sampling and original no U-turn criterion.
-
-Below is the doc for NUTS{S,C}.
-
-$NUTS_DOCSTR
-"""
+"$(SIGNATURES)"
 NUTS(args...) = NUTS{MultinomialTS, GeneralisedNoUTurn}(args...)
 
 ###
@@ -691,9 +671,7 @@ function isterminated(tc::TC, h::Hamiltonian, t::BinaryTree, _tleft, _tright) wh
     return isterminated(tc, h, t)
 end
 
-"""
-Recursivly build a tree for a given depth `j`.
-"""
+"Recursivly build a tree for a given depth `j`."
 function build_tree(
     rng::AbstractRNG,
     nt::NUTS{S,C,I},
@@ -739,7 +717,7 @@ function transition(
     τ::NUTS{S,C,I},
     h::Hamiltonian,
     z0::PhasePoint,
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:DynamicTerminationCriterion}
+) where {I<:AbstractIntegrator,S<:AbstractTrajectorySampler,C<:DynamicTerminationCriterion}
     H0 = energy(z0)
     tree = BinaryTree(z0, z0, TurnStatistic(τ.termination_criterion, z0), zero(H0), zero(Int), zero(H0))
     sampler = S(rng, z0)
@@ -811,9 +789,7 @@ function A(h, z, ϵ)
     return z′, H′
 end
 
-"""
-Find a good initial leap-frog step-size via heuristic search.
-"""
+"Find a good initial leap-frog step-size via heuristic search."
 function find_good_stepsize(
     rng::AbstractRNG,
     h::Hamiltonian,
@@ -889,9 +865,7 @@ function find_good_stepsize(
     return find_good_stepsize(GLOBAL_RNG, h, θ; max_n_iters=max_n_iters)
 end
 
-"""
-Perform MH acceptance based on energy, i.e. negative log probability.
-"""
+"Perform MH acceptance based on energy, i.e. negative log probability."
 function mh_accept_ratio(
     rng::AbstractRNG,
     Horiginal::T,
