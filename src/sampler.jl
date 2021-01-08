@@ -13,10 +13,8 @@ function reconstruct(
     κ::AbstractKernel, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
 )
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
-    # FIXME: this is buggy for `JitteredLeapfrog`
-    ϵ = getϵ(adaptor)
     τ = reconstruct(
-        κ.τ, integrator=reconstruct(κ.τ.integrator, ϵ=ϵ)
+        κ.τ, integrator=update_nom_step_size(κ.τ.integrator, getϵ(adaptor))
     )
     return reconstruct(κ, τ=τ)
 end
@@ -24,7 +22,7 @@ end
 function resize(h::Hamiltonian, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
     metric = h.metric
     if size(metric) != size(θ)
-        metric = typeof(metric)(size(θ))
+        metric = getname(metric)(size(θ))
         h = reconstruct(h, metric=metric)
     end
     return h
