@@ -74,7 +74,7 @@ end
 using Distributions: MvNormal
 import Turing
 
-Turing.@model function mvntest(θ, x)
+Turing.@model function mvntest(θ=missing, x=missing)
     θ ~ MvNormal(zeros(D), 2)
     x ~ Normal(sum(θ), 1)
     return θ, x
@@ -108,4 +108,4 @@ function rand_θ_given(x, modelgen, metric, τ; n_samples=20)
 end
 
 # Test function
-g(θ, x) = cat(θ, x; dims=1)
+geweke_g(θ, x) = cat(θ, x; dims=1)
