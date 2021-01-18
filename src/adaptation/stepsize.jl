@@ -86,10 +86,11 @@ NesterovDualAveraging(
     δ::T,
     ϵ::VT
 ) where {T<:AbstractFloat, VT<:AbstractScalarOrVec{T}} = NesterovDualAveraging(γ, t_0, κ, δ, DAState(ϵ))
+
 NesterovDualAveraging(
     δ::T,
     ϵ::VT
-) where {T<:AbstractFloat, VT<:AbstractScalarOrVec{T}} = NesterovDualAveraging(0.05, 10.0, 0.75, δ, ϵ)
+) where {T<:AbstractFloat, VT<:AbstractScalarOrVec{T}} = NesterovDualAveraging(T(0.05), T(10.0), T(0.75), δ, ϵ)
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
 # Note: This function is not merged with `adapt!` to empahsize the fact that
