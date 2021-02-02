@@ -212,7 +212,7 @@ struct StaticTrajectory{
     S<:AbstractTrajectorySampler, 
     I<:AbstractIntegrator, 
     TC<:StaticTerminationCriterion
-    } <: AbstractTrajectory{I}
+} <: AbstractTrajectory{I}
     integrator              ::  I
     termination_criterion   ::  TC
 end
