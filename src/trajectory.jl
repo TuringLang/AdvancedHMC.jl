@@ -59,7 +59,7 @@ $(TYPEDFIELDS)
 1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901)) 
 """
 struct FixedIntegrationTime{F<:AbstractFloat} <: StaticTerminationCriterion
-    "Total length of the trajectory, i.e. take `floor(λ / integrator_step)` number of leapfrog steps."
+    "Total length of the trajectory, i.e. take `floor(λ / integrator_step_size)` number of leapfrog steps."
     λ::F
 end
 
@@ -208,7 +208,11 @@ $(TYPEDFIELDS)
 # References
 1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
 """
-struct StaticTrajectory{S<:AbstractTrajectorySampler, I<:AbstractIntegrator, TC<:StaticTerminationCriterion} <: AbstractTrajectory{I}
+struct StaticTrajectory{
+    S<:AbstractTrajectorySampler, 
+    I<:AbstractIntegrator, 
+    TC<:StaticTerminationCriterion
+    } <: AbstractTrajectory{I}
     integrator              ::  I
     termination_criterion   ::  TC
 end
@@ -465,7 +469,7 @@ combine(tsl::T, tsr::T) where {T<:TurnStatistic} = TurnStatistic(tsl.rho + tsr.r
 
 """
 $(TYPEDEF)
-Dynamic HMC using the no-U-turn termination criteria algorithm.
+Dynamic HMC algorithm using the no-U-turn termination criteria.
 
 # Fields
 $(TYPEDFIELDS)
