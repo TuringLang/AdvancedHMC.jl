@@ -213,6 +213,7 @@ struct StaticTrajectory{
     I<:AbstractIntegrator, 
     TC<:StaticTerminationCriterion
 } <: AbstractTrajectory{I}
+    "Integrator used to simulate trajectory."
     integrator              ::  I
     termination_criterion   ::  TC
 end
