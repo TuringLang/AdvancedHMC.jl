@@ -66,21 +66,23 @@ end
 end
 
 @testset "TerminationCriterion" begin
+    tc = AdvancedHMC.ClassicNoUTurn()
     z1 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
-    c1 = AdvancedHMC.ClassicNoUTurn(z1)
     z2 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
-    c2 = AdvancedHMC.ClassicNoUTurn(z2)
-    c3 = AdvancedHMC.combine(c1, c2)
-    @test c1 == c2 == c3
+    ts1 = AdvancedHMC.TurnStatistic(tc, z1)
+    ts2 = AdvancedHMC.TurnStatistic(tc, z2)
+    ts3 = AdvancedHMC.combine(ts1, ts2)
+    @test ts1 == ts2 == ts3
 
+    tc = AdvancedHMC.GeneralisedNoUTurn()
     r1 = randn(D)
     z1 = AdvancedHMC.phasepoint(h, θ_init, r1)
-    c1 = AdvancedHMC.GeneralisedNoUTurn(z1) 
     r2 = randn(D)
     z2 = AdvancedHMC.phasepoint(h, θ_init, r2)
-    c2 = AdvancedHMC.GeneralisedNoUTurn(z2) 
-    c3 = AdvancedHMC.combine(c1, c2)
-    @test c3.rho == r1 + r2
+    ts1 = AdvancedHMC.TurnStatistic(tc, z1) 
+    ts2 = AdvancedHMC.TurnStatistic(tc, z2) 
+    ts3 = AdvancedHMC.combine(ts1, ts2)
+    @test ts3.rho == r1 + r2
 end
 
 @testset "Termination" begin
@@ -118,15 +120,15 @@ end
 @testset "BinaryTree" begin
     z = AdvancedHMC.phasepoint(h, θ_init, randn(D))
 
-    t1 = AdvancedHMC.BinaryTree(z, z, ClassicNoUTurn(), 0.1, 1, -2.0)
-    t2 = AdvancedHMC.BinaryTree(z, z, ClassicNoUTurn(), 1.1, 2, 1.0)
+    t1 = AdvancedHMC.BinaryTree(z, z, AdvancedHMC.TurnStatistic(), 0.1, 1, -2.0)
+    t2 = AdvancedHMC.BinaryTree(z, z, AdvancedHMC.TurnStatistic(), 1.1, 2, 1.0)
     t3 = AdvancedHMC.combine(t1, t2)
 
     @test t3.sum_α ≈ 1.2 atol=1e-9
     @test t3.nα == 3
     @test t3.ΔH_max == -2.0
 
-    t4 = AdvancedHMC.BinaryTree(z, z, ClassicNoUTurn(), 1.1, 2, 3.0)
+    t4 = AdvancedHMC.BinaryTree(z, z, AdvancedHMC.TurnStatistic(), 1.1, 2, 3.0)
     t5 = AdvancedHMC.combine(t1, t4)
 
     @test t5.ΔH_max == 3.0
@@ -193,7 +195,7 @@ function hand_isturn(z0, z1, rho, v=1)
 end
 
 ahmc_isturn(z0, z1, rho, v=1) =
-    AdvancedHMC.isterminated(h, AdvancedHMC.BinaryTree(z0, z1, ClassicNoUTurn(), 0, 0, 0.0)).dynamic
+    AdvancedHMC.isterminated(ClassicNoUTurn(), h, AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(), 0, 0, 0.0)).dynamic
 
 function hand_isturn_generalised(z0, z1, rho, v=1)
     s = (dot(rho, -z0.r) >= 0) || (dot(-rho, z1.r) >= 0)
@@ -201,14 +203,15 @@ function hand_isturn_generalised(z0, z1, rho, v=1)
 end
 
 ahmc_isturn_generalised(z0, z1, rho, v=1) =
-    AdvancedHMC.isterminated(h, AdvancedHMC.BinaryTree(z0, z1, GeneralisedNoUTurn(rho), 0, 0, 0.0)).dynamic
+    AdvancedHMC.isterminated(GeneralisedNoUTurn(), h, AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(rho), 0, 0, 0.0)).dynamic
 
 function ahmc_isturn_strictgeneralised(z0, z1, rho, v=1)
     t = AdvancedHMC.isterminated(
+        StrictGeneralisedNoUTurn(),
         h, 
-        AdvancedHMC.BinaryTree(z0, z1, StrictGeneralisedNoUTurn(rho), 0, 0, 0.0),
-        AdvancedHMC.BinaryTree(z0, z0, StrictGeneralisedNoUTurn(rho - z1.r), 0, 0, 0.0), 
-        AdvancedHMC.BinaryTree(z1, z1, StrictGeneralisedNoUTurn(rho - z0.r), 0, 0, 0.0)
+        AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(rho), 0, 0, 0.0),
+        AdvancedHMC.BinaryTree(z0, z0, AdvancedHMC.TurnStatistic(rho - z1.r), 0, 0, 0.0), 
+        AdvancedHMC.BinaryTree(z1, z1, AdvancedHMC.TurnStatistic(rho - z0.r), 0, 0, 0.0)
     )
     return t.dynamic
 end
@@ -217,24 +220,14 @@ end
 Check whether the subtree checks adequately detect U-turns.
 """
 function check_subtree_u_turns(z0, z1, rho)
-    t = AdvancedHMC.BinaryTree(z0, z1, StrictGeneralisedNoUTurn(rho), 0, 0, 0.0)
-
+    t = AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(rho), 0, 0, 0.0)
     # The left and right subtree are created in such a way that the 
     # check_left_subtree and check_right_subtree checks should be equivalent 
     # to the general no U-turn check.
-    tleft = AdvancedHMC.BinaryTree(z0, z0, StrictGeneralisedNoUTurn(rho - z1.r), 0, 0, 0.0)
-    tright = AdvancedHMC.BinaryTree(z1, z1, StrictGeneralisedNoUTurn(rho - z0.r), 0, 0, 0.0)
+    tleft = AdvancedHMC.BinaryTree(z0, z0, AdvancedHMC.TurnStatistic(rho - z1.r), 0, 0, 0.0)
+    tright = AdvancedHMC.BinaryTree(z1, z1, AdvancedHMC.TurnStatistic(rho - z0.r), 0, 0, 0.0)
 
-    t_generalised = AdvancedHMC.BinaryTree(
-        t.zleft,
-        t.zright,
-        GeneralisedNoUTurn(t.c.rho),
-        t.sum_α,
-        t.nα,
-        t.ΔH_max
-    )
-    s1 = AdvancedHMC.isterminated(h, t_generalised)
-
+    s1 = AdvancedHMC.isterminated(GeneralisedNoUTurn(), h, t)
     s2 = AdvancedHMC.check_left_subtree(h, t, tleft, tright)
     s3 = AdvancedHMC.check_right_subtree(h, t, tleft, tright)
     @test s1 == s2 == s3
