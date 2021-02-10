@@ -199,6 +199,10 @@ function Base.show(io::IO, τ::Trajectory{TS}) where {TS}
     print(io, "Trajectory{$TS}(integrator=$(τ.integrator), tc=$(τ.termination_criterion))")
 end
 
+nsteps(τ::Trajectory{TS, I, TC}) where {TS, I, TC<:FixedNSteps} = τ.termination_criterion.L
+nsteps(τ::Trajectory{TS, I, TC}) where {TS, I, TC<:FixedIntegrationTime} = 
+    max(1, floor(Int, τ.termination_criterion.λ / nom_step_size(τ.integrator)))
+
 """
 $(SIGNATURES)
 
@@ -219,7 +223,7 @@ function transition(
     τ::Trajectory{TS, I, TC},
     h::Hamiltonian,
     z::PhasePoint,
-) where {TS<:AbstractTrajectorySampler, I, TC<:FixedNSteps}
+) where {TS<:AbstractTrajectorySampler, I, TC<:StaticTerminationCriterion}
     H0 = energy(z)
 
     integrator = jitter(rng, τ.integrator)
@@ -233,7 +237,7 @@ function transition(
     H = energy(z)
     tstat = merge(
         (
-            n_steps=τ.termination_criterion.L,
+            n_steps=nsteps(τ),
             is_accept=is_accept,
             acceptance_rate=α,
             log_density=z.ℓπ.value,
@@ -274,7 +278,7 @@ end
 ### Use end-point from the trajectory as a proposal and apply MH correction
 
 function sample_phasepoint(rng, τ::Trajectory{EndPointTS}, h, z)
-    z′ = step(τ.integrator, h, z, τ.termination_criterion.L)
+    z′ = step(τ.integrator, h, z, nsteps(τ))
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
     return z′, is_accept, α
 end
@@ -305,7 +309,7 @@ function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMat
 end
 
 function sample_phasepoint(rng, τ::Trajectory{MultinomialTS}, h, z)
-    n_steps = abs(τ.termination_criterion.L)
+    n_steps = abs(nsteps(τ))
     # TODO: Deal with vectorized-mode generically.
     #       Currently the direction of multiple chains are always coupled
     n_steps_fwd = rand_coupled(rng, 0:n_steps) 
@@ -325,22 +329,6 @@ function sample_phasepoint(rng, τ::Trajectory{MultinomialTS}, h, z)
     α = exp.(min.(0, -ΔH))  # this is a matrix for vectorized mode and a vector otherwise
     α = typeof(α) <: AbstractVector ? mean(α) : vec(mean(α; dims=2))
     return z′, true, α
-end
-
-###
-### Standard HMC implementation with fixed total trajectory length.
-###
-
-function transition(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    τ::Trajectory{TS, I, TC},
-    h::Hamiltonian,
-    z::PhasePoint,
-) where {TS<:AbstractTrajectorySampler, I, TC<:FixedIntegrationTime}
-    # Create the corresponding static τ
-    n_steps = max(1, floor(Int, τ.termination_criterion.λ / nom_step_size(τ.integrator)))
-    τ = Trajectory{TS}(τ.integrator, FixedNSteps(n_steps))
-    return transition(rng, τ, h, z)
 end
 
 ###
