@@ -2,6 +2,7 @@
 const PROGRESS = length(ARGS) > 0 && ARGS[1] == "--progress" ? true : false
 
 using Test, AdvancedHMC, LinearAlgebra, Random, MCMCDebugging, Plots
+using AdvancedHMC: StaticTerminationCriterion, DynamicTerminationCriterion
 using Parameters: reconstruct
 using Statistics: mean, var, cov
 unicodeplots()
@@ -13,7 +14,7 @@ n_steps = 10
 n_samples = 22_000
 n_adapts = 4_000
 
-function test_stats(::Union{StaticTrajectory,HMCDA}, stats, n_adapts)
+function test_stats(::Trajectory{TS,I,TC}, stats, n_adapts) where {TS,I,TC<:StaticTerminationCriterion}
     for name in (:step_size, :nom_step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :hamiltonian_energy_error, :is_adapt)
         @test all(map(s -> in(name, propertynames(s)), stats))
     end
@@ -22,7 +23,7 @@ function test_stats(::Union{StaticTrajectory,HMCDA}, stats, n_adapts)
     @test is_adapts[(n_adapts+1):end] == zeros(Bool, length(stats) - n_adapts)
 end
 
-function test_stats(::NUTS, stats, n_adapts)
+function test_stats(::Trajectory{TS,I,TC}, stats, n_adapts) where {TS,I,TC<:DynamicTerminationCriterion}
     for name in (:step_size, :nom_step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :hamiltonian_energy_error, :is_adapt, :max_hamiltonian_energy_error, :tree_depth, :numerical_error)
         @test all(map(s -> in(name, propertynames(s)), stats))
     end
@@ -45,14 +46,14 @@ end
             :TemperedLeapfrog => TemperedLeapfrog(ϵ, 1.05),
         )
             @testset "$τsym" for (τsym, τ) in Dict(
-                :(StaticTrajectory{EndPointTS}) => StaticTrajectory{EndPointTS}(lf, n_steps),
-                :(StaticTrajectory{MultinomialTS}) => StaticTrajectory{MultinomialTS}(lf, n_steps),
-                :(HMCDA{EndPointTS}) => HMCDA{EndPointTS}(lf, ϵ * n_steps),
-                :(HMCDA{MultinomialTS}) => HMCDA{MultinomialTS}(lf, ϵ * n_steps),
-                :(NUTS{SliceTS,Original}) => NUTS{SliceTS,ClassicNoUTurn}(lf),
-                :(NUTS{SliceTS,Generalised}) => NUTS{SliceTS,GeneralisedNoUTurn}(lf),
-                :(NUTS{MultinomialTS,Original}) => NUTS{MultinomialTS,ClassicNoUTurn}(lf),
-                :(NUTS{MultinomialTS,Generalised}) => NUTS{MultinomialTS,GeneralisedNoUTurn}(lf),
+                :(HMC{EndPointTS}) => Trajectory{EndPointTS}(lf, FixedNSteps(n_steps)),
+                :(HMC{MultinomialTS}) => Trajectory{MultinomialTS}(lf, FixedNSteps(n_steps)),
+                :(HMCDA{EndPointTS}) => Trajectory{EndPointTS}(lf, FixedIntegrationTime(ϵ * n_steps)),
+                :(HMCDA{MultinomialTS}) => Trajectory{MultinomialTS}(lf, FixedIntegrationTime(ϵ * n_steps)),
+                :(NUTS{SliceTS,Original}) => Trajectory{SliceTS}(lf, ClassicNoUTurn()),
+                :(NUTS{SliceTS,Generalised}) => Trajectory{SliceTS}(lf, GeneralisedNoUTurn()),
+                :(NUTS{MultinomialTS,Original}) => Trajectory{MultinomialTS}(lf, ClassicNoUTurn()),
+                :(NUTS{MultinomialTS,Generalised}) => Trajectory{MultinomialTS}(lf, GeneralisedNoUTurn()),
             )
                 @test show(h) == nothing
                 @test show(τ) == nothing

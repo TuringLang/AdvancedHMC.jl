@@ -63,9 +63,6 @@ struct FixedIntegrationTime{F<:AbstractFloat} <: StaticTerminationCriterion
     λ::F
 end
 
-"Hamiltonian dynamics numerical simulation trajectories."
-abstract type AbstractTrajectory{I<:AbstractIntegrator} <: AbstractProposal end
-
 ##
 ## Sampling methods for trajectories.
 ##
@@ -184,13 +181,32 @@ function mh_accept(rng::AbstractRNG, s::MultinomialTS, s′::MultinomialTS)
 end
 
 """
+$(TYPEDEF)
+
+Numerically simulated Hamiltonian trajectories.
+"""
+struct Trajectory{TS<:AbstractTrajectorySampler, I<:AbstractIntegrator, TC<:AbstractTerminationCriterion} <: AbstractProposal 
+    "Integrator used to simulate trajectory."
+    integrator::I
+    "Criterion to terminate the simulation."
+    termination_criterion::TC
+end
+
+Trajectory{TS}(integrator::I, termination_criterion::TC) where {TS, I, TC} = 
+    Trajectory{TS, I, TC}(integrator, termination_criterion)
+
+function Base.show(io::IO, τ::Trajectory{TS}) where {TS}
+    print(io, "Trajectory{$TS}(integrator=$(τ.integrator), tc=$(τ.termination_criterion))")
+end
+
+"""
 $(SIGNATURES)
 
 Make a MCMC transition from phase point `z` using the trajectory `τ` under Hamiltonian `h`.
 
 NOTE: This is a RNG-implicit fallback function for `transition(GLOBAL_RNG, τ, h, z)`
 """
-function transition(τ::AbstractTrajectory, h::Hamiltonian, z::PhasePoint)
+function transition(τ::Trajectory, h::Hamiltonian, z::PhasePoint)
     return transition(GLOBAL_RNG, τ, h, z)
 end
 
@@ -198,46 +214,12 @@ end
 ### Actual trajectory implementations
 ###
 
-"""
-$(TYPEDEF)
-Static HMC with a fixed number of leapfrog steps.
-
-# Fields
-$(TYPEDFIELDS)
-
-# References
-1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
-"""
-struct StaticTrajectory{
-    S<:AbstractTrajectorySampler, 
-    I<:AbstractIntegrator, 
-    TC<:StaticTerminationCriterion
-} <: AbstractTrajectory{I}
-    "Integrator used to simulate trajectory."
-    integrator              ::  I
-    termination_criterion   ::  TC
-end
-
-function Base.show(io::IO, τ::StaticTrajectory{<:EndPointTS})
-    print(io, "StaticTrajectory{EndPointTS}(integrator=$(τ.integrator), tc=$(τ.termination_criterion))")
-end
-
-function Base.show(io::IO, τ::StaticTrajectory{<:MultinomialTS})
-    print(io, "StaticTrajectory{MultinomialTS}(integrator=$(τ.integrator), tc=$(τ.termination_criterion))")
-end
-
-function StaticTrajectory{S}(integrator::I, n_steps::Int) where {S,I}
-    tc = FixedNSteps(n_steps)
-    return StaticTrajectory{S, I, typeof(tc)}(integrator, tc)
-end
-StaticTrajectory(args...) = StaticTrajectory{EndPointTS}(args...) # default StaticTrajectory using last point from trajectory
-
 function transition(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    τ::StaticTrajectory,
+    τ::Trajectory{TS, I, TC},
     h::Hamiltonian,
     z::PhasePoint,
-)
+) where {TS<:AbstractTrajectorySampler, I, TC<:FixedNSteps}
     H0 = energy(z)
 
     integrator = jitter(rng, τ.integrator)
@@ -291,7 +273,7 @@ end
 
 ### Use end-point from the trajectory as a proposal and apply MH correction
 
-function sample_phasepoint(rng, τ::StaticTrajectory{EndPointTS}, h, z)
+function sample_phasepoint(rng, τ::Trajectory{EndPointTS}, h, z)
     z′ = step(τ.integrator, h, z, τ.termination_criterion.L)
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
     return z′, is_accept, α
@@ -322,7 +304,7 @@ function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMat
     return z
 end
 
-function sample_phasepoint(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
+function sample_phasepoint(rng, τ::Trajectory{MultinomialTS}, h, z)
     n_steps = abs(τ.termination_criterion.L)
     # TODO: Deal with vectorized-mode generically.
     #       Currently the direction of multiple chains are always coupled
@@ -345,50 +327,20 @@ function sample_phasepoint(rng, τ::StaticTrajectory{MultinomialTS}, h, z)
     return z′, true, α
 end
 
-abstract type DynamicTrajectory{I<:AbstractIntegrator} <: AbstractTrajectory{I} end
-
 ###
 ### Standard HMC implementation with fixed total trajectory length.
 ###
 
-"""
-$(TYPEDEF)
-Standard HMC implementation with fixed total trajectory length.
-
-# Fields
-$(TYPEDFIELDS)
-
-# References
-1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901)) 
-"""
-struct HMCDA{S<:AbstractTrajectorySampler, I<:AbstractIntegrator, TC<:StaticTerminationCriterion} <: DynamicTrajectory{I}
-    integrator              ::  I
-    termination_criterion   ::  TC
-end
-
-function Base.show(io::IO, τ::HMCDA{<:EndPointTS})
-    print(io, "HMCDA{EndPointTS}(integrator=$(τ.integrator), tc=$(τ.termination_criterion))")
-end
-function Base.show(io::IO, τ::HMCDA{<:MultinomialTS})
-    print(io, "HMCDA{MultinomialTS}(integrator=$(τ.integrator), tc=$(τ.termination_criterion))")
-end
-
-function HMCDA{S}(integrator::I, λ::AbstractFloat) where {S,I}
-    tc = FixedIntegrationTime(λ)
-    return HMCDA{S, I, typeof(tc)}(integrator, tc)
-end
-HMCDA(args...) = HMCDA{EndPointTS}(args...) # default HMCDA using last point from trajectory
-
 function transition(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    τ::HMCDA{S},
+    τ::Trajectory{TS, I, TC},
     h::Hamiltonian,
     z::PhasePoint,
-) where {S}
+) where {TS<:AbstractTrajectorySampler, I, TC<:FixedIntegrationTime}
     # Create the corresponding static τ
     n_steps = max(1, floor(Int, τ.termination_criterion.λ / nom_step_size(τ.integrator)))
-    static_τ = StaticTrajectory{S}(τ.integrator, n_steps)
-    return transition(rng, static_τ, h, z)
+    τ = Trajectory{TS}(τ.integrator, FixedNSteps(n_steps))
+    return transition(rng, τ, h, z)
 end
 
 ###
@@ -464,62 +416,6 @@ TurnStatistic(::Union{GeneralisedNoUTurn, StrictGeneralisedNoUTurn}, z::PhasePoi
 combine(ts::TurnStatistic{T}, ::TurnStatistic{T}) where {T<:UndefInitializer} = ts
 combine(tsl::T, tsr::T) where {T<:TurnStatistic} = TurnStatistic(tsl.rho + tsr.rho)
 
-##
-## NUTS
-##
-
-"""
-$(TYPEDEF)
-Dynamic HMC algorithm using the no-U-turn termination criteria.
-
-# Fields
-$(TYPEDFIELDS)
-"""
-struct NUTS{
-    S<:AbstractTrajectorySampler,
-    C<:DynamicTerminationCriterion,
-    I<:AbstractIntegrator,
-} <: DynamicTrajectory{I}
-    integrator              ::  I
-    termination_criterion   ::  C
-end
-
-function Base.show(io::IO, τ::NUTS{<:SliceTS, <:ClassicNoUTurn})
-    print(io, "NUTS{SliceTS}(integrator=$(τ.integrator), termination_criterion=$(τ.termination_criterion))")
-end
-function Base.show(io::IO, τ::NUTS{<:SliceTS, <:GeneralisedNoUTurn})
-    print(io, "NUTS{SliceTS,Generalised}(integrator=$(τ.integrator), termination_criterion=$(τ.termination_criterion))")
-end
-function Base.show(io::IO, τ::NUTS{<:MultinomialTS, <:ClassicNoUTurn})
-    print(io, "NUTS{MultinomialTS}(integrator=$(τ.integrator), termination_criterion=$(τ.termination_criterion))")
-end
-function Base.show(io::IO, τ::NUTS{<:MultinomialTS, <:GeneralisedNoUTurn})
-    print(io, "NUTS{MultinomialTS,Generalised}(integrator=$(τ.integrator), termination_criterion=$(τ.termination_criterion))")
-end
-
-
-const NUTS_DOCSTR = """
-    NUTS{S,C}(
-        integrator::I,
-        max_depth::Int=10,
-        Δ_max::F=1000.0
-    ) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:DynamicTerminationCriterion}
-
-Create an instance for the No-U-Turn sampling algorithm.
-"""
-
-"$(SIGNATURES)"
-function NUTS{S,C}(
-    integrator::I,
-    max_depth::Int=10,
-    Δ_max::F=1000.0,
-) where {I<:AbstractIntegrator,F<:AbstractFloat,S<:AbstractTrajectorySampler,C<:DynamicTerminationCriterion}
-    return NUTS{S,C,I}(integrator, C(max_depth, Δ_max))
-end
-
-"$(SIGNATURES)"
-NUTS(args...) = NUTS{MultinomialTS, GeneralisedNoUTurn}(args...)
-
 ###
 ### The doubling tree algorithm for expanding trajectory.
 ###
@@ -541,20 +437,20 @@ Base.:*(d1::Termination, d2::Termination) = Termination(d1.dynamic || d2.dynamic
 isterminated(d::Termination) = d.dynamic || d.numerical
 
 """
-    Termination(s::SliceTS, nt::NUTS, H0::F, H′::F) where {F<:AbstractFloat}
+$(SIGNATURES)
 
 Check termination of a Hamiltonian trajectory.
 """
-function Termination(s::SliceTS, nt::NUTS, H0::F, H′::F) where {F<:AbstractFloat}
+function Termination(s::SliceTS, nt::Trajectory, H0::F, H′::F) where {F<:AbstractFloat}
     return Termination(false, !(s.ℓu < nt.termination_criterion.Δ_max + -H′))
 end
 
 """
-    Termination(s::MultinomialTS, nt::NUTS, H0::F, H′::F) where {F<:AbstractFloat}
+$(SIGNATURES)
 
 Check termination of a Hamiltonian trajectory.
 """
-function Termination(s::MultinomialTS, nt::NUTS, H0::F, H′::F) where {F<:AbstractFloat}
+function Termination(s::MultinomialTS, nt::Trajectory, H0::F, H′::F) where {F<:AbstractFloat}
     return Termination(false, !(-H0 < nt.termination_criterion.Δ_max + -H′))
 end
 
@@ -679,21 +575,21 @@ end
 "Recursivly build a tree for a given depth `j`."
 function build_tree(
     rng::AbstractRNG,
-    nt::NUTS{S,C,I},
+    nt::Trajectory{TS, I, TC},
     h::Hamiltonian,
     z::PhasePoint,
     sampler::AbstractTrajectorySampler,
     v::Int,
     j::Int,
     H0::AbstractFloat,
-) where {I<:AbstractIntegrator,S<:AbstractTrajectorySampler,C<:DynamicTerminationCriterion}
+) where {TS<:AbstractTrajectorySampler, I<:AbstractIntegrator, TC<:DynamicTerminationCriterion}
     if j == 0
         # Base case - take one leapfrog step in the direction v.
         z′ = step(nt.integrator, h, z, v)
         H′ = energy(z′)
         ΔH = H′ - H0
         α′ = exp(min(0, -ΔH))
-        sampler′ = S(sampler, H0, z′)
+        sampler′ = TS(sampler, H0, z′)
         return BinaryTree(z′, z′, TurnStatistic(nt.termination_criterion, z′), α′, 1, ΔH), sampler′, Termination(sampler′, nt, H0, H′)
     else
         # Recursion - build the left and right subtrees.
@@ -719,13 +615,13 @@ end
 
 function transition(
     rng::AbstractRNG,
-    τ::NUTS{S,C,I},
+    τ::Trajectory{TS, I, TC},
     h::Hamiltonian,
     z0::PhasePoint,
-) where {I<:AbstractIntegrator,S<:AbstractTrajectorySampler,C<:DynamicTerminationCriterion}
+) where {TS<:AbstractTrajectorySampler, I<:AbstractIntegrator, TC<:DynamicTerminationCriterion}
     H0 = energy(z0)
     tree = BinaryTree(z0, z0, TurnStatistic(τ.termination_criterion, z0), zero(H0), zero(Int), zero(H0))
-    sampler = S(rng, z0)
+    sampler = TS(rng, z0)
     termination = Termination(false, false)
     zcand = z0
 

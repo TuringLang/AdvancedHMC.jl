@@ -34,12 +34,34 @@ include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 
 include("trajectory.jl")
-@deprecate find_good_eps find_good_stepsize
-export EndPointTS, SliceTS, MultinomialTS, 
-       StaticTrajectory, HMCDA, NUTS, 
-       ClassicNoUTurn, GeneralisedNoUTurn, 
-       StrictGeneralisedNoUTurn,
+export Trajectory,
+       FixedNSteps, FixedIntegrationTime,
+       ClassicNoUTurn, GeneralisedNoUTurn, StrictGeneralisedNoUTurn,
+       EndPointTS, SliceTS, MultinomialTS, 
        find_good_stepsize
+
+# Deprecations for trajectory.jl
+
+struct AbstractTrajectory <: AbstractProposal end
+
+struct StaticTrajectory{TS} end
+@deprecate StaticTrajectory{TS}(int::AbstractIntegrator, L) where {TS} Trajectory{TS}(int, FixedNSteps(L))
+@deprecate StaticTrajectory(int::AbstractIntegrator, L) Trajectory{EndPointTS}(int, FixedNSteps(L))
+@deprecate StaticTrajectory(ϵ::AbstractScalarOrVec{<:Real}, L) Trajectory{EndPointTS}(Leapfrog(ϵ), FixedNSteps(L))
+
+struct HMCDA{TS} end
+@deprecate HMCDA{TS}(int::AbstractIntegrator, λ) where {TS} Trajectory{TS}(int, FixedIntegrationTime(λ))
+@deprecate HMCDA(int::AbstractIntegrator, λ) Trajectory{MetropolisTS}(int, FixedIntegrationTime(λ))
+@deprecate HMCDA(ϵ::AbstractScalarOrVec{<:Real}, λ) Trajectory{MetropolisTS}(Leapfrog(ϵ), FixedIntegrationTime(λ))
+
+struct NUTS{TS, TC} end
+@deprecate NUTS{TS, TC}(int::AbstractIntegrator, args...; kwargs...) where {TS, TC} Trajectory{TS}(int, TC(args...; kwargs...))
+@deprecate NUTS(int::AbstractIntegrator, args...; kwargs...) Trajectory{MultinomialTS}(int, GeneralisedNoUTurn(args...; kwargs...))
+@deprecate NUTS(ϵ::AbstractScalarOrVec{<:Real}) Trajectory{MultinomialTS}(Leapfrog(ϵ), GeneralisedNoUTurn())
+
+@deprecate find_good_eps find_good_stepsize
+
+export AbstractTrajectory, StaticTrajectory, HMCDA, NUTS, find_good_eps
 
 include("adaptation/Adaptation.jl")
 using .Adaptation
