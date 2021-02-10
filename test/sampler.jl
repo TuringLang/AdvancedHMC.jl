@@ -46,14 +46,14 @@ end
             :TemperedLeapfrog => TemperedLeapfrog(ϵ, 1.05),
         )
             @testset "$τsym" for (τsym, τ) in Dict(
-                :(HMC{EndPointTS}) => Trajectory{EndPointTS}(lf, FixedNSteps(n_steps)),
-                :(HMC{MultinomialTS}) => Trajectory{MultinomialTS}(lf, FixedNSteps(n_steps)),
-                :(HMCDA{EndPointTS}) => Trajectory{EndPointTS}(lf, FixedIntegrationTime(ϵ * n_steps)),
-                :(HMCDA{MultinomialTS}) => Trajectory{MultinomialTS}(lf, FixedIntegrationTime(ϵ * n_steps)),
-                :(NUTS{SliceTS,Original}) => Trajectory{SliceTS}(lf, ClassicNoUTurn()),
-                :(NUTS{SliceTS,Generalised}) => Trajectory{SliceTS}(lf, GeneralisedNoUTurn()),
-                :(NUTS{MultinomialTS,Original}) => Trajectory{MultinomialTS}(lf, ClassicNoUTurn()),
-                :(NUTS{MultinomialTS,Generalised}) => Trajectory{MultinomialTS}(lf, GeneralisedNoUTurn()),
+                :(Trajectory{EndPointTS,FixedNSteps}) => Trajectory{EndPointTS}(lf, FixedNSteps(n_steps)),
+                :(Trajectory{MultinomialTS,FixedNSteps}) => Trajectory{MultinomialTS}(lf, FixedNSteps(n_steps)),
+                :(Trajectory{EndPointTS,FixedIntegrationTime}) => Trajectory{EndPointTS}(lf, FixedIntegrationTime(ϵ * n_steps)),
+                :(Trajectory{MultinomialTS,FixedIntegrationTime}) => Trajectory{MultinomialTS}(lf, FixedIntegrationTime(ϵ * n_steps)),
+                :(Trajectory{SliceTS,Original}) => Trajectory{SliceTS}(lf, ClassicNoUTurn()),
+                :(Trajectory{SliceTS,Generalised}) => Trajectory{SliceTS}(lf, GeneralisedNoUTurn()),
+                :(Trajectory{MultinomialTS,Original}) => Trajectory{MultinomialTS}(lf, ClassicNoUTurn()),
+                :(Trajectory{MultinomialTS,Generalised}) => Trajectory{MultinomialTS}(lf, GeneralisedNoUTurn()),
             )
                 @test show(h) == nothing
                 @test show(τ) == nothing
