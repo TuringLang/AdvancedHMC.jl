@@ -40,6 +40,29 @@ export Trajectory,
        EndPointTS, SliceTS, MultinomialTS, 
        find_good_stepsize
 
+# Useful defaults
+
+"""
+$(TYPEDEF)
+
+Convenient constructor for the no-U-turn sampler (NUTS).
+This falls back to `Trajectory{TS}(int, TC(args...; kwargs...))` where
+
+- `TS<:Union{MultinomialTS, SliceTS}` is the type for trajectory sampler
+- `TC<:Union{ClassicNoUTurn, GeneralisedNoUTurn, StrictGeneralisedNoUTurn}` is the type for termination criterion.
+
+See [`ClassicNoUTurn`](@ref), [`GeneralisedNoUTurn`](@ref) and [`StrictGeneralisedNoUTurn`](@ref) for details in parameters.
+"""
+struct NUTS{TS, TC} end
+NUTS{TS, TC}(int::AbstractIntegrator, args...; kwargs...) where {TS, TC} = 
+    Trajectory{TS}(int, TC(args...; kwargs...))
+NUTS(int::AbstractIntegrator, args...; kwargs...) = 
+    Trajectory{MultinomialTS}(int, GeneralisedNoUTurn(args...; kwargs...))
+NUTS(ϵ::AbstractScalarOrVec{<:Real}) =
+    Trajectory{MultinomialTS}(Leapfrog(ϵ), GeneralisedNoUTurn())
+
+export NUTS
+
 # Deprecations for trajectory.jl
 
 struct AbstractTrajectory <: AbstractProposal end
@@ -54,14 +77,9 @@ struct HMCDA{TS} end
 @deprecate HMCDA(int::AbstractIntegrator, λ) Trajectory{MetropolisTS}(int, FixedIntegrationTime(λ))
 @deprecate HMCDA(ϵ::AbstractScalarOrVec{<:Real}, λ) Trajectory{MetropolisTS}(Leapfrog(ϵ), FixedIntegrationTime(λ))
 
-struct NUTS{TS, TC} end
-@deprecate NUTS{TS, TC}(int::AbstractIntegrator, args...; kwargs...) where {TS, TC} Trajectory{TS}(int, TC(args...; kwargs...))
-@deprecate NUTS(int::AbstractIntegrator, args...; kwargs...) Trajectory{MultinomialTS}(int, GeneralisedNoUTurn(args...; kwargs...))
-@deprecate NUTS(ϵ::AbstractScalarOrVec{<:Real}) Trajectory{MultinomialTS}(Leapfrog(ϵ), GeneralisedNoUTurn())
-
 @deprecate find_good_eps find_good_stepsize
 
-export AbstractTrajectory, StaticTrajectory, HMCDA, NUTS, find_good_eps
+export AbstractTrajectory, StaticTrajectory, HMCDA, find_good_eps
 
 include("adaptation/Adaptation.jl")
 using .Adaptation
