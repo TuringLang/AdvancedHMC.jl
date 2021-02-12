@@ -42,8 +42,10 @@ export Trajectory,
 
 # Useful defaults
 
+struct NUTS{TS, TC} end
+
 """
-$(TYPEDEF)
+$(SIGNATURES)
 
 Convenient constructor for the no-U-turn sampler (NUTS).
 This falls back to `Trajectory{TS}(int, TC(args...; kwargs...))` where
@@ -53,7 +55,6 @@ This falls back to `Trajectory{TS}(int, TC(args...; kwargs...))` where
 
 See [`ClassicNoUTurn`](@ref), [`GeneralisedNoUTurn`](@ref) and [`StrictGeneralisedNoUTurn`](@ref) for details in parameters.
 """
-struct NUTS{TS, TC} end
 NUTS{TS, TC}(int::AbstractIntegrator, args...; kwargs...) where {TS, TC} = 
     Trajectory{TS}(int, TC(args...; kwargs...))
 NUTS(int::AbstractIntegrator, args...; kwargs...) = 
