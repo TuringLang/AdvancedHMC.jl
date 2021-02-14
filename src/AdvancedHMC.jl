@@ -80,7 +80,7 @@ struct HMCDA{TS} end
 
 @deprecate find_good_eps find_good_stepsize
 
-export AbstractTrajectory, StaticTrajectory, HMCDA, find_good_eps
+export StaticTrajectory, HMCDA, find_good_eps
 
 include("adaptation/Adaptation.jl")
 using .Adaptation
