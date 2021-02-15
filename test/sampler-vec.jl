@@ -20,12 +20,12 @@ include("common.jl")
         DiagEuclideanMetric,
         # DenseEuclideanMetric  # not supported at the moment
     ], τ in [
-        StaticTrajectory{EndPointTS}(lfi, n_steps),
-        StaticTrajectory{MultinomialTS}(lfi, n_steps),
-        StaticTrajectory{EndPointTS}(lfi_jittered, n_steps),
-        StaticTrajectory{MultinomialTS}(lfi_jittered, n_steps),
-        HMCDA{EndPointTS}(lf, ϵ * n_steps),
-        HMCDA{MultinomialTS}(lf, ϵ * n_steps),
+        Trajectory{EndPointTS}(lfi, FixedNSteps(n_steps)),
+        Trajectory{MultinomialTS}(lfi, FixedNSteps(n_steps)),
+        Trajectory{EndPointTS}(lfi_jittered, FixedNSteps(n_steps)),
+        Trajectory{MultinomialTS}(lfi_jittered, FixedNSteps(n_steps)),
+        Trajectory{EndPointTS}(lf, FixedIntegrationTime(ϵ * n_steps)),
+        Trajectory{MultinomialTS}(lf, FixedIntegrationTime(ϵ * n_steps)),
     ]
         n_chains = n_chains_list[i_test]
         metric = metricT((D, n_chains))
@@ -52,7 +52,7 @@ include("common.jl")
                 StepSizeAdaptor(0.8, lfi),
             ),
         ]
-            τ isa HMCDA && continue
+            τ.termination_criterion isa FixedIntegrationTime && continue
             @test show(adaptor) == nothing
 
             Random.seed!(100)
@@ -73,7 +73,7 @@ include("common.jl")
         end
         @test all_same
     end
-    @info "Adaptation tests for HMCDA with StepSizeAdaptor are skipped"
+    @info "Adaptation tests for FixedIntegrationTime with StepSizeAdaptor are skipped"
 
     # Simple time benchmark
     let metricT=UnitEuclideanMetric
