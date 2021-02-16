@@ -34,7 +34,7 @@ include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 
 include("trajectory.jl")
-export Trajectory,
+export Trajectory, HMCKernel,
        FixedNSteps, FixedIntegrationTime,
        ClassicNoUTurn, GeneralisedNoUTurn, StrictGeneralisedNoUTurn,
        EndPointTS, SliceTS, MultinomialTS, 
@@ -48,7 +48,7 @@ struct NUTS{TS, TC} end
 $(SIGNATURES)
 
 Convenient constructor for the no-U-turn sampler (NUTS).
-This falls back to `Trajectory{TS}(int, TC(args...; kwargs...))` where
+This falls back to `HMCKernel(Trajectory{TS}(int, TC(args...; kwargs...)))` where
 
 - `TS<:Union{MultinomialTS, SliceTS}` is the type for trajectory sampler
 - `TC<:Union{ClassicNoUTurn, GeneralisedNoUTurn, StrictGeneralisedNoUTurn}` is the type for termination criterion.
@@ -56,27 +56,27 @@ This falls back to `Trajectory{TS}(int, TC(args...; kwargs...))` where
 See [`ClassicNoUTurn`](@ref), [`GeneralisedNoUTurn`](@ref) and [`StrictGeneralisedNoUTurn`](@ref) for details in parameters.
 """
 NUTS{TS, TC}(int::AbstractIntegrator, args...; kwargs...) where {TS, TC} = 
-    Trajectory{TS}(int, TC(args...; kwargs...))
+    HMCKernel(Trajectory{TS}(int, TC(args...; kwargs...)))
 NUTS(int::AbstractIntegrator, args...; kwargs...) = 
-    Trajectory{MultinomialTS}(int, GeneralisedNoUTurn(args...; kwargs...))
+    HMCKernel(Trajectory{MultinomialTS}(int, GeneralisedNoUTurn(args...; kwargs...)))
 NUTS(ϵ::AbstractScalarOrVec{<:Real}) =
-    Trajectory{MultinomialTS}(Leapfrog(ϵ), GeneralisedNoUTurn())
+    HMCKernel(Trajectory{MultinomialTS}(Leapfrog(ϵ), GeneralisedNoUTurn()))
 
 export NUTS
 
 # Deprecations for trajectory.jl
 
-struct AbstractTrajectory <: AbstractProposal end
+abstract type AbstractTrajectory end
 
 struct StaticTrajectory{TS} end
-@deprecate StaticTrajectory{TS}(int::AbstractIntegrator, L) where {TS} Trajectory{TS}(int, FixedNSteps(L))
-@deprecate StaticTrajectory(int::AbstractIntegrator, L) Trajectory{EndPointTS}(int, FixedNSteps(L))
-@deprecate StaticTrajectory(ϵ::AbstractScalarOrVec{<:Real}, L) Trajectory{EndPointTS}(Leapfrog(ϵ), FixedNSteps(L))
+@deprecate StaticTrajectory{TS}(int::AbstractIntegrator, L) where {TS} HMCKernel(Trajectory{TS}(int, FixedNSteps(L)))
+@deprecate StaticTrajectory(int::AbstractIntegrator, L) HMCKernel(Trajectory{EndPointTS}(int, FixedNSteps(L)))
+@deprecate StaticTrajectory(ϵ::AbstractScalarOrVec{<:Real}, L) HMCKernel(Trajectory{EndPointTS}(Leapfrog(ϵ), FixedNSteps(L)))
 
 struct HMCDA{TS} end
-@deprecate HMCDA{TS}(int::AbstractIntegrator, λ) where {TS} Trajectory{TS}(int, FixedIntegrationTime(λ))
-@deprecate HMCDA(int::AbstractIntegrator, λ) Trajectory{MetropolisTS}(int, FixedIntegrationTime(λ))
-@deprecate HMCDA(ϵ::AbstractScalarOrVec{<:Real}, λ) Trajectory{MetropolisTS}(Leapfrog(ϵ), FixedIntegrationTime(λ))
+@deprecate HMCDA{TS}(int::AbstractIntegrator, λ) where {TS} HMCKernel(Trajectory{TS}(int, FixedIntegrationTime(λ)))
+@deprecate HMCDA(int::AbstractIntegrator, λ) HMCKernel(Trajectory{MetropolisTS}(int, FixedIntegrationTime(λ)))
+@deprecate HMCDA(ϵ::AbstractScalarOrVec{<:Real}, λ) HMCKernel(Trajectory{MetropolisTS}(Leapfrog(ϵ), FixedIntegrationTime(λ)))
 
 @deprecate find_good_eps find_good_stepsize
 

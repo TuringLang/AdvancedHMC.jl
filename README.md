@@ -138,7 +138,7 @@ All the combinations are tested in [this file](https://github.com/TuringLang/Adv
 function sample(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
-    τ::AbstractProposal,
+    κ::HMCKernel,
     θ::AbstractVector{<:AbstractFloat},
     n_samples::Int,
     adaptor::AbstractAdaptor=NoAdaptation(),
@@ -149,7 +149,7 @@ function sample(
 )
 ```
 
-Draw `n_samples` samples using the proposal `τ` under the Hamiltonian system `h`
+Draw `n_samples` samples using the proposal `κ` under the Hamiltonian system `h`
 
 - The randomness is controlled by `rng`.
   - If `rng` is not provided, `GLOBAL_RNG` will be used.

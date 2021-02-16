@@ -138,15 +138,32 @@ phasepoint(
     h::Hamiltonian
 ) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric))
 
+abstract type AbstractRefreshment end
+
+"Completly resample new momentum."
+struct FullRefreshment <: AbstractRefreshment end
+
 refresh(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
+    ::FullRefreshment,
+    h::Hamiltonian,
     z::PhasePoint,
-    h::Hamiltonian
 ) = phasepoint(h, z.θ, rand(rng, h.metric))
 
-# refresh(
-#     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-#     z::PhasePoint,
-#     h::Hamiltonian,
-#     α::AbstractFloat
-# ) = phasepoint(h, z.θ, α * z.r + (1 - α^2) * rand(rng, h.metric))
+"""
+Partial momentum refreshment with refresh rate `α`.
+
+## References
+
+1. Neal, Radford M. "MCMC using Hamiltonian dynamics." Handbook of markov chain monte carlo 2.11 (2011): 2.
+"""
+struct PartialRefreshment{F<:AbstractFloat} <: AbstractRefreshment
+    α::F
+end
+
+refresh(
+    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
+    ref::PartialRefreshment,
+    h::Hamiltonian,
+    z::PhasePoint,
+) = phasepoint(h, z.θ, ref.α * z.r + (1 - ref.α^2) * rand(rng, h.metric))

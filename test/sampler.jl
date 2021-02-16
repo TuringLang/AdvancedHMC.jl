@@ -59,10 +59,10 @@ end
                 @test show(τ) == nothing
                 @testset  "NoAdaptation" begin
                     Random.seed!(1)
-                    samples, stats = sample(h, τ, θ_init, n_samples; verbose=false, progress=PROGRESS)
+                    samples, stats = sample(h, HMCKernel(τ), θ_init, n_samples; verbose=false, progress=PROGRESS)
                     @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
                     if "GEWEKE_TEST" in keys(ENV) && ENV["GEWEKE_TEST"] == "1"
-                        res = perform(GewekeTest(5_000), mvntest, x -> rand_θ_given(x, mvntest, metric, τ); g=geweke_g, progress=false)
+                        res = perform(GewekeTest(5_000), mvntest, x -> rand_θ_given(x, mvntest, metric, HMCKernel(τ)); g=geweke_g, progress=false)
                         p = plot(res, mvntest())
                         display(p)
                         println()
@@ -92,7 +92,7 @@ end
                     # For `MassMatrixAdaptor`, we use the pre-defined step size as the method cannot adapt the step size.
                     # For other adapatation methods that are able to adpat the step size, we use `find_good_stepsize`.
                     τ_used = adaptorsym == :MassMatrixAdaptorOnly ? τ : reconstruct(τ, integrator=reconstruct(lf, ϵ=find_good_stepsize(h, θ_init)))
-                    samples, stats = sample(h, τ_used , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
+                    samples, stats = sample(h, HMCKernel(τ_used) , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
                     @test mean(samples[(n_adapts+1):end]) ≈ zeros(D) atol=RNDATOL
                     test_stats(τ_used, stats, n_adapts)
                 end
@@ -104,15 +104,15 @@ end
 @testset "drop_warmup" begin
     metric = DiagEuclideanMetric(D)
     h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-    τ = NUTS(Leapfrog(ϵ))
+    κ = NUTS(Leapfrog(ϵ))
     adaptor = StanHMCAdaptor(
         MassMatrixAdaptor(metric),
-        StepSizeAdaptor(0.8, τ.integrator),
+        StepSizeAdaptor(0.8, κ.τ.integrator),
     )
-    samples, stats = sample(h, τ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false, drop_warmup=true)
+    samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false, drop_warmup=true)
     @test length(samples) == n_samples - n_adapts
     @test length(stats) == n_samples - n_adapts
-    samples, stats = sample(h, τ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false, drop_warmup=false)
+    samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false, drop_warmup=false)
     @test length(samples) == n_samples
     @test length(stats) == n_samples
 end

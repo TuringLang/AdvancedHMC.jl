@@ -36,7 +36,7 @@ include("common.jl")
 
         # NoAdaptation
         Random.seed!(100)
-        samples, stats = sample(h, τ, θ_init_list[i_test], n_samples; verbose=false)
+        samples, stats = sample(h, HMCKernel(τ), θ_init_list[i_test], n_samples; verbose=false)
         @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL * n_chains
 
         # Adaptation
@@ -56,7 +56,7 @@ include("common.jl")
             @test show(adaptor) == nothing
 
             Random.seed!(100)
-            samples, stats = sample(h, τ, θ_init_list[i_test], n_samples, adaptor, n_adapts; verbose=false, progress=false)
+            samples, stats = sample(h, HMCKernel(τ), θ_init_list[i_test], n_samples, adaptor, n_adapts; verbose=false, progress=false)
             @test mean(samples) ≈ zeros(D, n_chains) atol=RNDATOL * n_chains
         end
 
@@ -64,7 +64,7 @@ include("common.jl")
         rng = [MersenneTwister(1) for _ in 1:n_chains]
         h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∂ℓπ∂θ)
         θ_init = repeat(rand(D), 1, n_chains)
-        samples, stats = sample(rng, h, τ, θ_init, n_samples; verbose=false)
+        samples, stats = sample(rng, h, HMCKernel(τ), θ_init, n_samples; verbose=false)
         all_same = true
         for i_sample in 2:10
             for j in 2:n_chains
@@ -77,12 +77,12 @@ include("common.jl")
 
     # Simple time benchmark
     let metricT=UnitEuclideanMetric
-        τ = StaticTrajectory(lf, n_steps)
+        κ = StaticTrajectory(lf, n_steps)
 
         time_mat = Vector{Float64}(undef, n_chains_max)
         for (i, n_chains) in enumerate(n_chains_list)
             h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∂ℓπ∂θ)
-            t = @elapsed samples, stats = sample(h, τ, θ_init_list[i], n_samples; verbose=false)
+            t = @elapsed samples, stats = sample(h, κ, θ_init_list[i], n_samples; verbose=false)
             time_mat[i] = t
         end
 
@@ -92,7 +92,7 @@ include("common.jl")
         for (i, n_chains) in enumerate(n_chains_list)
             t = @elapsed for j in 1:n_chains
                 h = Hamiltonian(metricT(D), ℓπ, ∂ℓπ∂θ)
-                samples, stats = sample(h, τ, θ_init_list[i][:,j], n_samples; verbose=false)
+                samples, stats = sample(h, κ, θ_init_list[i][:,j], n_samples; verbose=false)
             end
             time_seperate[i] = t
         end

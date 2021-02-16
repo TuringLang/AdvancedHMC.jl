@@ -25,7 +25,7 @@ end
 "Returns the statistics for transition `t`."
 stat(t::Transition) = t.stat
 
-abstract type AbstractProposal end
+abstract type AbstractMCMCKernel end
 
 abstract type AbstractTerminationCriterion end
 
@@ -185,7 +185,11 @@ $(TYPEDEF)
 
 Numerically simulated Hamiltonian trajectories.
 """
-struct Trajectory{TS<:AbstractTrajectorySampler, I<:AbstractIntegrator, TC<:AbstractTerminationCriterion} <: AbstractProposal 
+struct Trajectory{
+    TS<:AbstractTrajectorySampler, 
+    I<:AbstractIntegrator, 
+    TC<:AbstractTerminationCriterion,
+}
     "Integrator used to simulate trajectory."
     integrator::I
     "Criterion to terminate the simulation."
@@ -202,6 +206,17 @@ end
 nsteps(τ::Trajectory{TS, I, TC}) where {TS, I, TC<:FixedNSteps} = τ.termination_criterion.L
 nsteps(τ::Trajectory{TS, I, TC}) where {TS, I, TC<:FixedIntegrationTime} = 
     max(1, floor(Int, τ.termination_criterion.λ / nom_step_size(τ.integrator)))
+
+##
+## Kernel interface
+##
+
+struct HMCKernel{R, T<:Trajectory} <: AbstractMCMCKernel 
+    refreshment::R
+    τ::T
+end
+
+HMCKernel(τ::Trajectory) = HMCKernel(FullRefreshment(), τ)
 
 """
 $(SIGNATURES)
@@ -226,9 +241,6 @@ function transition(
 ) where {TS<:AbstractTrajectorySampler, I, TC<:StaticTerminationCriterion}
     H0 = energy(z)
 
-    integrator = jitter(rng, τ.integrator)
-    τ = reconstruct(τ, integrator=integrator)
-
     z′, is_accept, α = sample_phasepoint(rng, τ, h, z)
     # Do the actual accept / reject
     z = accept_phasepoint!(z, z′, is_accept)    # NOTE: this function changes `z′` in place in matrix-parallel mode
@@ -244,7 +256,7 @@ function transition(
             hamiltonian_energy=H,
             hamiltonian_energy_error=H - H0,
         ),
-        stat(integrator),
+        stat(τ.integrator),
     )
     return Transition(z, tstat)
 end
@@ -612,9 +624,6 @@ function transition(
     sampler = TS(rng, z0)
     termination = Termination(false, false)
     zcand = z0
-
-    integrator = jitter(rng, τ.integrator)
-    τ = reconstruct(τ, integrator=integrator)
 
     j = 0
     while !isterminated(termination) && j < τ.termination_criterion.max_depth
