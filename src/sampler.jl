@@ -156,7 +156,7 @@ Sample `n_samples` samples using the proposal `κ` under Hamiltonian `h`.
 function sample(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
-    κ::AbstractMCMCKernel,
+    κ::HMCKernel,
     θ::T,
     n_samples::Int,
     adaptor::AbstractAdaptor=NoAdaptation(),
