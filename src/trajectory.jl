@@ -216,7 +216,7 @@ struct HMCKernel{R, T<:Trajectory} <: AbstractMCMCKernel
     τ::T
 end
 
-HMCKernel(τ::Trajectory) = HMCKernel(FullRefreshment(), τ)
+HMCKernel(τ::Trajectory) = HMCKernel(FullMomentumRefreshment(), τ)
 
 """
 $(SIGNATURES)
