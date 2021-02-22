@@ -99,10 +99,10 @@ function get_primitives(x, modelgen)
     return ℓπ, ∂ℓπ∂θ, θ₀
 end
 
-function rand_θ_given(x, modelgen, metric, τ; n_samples=20)
+function rand_θ_given(x, modelgen, metric, κ; n_samples=20)
     ℓπ, ∂ℓπ∂θ, θ₀ = get_primitives(x, modelgen)
     h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-    samples, stats = sample(h, τ, θ₀, n_samples; verbose=false, progress=false)
+    samples, stats = sample(h, κ, θ₀, n_samples; verbose=false, progress=false)
     s = samples[end]
     return length(s) == 1 ? s[1] : s
 end
