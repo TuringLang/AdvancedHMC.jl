@@ -1,5 +1,7 @@
 import .CUDA
 
+CUDA.allowscalar(false)
+
 function refresh(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     ::FullMomentumRefreshment,

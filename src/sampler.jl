@@ -203,6 +203,10 @@ function sample(
             n_chains = 1
         else
             n_chains = size(θ, 2)
+            # Make sure that arrays are on CPU before printing.
+            EBFMI_est = convert(Vector{Float32}, EBFMI_est)
+            average_acceptance_rate = convert(
+                Vector{Float32}, average_acceptance_rate)
             EBFMI_est = "[" * join(EBFMI_est, ", ") * "]"
             average_acceptance_rate = "[" * join(average_acceptance_rate, ", ") * "]"
         end
