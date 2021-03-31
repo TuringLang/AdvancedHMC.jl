@@ -273,6 +273,11 @@ function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:Abs
     # Revert unaccepted proposals in `z′`
     is_reject = (!).(is_accept)
     if any(is_reject)
+        # Convert logical indexing to number indexing to support CUDA.jl
+        # NOTE: for x::CuArray, x[:,Vector{Bool}]  is NOT supported
+        #                       x[:,CuVector{Int}] is NOT supported
+        #                       x[:,Vector{Int}]   is     supported
+        is_reject = findall(is_reject) |> Array
         z′.θ[:,is_reject] = z.θ[:,is_reject]
         z′.r[:,is_reject] = z.r[:,is_reject]
         z′.ℓπ.value[is_reject] = z.ℓπ.value[is_reject]
