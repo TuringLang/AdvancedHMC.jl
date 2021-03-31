@@ -13,6 +13,8 @@ function refresh(
     return phasepoint(h, z.θ, r)
 end
 
+# TODO: Ideally this should be merged with the CPU version. The function is 
+#       essentially the same but sampling requires a custom call to CUDA.
 function mh_accept_ratio(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, Horiginal::TA, Hproposal::TA,
 ) where {T<:AbstractFloat, TA<:CUDA.CuArray{<:T}}
@@ -22,6 +24,8 @@ function mh_accept_ratio(
     #       the chains. We need to revisit this more rigirously 
     #       in the future. See discussions at 
     #       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
-    accept = TA(rand(rng, T, length(Horiginal))) .< α
+    r = CUDA.CuArray{Float32, 1}(undef, length(Horiginal))
+    CUDA.CURAND.rand!(r)
+    accept = r .< α
     return accept, α
 end
