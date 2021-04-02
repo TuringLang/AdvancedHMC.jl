@@ -6,9 +6,9 @@ function refresh(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     ::FullMomentumRefreshment,
     h::Hamiltonian,
-    z::PhasePoint{T}
-) where {T<:CUDA.CuArray}
-    r = CUDA.CuArray{Float32, 2}(undef, size(h.metric)...)
+    z::PhasePoint{TA}
+) where {T<:AbstractFloat,TA<:CUDA.CuArray{<:T}}
+    r = CUDA.CuArray{T, 2}(undef, size(h.metric)...)
     CUDA.CURAND.randn!(r)
     return phasepoint(h, z.θ, r)
 end
@@ -24,7 +24,7 @@ function mh_accept_ratio(
     #       the chains. We need to revisit this more rigirously 
     #       in the future. See discussions at 
     #       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
-    r = CUDA.CuArray{Float32, 1}(undef, length(Horiginal))
+    r = CUDA.CuArray{T, 1}(undef, length(Horiginal))
     CUDA.CURAND.rand!(r)
     accept = r .< α
     return accept, α
