@@ -1,4 +1,4 @@
-using Distributed, Test
+using Distributed, Test, CUDA
 
 println("Envronment variables for testing")
 println(ENV)
@@ -15,6 +15,14 @@ println(ENV)
         "demo",
         "models",
     ]
+
+    if CUDA.functional()
+        @eval module Test_cuda
+            include("cuda.jl")
+        end
+    else
+        @warn "Skipping GPU tests because no GPU available."
+    end
 
     res = map(tests) do t
         @eval module $(Symbol("Test_", t))
