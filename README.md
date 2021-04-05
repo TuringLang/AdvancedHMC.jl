@@ -165,7 +165,37 @@ Note that the function signature of the `sample` function exported by `AdvancedH
 ## Citing AdvancedHMC.jl ##
 If you use AdvancedHMC.jl for your own research, please consider citing the following publication:
 
-Hong Ge, Kai Xu, and Zoubin Ghahramani: "Turing: a language for flexible probabilistic inference.", *International Conference on Artificial Intelligence and Statistics*, 2018. ([abs](http://proceedings.mlr.press/v84/ge18b.html), [pdf](http://proceedings.mlr.press/v84/ge18b/ge18b.pdf), [BibTeX](https://github.com/TuringLang/Turing.jl/blob/master/CITATION.bib))
+Kai Xu, Hong Ge, Will Tebbutt, Mohamed Tarek, Martin Trapp, Zoubin Ghahramani: "AdvancedHMC.jl: A robust, modular and efficient implementation of advanced HMC algorithms.", *Symposium on Advances in Approximate Bayesian Inference*, 2020. ([abs](http://proceedings.mlr.press/v118/xu20a.html), [pdf](http://proceedings.mlr.press/v118/xu20a/xu20a.pdf))
+
+with the following BibTeX entry:
+
+```
+@inproceedings{xu2020advancedhmc,
+  title={AdvancedHMC. jl: A robust, modular and efficient implementation of advanced HMC algorithms},
+  author={Xu, Kai and Ge, Hong and Tebbutt, Will and Tarek, Mohamed and Trapp, Martin and Ghahramani, Zoubin},
+  booktitle={Symposium on Advances in Approximate Bayesian Inference},
+  pages={1--10},
+  year={2020},
+  organization={PMLR}
+}
+```
+
+If you using AdvancedHMC.jl directly through Turing.jl, please consider citing the following publication:
+
+Hong Ge, Kai Xu, and Zoubin Ghahramani: "Turing: a language for flexible probabilistic inference.", *International Conference on Artificial Intelligence and Statistics*, 2018. ([abs](http://proceedings.mlr.press/v84/ge18b.html), [pdf](http://proceedings.mlr.press/v84/ge18b/ge18b.pdf))
+
+with the following BibTeX entry:
+
+```
+@inproceedings{ge2018turing,
+  title={Turing: A language for flexible probabilistic inference},
+  author={Ge, Hong and Xu, Kai and Ghahramani, Zoubin},
+  booktitle={International Conference on Artificial Intelligence and Statistics},
+  pages={1682--1690},
+  year={2018},
+  organization={PMLR}
+}
+```
 
 ## References
 
