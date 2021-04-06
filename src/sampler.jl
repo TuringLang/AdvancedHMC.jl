@@ -17,7 +17,7 @@ function reconstruct(
     return reconstruct(τ, integrator=integrator)
 end
 
-reconstruct(κ::AbstractMCMCKernel, adaptor::AbstractAdaptor) = 
+reconstruct(κ::AbstractHMCKernel, adaptor::AbstractAdaptor) = 
     reconstruct(κ, τ=reconstruct(κ.τ, adaptor))
 
 function resize(h::Hamiltonian, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
@@ -58,7 +58,7 @@ end
 
 Adaptation.adapt!(
     h::Hamiltonian,
-    κ::AbstractMCMCKernel,
+    κ::AbstractHMCKernel,
     adaptor::Adaptation.NoAdaptation,
     i::Int,
     n_adapts::Int,
@@ -68,7 +68,7 @@ Adaptation.adapt!(
 
 function Adaptation.adapt!(
     h::Hamiltonian,
-    κ::AbstractMCMCKernel,
+    κ::AbstractHMCKernel,
     adaptor::AbstractAdaptor,
     i::Int,
     n_adapts::Int,
@@ -106,27 +106,32 @@ end
 function AbstractMCMC.step(
     rng::AbstractRNG,
     model::HamiltonianModel,
-    spl::HMCKernel;
-    init_params, # TODO: implement this. Just do `rand`? Need dimensionality though.
+    spl::AbstractHMCKernel;
+    init_params = nothing,
     adaptor::AbstractAdaptor=NoAdaptation(),
     kwargs...
 )
-    # Get an initial smaple
+    if init_params === nothing
+        init_params = randn(size(model.hamiltonian.metric, 1))
+    end
+
+    # Get an initial sample.
     h, t = AdvancedHMC.sample_init(rng, model.hamiltonian, init_params)
 
     # Compute next transition and state.
     state = HMCState(0, t, adaptor)
 
-    # Take actual first step
+    # Take actual first step.
     return AbstractMCMC.step(rng, model, spl, state; kwargs...)
 end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
     model::HamiltonianModel,
-    spl::HMCKernel,
+    spl::AbstractHMCKernel,
     state::HMCState;
-    nadapts::Int=0,
+    nadapts::Int = 0,
+    verbose::Bool = true,
     kwargs...
 )
     # Get step size
