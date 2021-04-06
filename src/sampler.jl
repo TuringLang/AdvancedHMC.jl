@@ -32,7 +32,6 @@ end
 ##
 ## Interface functions
 ##
-
 function sample_init(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
     h::Hamiltonian, 
@@ -209,4 +208,70 @@ function sample(
         @info "Finished $n_samples sampling steps for $n_chains chains in $time (s)" h κ EBFMI_est average_acceptance_rate
     end
     return θs, stats
+end
+
+#################################
+### AbstractMCMC.jl interface ###
+#################################
+struct HamiltonianModel{H} <: AbstractMCMC.AbstractModel
+    hamiltonian :: H
+end
+
+struct HMCState{
+    TTrans<:Transition,
+    TAdapt<:Adaptation.AbstractAdaptor
+}
+    i::Int
+    transition::TTrans
+    adaptor::TAdapt
+end
+
+function AbstractMCMC.step(
+    rng::AbstractRNG,
+    model::HamiltonianModel,
+    spl::HMCKernel;
+    init_params, # TODO: implement this. Just do `rand`? Need dimensionality though.
+    adaptor::AbstractAdaptor=NoAdaptation(),
+    kwargs...
+)
+    # Get an initial smaple
+    h, t = AdvancedHMC.sample_init(rng, model.hamiltonian, init_params)
+
+    # Compute next transition and state.
+    state = HMCState(0, t, adaptor)
+
+    # Take actual first step
+    return AbstractMCMC.step(rng, model, spl, state; kwargs...)
+end
+
+function AbstractMCMC.step(
+    rng::AbstractRNG,
+    model::HamiltonianModel,
+    spl::HMCKernel,
+    state::HMCState;
+    nadapts::Int=0,
+    kwargs...
+)
+    # Get step size
+    @debug "current ϵ" getstepsize(spl, state)
+
+    # Compute transition.
+    h = model.hamiltonian
+    i = state.i + 1
+    t_old = state.transition
+    adaptor = state.adaptor
+
+    # Make new transition.
+    t = transition(rng, h, spl, t_old.z)
+
+    # Adapt h and spl.
+    tstat = stat(t)
+    h, spl, isadapted = adapt!(h, spl, adaptor, i, nadapts, t.z.θ, tstat.acceptance_rate)
+    tstat = merge(tstat, (is_adapt=isadapted,))
+
+    # Compute next transition and state.
+    newstate = HMCState(i, t, adaptor)
+
+    # Return `Transition` with additional stats added.
+    return Transition(t.z, tstat), newstate
 end

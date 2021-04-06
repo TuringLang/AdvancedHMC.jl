@@ -12,6 +12,8 @@ using ArgCheck: @argcheck
 
 using DocStringExtensions
 
+import AbstractMCMC
+
 import StatsBase: sample
 import Parameters: reconstruct
 

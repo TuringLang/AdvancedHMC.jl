@@ -25,7 +25,9 @@ end
 "Returns the statistics for transition `t`."
 stat(t::Transition) = t.stat
 
-abstract type AbstractMCMCKernel end
+# abstract type AbstractMCMCKernel end
+
+const AbstractMCMCKernel = AbstractMCMC.AbstractSampler
 
 abstract type AbstractTerminationCriterion end
 
@@ -211,7 +213,7 @@ nsteps(τ::Trajectory{TS, I, TC}) where {TS, I, TC<:FixedIntegrationTime} =
 ## Kernel interface
 ##
 
-struct HMCKernel{R, T<:Trajectory} <: AbstractMCMCKernel 
+struct HMCKernel{R, T<:Trajectory} <: AbstractMCMCKernel
     refreshment::R
     τ::T
 end
