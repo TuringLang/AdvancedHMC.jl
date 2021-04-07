@@ -53,7 +53,7 @@ jitter(::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, lf::AbstractLeapfrog
 temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int) = r
 stat(lf::AbstractLeapfrog) = (step_size=step_size(lf), nom_step_size=nom_step_size(lf))
 
-update_nom_step_size(lf::AbstractLeapfrog, ϵ) = reconstruct(lf, ϵ=ϵ)
+update_nom_step_size(lf::AbstractLeapfrog, ϵ) = @set lf.ϵ = ϵ
 
 function step(
     lf::AbstractLeapfrog{T},
@@ -172,7 +172,7 @@ end
 
 nom_step_size(lf::JitteredLeapfrog) = lf.ϵ0
 
-update_nom_step_size(lf::JitteredLeapfrog, ϵ0) = reconstruct(lf, ϵ0=ϵ0)
+update_nom_step_size(lf::JitteredLeapfrog, ϵ0) = @set lf.ϵ0 = ϵ0
 
 # Jitter step size; ref: https://github.com/stan-dev/stan/blob/1bb054027b01326e66ec610e95ef9b2a60aa6bec/src/stan/mcmc/hmc/base_hmc.hpp#L177-L178
 function _jitter(
@@ -180,7 +180,7 @@ function _jitter(
     lf::JitteredLeapfrog{FT,T}
 ) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}}
     ϵ = lf.ϵ0 .* (1 .+ lf.jitter .* (2 .* rand(rng) .- 1))
-    return reconstruct(lf, ϵ=ϵ)
+    return @set lf.ϵ = ϵ
 end
 
 jitter(rng::AbstractRNG, lf::JitteredLeapfrog) = _jitter(rng, lf)
