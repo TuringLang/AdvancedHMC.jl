@@ -25,7 +25,7 @@ end
 "Returns the statistics for transition `t`."
 stat(t::Transition) = t.stat
 
-abstract type AbstractHMCKernel <: AbstractMCMC.AbstractSampler end
+abstract type AbstractHMCKernel end
 
 abstract type AbstractTerminationCriterion end
 

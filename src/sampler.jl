@@ -212,44 +212,108 @@ end
 #################################
 ### AbstractMCMC.jl interface ###
 #################################
-struct HMCSampler{K, A} <: AbstractMCMC.AbstractSampler
-    κ::K
-    adaptor::A
+struct HMCSampler{K, M, A} <: AbstractMCMC.AbstractSampler
+    initial_kernel::K
+    initial_metric::M
+    initial_adaptor::A
 end
 
-struct HamiltonianModel{H} <: AbstractMCMC.AbstractModel
-    hamiltonian::H
+struct DifferentiableDensityModel{Tlogπ, T∂logπ∂θ} <: AbstractMCMC.AbstractModel
+    ℓπ::Tlogπ
+    ∂ℓπ∂θ::T∂logπ∂θ
 end
 
 struct HMCState{
     TTrans<:Transition,
-    THam<:Hamiltonian,
+    TMetric<:AbstractMetric,
     TKernel<:AbstractHMCKernel,
     TAdapt<:Adaptation.AbstractAdaptor
 }
     i::Int
     transition::TTrans
-    hamiltonian::THam
+    metric::TMetric
     κ::TKernel
     adaptor::TAdapt
 end
 
+function AbstractMCMC.sample(
+    model::DifferentiableDensityModel,
+    kernel::AbstractHMCKernel,
+    metric::AbstractMetric,
+    adaptor::AbstractAdaptor,
+    N::Integer;
+    kwargs...
+)
+    return AbstractMCMC.sample(Random.GLOBAL_RNG, model, kernel, metric, adaptor, N; kwargs...)
+end
+
+function AbstractMCMC.sample(
+    rng::Random.AbstractRNG,
+    model::DifferentiableDensityModel,
+    kernel::AbstractHMCKernel,
+    metric::AbstractMetric,
+    adaptor::AbstractAdaptor,
+    N::Integer;
+    kwargs...
+)
+    sampler = HMCSampler(kernel, metric, adaptor)
+    return AbstractMCMC.mcmcsample(rng, model, sampler, N; kwargs...)
+end
+
+function AbstractMCMC.sample(
+    model::DifferentiableDensityModel,
+    kernel::AbstractHMCKernel,
+    metric::AbstractMetric,
+    adaptor::AbstractAdaptor,
+    parallel::AbstractMCMC.AbstractMCMCParallel,
+    N::Integer,
+    nchains::Integer;
+    kwargs...
+)
+    return AbstractMCMC.sample(
+        Random.GLOBAL_RNG, model, kernel, metric, adaptor, N, nchains;
+        kwargs...
+    )
+end
+
+function AbstractMCMC.sample(
+    rng::Random.AbstractRNG,
+    model::DifferentiableDensityModel,
+    kernel::AbstractHMCKernel,
+    metric::AbstractMetric,
+    adaptor::AbstractAdaptor,
+    parallel::AbstractMCMC.AbstractMCMCParallel,
+    N::Integer,
+    nchains::Integer;
+    kwargs...
+)
+    sampler = HMCSampler(kernel, metric, adaptor)
+    return AbstractMCMC.mcmcsample(rng, model, sampler, parallel, N, nchains; kwargs...)
+end
+
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::HamiltonianModel,
+    model::DifferentiableDensityModel,
     spl::HMCSampler;
     init_params = nothing,
     kwargs...
 )
+    metric = spl.initial_metric
+    κ = spl.initial_kernel
+    adaptor = spl.initial_adaptor
+
     if init_params === nothing
-        init_params = randn(size(model.hamiltonian.metric, 1))
+        init_params = randn(size(metric, 1))
     end
 
+    # Construct the hamiltonian using the initial metric
+    hamiltonian = Hamiltonian(metric, model.ℓπ, model.∂ℓπ∂θ)
+
     # Get an initial sample.
-    h, t = AdvancedHMC.sample_init(rng, model.hamiltonian, init_params)
+    h, t = AdvancedHMC.sample_init(rng, hamiltonian, init_params)
 
     # Compute next transition and state.
-    state = HMCState(0, t, h, spl.κ, spl.adaptor)
+    state = HMCState(0, t, h.metric, κ, adaptor)
 
     # Take actual first step.
     return AbstractMCMC.step(rng, model, spl, state; kwargs...)
@@ -257,7 +321,7 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::HamiltonianModel,
+    model::DifferentiableDensityModel,
     spl::HMCSampler,
     state::HMCState;
     nadapts::Int = 0,
@@ -268,11 +332,14 @@ function AbstractMCMC.step(
     @debug "current ϵ" getstepsize(spl, state)
 
     # Compute transition.
-    h = model.hamiltonian
     i = state.i + 1
     t_old = state.transition
     adaptor = state.adaptor
     κ = state.κ
+    metric = state.metric
+
+    # Reconstruct hamiltonian.
+    h = Hamiltonian(metric, model.ℓπ, model.∂ℓπ∂θ)
 
     # Make new transition.
     t = transition(rng, h, κ, t_old.z)
@@ -283,7 +350,7 @@ function AbstractMCMC.step(
     tstat = merge(tstat, (is_adapt=isadapted,))
 
     # Compute next transition and state.
-    newstate = HMCState(i, t, h, κ, adaptor)
+    newstate = HMCState(i, t, h.metric, κ, adaptor)
 
     # Return `Transition` with additional stats added.
     return Transition(t.z, tstat), newstate
@@ -294,6 +361,7 @@ end
 ### Callback ###
 ################
 
+# TODO: add as a default once AbstractMCMC.jl has been updated
 struct HMCCallback end
 
 function (cb::HMCCallback)(
