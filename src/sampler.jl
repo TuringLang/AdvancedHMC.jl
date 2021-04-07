@@ -217,6 +217,7 @@ struct HMCSampler{K, M, A} <: AbstractMCMC.AbstractSampler
     initial_metric::M
     initial_adaptor::A
 end
+HMCSampler(kernel, metric) = HMCSampler(kernel, metric, Adaptation.NoAdaptation())
 
 struct DifferentiableDensityModel{Tlogπ, T∂logπ∂θ} <: AbstractMCMC.AbstractModel
     ℓπ::Tlogπ
@@ -238,7 +239,7 @@ end
 
 function AbstractMCMC.sample(
     model::DifferentiableDensityModel,
-    kernel::AbstractHMCKernel,
+    kernel::AbstractMCMCKernel,
     metric::AbstractMetric,
     adaptor::AbstractAdaptor,
     N::Integer;
@@ -250,7 +251,7 @@ end
 function AbstractMCMC.sample(
     rng::Random.AbstractRNG,
     model::DifferentiableDensityModel,
-    kernel::AbstractHMCKernel,
+    kernel::AbstractMCMCKernel,
     metric::AbstractMetric,
     adaptor::AbstractAdaptor,
     N::Integer;
@@ -262,7 +263,7 @@ end
 
 function AbstractMCMC.sample(
     model::DifferentiableDensityModel,
-    kernel::AbstractHMCKernel,
+    kernel::AbstractMCMCKernel,
     metric::AbstractMetric,
     adaptor::AbstractAdaptor,
     parallel::AbstractMCMC.AbstractMCMCParallel,
@@ -279,7 +280,7 @@ end
 function AbstractMCMC.sample(
     rng::Random.AbstractRNG,
     model::DifferentiableDensityModel,
-    kernel::AbstractHMCKernel,
+    kernel::AbstractMCMCKernel,
     metric::AbstractMetric,
     adaptor::AbstractAdaptor,
     parallel::AbstractMCMC.AbstractMCMCParallel,
