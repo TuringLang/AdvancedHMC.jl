@@ -131,6 +131,8 @@ include("diagnosis.jl")
 include("sampler.jl")
 export sample
 
+include("abstractmcmc.jl")
+
 include("contrib/ad.jl")
 
 ### Init
