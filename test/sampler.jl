@@ -3,7 +3,7 @@ const PROGRESS = length(ARGS) > 0 && ARGS[1] == "--progress" ? true : false
 
 using Test, AdvancedHMC, LinearAlgebra, Random, MCMCDebugging, Plots
 using AdvancedHMC: StaticTerminationCriterion, DynamicTerminationCriterion
-using Parameters: reconstruct
+using Setfield
 using Statistics: mean, var, cov
 unicodeplots()
 include("common.jl")
@@ -38,7 +38,7 @@ end
         :DiagEuclideanMetric => DiagEuclideanMetric(D),
         :DenseEuclideanMetric => DenseEuclideanMetric(D),
     )
-        @test show(metric) == nothing
+        test_show(metric)
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         @testset "$lfsym" for (lfsym, lf) in Dict(
             :Leapfrog => Leapfrog(ϵ),
@@ -55,8 +55,8 @@ end
                 :(Trajectory{MultinomialTS,Original}) => Trajectory{MultinomialTS}(lf, ClassicNoUTurn()),
                 :(Trajectory{MultinomialTS,Generalised}) => Trajectory{MultinomialTS}(lf, GeneralisedNoUTurn()),
             )
-                @test show(h) == nothing
-                @test show(τ) == nothing
+                test_show(h)
+                test_show(τ)
                 @testset  "NoAdaptation" begin
                     Random.seed!(1)
                     samples, stats = sample(h, HMCKernel(τ), θ_init, n_samples; verbose=false, progress=PROGRESS)
@@ -87,11 +87,16 @@ end
                         StepSizeAdaptor(0.8, τ.integrator),
                     ),
                 )
-                    @test show(adaptor) == nothing
+                    test_show(adaptor)
                     Random.seed!(1)
                     # For `MassMatrixAdaptor`, we use the pre-defined step size as the method cannot adapt the step size.
-                    # For other adapatation methods that are able to adpat the step size, we use `find_good_stepsize`.
-                    τ_used = adaptorsym == :MassMatrixAdaptorOnly ? τ : reconstruct(τ, integrator=reconstruct(lf, ϵ=find_good_stepsize(h, θ_init)))
+                    # For other adapatation methods that are able to adapt the step size, we use `find_good_stepsize`.
+                    τ_used = if adaptorsym == :MassMatrixAdaptorOnly
+                        τ
+                    else
+                        ϵ = find_good_stepsize(h, θ_init)
+                        @set τ.integrator.ϵ = ϵ
+                    end
                     samples, stats = sample(h, HMCKernel(τ_used) , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
                     @test mean(samples[(n_adapts+1):end]) ≈ zeros(D) atol=RNDATOL
                     test_stats(τ_used, stats, n_adapts)

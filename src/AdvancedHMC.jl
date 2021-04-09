@@ -7,13 +7,16 @@ using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, chol
 using StatsFuns: logaddexp, logsumexp
 using Random: GLOBAL_RNG, AbstractRNG
 using ProgressMeter: ProgressMeter
-using Parameters: @unpack, reconstruct
+using UnPack: @unpack
+
+using Setfield
+import Setfield: ConstructionBase
+
 using ArgCheck: @argcheck
 
 using DocStringExtensions
 
 import StatsBase: sample
-import Parameters: reconstruct
 
 include("utilities.jl")
 

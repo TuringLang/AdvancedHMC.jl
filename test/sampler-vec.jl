@@ -30,9 +30,9 @@ include("common.jl")
         n_chains = n_chains_list[i_test]
         metric = metricT((D, n_chains))
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-        @test show(metric) == nothing
-        @test show(h) == nothing
-        @test show(τ) == nothing
+        test_show(metric)
+        test_show(h)
+        test_show(τ)
 
         # NoAdaptation
         Random.seed!(100)
@@ -53,7 +53,7 @@ include("common.jl")
             ),
         ]
             τ.termination_criterion isa FixedIntegrationTime && continue
-            @test show(adaptor) == nothing
+            test_show(adaptor)
 
             Random.seed!(100)
             samples, stats = sample(h, HMCKernel(τ), θ_init_list[i_test], n_samples, adaptor, n_adapts; verbose=false, progress=false)

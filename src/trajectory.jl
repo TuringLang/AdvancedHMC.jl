@@ -199,6 +199,8 @@ end
 Trajectory{TS}(integrator::I, termination_criterion::TC) where {TS, I, TC} = 
     Trajectory{TS, I, TC}(integrator, termination_criterion)
 
+ConstructionBase.constructorof(::Type{<:Trajectory{TS}}) where {TS} = Trajectory{TS}
+
 function Base.show(io::IO, τ::Trajectory{TS}) where {TS}
     print(io, "Trajectory{$TS}(integrator=$(τ.integrator), tc=$(τ.termination_criterion))")
 end
