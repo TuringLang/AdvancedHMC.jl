@@ -8,7 +8,11 @@ using StatsFuns: logaddexp, logsumexp
 import Random
 using Random: GLOBAL_RNG, AbstractRNG
 using ProgressMeter: ProgressMeter
-using Parameters: @unpack, reconstruct
+using UnPack: @unpack
+
+using Setfield
+import Setfield: ConstructionBase
+
 using ArgCheck: @argcheck
 
 using DocStringExtensions
@@ -16,7 +20,6 @@ using DocStringExtensions
 import AbstractMCMC
 
 import StatsBase: sample
-import Parameters: reconstruct
 
 include("utilities.jl")
 
