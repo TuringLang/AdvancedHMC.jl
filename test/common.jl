@@ -1,4 +1,6 @@
 # TODO: add more target distributions and make them iteratable
+# TODO: Integrate with https://github.com/xukai92/VecTargets.jl to achieve goal noted 
+#       above.
 
 # Dimension of testing distribution
 const D = 5
