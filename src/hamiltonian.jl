@@ -70,15 +70,22 @@ phasepoint(
 
 # If position variable and momentum variable are in different containers,
 # move the momentum variable to that of the position variable.
-# This is needed for AHMC to work with CuArrays (without depending on it).
+# This is needed for AHMC to work with CuArrays and other Arrays (without depending on it).
 phasepoint(
     h::Hamiltonian,
     θ::T1,
     _r::T2;
-    r=T1(_r),
+    r=safe_rsimilar(θ, _r),
     ℓπ=∂H∂θ(h, θ),
     ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, r))
 ) where {T1<:AbstractVecOrMat,T2<:AbstractVecOrMat} = PhasePoint(θ, r, ℓπ, ℓκ)
+# ensures compatibility with ComponentArrays
+function safe_rsimilar(θ, _r)
+    r = similar(θ)
+    copyto!(r, _r)
+    r
+end
+
 
 Base.isfinite(v::DualValue) = all(isfinite, v.value) && all(isfinite, v.gradient)
 Base.isfinite(v::AbstractVecOrMat) = all(isfinite, v)

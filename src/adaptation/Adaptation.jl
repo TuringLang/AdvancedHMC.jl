@@ -3,7 +3,7 @@ export Adaptation
 
 using LinearAlgebra: LinearAlgebra
 using Statistics: Statistics
-using Parameters: @unpack, @pack!
+using UnPack: @unpack, @pack!
 
 using ..AdvancedHMC: DEBUG, AbstractScalarOrVec
 

@@ -15,8 +15,8 @@ include("common.jl")
     z1 = init_z1()
     z2 = init_z2()
 
-    @test z1.ℓπ.value == z1.ℓπ.value
-    @test z1.ℓκ.value == z1.ℓκ.value
+    @test z1.ℓπ.value == z2.ℓπ.value
+    @test z1.ℓκ.value == z2.ℓκ.value
 end
 
 @testset "Metric" begin
