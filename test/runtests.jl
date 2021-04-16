@@ -17,7 +17,7 @@ println(ENV)
     ]
 
     if CUDA.functional()
-        @eval module Test_cuda
+        @eval module TestCUDA
             include("cuda.jl")
         end
     else
