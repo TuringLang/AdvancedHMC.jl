@@ -1,4 +1,6 @@
 # TODO: add more target distributions and make them iteratable
+# TODO: Integrate with https://github.com/xukai92/VecTargets.jl to achieve goal noted 
+#       above.
 
 # Dimension of testing distribution
 const D = 5
@@ -9,42 +11,48 @@ const DETATOL = 1e-3 * D * TRATIO
 # Random tolerance
 const RNDATOL = 5e-2 * D * TRATIO * 2
 
-# Hand-coded multivaite Gaussain
+# Hand-coded multivariate Gaussian
 
 const gaussian_m = zeros(D)
 const gaussian_s = ones(D)
 
-function ℓπ(m, s, x::AbstractVecOrMat{T}) where {T}
-    diff = x .- m
-    v = s.^2
-    return -(log(2 * T(pi)) .+ log.(v) .+ diff .* diff ./ v) / 2
+struct Gaussian{Tm, Ts}
+    m::Tm
+    s::Ts
 end
 
-function ℓπ(θ::AbstractVector)
-    return sum(ℓπ(gaussian_m, gaussian_s, θ))
+function ℓπ_gaussian(g::AbstractVecOrMat{T}, s) where {T}
+    return .-(log(2 * T(pi)) .+ 2 .* log.(s) .+ abs2.(g) ./ s.^2) ./ 2
 end
 
-function ℓπ(θ::AbstractMatrix)
-    return dropdims(sum(ℓπ(gaussian_m, gaussian_s, θ); dims=1); dims=1)
-end
+ℓπ_gaussian(m, s, x) = ℓπ_gaussian(m .- x, s)
 
-function ∂ℓπ∂θ(m, s, x::AbstractVecOrMat{T}) where {T}
-    diff = x .- m
-    v = s.^2
-    v = -(log(2 * T(pi)) .+ log.(v) .+ diff .* diff ./ v) / 2
-    g = -diff
+function ∇ℓπ_gaussianl(m, s, x)
+    g = m .- x
+    v = ℓπ_gaussian(g, s)
     return v, g
 end
 
-function ∂ℓπ∂θ(θ::AbstractVector)
-    v, g = ∂ℓπ∂θ(gaussian_m, gaussian_s, θ)
-    return sum(v), g
+function get_ℓπ(g::Gaussian)
+    ℓπ(x::AbstractVector) = sum(ℓπ_gaussian(g.m, g.s, x))
+    ℓπ(x::AbstractMatrix) = dropdims(sum(ℓπ_gaussian(g.m, g.s, x); dims=1); dims=1)
+    return ℓπ
 end
 
-function ∂ℓπ∂θ(θ::AbstractMatrix)
-    v, g = ∂ℓπ∂θ(gaussian_m, gaussian_s, θ)
-    return dropdims(sum(v; dims=1); dims=1), g
+function get_∇ℓπ(g::Gaussian)
+    function ∇ℓπ(x::AbstractVector)
+        val, grad = ∇ℓπ_gaussianl(g.m, g.s, x)
+        return sum(val), grad
+    end
+    function ∇ℓπ(x::AbstractMatrix)
+        val, grad = ∇ℓπ_gaussianl(g.m, g.s, x)
+        return dropdims(sum(val; dims=1); dims=1), grad
+    end
+    return ∇ℓπ
 end
+
+ℓπ = get_ℓπ(Gaussian(gaussian_m, gaussian_s))
+∂ℓπ∂θ = get_∇ℓπ(Gaussian(gaussian_m, gaussian_s))
 
 # For the Turing model
 # @model gdemo() = begin

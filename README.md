@@ -87,6 +87,12 @@ Threads.@threads for i in 1:nchains
 end
 ```
 
+### GPU Sampling with CUDA
+
+There is experimental support for running static HMC on the GPU using CUDA. 
+To do so the user needs to have [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) installed, ensure the logdensity of the `Hamiltonian` can be executed on the GPU and that the initial points are a `CuArray`. 
+A small working example can be found at `test/cuda.jl`.
+
 ## API and supported HMC algorithms
 
 An important design goal of AdvancedHMC.jl is modularity; we would like to support algorithmic research on HMC.
