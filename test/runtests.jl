@@ -1,6 +1,6 @@
 using Distributed, Test, CUDA
 
-println("Envronment variables for testing")
+println("Environment variables for testing")
 println(ENV)
 
 @testset "AdvancedHMC" begin
