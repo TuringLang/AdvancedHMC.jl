@@ -45,9 +45,14 @@ struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
         @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
         if any(isfinite.((θ, r, ℓπ, ℓκ)) .== false)
             @warn "The current proposal will be rejected due to numerical error(s)." isfinite.((θ, r, ℓπ, ℓκ))
-            E = eltype(T)
-            ℓπ = DualValue(map(v -> isfinite(v) ? v : -E(Inf), ℓπ.value), ℓπ.gradient)
-            ℓκ = DualValue(map(v -> isfinite(v) ? v : -E(Inf), ℓκ.value), ℓκ.gradient)
+            ℓπ = DualValue(
+                map(v -> isfinite(v) ? v : -eltype(T)(Inf), ℓπ.value), 
+                ℓπ.gradient
+            )
+            ℓκ = DualValue(
+                map(v -> isfinite(v) ? v : -eltype(T)(Inf), ℓκ.value), 
+                ℓκ.gradient
+            )
         end
         new{T,V}(θ, r, ℓπ, ℓκ)
     end
