@@ -33,7 +33,6 @@ end
 ##
 ## Interface functions
 ##
-
 function sample_init(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
     h::Hamiltonian, 
@@ -143,7 +142,6 @@ sample(
         verbose::Bool=true,
         progress::Bool=false
     )
-
 Sample `n_samples` samples using the proposal `κ` under Hamiltonian `h`.
 - The randomness is controlled by `rng`. 
     - If `rng` is not provided, `GLOBAL_RNG` will be used.
