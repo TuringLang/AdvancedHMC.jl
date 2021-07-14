@@ -132,6 +132,7 @@ include("sampler.jl")
 export sample
 
 include("abstractmcmc.jl")
+export DifferentiableDensityModel
 
 include("contrib/ad.jl")
 

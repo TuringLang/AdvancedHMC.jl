@@ -1,35 +1,95 @@
+"""
+    HMCSampler
+
+A `AbstractMCMC.AbstractSampler` for kernels in AdvancedHMC.jl.
+
+# Fields
+
+$(FIELDS)
+
+# Notes
+
+Note that all the fields have the prefix `initial_` to indicate
+that these will not necessarily correspond to the `kernel`, `metric`,
+and `adaptor` after sampling.
+
+To access the updated fields use the resulting [`HMCState`](@ref).
+"""
 struct HMCSampler{K, M, A} <: AbstractMCMC.AbstractSampler
+    "Initial [`AbstractMCMCKernel`](@ref)."
     initial_kernel::K
+    "Initial [`AbstractMetric`](@ref)."
     initial_metric::M
+    "Initial [`AbstractAdaptor`](@ref)."
     initial_adaptor::A
 end
 HMCSampler(kernel, metric) = HMCSampler(kernel, metric, Adaptation.NoAdaptation())
 
+"""
+    DifferentiableDensityModel(ℓπ, ∂ℓπ∂θ)
+    DifferentiableDensityModel(ℓπ, m::Module)
+
+A `AbstractMCMC.AbstractMCMCModel` representing a differentiable log-density.
+
+If a module `m` is given as the second argument, then `m` is assumed to be an
+automatic-differentiation package and this will be used to compute the gradients.
+
+Note that the module `m` must be imported before usage, e.g.
+```julia
+using Zygote: Zygote
+model = DifferentiableDensityModel(ℓπ, Zygote)
+```
+results in a `model` which will use Zygote.jl as its AD-backend.
+
+# Fields
+$(FIELDS)
+"""
 struct DifferentiableDensityModel{Tlogπ, T∂logπ∂θ} <: AbstractMCMC.AbstractModel
+    "Log-density. Maps `AbstractArray` to value of the log-density."
     ℓπ::Tlogπ
+    "Gradient of log-density. Returns a tuple of `ℓπ` and the gradient evaluated at the given point."
     ∂ℓπ∂θ::T∂logπ∂θ
 end
 
 struct DummyMetric <: AbstractMetric end
-
-function DifferentiableDensityModel(ℓπ, m::Module=ForwardDiff)
+function DifferentiableDensityModel(ℓπ, m::Module)
     h = Hamiltonian(DummyMetric(), ℓπ, m)
     return DifferentiableDensityModel(h.ℓπ, h.∂ℓπ∂θ)
 end
 
+"""
+    HMCState
+
+Represents the state of a [`HMCSampler`](@ref).
+
+# Fields
+
+$(FIELDS)
+
+"""
 struct HMCState{
     TTrans<:Transition,
     TMetric<:AbstractMetric,
     TKernel<:AbstractMCMCKernel,
     TAdapt<:Adaptation.AbstractAdaptor
 }
+    "Index of current iteration."
     i::Int
+    "Current [`Transition`](@ref)."
     transition::TTrans
+    "Current [`AbstractMetric`](@ref), possibly adapted."
     metric::TMetric
+    "Current [`AbstractMCMCKernel`](@ref)."
     κ::TKernel
+    "Current [`AbstractAdaptor`](@ref)."
     adaptor::TAdapt
 end
 
+"""
+    $(TYPEDSIGNATURES)
+
+A convenient wrapper around `AbstractMCMC.sample` avoiding explicit construction of [`HMCSampler`](@ref).
+"""
 function AbstractMCMC.sample(
     model::DifferentiableDensityModel,
     kernel::AbstractMCMCKernel,
@@ -181,9 +241,21 @@ end
 ################
 ### Callback ###
 ################
+"""
+    HMCProgressCallback
+
+A callback to be used with AbstractMCMC.jl's interface, replicating the
+logging behavior of the non-AbstractMCMC [`sample`](@ref).
+
+# Fields
+$(FIELDS)
+"""
 struct HMCProgressCallback{P}
+    "`Progress` meter from ProgressMeters.jl."
     pm::P
+    "Specifies whether or not to use display a progress bar."
     progress::Bool
+    "If `progress` is not specified and this is `true` some information will be logged upon completion of adaptation."
     verbose::Bool
 end
 
