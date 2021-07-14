@@ -10,6 +10,13 @@ struct DifferentiableDensityModel{Tlogπ, T∂logπ∂θ} <: AbstractMCMC.Abstra
     ∂ℓπ∂θ::T∂logπ∂θ
 end
 
+struct DummyMetric <: AbstractMetric end
+
+function DifferentiableDensityModel(ℓπ, m::Module=ForwardDiff)
+    h = Hamiltonian(DummyMetric(), ℓπ, m)
+    return DifferentiableDensityModel(h.ℓπ, h.∂ℓπ∂θ)
+end
+
 struct HMCState{
     TTrans<:Transition,
     TMetric<:AbstractMetric,
