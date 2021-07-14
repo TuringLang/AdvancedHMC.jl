@@ -1,4 +1,6 @@
-using Distributed, Test, CUDA, AdvancedHMC
+using Distributed, Test, CUDA, Pkg
+
+using AdvancedHMC: AdvancedHMC
 
 println("Envronment variables for testing")
 println(ENV)
@@ -51,7 +53,11 @@ const GROUP = get(ENV, "GROUP", "All")
                     pushfirst!(LOAD_PATH, DIRECTORY_Turing_tests)
                 end
 
+                # Avoids conflicting namespaces, e.g. `NUTS` used in Turing.jl's tests
+                # refers to `Turing.NUTS` not `AdvancedHMC.NUTS`.
+                @eval module TuringIntegrationTests
                 include(joinpath("turing", "runtests.jl"))
+                end
             catch err
                 err isa Pkg.Resolve.ResolverError || rethrow()
                 # If we can't resolve that means this is incompatible by SemVer and this is fine
