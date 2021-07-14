@@ -5,7 +5,7 @@ include("common.jl")
 @testset "`gdemo`" begin
     rng = MersenneTwister(0)
 
-    n_samples = 5_000
+    n_samples = 10_000
     n_adapts = 1_000
 
     θ_init = randn(rng, 2)
@@ -28,7 +28,7 @@ include("common.jl")
     for t in samples
         t.z.θ .= invlink_gdemo(t.z.θ)
     end
-    m_est = mean(samples[1000:end]) do t
+    m_est = mean(samples[1000:10:end]) do t
         t.z.θ
     end
 
