@@ -40,7 +40,7 @@ jobs:
         uses: julia-actions/julia-runtest@latest
         env:
           GROUP: AdvancedHMC
-      - name: Run tests
+      - name: Run integration tests
         uses: julia-actions/julia-runtest@latest
         continue-on-error: true
         env:
