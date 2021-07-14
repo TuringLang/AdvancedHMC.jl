@@ -36,6 +36,5 @@ jobs:
       - uses: julia-actions/julia-buildpkg@latest
       - name: Run integration tests
         uses: julia-actions/julia-runtest@latest
-        continue-on-error: true
         env:
           GROUP: Downstream
