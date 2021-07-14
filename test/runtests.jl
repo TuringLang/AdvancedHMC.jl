@@ -1,4 +1,4 @@
-using Distributed, Test, CUDA
+using Distributed, Test, CUDA, AdvancedHMC
 
 println("Envronment variables for testing")
 println(ENV)
