@@ -1,4 +1,4 @@
-name: CI
+name: IntegrationTests
 
 on:
   push:
@@ -9,12 +9,10 @@ on:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.version == 'nightly' }}
     strategy:
       matrix:
         version:
           - '1'
-          - 'nightly'
         os:
           - ubuntu-latest
           - macOS-latest
@@ -36,7 +34,7 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/julia-buildpkg@latest
-      - name: Run tests
+      - name: Run integration tests
         uses: julia-actions/julia-runtest@latest
         env:
-          GROUP: AdvancedHMC
+          GROUP: Downstream
