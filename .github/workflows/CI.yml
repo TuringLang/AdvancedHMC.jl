@@ -39,4 +39,4 @@ jobs:
       - name: Run tests
         uses: julia-actions/julia-runtest@latest
         env:
-          GROUP: AdvancedHMC
+          AHMC_TEST_GROUP: AdvancedHMC
