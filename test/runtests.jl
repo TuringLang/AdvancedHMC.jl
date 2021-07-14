@@ -21,6 +21,7 @@ const GROUP = get(ENV, "GROUP", "All")
             "sampler-vec",
             "demo",
             "models",
+            "abstractmcmc"
         ]
 
         if CUDA.functional()
