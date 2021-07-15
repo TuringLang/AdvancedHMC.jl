@@ -19,11 +19,13 @@ include("common.jl")
     samples = AbstractMCMC.sample(
         model, κ, metric, adaptor, n_adapts + n_samples;
         nadapts = n_adapts,
-        init_params = θ_init
+        init_params = θ_init,
+        progress=false,
+        verbose=false
     );
 
     # Transform back to original space.
-    # NOTE: We're not correctly for the `logabsdetjac` here since, but
+    # NOTE: We're not correcting for the `logabsdetjac` here since, but
     # we're only interested in the mean it doesn't matter.
     for t in samples
         t.z.θ .= invlink_gdemo(t.z.θ)
