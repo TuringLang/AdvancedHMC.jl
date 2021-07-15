@@ -17,7 +17,7 @@ include("common.jl")
     adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, κ.τ.integrator))
 
     samples = AbstractMCMC.sample(
-        model, κ, metric, adaptor, n_samples;
+        model, κ, metric, adaptor, n_adapts + n_samples;
         nadapts = n_adapts,
         init_params = θ_init
     );
@@ -28,7 +28,7 @@ include("common.jl")
     for t in samples
         t.z.θ .= invlink_gdemo(t.z.θ)
     end
-    m_est = mean(samples) do t
+    m_est = mean(samples[n_adapts + 1:end]) do t
         t.z.θ
     end
 
