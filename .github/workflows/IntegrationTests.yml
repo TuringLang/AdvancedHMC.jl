@@ -37,4 +37,4 @@ jobs:
       - name: Run integration tests
         uses: julia-actions/julia-runtest@latest
         env:
-          GROUP: Downstream
+          AHMC_TEST_GROUP: Downstream

@@ -2,12 +2,12 @@ using Distributed, Test, CUDA, Pkg
 
 using AdvancedHMC: AdvancedHMC
 
-println("Envronment variables for testing")
+println("Environment variables for testing")
 println(ENV)
 
 const DIRECTORY_AdvancedHMC = dirname(dirname(pathof(AdvancedHMC)))
 const DIRECTORY_Turing_tests = joinpath(DIRECTORY_AdvancedHMC, "test", "turing")
-const GROUP = get(ENV, "GROUP", "All")
+const GROUP = get(ENV, "AHMC_TEST_GROUP", "All")
 
 @testset "AdvancedHMC" begin
     if GROUP == "All" || GROUP == "AdvancedHMC"
