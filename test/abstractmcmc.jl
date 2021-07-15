@@ -5,8 +5,8 @@ include("common.jl")
 @testset "`gdemo`" begin
     rng = MersenneTwister(0)
 
-    n_samples = 10_000
-    n_adapts = 1_000
+    n_samples = 5_000
+    n_adapts = 5_000
 
     θ_init = randn(rng, 2)
 
