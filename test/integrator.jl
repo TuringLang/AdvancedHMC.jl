@@ -26,17 +26,6 @@ n_steps = 10
     @test z_step.r ≈ z_steps.r atol=DETATOL
 end
 
-# using Turing: Inference
-# @testset "step(::Leapfrog) against Turing.Inference._leapfrog()" begin
-#     z = AdvancedHMC.phasepoint(h, θ_init, r_init)
-#     t_Turing = @elapsed θ_Turing, r_Turing, _ = Inference._leapfrog(θ_init, r_init, n_steps, ϵ, x -> (nothing, ∂logπ∂θ(x)))
-#     t_AHMC = @elapsed z_AHMC = AdvancedHMC.step(lf, h, z, n_steps)
-#     @info "Performance of leapfrog of AdvancedHMC v.s. Turing" n_steps t_Turing t_AHMC t_Turing / t_AHMC
-#
-#     @test θ_Turing ≈ z_AHMC.θ atol=DETATOL
-#     @test r_Turing ≈ z_AHMC.r atol=DETATOL
-# end
-
 @testset "jitter" begin
     @testset "Leapfrog" begin
         ϵ0 = 0.1
