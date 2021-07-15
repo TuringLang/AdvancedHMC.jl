@@ -213,7 +213,7 @@ nsteps(τ::Trajectory{TS, I, TC}) where {TS, I, TC<:FixedIntegrationTime} =
 ## Kernel interface
 ##
 
-struct HMCKernel{R, T<:Trajectory} <: AbstractMCMCKernel 
+struct HMCKernel{R, T<:Trajectory} <: AbstractMCMCKernel
     refreshment::R
     τ::T
 end

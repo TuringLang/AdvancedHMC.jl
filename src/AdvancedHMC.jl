@@ -5,6 +5,7 @@ const DEBUG = convert(Bool, parse(Int, get(ENV, "DEBUG_AHMC", "0")))
 using Statistics: mean, var, middle
 using LinearAlgebra: Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
 using StatsFuns: logaddexp, logsumexp
+import Random
 using Random: GLOBAL_RNG, AbstractRNG
 using ProgressMeter: ProgressMeter
 using UnPack: @unpack
@@ -15,6 +16,8 @@ import Setfield: ConstructionBase
 using ArgCheck: @argcheck
 
 using DocStringExtensions
+
+import AbstractMCMC
 
 import StatsBase: sample
 
@@ -127,6 +130,9 @@ include("diagnosis.jl")
 
 include("sampler.jl")
 export sample
+
+include("abstractmcmc.jl")
+export DifferentiableDensityModel
 
 include("contrib/ad.jl")
 

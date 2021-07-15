@@ -1,8 +1,9 @@
 name = "AdvancedHMC"
 uuid = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
-version = "0.2.28"
+version = "0.3.0"
 
 [deps]
+AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 InplaceOps = "505f98c9-085e-5b2c-8e89-488be7bf1f34"
@@ -17,6 +18,7 @@ StatsFuns = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
+AbstractMCMC = "3"
 ArgCheck = "1, 2"
 DocStringExtensions = "0.8"
 InplaceOps = "0.3"

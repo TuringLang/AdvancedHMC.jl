@@ -21,6 +21,7 @@ const GROUP = get(ENV, "AHMC_TEST_GROUP", "All")
             "sampler-vec",
             "demo",
             "models",
+            "abstractmcmc"
         ]
 
         if CUDA.functional()

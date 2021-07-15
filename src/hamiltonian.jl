@@ -47,11 +47,11 @@ struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
             @warn "The current proposal will be rejected due to numerical error(s)." isfinite.((θ, r, ℓπ, ℓκ))
             # NOTE eltype has to be inlined to avoid type stability issue; see #267
             ℓπ = DualValue(
-                map(v -> isfinite(v) ? v : -eltype(T)(Inf), ℓπ.value), 
+                map(v -> isfinite(v) ? v : -eltype(T)(Inf), ℓπ.value),
                 ℓπ.gradient
             )
             ℓκ = DualValue(
-                map(v -> isfinite(v) ? v : -eltype(T)(Inf), ℓκ.value), 
+                map(v -> isfinite(v) ? v : -eltype(T)(Inf), ℓκ.value),
                 ℓκ.gradient
             )
         end
