@@ -11,7 +11,7 @@ include("common.jl")
     θ_init = randn(rng, 2)
 
     model = AdvancedHMC.DifferentiableDensityModel(ℓπ_gdemo, ForwardDiff)
-    init_eps = Leapfrog(0.1)
+    init_eps = Leapfrog(1e-3)
     κ = NUTS(init_eps)
     metric = DiagEuclideanMetric(2)
     adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, κ.τ.integrator))
