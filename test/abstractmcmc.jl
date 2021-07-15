@@ -28,7 +28,7 @@ include("common.jl")
     for t in samples
         t.z.θ .= invlink_gdemo(t.z.θ)
     end
-    m_est = mean(samples[n_adapts + 1:end]) do t
+    m_est = mean(samples) do t
         t.z.θ
     end
 
