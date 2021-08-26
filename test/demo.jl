@@ -7,7 +7,7 @@ using LinearAlgebra
     D = 10; initial_θ = rand(D)
 
     # Define the target distribution
-    ℓπ(θ) = logpdf(MvNormal(zeros(D), I)), θ)
+    ℓπ(θ) = logpdf(MvNormal(zeros(D), I), θ)
 
     # Set the number of samples to draw and warmup iterations
     n_samples, n_adapts = 2_000, 1_000
