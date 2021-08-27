@@ -17,7 +17,7 @@ include("common.jl")
     adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, κ.τ.integrator))
 
     samples = AbstractMCMC.sample(
-        model, κ, metric, adaptor, n_adapts + n_samples;
+        rng, model, κ, metric, adaptor, n_adapts + n_samples;
         nadapts = n_adapts,
         init_params = θ_init,
         progress=false,

@@ -31,12 +31,13 @@ If you are interested in using AdvancedHMC.jl through a probabilistic programmin
 
 ```julia
 using AdvancedHMC, Distributions, ForwardDiff
+using LinearAlgebra
 
 # Choose parameter dimensionality and initial parameter value
 D = 10; initial_θ = rand(D)
 
 # Define the target distribution
-ℓπ(θ) = logpdf(MvNormal(zeros(D), ones(D)), θ)
+ℓπ(θ) = logpdf(MvNormal(zeros(D), I), θ)
 
 # Set the number of samples to draw and warmup iterations
 n_samples, n_adapts = 2_000, 1_000

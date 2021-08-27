@@ -16,7 +16,7 @@ using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, get_es
     cov_estimators = [cov_welford, cov_naive]
     estimators = [var_estimators..., cov_estimators...]
 
-    for dist in [MvNormal(zeros(D), ones(D)), Dirichlet(D, 1)]
+    for dist in [MvNormal(zeros(D), I), Dirichlet(D, 1)]
         for _ = 1:n_samples
             s = rand(dist)
             for estimator in estimators
@@ -120,17 +120,17 @@ let D=10
                 Random.seed!(1)
 
                 # Random variance
-                σ = ones(D) + abs.(randn(D))
+                σ² = 1 .+ abs.(randn(D))
 
                 # Diagonal Gaussian
-                target = MvNormal(zeros(D), σ)
+                target = MvNormal(zeros(D), Diagonal(σ²))
                 ℓπ = θ -> logpdf(target, θ)
 
                 res = runnuts(ℓπ, DiagEuclideanMetric(D))
-                @test res.adaptor.pc.var ≈ σ .^ 2 rtol=0.2
+                @test res.adaptor.pc.var ≈ σ² rtol=0.2
 
                 res = runnuts(ℓπ, DenseEuclideanMetric(D))
-                @test res.adaptor.pc.cov ≈ diagm(0 => σ .^ 2) rtol=0.25
+                @test res.adaptor.pc.cov ≈ Diagonal(σ²) rtol=0.25
             end
         end
 
@@ -155,7 +155,7 @@ let D=10
     end
 
     @testset "Initialisation adaptor by metric" begin
-        target = MvNormal(zeros(D), 1)
+        target = MvNormal(zeros(D), I)
         ℓπ = θ -> logpdf(target, θ)
 
         mass_init = fill(0.5, D)

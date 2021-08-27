@@ -133,7 +133,7 @@ function AbstractMCMC.sample(
     kernel::AbstractMCMCKernel,
     metric::AbstractMetric,
     adaptor::AbstractAdaptor,
-    parallel::AbstractMCMC.AbstractMCMCParallel,
+    parallel::AbstractMCMC.AbstractMCMCEnsemble,
     N::Integer,
     nchains::Integer;
     kwargs...
@@ -150,7 +150,7 @@ function AbstractMCMC.sample(
     kernel::AbstractMCMCKernel,
     metric::AbstractMetric,
     adaptor::AbstractAdaptor,
-    parallel::AbstractMCMC.AbstractMCMCParallel,
+    parallel::AbstractMCMC.AbstractMCMCEnsemble,
     N::Integer,
     nchains::Integer;
     progress = true,
