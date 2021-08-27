@@ -52,8 +52,10 @@ end
                 :(Trajectory{MultinomialTS,FixedIntegrationTime}) => Trajectory{MultinomialTS}(lf, FixedIntegrationTime(ϵ * n_steps)),
                 :(Trajectory{SliceTS,Original}) => Trajectory{SliceTS}(lf, ClassicNoUTurn()),
                 :(Trajectory{SliceTS,Generalised}) => Trajectory{SliceTS}(lf, GeneralisedNoUTurn()),
+                :(Trajectory{SliceTS,StrictGeneralised}) => Trajectory{SliceTS}(lf, StrictGeneralisedNoUTurn()),
                 :(Trajectory{MultinomialTS,Original}) => Trajectory{MultinomialTS}(lf, ClassicNoUTurn()),
                 :(Trajectory{MultinomialTS,Generalised}) => Trajectory{MultinomialTS}(lf, GeneralisedNoUTurn()),
+                :(Trajectory{MultinomialTS,StrictGeneralised}) => Trajectory{MultinomialTS}(lf, StrictGeneralisedNoUTurn()),
             )
                 test_show(h)
                 test_show(τ)
