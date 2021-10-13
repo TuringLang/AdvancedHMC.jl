@@ -167,6 +167,12 @@ refresh(
 """
 Partial momentum refreshment with refresh rate `α`.
 
+See equation (5.19) [1]
+
+    r' = α⋅r + sqrt(1-α²)⋅G
+
+where r is the momentum and G is a Gaussian random variable.
+
 ## References
 
 1. Neal, Radford M. "MCMC using Hamiltonian dynamics." Handbook of markov chain monte carlo 2.11 (2011): 2.
@@ -180,4 +186,4 @@ refresh(
     ref::PartialMomentumRefreshment,
     h::Hamiltonian,
     z::PhasePoint,
-) = phasepoint(h, z.θ, ref.α * z.r + (1 - ref.α^2) * rand(rng, h.metric))
+) = phasepoint(h, z.θ, ref.α * z.r + sqrt(1 - ref.α^2) * rand(rng, h.metric))
