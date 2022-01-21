@@ -35,4 +35,21 @@ include("common.jl")
     end
 
     @test m_est ≈ [49 / 24, 7 / 6] atol=RNDATOL
+
+    # Test that using the same AbstractRNG results in the same chain
+    rng1 = MersenneTwister(42)
+    rng2 = MersenneTwister(42)
+    samples1 = AbstractMCMC.sample(
+        rng1, model, κ, metric, adaptor, 10;
+        nadapts = 0,
+        progress=false,
+        verbose=false
+    );
+    samples2 = AbstractMCMC.sample(
+        rng2, model, κ, metric, adaptor, 10;
+        nadapts = 0,
+        progress=false,
+        verbose=false
+    );
+    @test samples1 == samples2
 end
