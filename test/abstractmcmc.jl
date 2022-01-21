@@ -51,5 +51,7 @@ include("common.jl")
         progress=false,
         verbose=false
     );
-    @test samples1 == samples2
+    @test mapreduce(*, samples1, samples2) do s1, s2
+        s1.z.θ == s2.z.θ
+    end # Equivalent to using all, check that all samples are equal
 end
