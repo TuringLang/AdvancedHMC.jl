@@ -185,7 +185,7 @@ function AbstractMCMC.step(
     adaptor = spl.initial_adaptor
 
     if init_params === nothing
-        init_params = randn(size(metric, 1))
+        init_params = randn(rng, size(metric, 1))
     end
 
     # Construct the hamiltonian using the initial metric
