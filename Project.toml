@@ -18,7 +18,7 @@ StatsFuns = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
-AbstractMCMC = "3.2"
+AbstractMCMC = "3.2, 4"
 ArgCheck = "1, 2"
 DocStringExtensions = "0.8"
 InplaceOps = "0.3"
