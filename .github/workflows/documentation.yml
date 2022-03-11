@@ -16,7 +16,7 @@ jobs:
         with:
           version: '1.7'
       - name: Install dependencies
-        run: julia --project=docs/ -e 'using Pkg; Pkg.add("https://github.com/TuringLang/beta.turing.ml"); Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+        run: julia --project=docs/ -e 'using Pkg; Pkg.add(url="https://github.com/TuringLang/beta.turing.ml"); Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
       - name: Build and deploy
         env:
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # If authenticating with SSH deploy key
