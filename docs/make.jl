@@ -11,5 +11,6 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/TuringLang/AdvancedHMC.jl.git"
+    repo = "github.com/TuringLang/AdvancedHMC.jl.git",
+    push_preview = true, # allows PR to deploy
 )
