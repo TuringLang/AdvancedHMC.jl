@@ -60,5 +60,5 @@ end
 using Comonicon
 
 @main function runtests(patterns...; dry::Bool=false)
-    retest(patterns...; dry=dry, seed=43, verbose=Inf)
+    retest(patterns...; dry=dry, verbose=Inf)
 end
