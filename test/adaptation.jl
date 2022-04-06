@@ -96,22 +96,22 @@ end
     end
 end
 
+function runnuts(ℓπ, metric; n_samples=3_000)
+    n_adapts = 1_500
+
+    θ_init = rand(D)
+
+    h = Hamiltonian(metric, ℓπ, ForwardDiff)
+    κ = NUTS(Leapfrog(find_good_stepsize(h, θ_init)))
+    adaptor = StanHMCAdaptor(
+        MassMatrixAdaptor(metric),
+        StepSizeAdaptor(0.8, κ.τ.integrator)
+    )
+    samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose=false)
+    return (samples=samples, stats=stats, adaptor=adaptor)
+end
+
 let D=10
-    function runnuts(ℓπ, metric; n_samples=3_000)
-        n_adapts = 1_500
-
-        θ_init = rand(D)
-
-        h = Hamiltonian(metric, ℓπ, ForwardDiff)
-        κ = NUTS(Leapfrog(find_good_stepsize(h, θ_init)))
-        adaptor = StanHMCAdaptor(
-            MassMatrixAdaptor(metric),
-            StepSizeAdaptor(0.8, κ.τ.integrator)
-        )
-        samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose=false)
-        return (samples=samples, stats=stats, adaptor=adaptor)
-    end
-
     @testset "Adapted mass v.s. true variance" begin
         n_tests = 5
 
