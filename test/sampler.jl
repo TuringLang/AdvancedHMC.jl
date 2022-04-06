@@ -8,7 +8,7 @@ using Statistics: mean, var, cov
 unicodeplots()
 include("common.jl")
 
-θ_init = rand(MersenneTwister(1), D)
+θ_init = rand(MersenneTwister(43), D)
 ϵ = 0.1
 n_steps = 10
 n_samples = 22_000
@@ -60,7 +60,7 @@ end
                 test_show(h)
                 test_show(τ)
                 @testset  "NoAdaptation" begin
-                    Random.seed!(1)
+                    Random.seed!(43)
                     samples, stats = sample(h, HMCKernel(τ), θ_init, n_samples; verbose=false, progress=PROGRESS)
                     @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
                 end
@@ -84,7 +84,7 @@ end
                     ),
                 )
                     test_show(adaptor)
-                    Random.seed!(1)
+                    Random.seed!(43)
                     # For `MassMatrixAdaptor`, we use the pre-defined step size as the method cannot adapt the step size.
                     # For other adapatation methods that are able to adapt the step size, we use `find_good_stepsize`.
                     τ_used = if adaptorsym == :MassMatrixAdaptorOnly
