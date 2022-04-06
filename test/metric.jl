@@ -1,4 +1,4 @@
-using Test, Random, AdvancedHMC
+using ReTest, Random, AdvancedHMC
 
 @testset "Sample momentum variables from metric via vector of RNGs" begin
     D = 10

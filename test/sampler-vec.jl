@@ -1,4 +1,4 @@
-using Test, AdvancedHMC, LinearAlgebra, UnicodePlots, Random
+using ReTest, AdvancedHMC, LinearAlgebra, UnicodePlots, Random
 using Statistics: mean, var, cov
 include("common.jl")
 

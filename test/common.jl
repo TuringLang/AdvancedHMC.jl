@@ -13,9 +13,6 @@ const RNDATOL = 5e-2 * D * TRATIO * 2
 
 # Hand-coded multivariate Gaussian
 
-const gaussian_m = zeros(D)
-const gaussian_s = ones(D)
-
 struct Gaussian{Tm, Ts}
     m::Tm
     s::Ts
@@ -51,8 +48,8 @@ function get_∇ℓπ(g::Gaussian)
     return ∇ℓπ
 end
 
-ℓπ = get_ℓπ(Gaussian(gaussian_m, gaussian_s))
-∂ℓπ∂θ = get_∇ℓπ(Gaussian(gaussian_m, gaussian_s))
+ℓπ = get_ℓπ(Gaussian(zeros(D), ones(D)))
+∂ℓπ∂θ = get_∇ℓπ(Gaussian(zeros(D), ones(D)))
 
 # For the Turing model
 # @model gdemo() = begin

@@ -1,4 +1,4 @@
-using Test, LinearAlgebra, Distributions, AdvancedHMC, Random, ForwardDiff
+using ReTest, LinearAlgebra, Distributions, AdvancedHMC, Random, ForwardDiff
 using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, get_estimation, get_estimation, reset!
 
 # Check that the estimated variance is approximately correct.

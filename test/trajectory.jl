@@ -1,4 +1,4 @@
-using Test, AdvancedHMC, Random
+using ReTest, AdvancedHMC, Random
 using Statistics: mean
 using LinearAlgebra: dot
 include("common.jl")

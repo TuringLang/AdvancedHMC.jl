@@ -1,4 +1,4 @@
-using Test, Random, AdvancedHMC, ForwardDiff
+using ReTest, Random, AdvancedHMC, ForwardDiff
 include("common.jl")
 
 ϵ = 0.01

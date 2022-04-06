@@ -1,4 +1,4 @@
-using Test
+using ReTest
 using AdvancedHMC, Distributions, ForwardDiff, ComponentArrays
 using LinearAlgebra
 

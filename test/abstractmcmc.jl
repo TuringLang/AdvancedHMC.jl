@@ -1,4 +1,4 @@
-using Test, Random, AdvancedHMC, ForwardDiff, AbstractMCMC
+using ReTest, Random, AdvancedHMC, ForwardDiff, AbstractMCMC
 using Statistics: mean
 include("common.jl")
 

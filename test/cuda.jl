@@ -1,4 +1,4 @@
-using Test
+using ReTest
 using AdvancedHMC
 using AdvancedHMC: DualValue, PhasePoint
 using CUDA
