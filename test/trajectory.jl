@@ -39,7 +39,7 @@ function makeplot(
     return fig
 end
 
-function gettraj(rng, ϵ=0.1, n_steps=50)
+function gettraj(rng, h, ϵ=0.1, n_steps=50)
     lf = Leapfrog(ϵ)
 
     q_init = randn(rng, D)
@@ -61,7 +61,7 @@ function hand_isturn(z0, z1, rho, v=1)
     return s
 end
 
-ahmc_isturn(z0, z1, rho, v=1) =
+ahmc_isturn(h, z0, z1, rho, v=1) =
     AdvancedHMC.isterminated(ClassicNoUTurn(), h, AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(), 0, 0, 0.0)).dynamic
 
 function hand_isturn_generalised(z0, z1, rho, v=1)
@@ -69,10 +69,10 @@ function hand_isturn_generalised(z0, z1, rho, v=1)
     return s
 end
 
-ahmc_isturn_generalised(z0, z1, rho, v=1) =
+ahmc_isturn_generalised(h, z0, z1, rho, v=1) =
     AdvancedHMC.isterminated(GeneralisedNoUTurn(), h, AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(rho), 0, 0, 0.0)).dynamic
 
-function ahmc_isturn_strictgeneralised(z0, z1, rho, v=1)
+function ahmc_isturn_strictgeneralised(h, z0, z1, rho, v=1)
     t = AdvancedHMC.isterminated(
         StrictGeneralisedNoUTurn(),
         h,
@@ -86,7 +86,7 @@ end
 """
 Check whether the subtree checks adequately detect U-turns.
 """
-function check_subtree_u_turns(z0, z1, rho)
+function check_subtree_u_turns(h, z0, z1, rho)
     t = AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(rho), 0, 0, 0.0)
     # The left and right subtree are created in such a way that the
     # check_left_subtree and check_right_subtree checks should be equivalent
@@ -240,20 +240,20 @@ end
             seed = abs(rand(Int8) + 128)
             rng = MersenneTwister(seed)
             @testset "seed = $seed" begin
-                traj_z = gettraj(rng)
+                traj_z = gettraj(rng, h)
                 traj_θ = hcat(map(z -> z.θ, traj_z)...)
                 traj_r = hcat(map(z -> z.r, traj_z)...)
                 rho = cumsum(traj_r, dims=2)
 
                 ts_hand_isturn_fwd = hand_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
-                ts_ahmc_isturn_fwd = ahmc_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+                ts_ahmc_isturn_fwd = ahmc_isturn.(Ref(h), Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
                 ts_hand_isturn_generalised_fwd = hand_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
-                ts_ahmc_isturn_generalised_fwd = ahmc_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+                ts_ahmc_isturn_generalised_fwd = ahmc_isturn_generalised.(Ref(h), Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
-                ts_ahmc_isturn_strictgeneralised_fwd = ahmc_isturn_strictgeneralised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+                ts_ahmc_isturn_strictgeneralised_fwd = ahmc_isturn_strictgeneralised.(Ref(h), Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
-                check_subtree_u_turns.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)])
+                check_subtree_u_turns.(Ref(h), Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)])
 
                 @test ts_hand_isturn_fwd[2:end] ==
                     ts_ahmc_isturn_fwd[2:end] ==
