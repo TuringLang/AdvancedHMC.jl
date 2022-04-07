@@ -1,5 +1,3 @@
-using ReTest, CUDA, Pkg
-
 using AdvancedHMC: AdvancedHMC
 
 println("Environment variables for testing")
@@ -10,6 +8,8 @@ const DIRECTORY_Turing_tests = joinpath(DIRECTORY_AdvancedHMC, "test", "turing")
 const GROUP = get(ENV, "AHMC_TEST_GROUP", "AdvancedHMC")
 
 if GROUP == "All" || GROUP == "AdvancedHMC"
+    using ReTest, CUDA, Pkg
+
     include("metric.jl")
     include("hamiltonian.jl")
     include("integrator.jl")
@@ -25,6 +25,12 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
         include("cuda.jl")
     else
         @warn "Skipping GPU tests because no GPU available."
+    end
+
+    using Comonicon
+
+    @main function runtests(patterns...; dry::Bool=false)
+        retest(patterns...; dry=dry, verbose=Inf)
     end
 end
 
@@ -51,12 +57,4 @@ if GROUP == "All" || GROUP == "Downstream"
         # Mistakenly introducing a breaking change, as we have intentionally made one
         @info "Not compatible with this release. No problem." exception = err
     end
-end
-
-
-
-using Comonicon
-
-@main function runtests(patterns...; dry::Bool=false)
-    retest(patterns...; dry=dry, verbose=Inf)
 end
