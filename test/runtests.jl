@@ -1,3 +1,4 @@
+using Comonicon
 using AdvancedHMC: AdvancedHMC
 
 println("Environment variables for testing")
@@ -26,8 +27,6 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
     else
         @warn "Skipping GPU tests because no GPU available."
     end
-
-    using Comonicon
 
     @main function runtests(patterns...; dry::Bool=false)
         retest(patterns...; dry=dry, verbose=Inf)
