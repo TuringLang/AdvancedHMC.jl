@@ -3,6 +3,103 @@ using Statistics: mean
 using LinearAlgebra: dot
 include("common.jl")
 
+function makeplot(
+    plt,
+    traj_θ,
+    ts_list...
+)
+    function plotturn!(traj_θ, ts)
+        s = 9.0
+        idcs_nodiv = ts .== false
+        idcs_div = ts .== true
+        idcs_nodiv[1] = idcs_div[1] = false # avoid plotting the first point
+        plt.scatter(traj_θ[1,idcs_nodiv], traj_θ[2,idcs_nodiv], s=s, c="black",  label="¬div")
+        plt.scatter(traj_θ[1,idcs_div], traj_θ[2,idcs_div],  s=s, c="red",    label="div")
+        plt.scatter(traj_θ[1,1], traj_θ[2,1], s=s, c="yellow", label="init")
+    end
+
+    fig = plt.figure(figsize=(16, 3))
+
+    for (i, ts, title) in zip(
+        1:length(ts_list),
+        ts_list,
+        [
+            "Hand original (v = 1)",
+            "AHMC original (v = 1)",
+            "Hand generalised (v = 1)",
+            "AHMC generalised (v = 1)"
+        ]
+    )
+        plt.subplot(1, 4, i)
+        plotturn!(traj_θ, ts)
+        plt.gca().set_title(title)
+        plt.legend()
+    end
+
+    return fig
+end
+
+function gettraj(rng, ϵ=0.1, n_steps=50)
+    lf = Leapfrog(ϵ)
+
+    q_init = randn(rng, D)
+    p_init = AdvancedHMC.rand(rng, h.metric)
+    z = AdvancedHMC.phasepoint(h, q_init, p_init)
+
+    traj_z = Vector(undef, n_steps)
+    traj_z[1] = z
+    for i = 2:n_steps
+        traj_z[i] = AdvancedHMC.step(lf, h, traj_z[i-1])
+    end
+
+    return traj_z
+end
+
+function hand_isturn(z0, z1, rho, v=1)
+    θ0minusθ1 = z0.θ - z1.θ
+    s = (dot(-θ0minusθ1, -z0.r) >= 0) || (dot(θ0minusθ1, z1.r) >= 0)
+    return s
+end
+
+ahmc_isturn(z0, z1, rho, v=1) =
+    AdvancedHMC.isterminated(ClassicNoUTurn(), h, AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(), 0, 0, 0.0)).dynamic
+
+function hand_isturn_generalised(z0, z1, rho, v=1)
+    s = (dot(rho, -z0.r) >= 0) || (dot(-rho, z1.r) >= 0)
+    return s
+end
+
+ahmc_isturn_generalised(z0, z1, rho, v=1) =
+    AdvancedHMC.isterminated(GeneralisedNoUTurn(), h, AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(rho), 0, 0, 0.0)).dynamic
+
+function ahmc_isturn_strictgeneralised(z0, z1, rho, v=1)
+    t = AdvancedHMC.isterminated(
+        StrictGeneralisedNoUTurn(),
+        h,
+        AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(rho), 0, 0, 0.0),
+        AdvancedHMC.BinaryTree(z0, z0, AdvancedHMC.TurnStatistic(rho - z1.r), 0, 0, 0.0),
+        AdvancedHMC.BinaryTree(z1, z1, AdvancedHMC.TurnStatistic(rho - z0.r), 0, 0, 0.0)
+    )
+    return t.dynamic
+end
+
+"""
+Check whether the subtree checks adequately detect U-turns.
+"""
+function check_subtree_u_turns(z0, z1, rho)
+    t = AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(rho), 0, 0, 0.0)
+    # The left and right subtree are created in such a way that the
+    # check_left_subtree and check_right_subtree checks should be equivalent
+    # to the general no U-turn check.
+    tleft = AdvancedHMC.BinaryTree(z0, z0, AdvancedHMC.TurnStatistic(rho - z1.r), 0, 0, 0.0)
+    tright = AdvancedHMC.BinaryTree(z1, z1, AdvancedHMC.TurnStatistic(rho - z0.r), 0, 0, 0.0)
+
+    s1 = AdvancedHMC.isterminated(GeneralisedNoUTurn(), h, t)
+    s2 = AdvancedHMC.check_left_subtree(h, t, tleft, tright)
+    s3 = AdvancedHMC.check_right_subtree(h, t, tleft, tright)
+    @test s1 == s2 == s3
+end
+
 
 @testset "Trajectory" begin
     ϵ = 0.01
@@ -135,146 +232,49 @@ include("common.jl")
 
         @test t5.ΔH_max == 3.0
     end
-end
 
-### Test ClassicNoUTurn and GeneralisedNoUTurn
+    ### Test ClassicNoUTurn and GeneralisedNoUTurn
+    @testset "ClassicNoUTurn" begin
+        n_tests = 4
+        for _ = 1:n_tests
+            seed = abs(rand(Int8) + 128)
+            rng = MersenneTwister(seed)
+            @testset "seed = $seed" begin
+                traj_z = gettraj(rng)
+                traj_θ = hcat(map(z -> z.θ, traj_z)...)
+                traj_r = hcat(map(z -> z.r, traj_z)...)
+                rho = cumsum(traj_r, dims=2)
 
-function makeplot(
-    plt,
-    traj_θ,
-    ts_list...
-)
-    function plotturn!(traj_θ, ts)
-        s = 9.0
-        idcs_nodiv = ts .== false
-        idcs_div = ts .== true
-        idcs_nodiv[1] = idcs_div[1] = false # avoid plotting the first point
-        plt.scatter(traj_θ[1,idcs_nodiv], traj_θ[2,idcs_nodiv], s=s, c="black",  label="¬div")
-        plt.scatter(traj_θ[1,idcs_div], traj_θ[2,idcs_div],  s=s, c="red",    label="div")
-        plt.scatter(traj_θ[1,1], traj_θ[2,1], s=s, c="yellow", label="init")
-    end
+                ts_hand_isturn_fwd = hand_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+                ts_ahmc_isturn_fwd = ahmc_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
-    fig = plt.figure(figsize=(16, 3))
+                ts_hand_isturn_generalised_fwd = hand_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
+                ts_ahmc_isturn_generalised_fwd = ahmc_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
-    for (i, ts, title) in zip(
-        1:length(ts_list),
-        ts_list,
-        [
-            "Hand original (v = 1)",
-            "AHMC original (v = 1)",
-            "Hand generalised (v = 1)",
-            "AHMC generalised (v = 1)"
-        ]
-    )
-        plt.subplot(1, 4, i)
-        plotturn!(traj_θ, ts)
-        plt.gca().set_title(title)
-        plt.legend()
-    end
+                ts_ahmc_isturn_strictgeneralised_fwd = ahmc_isturn_strictgeneralised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
 
-    return fig
-end
+                check_subtree_u_turns.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)])
 
-function gettraj(rng, ϵ=0.1, n_steps=50)
-    lf = Leapfrog(ϵ)
-    
-    q_init = randn(rng, D)
-    p_init = AdvancedHMC.rand(rng, h.metric)
-    z = AdvancedHMC.phasepoint(h, q_init, p_init)
+                @test ts_hand_isturn_fwd[2:end] ==
+                    ts_ahmc_isturn_fwd[2:end] ==
+                    ts_hand_isturn_generalised_fwd[2:end] ==
+                    ts_ahmc_isturn_generalised_fwd[2:end] ==
+                    ts_ahmc_isturn_strictgeneralised_fwd[2:end]
 
-    traj_z = Vector(undef, n_steps)
-    traj_z[1] = z
-    for i = 2:n_steps
-        traj_z[i] = AdvancedHMC.step(lf, h, traj_z[i-1])
-    end
-    
-    return traj_z
-end
-
-function hand_isturn(z0, z1, rho, v=1)
-    θ0minusθ1 = z0.θ - z1.θ
-    s = (dot(-θ0minusθ1, -z0.r) >= 0) || (dot(θ0minusθ1, z1.r) >= 0)
-    return s
-end
-
-ahmc_isturn(z0, z1, rho, v=1) =
-    AdvancedHMC.isterminated(ClassicNoUTurn(), h, AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(), 0, 0, 0.0)).dynamic
-
-function hand_isturn_generalised(z0, z1, rho, v=1)
-    s = (dot(rho, -z0.r) >= 0) || (dot(-rho, z1.r) >= 0)
-    return s
-end
-
-ahmc_isturn_generalised(z0, z1, rho, v=1) =
-    AdvancedHMC.isterminated(GeneralisedNoUTurn(), h, AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(rho), 0, 0, 0.0)).dynamic
-
-function ahmc_isturn_strictgeneralised(z0, z1, rho, v=1)
-    t = AdvancedHMC.isterminated(
-        StrictGeneralisedNoUTurn(),
-        h, 
-        AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(rho), 0, 0, 0.0),
-        AdvancedHMC.BinaryTree(z0, z0, AdvancedHMC.TurnStatistic(rho - z1.r), 0, 0, 0.0), 
-        AdvancedHMC.BinaryTree(z1, z1, AdvancedHMC.TurnStatistic(rho - z0.r), 0, 0, 0.0)
-    )
-    return t.dynamic
-end
-
-"""
-Check whether the subtree checks adequately detect U-turns.
-"""
-function check_subtree_u_turns(z0, z1, rho)
-    t = AdvancedHMC.BinaryTree(z0, z1, AdvancedHMC.TurnStatistic(rho), 0, 0, 0.0)
-    # The left and right subtree are created in such a way that the 
-    # check_left_subtree and check_right_subtree checks should be equivalent 
-    # to the general no U-turn check.
-    tleft = AdvancedHMC.BinaryTree(z0, z0, AdvancedHMC.TurnStatistic(rho - z1.r), 0, 0, 0.0)
-    tright = AdvancedHMC.BinaryTree(z1, z1, AdvancedHMC.TurnStatistic(rho - z0.r), 0, 0, 0.0)
-
-    s1 = AdvancedHMC.isterminated(GeneralisedNoUTurn(), h, t)
-    s2 = AdvancedHMC.check_left_subtree(h, t, tleft, tright)
-    s3 = AdvancedHMC.check_right_subtree(h, t, tleft, tright)
-    @test s1 == s2 == s3
-end
-
-@testset "ClassicNoUTurn" begin
-    n_tests = 4
-    for _ = 1:n_tests
-        seed = abs(rand(Int8) + 128)
-        rng = MersenneTwister(seed)
-        @testset "seed = $seed" begin
-            traj_z = gettraj(rng)
-            traj_θ = hcat(map(z -> z.θ, traj_z)...)
-            traj_r = hcat(map(z -> z.r, traj_z)...)
-            rho = cumsum(traj_r, dims=2)
-            
-            ts_hand_isturn_fwd = hand_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
-            ts_ahmc_isturn_fwd = ahmc_isturn.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
-
-            ts_hand_isturn_generalised_fwd = hand_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
-            ts_ahmc_isturn_generalised_fwd = ahmc_isturn_generalised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
-
-            ts_ahmc_isturn_strictgeneralised_fwd = ahmc_isturn_strictgeneralised.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)], Ref(1))
-
-            check_subtree_u_turns.(Ref(traj_z[1]), traj_z, [rho[:,i] for i = 1:length(traj_z)])
-
-            @test ts_hand_isturn_fwd[2:end] == 
-                ts_ahmc_isturn_fwd[2:end] == 
-                ts_hand_isturn_generalised_fwd[2:end] == 
-                ts_ahmc_isturn_generalised_fwd[2:end] == 
-                ts_ahmc_isturn_strictgeneralised_fwd[2:end]
-
-            if length(ARGS) > 0 && ARGS[1] == "--plot"
-                import PyPlot
-                fig = makeplot(
-                    PyPlot,
-                    traj_θ,
-                    ts_hand_isturn_fwd, 
-                    ts_ahmc_isturn_fwd,
-                    ts_hand_isturn_generalised_fwd, 
-                    ts_ahmc_isturn_generalised_fwd
-                )
-                fig.savefig("seed=$seed.png")
+                if length(ARGS) > 0 && ARGS[1] == "--plot"
+                    import PyPlot
+                    fig = makeplot(
+                        PyPlot,
+                        traj_θ,
+                        ts_hand_isturn_fwd,
+                        ts_ahmc_isturn_fwd,
+                        ts_hand_isturn_generalised_fwd,
+                        ts_ahmc_isturn_generalised_fwd
+                    )
+                    fig.savefig("seed=$seed.png")
+                end
             end
         end
     end
+
 end
