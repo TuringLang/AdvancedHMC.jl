@@ -3,135 +3,138 @@ using Statistics: mean
 using LinearAlgebra: dot
 include("common.jl")
 
-ϵ = 0.01
-lf = Leapfrog(ϵ)
 
-θ_init = randn(D)
-h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
-τ = Trajectory{MultinomialTS}(Leapfrog(find_good_stepsize(h, θ_init)), GeneralisedNoUTurn())
-r_init = AdvancedHMC.rand(h.metric)
+@testset "Trajectory" begin
+    ϵ = 0.01
+    lf = Leapfrog(ϵ)
 
-@testset "Passing random number generator" begin
-    τ_with_jittered_lf = Trajectory{MultinomialTS}(JitteredLeapfrog(find_good_stepsize(h, θ_init), 1.0), GeneralisedNoUTurn())
-    for τ_test in [τ, τ_with_jittered_lf],
-        seed in [1234, 5678, 90]
-        rng = MersenneTwister(seed)
-        z = AdvancedHMC.phasepoint(h, θ_init, r_init)
-        z1′ = AdvancedHMC.transition(rng, τ_test, h, z).z
+    θ_init = randn(D)
+    h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
+    τ = Trajectory{MultinomialTS}(Leapfrog(find_good_stepsize(h, θ_init)), GeneralisedNoUTurn())
+    r_init = AdvancedHMC.rand(h.metric)
 
-        rng = MersenneTwister(seed)
-        z = AdvancedHMC.phasepoint(h, θ_init, r_init)
-        z2′ = AdvancedHMC.transition(rng, τ_test, h, z).z
+    @testset "Passing random number generator" begin
+        τ_with_jittered_lf = Trajectory{MultinomialTS}(JitteredLeapfrog(find_good_stepsize(h, θ_init), 1.0), GeneralisedNoUTurn())
+        for τ_test in [τ, τ_with_jittered_lf],
+            seed in [1234, 5678, 90]
+            rng = MersenneTwister(seed)
+            z = AdvancedHMC.phasepoint(h, θ_init, r_init)
+            z1′ = AdvancedHMC.transition(rng, τ_test, h, z).z
 
-        @test z1′.θ == z2′.θ
-        @test z1′.r == z2′.r
+            rng = MersenneTwister(seed)
+            z = AdvancedHMC.phasepoint(h, θ_init, r_init)
+            z2′ = AdvancedHMC.transition(rng, τ_test, h, z).z
+
+            @test z1′.θ == z2′.θ
+            @test z1′.r == z2′.r
+        end
     end
-end
 
-@testset "TreeSampler" begin
-    n_samples = 10_000
-    z1 = AdvancedHMC.phasepoint(h, zeros(D), r_init)
-    z2 = AdvancedHMC.phasepoint(h, ones(D), r_init)
+    @testset "TreeSampler" begin
+        n_samples = 10_000
+        z1 = AdvancedHMC.phasepoint(h, zeros(D), r_init)
+        z2 = AdvancedHMC.phasepoint(h, ones(D), r_init)
 
-    rng = MersenneTwister(1234)
+        rng = MersenneTwister(1234)
 
-    ℓu = rand()
-    n1 = 2
-    s1 = AdvancedHMC.SliceTS(z1, ℓu, n1) 
-    n2 = 1
-    s2 = AdvancedHMC.SliceTS(z2, ℓu, n2) 
-    s3 = AdvancedHMC.combine(rng, s1, s2)
-    @test s3.ℓu == ℓu
-    @test s3.n == n1 + n2
+        ℓu = rand()
+        n1 = 2
+        s1 = AdvancedHMC.SliceTS(z1, ℓu, n1)
+        n2 = 1
+        s2 = AdvancedHMC.SliceTS(z2, ℓu, n2)
+        s3 = AdvancedHMC.combine(rng, s1, s2)
+        @test s3.ℓu == ℓu
+        @test s3.n == n1 + n2
 
-    
-    s3_θ = Vector(undef, n_samples)
-    for i = 1:n_samples
-        s3_θ[i] = AdvancedHMC.combine(rng, s1, s2).zcand.θ
+
+        s3_θ = Vector(undef, n_samples)
+        for i = 1:n_samples
+            s3_θ[i] = AdvancedHMC.combine(rng, s1, s2).zcand.θ
+        end
+        @test mean(s3_θ) ≈ ones(D) * n2 / (n1 + n2) rtol=0.01
+
+        w1 = 100
+        s1 = AdvancedHMC.MultinomialTS(z1, log(w1))
+        w2 = 150
+        s2 = AdvancedHMC.MultinomialTS(z2, log(w2))
+        s3 = AdvancedHMC.combine(rng, s1, s2)
+        @test s3.ℓw ≈ log(w1 + w2)
+
+        s3_θ = Vector(undef, n_samples)
+        for i = 1:n_samples
+            s3_θ[i] = AdvancedHMC.combine(rng, s1, s2).zcand.θ
+        end
+        @test mean(s3_θ) ≈ ones(D) * w2 / (w1 + w2) rtol=0.01
     end
-    @test mean(s3_θ) ≈ ones(D) * n2 / (n1 + n2) rtol=0.01
 
-    w1 = 100
-    s1 = AdvancedHMC.MultinomialTS(z1, log(w1))
-    w2 = 150
-    s2 = AdvancedHMC.MultinomialTS(z2, log(w2))
-    s3 = AdvancedHMC.combine(rng, s1, s2)
-    @test s3.ℓw ≈ log(w1 + w2)
+    @testset "TerminationCriterion" begin
+        tc = AdvancedHMC.ClassicNoUTurn()
+        z1 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
+        z2 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
+        ts1 = AdvancedHMC.TurnStatistic(tc, z1)
+        ts2 = AdvancedHMC.TurnStatistic(tc, z2)
+        ts3 = AdvancedHMC.combine(ts1, ts2)
+        @test ts1 == ts2 == ts3
 
-    s3_θ = Vector(undef, n_samples)
-    for i = 1:n_samples
-        s3_θ[i] = AdvancedHMC.combine(rng, s1, s2).zcand.θ
+        tc = AdvancedHMC.GeneralisedNoUTurn()
+        r1 = randn(D)
+        z1 = AdvancedHMC.phasepoint(h, θ_init, r1)
+        r2 = randn(D)
+        z2 = AdvancedHMC.phasepoint(h, θ_init, r2)
+        ts1 = AdvancedHMC.TurnStatistic(tc, z1)
+        ts2 = AdvancedHMC.TurnStatistic(tc, z2)
+        ts3 = AdvancedHMC.combine(ts1, ts2)
+        @test ts3.rho == r1 + r2
     end
-    @test mean(s3_θ) ≈ ones(D) * w2 / (w1 + w2) rtol=0.01
-end
 
-@testset "TerminationCriterion" begin
-    tc = AdvancedHMC.ClassicNoUTurn()
-    z1 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
-    z2 = AdvancedHMC.phasepoint(h, θ_init, randn(D))
-    ts1 = AdvancedHMC.TurnStatistic(tc, z1)
-    ts2 = AdvancedHMC.TurnStatistic(tc, z2)
-    ts3 = AdvancedHMC.combine(ts1, ts2)
-    @test ts1 == ts2 == ts3
+    @testset "Termination" begin
+        t00 = AdvancedHMC.Termination(false, false)
+        t01 = AdvancedHMC.Termination(false, true)
+        t10 = AdvancedHMC.Termination(true, false)
+        t11 = AdvancedHMC.Termination(true, true)
 
-    tc = AdvancedHMC.GeneralisedNoUTurn()
-    r1 = randn(D)
-    z1 = AdvancedHMC.phasepoint(h, θ_init, r1)
-    r2 = randn(D)
-    z2 = AdvancedHMC.phasepoint(h, θ_init, r2)
-    ts1 = AdvancedHMC.TurnStatistic(tc, z1) 
-    ts2 = AdvancedHMC.TurnStatistic(tc, z2) 
-    ts3 = AdvancedHMC.combine(ts1, ts2)
-    @test ts3.rho == r1 + r2
-end
+        @test AdvancedHMC.isterminated(t00) == false
+        @test AdvancedHMC.isterminated(t01) == true
+        @test AdvancedHMC.isterminated(t10) == true
+        @test AdvancedHMC.isterminated(t11) == true
 
-@testset "Termination" begin
-    t00 = AdvancedHMC.Termination(false, false)
-    t01 = AdvancedHMC.Termination(false, true)
-    t10 = AdvancedHMC.Termination(true, false)
-    t11 = AdvancedHMC.Termination(true, true)
+        @test AdvancedHMC.isterminated(t00 * t00) == false
+        @test AdvancedHMC.isterminated(t00 * t01) == true
+        @test AdvancedHMC.isterminated(t00 * t10) == true
+        @test AdvancedHMC.isterminated(t00 * t11) == true
 
-    @test AdvancedHMC.isterminated(t00) == false
-    @test AdvancedHMC.isterminated(t01) == true
-    @test AdvancedHMC.isterminated(t10) == true
-    @test AdvancedHMC.isterminated(t11) == true
+        @test AdvancedHMC.isterminated(t01 * t00) == true
+        @test AdvancedHMC.isterminated(t01 * t01) == true
+        @test AdvancedHMC.isterminated(t01 * t10) == true
+        @test AdvancedHMC.isterminated(t01 * t11) == true
 
-    @test AdvancedHMC.isterminated(t00 * t00) == false
-    @test AdvancedHMC.isterminated(t00 * t01) == true
-    @test AdvancedHMC.isterminated(t00 * t10) == true
-    @test AdvancedHMC.isterminated(t00 * t11) == true
+        @test AdvancedHMC.isterminated(t10 * t00) == true
+        @test AdvancedHMC.isterminated(t10 * t01) == true
+        @test AdvancedHMC.isterminated(t10 * t10) == true
+        @test AdvancedHMC.isterminated(t10 * t11) == true
 
-    @test AdvancedHMC.isterminated(t01 * t00) == true
-    @test AdvancedHMC.isterminated(t01 * t01) == true
-    @test AdvancedHMC.isterminated(t01 * t10) == true
-    @test AdvancedHMC.isterminated(t01 * t11) == true
+        @test AdvancedHMC.isterminated(t11 * t00) == true
+        @test AdvancedHMC.isterminated(t11 * t01) == true
+        @test AdvancedHMC.isterminated(t11 * t10) == true
+        @test AdvancedHMC.isterminated(t11 * t11) == true
+    end
 
-    @test AdvancedHMC.isterminated(t10 * t00) == true
-    @test AdvancedHMC.isterminated(t10 * t01) == true
-    @test AdvancedHMC.isterminated(t10 * t10) == true
-    @test AdvancedHMC.isterminated(t10 * t11) == true
+    @testset "BinaryTree" begin
+        z = AdvancedHMC.phasepoint(h, θ_init, randn(D))
 
-    @test AdvancedHMC.isterminated(t11 * t00) == true
-    @test AdvancedHMC.isterminated(t11 * t01) == true
-    @test AdvancedHMC.isterminated(t11 * t10) == true
-    @test AdvancedHMC.isterminated(t11 * t11) == true
-end
+        t1 = AdvancedHMC.BinaryTree(z, z, AdvancedHMC.TurnStatistic(), 0.1, 1, -2.0)
+        t2 = AdvancedHMC.BinaryTree(z, z, AdvancedHMC.TurnStatistic(), 1.1, 2, 1.0)
+        t3 = AdvancedHMC.combine(t1, t2)
 
-@testset "BinaryTree" begin
-    z = AdvancedHMC.phasepoint(h, θ_init, randn(D))
+        @test t3.sum_α ≈ 1.2 atol=1e-9
+        @test t3.nα == 3
+        @test t3.ΔH_max == -2.0
 
-    t1 = AdvancedHMC.BinaryTree(z, z, AdvancedHMC.TurnStatistic(), 0.1, 1, -2.0)
-    t2 = AdvancedHMC.BinaryTree(z, z, AdvancedHMC.TurnStatistic(), 1.1, 2, 1.0)
-    t3 = AdvancedHMC.combine(t1, t2)
+        t4 = AdvancedHMC.BinaryTree(z, z, AdvancedHMC.TurnStatistic(), 1.1, 2, 3.0)
+        t5 = AdvancedHMC.combine(t1, t4)
 
-    @test t3.sum_α ≈ 1.2 atol=1e-9
-    @test t3.nα == 3
-    @test t3.ΔH_max == -2.0
-
-    t4 = AdvancedHMC.BinaryTree(z, z, AdvancedHMC.TurnStatistic(), 1.1, 2, 3.0)
-    t5 = AdvancedHMC.combine(t1, t4)
-
-    @test t5.ΔH_max == 3.0
+        @test t5.ΔH_max == 3.0
+    end
 end
 
 ### Test ClassicNoUTurn and GeneralisedNoUTurn

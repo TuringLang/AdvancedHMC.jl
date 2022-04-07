@@ -1,104 +1,106 @@
 using ReTest, Random, AdvancedHMC, ForwardDiff
 include("common.jl")
 
-ϵ = 0.01
-lf = Leapfrog(ϵ)
+@testset "Integrator" begin
+    ϵ = 0.01
+    lf = Leapfrog(ϵ)
 
-θ_init = randn(D)
-h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
-r_init = AdvancedHMC.rand(h.metric)
+    θ_init = randn(D)
+    h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
+    r_init = AdvancedHMC.rand(h.metric)
 
-n_steps = 10
+    n_steps = 10
 
-@testset "step(::Leapfrog) against step(::Leapfrog)" begin
-    z = AdvancedHMC.phasepoint(h, copy(θ_init), copy(r_init))
-    z_step = z
+    @testset "step(::Leapfrog) against step(::Leapfrog)" begin
+        z = AdvancedHMC.phasepoint(h, copy(θ_init), copy(r_init))
+        z_step = z
 
-    t_step = @elapsed for i = 1:n_steps
-        z_step = AdvancedHMC.step(lf, h, z_step)
+        t_step = @elapsed for i = 1:n_steps
+            z_step = AdvancedHMC.step(lf, h, z_step)
+        end
+
+        t_steps = @elapsed z_steps = AdvancedHMC.step(lf, h, z, n_steps)
+
+        @info "Performance of step() v.s. step()" n_steps t_step t_steps t_step / t_steps
+
+        @test z_step.θ ≈ z_steps.θ atol=DETATOL
+        @test z_step.r ≈ z_steps.r atol=DETATOL
     end
 
-    t_steps = @elapsed z_steps = AdvancedHMC.step(lf, h, z, n_steps)
+    @testset "jitter" begin
+        @testset "Leapfrog" begin
+            ϵ0 = 0.1
+            lf = Leapfrog(ϵ0)
+            @test lf.ϵ == ϵ0
+            @test AdvancedHMC.nom_step_size(lf) == ϵ0
+            @test AdvancedHMC.step_size(lf) == ϵ0
 
-    @info "Performance of step() v.s. step()" n_steps t_step t_steps t_step / t_steps
+            lf2 = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
+            @test lf2 === lf
+            @test AdvancedHMC.nom_step_size(lf2) == ϵ0
+            @test AdvancedHMC.step_size(lf2) == ϵ0
+        end
 
-    @test z_step.θ ≈ z_steps.θ atol=DETATOL
-    @test z_step.r ≈ z_steps.r atol=DETATOL
-end
+        @testset "JitteredLeapfrog" begin
+            ϵ0 = 0.1
+            lf = JitteredLeapfrog(ϵ0, 0.5)
+            @test lf.ϵ0 == ϵ0
+            @test AdvancedHMC.nom_step_size(lf) == ϵ0
+            @test lf.ϵ == ϵ0
+            @test AdvancedHMC.step_size(lf) == lf.ϵ
 
-@testset "jitter" begin
-    @testset "Leapfrog" begin
-        ϵ0 = 0.1
-        lf = Leapfrog(ϵ0)
-        @test lf.ϵ == ϵ0
-        @test AdvancedHMC.nom_step_size(lf) == ϵ0
-        @test AdvancedHMC.step_size(lf) == ϵ0
-
-        lf2 = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
-        @test lf2 === lf
-        @test AdvancedHMC.nom_step_size(lf2) == ϵ0
-        @test AdvancedHMC.step_size(lf2) == ϵ0
+            lf2 = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
+            @test lf2.ϵ0 == ϵ0
+            @test AdvancedHMC.nom_step_size(lf2) == ϵ0
+            @test lf2.ϵ != ϵ0
+            @test AdvancedHMC.step_size(lf2) == lf2.ϵ
+        end
     end
 
-    @testset "JitteredLeapfrog" begin
-        ϵ0 = 0.1
-        lf = JitteredLeapfrog(ϵ0, 0.5)
-        @test lf.ϵ0 == ϵ0
-        @test AdvancedHMC.nom_step_size(lf) == ϵ0
-        @test lf.ϵ == ϵ0
-        @test AdvancedHMC.step_size(lf) == lf.ϵ
+    @testset "update_nom_step_size" begin
+        @testset "Leapfrog" begin
+            ϵ0 = 0.1
+            lf = Leapfrog(ϵ0)
+            @test AdvancedHMC.nom_step_size(lf) == ϵ0
 
-        lf2 = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
-        @test lf2.ϵ0 == ϵ0
-        @test AdvancedHMC.nom_step_size(lf2) == ϵ0
-        @test lf2.ϵ != ϵ0
-        @test AdvancedHMC.step_size(lf2) == lf2.ϵ
-    end
-end
+            lf2 = AdvancedHMC.update_nom_step_size(lf, 0.5)
+            @test lf2 !== lf
+            @test AdvancedHMC.nom_step_size(lf2) == 0.5
+            @test AdvancedHMC.step_size(lf2) == 0.5
+        end
 
-@testset "update_nom_step_size" begin
-    @testset "Leapfrog" begin
-        ϵ0 = 0.1
-        lf = Leapfrog(ϵ0)
-        @test AdvancedHMC.nom_step_size(lf) == ϵ0
+        @testset "JitteredLeapfrog" begin
+            ϵ0 = 0.1
+            lf = JitteredLeapfrog(ϵ0, 0.5)
+            @test AdvancedHMC.nom_step_size(lf) == ϵ0
 
-        lf2 = AdvancedHMC.update_nom_step_size(lf, 0.5)
-        @test lf2 !== lf
-        @test AdvancedHMC.nom_step_size(lf2) == 0.5
-        @test AdvancedHMC.step_size(lf2) == 0.5
+            lf2 = AdvancedHMC.update_nom_step_size(lf, 0.2)
+            @test lf2 !== lf
+            @test AdvancedHMC.nom_step_size(lf2) == 0.2
+            # check that we've only updated nominal step size
+            @test AdvancedHMC.step_size(lf2) == ϵ0
+        end
     end
 
-    @testset "JitteredLeapfrog" begin
-        ϵ0 = 0.1
-        lf = JitteredLeapfrog(ϵ0, 0.5)
-        @test AdvancedHMC.nom_step_size(lf) == ϵ0
+    @testset "temper" begin
+        αsqrt = 2.0
+        lf = TemperedLeapfrog(ϵ, αsqrt ^ 2)
+        r = ones(5)
+        r1 = AdvancedHMC.temper(lf, r, (i=1, is_half=true), 3)
+        r2 = AdvancedHMC.temper(lf, r, (i=1, is_half=false), 3)
+        r3 = AdvancedHMC.temper(lf, r, (i=2, is_half=true), 3)
+        r4 = AdvancedHMC.temper(lf, r, (i=2, is_half=false), 3)
+        r5 = AdvancedHMC.temper(lf, r, (i=3, is_half=true), 3)
+        r6 = AdvancedHMC.temper(lf, r, (i=3, is_half=false), 3)
+        @test r1 == αsqrt * ones(5)
+        @test r2 == αsqrt * ones(5)
+        @test r3 == αsqrt * ones(5)
+        @test r4 == inv(αsqrt) * ones(5)
+        @test r5 == inv(αsqrt) * ones(5)
+        @test r6 == inv(αsqrt) * ones(5)
+        @test_throws BoundsError AdvancedHMC.temper(lf, r, (i=4, is_half=false), 3)
 
-        lf2 = AdvancedHMC.update_nom_step_size(lf, 0.2)
-        @test lf2 !== lf
-        @test AdvancedHMC.nom_step_size(lf2) == 0.2
-        # check that we've only updated nominal step size
-        @test AdvancedHMC.step_size(lf2) == ϵ0
     end
-end
-
-@testset "temper" begin
-    αsqrt = 2.0
-    lf = TemperedLeapfrog(ϵ, αsqrt ^ 2)
-    r = ones(5)
-    r1 = AdvancedHMC.temper(lf, r, (i=1, is_half=true), 3)
-    r2 = AdvancedHMC.temper(lf, r, (i=1, is_half=false), 3)
-    r3 = AdvancedHMC.temper(lf, r, (i=2, is_half=true), 3)
-    r4 = AdvancedHMC.temper(lf, r, (i=2, is_half=false), 3)
-    r5 = AdvancedHMC.temper(lf, r, (i=3, is_half=true), 3)
-    r6 = AdvancedHMC.temper(lf, r, (i=3, is_half=false), 3)
-    @test r1 == αsqrt * ones(5)
-    @test r2 == αsqrt * ones(5)
-    @test r3 == αsqrt * ones(5)
-    @test r4 == inv(αsqrt) * ones(5)
-    @test r5 == inv(αsqrt) * ones(5)
-    @test r6 == inv(αsqrt) * ones(5)
-    @test_throws BoundsError AdvancedHMC.temper(lf, r, (i=4, is_half=false), 3)
-
 end
 
 using OrdinaryDiffEq

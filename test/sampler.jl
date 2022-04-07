@@ -8,12 +8,6 @@ using Statistics: mean, var, cov
 unicodeplots()
 include("common.jl")
 
-θ_init = rand(MersenneTwister(43), D)
-ϵ = 0.1
-n_steps = 10
-n_samples = 22_000
-n_adapts = 4_000
-
 function test_stats(::Trajectory{TS,I,TC}, stats, n_adapts) where {TS,I,TC<:StaticTerminationCriterion}
     for name in (:step_size, :nom_step_size, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :hamiltonian_energy_error, :is_adapt)
         @test all(map(s -> in(name, propertynames(s)), stats))
@@ -33,6 +27,11 @@ function test_stats(::Trajectory{TS,I,TC}, stats, n_adapts) where {TS,I,TC<:Dyna
 end
 
 @testset "HMC and NUTS" begin
+    θ_init = rand(MersenneTwister(1), D)
+    ϵ = 0.1
+    n_steps = 10
+    n_samples = 22_000
+    n_adapts = 4_000
     @testset "$metricsym" for (metricsym, metric) in Dict(
         :UnitEuclideanMetric => UnitEuclideanMetric(D),
         :DiagEuclideanMetric => DiagEuclideanMetric(D),
@@ -45,29 +44,29 @@ end
             :JitteredLeapfrog => JitteredLeapfrog(ϵ, 1.0),
             :TemperedLeapfrog => TemperedLeapfrog(ϵ, 1.05),
         )
-            @testset "$τsym" for (τsym, τ) in Dict(
-                :(Trajectory{EndPointTS,FixedNSteps}) => Trajectory{EndPointTS}(lf, FixedNSteps(n_steps)),
-                :(Trajectory{MultinomialTS,FixedNSteps}) => Trajectory{MultinomialTS}(lf, FixedNSteps(n_steps)),
-                :(Trajectory{EndPointTS,FixedIntegrationTime}) => Trajectory{EndPointTS}(lf, FixedIntegrationTime(ϵ * n_steps)),
-                :(Trajectory{MultinomialTS,FixedIntegrationTime}) => Trajectory{MultinomialTS}(lf, FixedIntegrationTime(ϵ * n_steps)),
-                :(Trajectory{SliceTS,Original}) => Trajectory{SliceTS}(lf, ClassicNoUTurn()),
-                :(Trajectory{SliceTS,Generalised}) => Trajectory{SliceTS}(lf, GeneralisedNoUTurn()),
-                :(Trajectory{SliceTS,StrictGeneralised}) => Trajectory{SliceTS}(lf, StrictGeneralisedNoUTurn()),
-                :(Trajectory{MultinomialTS,Original}) => Trajectory{MultinomialTS}(lf, ClassicNoUTurn()),
-                :(Trajectory{MultinomialTS,Generalised}) => Trajectory{MultinomialTS}(lf, GeneralisedNoUTurn()),
-                :(Trajectory{MultinomialTS,StrictGeneralised}) => Trajectory{MultinomialTS}(lf, StrictGeneralisedNoUTurn()),
+            @testset "$τstr" for (τstr, τ) in Dict(
+                "Trajectory{EndPointTS,FixedNSteps}" => Trajectory{EndPointTS}(lf, FixedNSteps(n_steps)),
+                "Trajectory{MultinomialTS,FixedNSteps}" => Trajectory{MultinomialTS}(lf, FixedNSteps(n_steps)),
+                "Trajectory{EndPointTS,FixedIntegrationTime}" => Trajectory{EndPointTS}(lf, FixedIntegrationTime(ϵ * n_steps)),
+                "Trajectory{MultinomialTS,FixedIntegrationTime}" => Trajectory{MultinomialTS}(lf, FixedIntegrationTime(ϵ * n_steps)),
+                "Trajectory{SliceTS,Original}" => Trajectory{SliceTS}(lf, ClassicNoUTurn()),
+                "Trajectory{SliceTS,Generalised}" => Trajectory{SliceTS}(lf, GeneralisedNoUTurn()),
+                "Trajectory{SliceTS,StrictGeneralised}" => Trajectory{SliceTS}(lf, StrictGeneralisedNoUTurn()),
+                "Trajectory{MultinomialTS,Original}" => Trajectory{MultinomialTS}(lf, ClassicNoUTurn()),
+                "Trajectory{MultinomialTS,Generalised}" => Trajectory{MultinomialTS}(lf, GeneralisedNoUTurn()),
+                "Trajectory{MultinomialTS,StrictGeneralised}" => Trajectory{MultinomialTS}(lf, StrictGeneralisedNoUTurn()),
             )
                 test_show(h)
                 test_show(τ)
                 @testset  "NoAdaptation" begin
-                    Random.seed!(43)
+                    Random.seed!(1)
                     samples, stats = sample(h, HMCKernel(τ), θ_init, n_samples; verbose=false, progress=PROGRESS)
-                    @test mean(samples[n_adapts+1:end]) ≈ zeros(D) atol=RNDATOL
+                    @test mean(samples) ≈ zeros(D) atol=RNDATOL
                 end
 
                 # Skip adaptation tests with tempering
                 if lf isa TemperedLeapfrog
-                    @info "Adaptation tests for $τsym with $lfsym on $metricsym are skipped"
+                    @info "Adaptation tests for $τstr with $lfsym on $metricsym are skipped"
                     continue
                 end
 
@@ -84,14 +83,14 @@ end
                     ),
                 )
                     test_show(adaptor)
-                    Random.seed!(43)
+                    Random.seed!(1)
                     # For `MassMatrixAdaptor`, we use the pre-defined step size as the method cannot adapt the step size.
                     # For other adapatation methods that are able to adapt the step size, we use `find_good_stepsize`.
                     τ_used = if adaptorsym == :MassMatrixAdaptorOnly
                         τ
                     else
-                        ϵ = find_good_stepsize(h, θ_init)
-                        @set τ.integrator.ϵ = ϵ
+                        ϵ_used = find_good_stepsize(h, θ_init)
+                        @set τ.integrator.ϵ = ϵ_used
                     end
                     samples, stats = sample(h, HMCKernel(τ_used) , θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=PROGRESS)
                     @test mean(samples[(n_adapts+1):end]) ≈ zeros(D) atol=RNDATOL
