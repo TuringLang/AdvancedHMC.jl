@@ -7,13 +7,15 @@ using Turing.DynamicPPL
 
 using StatsFuns: logistic
 
-Turing.setprogress!(false)
+@testset "Turing" begin
+    Turing.setprogress!(false)
 
-Random.seed!(100)
+    Random.seed!(100)
 
-# Load test utilities.
-testdir(args...) = joinpath(pathof(Turing), "..", "..", "test", args...)
-include(testdir("test_utils", "AllUtils.jl"))
+    # Load test utilities.
+    testdir(args...) = joinpath(pathof(Turing), "..", "..", "test", args...)
+    include(testdir("test_utils", "AllUtils.jl"))
 
-# Test HMC.
-include(testdir("inference", "hmc.jl"))
+    # Test HMC.
+    include(testdir("inference", "hmc.jl"))
+end
