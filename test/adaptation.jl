@@ -112,11 +112,9 @@ end
         end
     end
 
-    D = 10
-
     @testset "Adapted mass v.s. true variance" begin
+        D = 10
         n_tests = 5
-
         @testset "DiagEuclideanMetric" begin
             for _ in 1:n_tests
                 Random.seed!(1)
