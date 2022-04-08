@@ -2,6 +2,7 @@ using ReTest, LinearAlgebra, Distributions, AdvancedHMC, Random, ForwardDiff
 using AdvancedHMC.Adaptation: WelfordVar, NaiveVar, WelfordCov, NaiveCov, get_estimation, get_estimation, reset!
 
 function runnuts(ℓπ, metric; n_samples=3_000)
+    D = size(metric, 1)
     n_adapts = 1_500
 
     θ_init = rand(D)
