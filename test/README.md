@@ -1,4 +1,4 @@
-* How to run tests locally
+# How to run tests locally
 
 Assuming you are in the local folder of the root of AdvancedHMC.jl,
 you can use the following command to run all tests locally:
