@@ -67,11 +67,6 @@ end
                     @test mean(samples) ≈ zeros(D) atol=RNDATOL
                 end
 
-                # Skip adaptation tests with tempering
-                if lf isa TemperedLeapfrog
-                    continue
-                end
-
                 @testset "$adaptorsym" for (adaptorsym, adaptor) in Dict(
                     :MassMatrixAdaptorOnly => MassMatrixAdaptor(metric),
                     :StepSizeAdaptorOnly => StepSizeAdaptor(0.8, τ.integrator),
@@ -85,6 +80,12 @@ end
                     ),
                 )
                     test_show(adaptor)
+
+                    # Skip adaptation tests with tempering
+                    if lf isa TemperedLeapfrog
+                        continue
+                    end
+
                     Random.seed!(1)
                     # For `MassMatrixAdaptor`, we use the pre-defined step size as the method cannot adapt the step size.
                     # For other adapatation methods that are able to adapt the step size, we use `find_good_stepsize`.
