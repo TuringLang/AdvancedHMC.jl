@@ -79,12 +79,12 @@ end
                         StepSizeAdaptor(0.8, τ.integrator),
                     ),
                 )
-                    test_show(adaptor)
-
                     # Skip adaptation tests with tempering
                     if lf isa TemperedLeapfrog
                         continue
                     end
+
+                    test_show(adaptor)
 
                     Random.seed!(1)
                     # For `MassMatrixAdaptor`, we use the pre-defined step size as the method cannot adapt the step size.
