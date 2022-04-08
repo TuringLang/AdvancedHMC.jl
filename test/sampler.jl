@@ -37,7 +37,6 @@ end
         :DiagEuclideanMetric => DiagEuclideanMetric(D),
         :DenseEuclideanMetric => DenseEuclideanMetric(D),
     )
-        test_show(metric)
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         @testset "$lfsym" for (lfsym, lf) in Dict(
             :Leapfrog => Leapfrog(ϵ),
@@ -56,8 +55,12 @@ end
                 "Trajectory{MultinomialTS,Generalised}" => Trajectory{MultinomialTS}(lf, GeneralisedNoUTurn()),
                 "Trajectory{MultinomialTS,StrictGeneralised}" => Trajectory{MultinomialTS}(lf, StrictGeneralisedNoUTurn()),
             )
-                test_show(h)
-                test_show(τ)
+                @testset "Base.show" begin
+                    test_show(metric)
+                    test_show(h)
+                    test_show(τ)
+                end
+
                 @testset  "NoAdaptation" begin
                     Random.seed!(1)
                     samples, stats = sample(h, HMCKernel(τ), θ_init, n_samples; verbose=false, progress=PROGRESS)
