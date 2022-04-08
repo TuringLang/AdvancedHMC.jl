@@ -69,7 +69,6 @@ end
 
                 # Skip adaptation tests with tempering
                 if lf isa TemperedLeapfrog
-                    @info "Adaptation tests for $τstr with $lfsym on $metricsym are skipped"
                     continue
                 end
 
