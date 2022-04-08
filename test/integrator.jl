@@ -1,6 +1,10 @@
 using ReTest, Random, AdvancedHMC, ForwardDiff
 include("common.jl")
 
+using OrdinaryDiffEq
+using LinearAlgebra: dot
+using Statistics: mean
+
 @testset "Integrator" begin
     ϵ = 0.01
     lf = Leapfrog(ϵ)
@@ -11,20 +15,20 @@ include("common.jl")
 
     n_steps = 10
 
-    @testset "step(::Leapfrog) against step(::Leapfrog)" begin
+    @testset "step" begin
         z = AdvancedHMC.phasepoint(h, copy(θ_init), copy(r_init))
-        z_step = z
+        z_step_loop = z
 
-        t_step = @elapsed for i = 1:n_steps
-            z_step = AdvancedHMC.step(lf, h, z_step)
+        t_step_loop = @elapsed for i = 1:n_steps
+            z_step_loop = AdvancedHMC.step(lf, h, z_step_loop)
         end
 
-        t_steps = @elapsed z_steps = AdvancedHMC.step(lf, h, z, n_steps)
+        t_step = @elapsed z_step = AdvancedHMC.step(lf, h, z, n_steps)
 
-        @info "Performance of step() v.s. step()" n_steps t_step t_steps t_step / t_steps
+        @info "Performance of loop of step() v.s. step()" n_steps t_step_loop t_step t_step_loop / t_step
 
-        @test z_step.θ ≈ z_steps.θ atol=DETATOL
-        @test z_step.r ≈ z_steps.r atol=DETATOL
+        @test z_step_loop.θ ≈ z_step.θ atol=DETATOL
+        @test z_step_loop.r ≈ z_step.r atol=DETATOL
     end
 
     @testset "jitter" begin
@@ -101,48 +105,45 @@ include("common.jl")
         @test_throws BoundsError AdvancedHMC.temper(lf, r, (i=4, is_half=false), 3)
 
     end
-end
 
-using OrdinaryDiffEq
-using LinearAlgebra: dot
-using Statistics: mean
-@testset "Eq (2.11) from (Neal, 2011)" begin
-    D = 1
-    negU(q::AbstractVector{T}) where {T<:Real} = -dot(q, q) / 2
+    @testset "Analyitcal solution to Eq (2.11) of Neal (2011)" begin
+        negU = q -> -dot(q, q) / 2
 
-    ϵ = 0.01
-    for lf in [
-        Leapfrog(ϵ),
-        DiffEqIntegrator(ϵ, VerletLeapfrog())
-    ]
-        q_init = randn(D)
-        h = Hamiltonian(UnitEuclideanMetric(D), negU, ForwardDiff)
-        p_init = AdvancedHMC.rand(h.metric)
+        ϵ = 0.01
+        for lf in [
+            Leapfrog(ϵ),
+            DiffEqIntegrator(ϵ, VerletLeapfrog())
+        ]
+            q_init = randn(1)
+            h = Hamiltonian(UnitEuclideanMetric(1), negU, ForwardDiff)
+            p_init = AdvancedHMC.rand(h.metric)
 
-        q, p = copy(q_init), copy(p_init)
-        z = AdvancedHMC.phasepoint(h, q, p)
+            q, p = copy(q_init), copy(p_init)
+            z = AdvancedHMC.phasepoint(h, q, p)
 
-        n_steps = 10_000
-        qs = zeros(n_steps)
-        ps = zeros(n_steps)
-        Hs = zeros(n_steps)
-        for i = 1:n_steps
-            z = AdvancedHMC.step(lf, h, z)
-            qs[i] = z.θ[1]
-            ps[i] = z.r[1]
-            Hs[i] = -AdvancedHMC.neg_energy(z)
+            n_steps = 10_000
+            qs = zeros(n_steps)
+            ps = zeros(n_steps)
+            Hs = zeros(n_steps)
+            for i = 1:n_steps
+                z = AdvancedHMC.step(lf, h, z)
+                qs[i] = z.θ[1]
+                ps[i] = z.r[1]
+                Hs[i] = -AdvancedHMC.neg_energy(z)
+            end
+
+            # Throw first 1_000 steps
+            qs = qs[1_000:end]
+            ps = ps[1_000:end]
+            Hs = Hs[1_000:end]
+
+            # Check if all points located at a cirle centered at the origin
+            rs = sqrt.(qs.^2 + ps.^2)
+            @test all(x-> abs(x - mean(rs)) < 2e-3, rs)
+
+            # Check if the Hamiltonian energy is stable
+            @test all(x-> abs(x - mean(Hs)) < 2e-3, Hs)
         end
-
-        # Throw first 1_000 steps
-        qs = qs[1_000:end]
-        ps = ps[1_000:end]
-        Hs = Hs[1_000:end]
-
-        # Check if all points located at a cirle centered at the origin
-        rs = sqrt.(qs.^2 + ps.^2)
-        @test all(x-> abs(x - mean(rs)) < 2e-3, rs)
-
-        # Check if the Hamiltonian energy is stable
-        @test all(x-> abs(x - mean(Hs)) < 2e-3, Hs)
     end
+
 end

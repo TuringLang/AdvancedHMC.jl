@@ -26,7 +26,7 @@ function test_stats(::Trajectory{TS,I,TC}, stats, n_adapts) where {TS,I,TC<:Dyna
     @test is_adapts[(n_adapts+1):end] == zeros(Bool, length(stats) - n_adapts)
 end
 
-@testset "HMC and NUTS" begin
+@testset "sample" begin
     θ_init = rand(MersenneTwister(1), D)
     ϵ = 0.1
     n_steps = 10

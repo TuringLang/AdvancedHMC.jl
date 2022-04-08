@@ -110,7 +110,7 @@ end
     τ = Trajectory{MultinomialTS}(Leapfrog(find_good_stepsize(h, θ_init)), GeneralisedNoUTurn())
     r_init = AdvancedHMC.rand(h.metric)
 
-    @testset "Passing random number generator" begin
+    @testset "Passing RNG" begin
         τ_with_jittered_lf = Trajectory{MultinomialTS}(JitteredLeapfrog(find_good_stepsize(h, θ_init), 1.0), GeneralisedNoUTurn())
         for τ_test in [τ, τ_with_jittered_lf],
             seed in [1234, 5678, 90]

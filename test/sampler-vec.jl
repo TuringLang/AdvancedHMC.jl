@@ -2,7 +2,7 @@ using ReTest, AdvancedHMC, LinearAlgebra, UnicodePlots, Random
 using Statistics: mean, var, cov
 include("common.jl")
 
-@testset "Matrix mode" begin
+@testset "sample (vectorized)" begin
     n_chains_max = 20
     n_chains_list = collect(1:n_chains_max)
     θ_init_list = [rand(D, n_chains) for n_chains in n_chains_list]
