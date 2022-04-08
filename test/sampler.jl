@@ -99,20 +99,19 @@ end
             end
         end
     end
-end
-
-@testset "drop_warmup" begin
-    metric = DiagEuclideanMetric(D)
-    h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-    κ = NUTS(Leapfrog(ϵ))
-    adaptor = StanHMCAdaptor(
-        MassMatrixAdaptor(metric),
-        StepSizeAdaptor(0.8, κ.τ.integrator),
-    )
-    samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false, drop_warmup=true)
-    @test length(samples) == n_samples - n_adapts
-    @test length(stats) == n_samples - n_adapts
-    samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false, drop_warmup=false)
-    @test length(samples) == n_samples
-    @test length(stats) == n_samples
+    @testset "drop_warmup" begin
+        metric = DiagEuclideanMetric(D)
+        h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+        κ = NUTS(Leapfrog(ϵ))
+        adaptor = StanHMCAdaptor(
+            MassMatrixAdaptor(metric),
+            StepSizeAdaptor(0.8, κ.τ.integrator),
+        )
+        samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false, drop_warmup=true)
+        @test length(samples) == n_samples - n_adapts
+        @test length(stats) == n_samples - n_adapts
+        samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose=false, progress=false, drop_warmup=false)
+        @test length(samples) == n_samples
+        @test length(stats) == n_samples
+    end
 end
