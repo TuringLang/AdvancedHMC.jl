@@ -18,7 +18,7 @@ include("common.jl")
         κ = NUTS(init_eps)
         adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, κ.τ.integrator))
 
-        samples, _ = sample(rng, h, κ, θ_init, n_samples, adaptor, n_adapts; progress=false)
+        samples, _ = sample(rng, h, κ, θ_init, n_samples, adaptor, n_adapts; progress=false, verbose=false)
 
         m_est = mean(map(invlink_gdemo, samples[1000:end]))
 

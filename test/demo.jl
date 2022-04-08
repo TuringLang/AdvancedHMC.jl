@@ -30,7 +30,7 @@ using LinearAlgebra
     # Run the sampler to draw samples from the specified Gaussian, where
     #   - `samples` will store the samples
     #   - `stats` will store diagnostic statistics for each sample
-    samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; progress=false)
+    samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; progress=false, verbose=false)
 
     @test length(samples) == n_samples
     @test length(stats) == n_samples
@@ -63,7 +63,7 @@ end
     # -- run sampler
     n_samples, n_adapts = 100, 50
     samples, stats = sample(hamiltonian, proposal, p1, n_samples,
-                            adaptor, n_adapts; progress=false)
+                            adaptor, n_adapts; progress=false, verbose=false)
 
     @test length(samples) == n_samples
     @test length(stats) == n_samples
