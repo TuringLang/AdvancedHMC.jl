@@ -9,7 +9,7 @@ const DIRECTORY_Turing_tests = joinpath(DIRECTORY_AdvancedHMC, "test", "turing")
 const GROUP = get(ENV, "AHMC_TEST_GROUP", "AdvancedHMC")
 
 if GROUP == "All" || GROUP == "AdvancedHMC"
-    using ReTest, CUDA, Pkg
+    using ReTest, CUDA
 
     include("metric.jl")
     include("hamiltonian.jl")
@@ -34,6 +34,7 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
 end
 
 if GROUP == "All" || GROUP == "Downstream"
+    using Pkg
     try
         # activate separate test environment
         Pkg.activate(DIRECTORY_Turing_tests)
