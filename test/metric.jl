@@ -1,6 +1,6 @@
 using ReTest, Random, AdvancedHMC
 
-@testset"Metric" begin
+@testset "Metric" begin
     @testset "Sample momentum variables from metric via vector of RNGs" begin
         D = 10
         n_chains = 5
