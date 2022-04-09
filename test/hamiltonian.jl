@@ -1,4 +1,4 @@
-using Test, AdvancedHMC
+using ReTest, AdvancedHMC
 using AdvancedHMC: DualValue, PhasePoint
 using LinearAlgebra: dot, diagm
 

@@ -1,8 +1,8 @@
-using Test, Random, AdvancedHMC, ForwardDiff, AbstractMCMC
+using ReTest, Random, AdvancedHMC, ForwardDiff, AbstractMCMC
 using Statistics: mean
 include("common.jl")
 
-@testset "`gdemo`" begin
+@testset "AbstractMCMC w/ gdemo" begin
     rng = MersenneTwister(0)
 
     n_samples = 5_000

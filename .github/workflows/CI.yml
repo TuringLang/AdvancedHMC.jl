@@ -29,6 +29,10 @@ jobs:
             arch: x86
           - os: windows-latest
             arch: x86
+          # GitHub Action seems to have issue of running julia-nightly with windows-latest
+          # TODO Revisit in the future
+          - version: 'nightly'
+            os: windows-latest
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1

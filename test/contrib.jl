@@ -1,4 +1,4 @@
-using Test, AdvancedHMC, ForwardDiff, Zygote
+using ReTest, AdvancedHMC, ForwardDiff, Zygote
 
 include("common.jl")
 
