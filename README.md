@@ -29,6 +29,12 @@ If you are interested in using AdvancedHMC.jl through a probabilistic programmin
 
 ## A minimal example - sampling from a multivariate Gaussian using NUTS
 
+In this section we demonstrate a minimal example of sampling from a multivariate Gaussian (10 dimensional) using the no U-turn sampler (NUTS). Below we describe the major components of the Hamiltonian system which are essential to sample using this approach:
+
+- Metric: In many sampling problems the sample space is usually associated metric, that allows us to measure the distance between any two points, and other similar quantities. In the example in this section, we use a special metric called the Euclidean Metric, represented with a `D × D` matrix from which we can compute distances. The Euclidean metric is also known as the mass matrix in the physical perspective.
+
+- 
+
 ```julia
 using AdvancedHMC, Distributions, ForwardDiff
 using LinearAlgebra
