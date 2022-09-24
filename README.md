@@ -31,9 +31,23 @@ If you are interested in using AdvancedHMC.jl through a probabilistic programmin
 
 In this section we demonstrate a minimal example of sampling from a multivariate Gaussian (10 dimensional) using the no U-turn sampler (NUTS). Below we describe the major components of the Hamiltonian system which are essential to sample using this approach:
 
-- **Metric**: In many sampling problems the sample space is usually associated with a metric, that allows us to measure the distance between any two points, and other similar quantities. In the example in this section, we use a special metric called the **Euclidean Metric**, represented with a `D × D` matrix from which we can compute distances. The Euclidean metric is also known as the mass matrix in the physical perspective.
+- **Metric**: In many sampling problems the sample space is usually associated with a metric, that allows us to measure the distance between any two points, and other similar quantities. In the example in this section, we use a special metric called the **Euclidean Metric**, represented with a `D × D` matrix from which we can compute distances. The Euclidean metric is also known as the mass matrix in the physical perspective. For available metrics refer [Hamiltonian mass matrix](https://github.com/SaranjeetKaur/AdvancedHMC.jl#hamiltonian-mass-matrix-metric).
 
-- 
+- **Leapfrog integration**: Leapfrog integration is a second-order numerical method for integrating differential equations (In this case they are, equations of motion for the relative position of one particle with respect to the other). The order of this integration signifies its rate of convergence. Any alogrithm with a finite time step size will have numerical errors and the order is related to this error. For a second-order algorithm, this error scales as the second power of the time step, hence, the name second-order. High-order intergrators are usually complex to code and have a limited region of convergence, hence they do not allow arbitrarily large time steps. A second-order integrator is suitable for our purpose, hence we opt for the leapfrog integrator. It is called `leapfrog` due to the ways this algorithm is written, where the positions and velocities of particles `leap over` each other.
+
+Suppose ${\bf x}$ and ${\bf v}$ are the position and velocity of an individual particle respectively; $i$ and $i+1$ are the indices for time values $t_i$ and $t_{i+1}$ respectively; $dt = t_{i+1} - t_i$ is the time step size (constant and regularly spaced intervals); and ${\bf a}$ is the acceleration induced on a particle by the forces of all other particles. Furthermore, suppose positions are defined at times $t_i, t_{i+1}, t_{i+2}, \dots $, spaced at constant intervals $dt$, the velocities are defined at halfway times in between, denoted by $t_{i-1/2}, t_{i+1/2}, t_{i+3/2}, \dots $, where $t_{i+1} - t_{i + 1/2} = t_{i + 1/2} - t_i = dt / 2$, and the accelerations ${\bf a}$ are defined only on integer times, just like the positions. Then the leapfrog integration scheme is given as:
+
+$\displaystyle {\bf x}_{i}$	$\textstyle =$	$\displaystyle {\bf x}_{i-1} + {\bf v}_{i-1/2} dt$	
+$\displaystyle {\bf v}_{i+1/2}$	$\textstyle =$	$\displaystyle {\bf v}_{i-1/2} + {\bf a}_i dt$	
+
+For available integrators refer [Integrator](https://github.com/SaranjeetKaur/AdvancedHMC.jl#integrator-integrator).
+
+- **Proposal for trajectories (static or dynamic)**: 
+For other available proposals refer [Proposal](https://github.com/SaranjeetKaur/AdvancedHMC.jl#proposal-proposal).
+
+- **Adaption schemes**:
+For available adaptors refer [Adaptor](https://github.com/SaranjeetKaur/AdvancedHMC.jl#adaptor-adaptor).
+
 
 ```julia
 using AdvancedHMC, Distributions, ForwardDiff
