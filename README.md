@@ -35,8 +35,10 @@ In this section we demonstrate a minimal example of sampling from a multivariate
 
 - **Leapfrog integration**: Leapfrog integration is a second-order numerical method for integrating differential equations (In this case they are, equations of motion for the relative position of one particle with respect to the other). The order of this integration signifies its rate of convergence. Any alogrithm with a finite time step size will have numerical errors and the order is related to this error. For a second-order algorithm, this error scales as the second power of the time step, hence, the name second-order. High-order intergrators are usually complex to code and have a limited region of convergence, hence they do not allow arbitrarily large time steps. A second-order integrator is suitable for our purpose, hence we opt for the leapfrog integrator. It is called `leapfrog` due to the ways this algorithm is written, where the positions and velocities of particles `leap over` each other. Suppose ${\bf x}$ and ${\bf v}$ are the position and velocity of an individual particle respectively; $i$ and $i+1$ are the indices for time values $t_i$ and $t_{i+1}$ respectively; $dt = t_{i+1} - t_i$ is the time step size (constant and regularly spaced intervals); and ${\bf a}$ is the acceleration induced on a particle by the forces of all other particles. Furthermore, suppose positions are defined at times $t_i, t_{i+1}, t_{i+2}, \dots $, spaced at constant intervals $dt$, the velocities are defined at halfway times in between, denoted by $t_{i-1/2}, t_{i+1/2}, t_{i+3/2}, \dots $, where $t_{i+1} - t_{i + 1/2} = t_{i + 1/2} - t_i = dt / 2$, and the accelerations ${\bf a}$ are defined only on integer times, just like the positions. Then the leapfrog integration scheme is given as:
 
-${\bf x}_{i} =  {\bf x}_{i-1} + {\bf v}_{i-1/2} dt$ \\	
-${\bf v}_{i+1/2} = {\bf v}_{i-1/2} + {\bf a}_i dt$	
+```math
+{\bf x}_{i} =  {\bf x}_{i-1} + {\bf v}_{i-1/2} dt \\	
+{\bf v}_{i+1/2} = {\bf v}_{i-1/2} + {\bf a}_i dt
+```
 
 For available integrators refer [Integrator](https://github.com/SaranjeetKaur/AdvancedHMC.jl#integrator-integrator).
 
