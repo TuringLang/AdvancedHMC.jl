@@ -33,7 +33,7 @@ In this section we demonstrate a minimal example of sampling from a multivariate
 
 - **Metric**: In many sampling problems the sample space is usually associated with a metric, that allows us to measure the distance between any two points, and other similar quantities. In the example in this section, we use a special metric called the **Euclidean Metric**, represented with a `D × D` matrix from which we can compute distances. 
 <details>
- <summary>Further details about **Metric**</summary>
+ <summary>Further details about the Metric component</summary>
  The Euclidean metric is also known as the mass matrix in the physical perspective. For available metrics refer [Hamiltonian mass matrix](https://github.com/SaranjeetKaur/AdvancedHMC.jl#hamiltonian-mass-matrix-metric).
 </details>
 
