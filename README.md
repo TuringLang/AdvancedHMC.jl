@@ -46,7 +46,7 @@ In this section we demonstrate a minimal example of sampling from a multivariate
 - **Proposal for trajectories (static or dynamic)**: Different types of proposals can be used, which maybe static or dynamic. At each iteration of any variant of the HMC algorithm there are two main steps - the first step changes the momentum and the second step may change both the position and the momentum of a particle. 
 <details>
  <summary>More about the proposals</summary>
- In the classical HMC approach, during the first step, new values for the momentum variables are randomly drawn from their Gaussian distribution, independently of the current values of the position variables. Whereas, during the second step, a Metropolis update is performed, using Hamiltonian dynamics to provide a new state. For available proposals refer [Proposal](https://github.com/SaranjeetKaur/AdvancedHMC.jl#proposal-proposal).
+ In the classical HMC approach, during the first step, new values for the momentum variables are randomly drawn from their Gaussian distribution, independently of the current values of the position variables. Whereas, during the second step, a Metropolis update is performed, using Hamiltonian dynamics to provide a new state. For available proposals refer <a href="https://github.com/SaranjeetKaur/AdvancedHMC.jl#proposal-proposal">Proposal</a>.
 </details>
   
 ```julia
