@@ -1,7 +1,6 @@
 using Pkg
-Pkg.update("TuringWeb")
 
-using Documenter, TuringWeb
+using Documenter
 using AdvancedHMC
 
 # cp(joinpath(@__DIR__, "../README.md"), joinpath(@__DIR__, "src/index.md"))
