@@ -1,11 +1,17 @@
-# TODO: add a type for kinetic energy
+abstract type AbstractKinetic end
 
-struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
+struct GaussianKinetic end
+
+struct Hamiltonian{M<:AbstractMetric, K<:AbstractKinetic, Tlogπ, T∂logπ∂θ}
     metric::M
+    kinetic::K
     ℓπ::Tlogπ
     ∂ℓπ∂θ::T∂logπ∂θ
 end
-Base.show(io::IO, h::Hamiltonian) = print(io, "Hamiltonian(metric=$(h.metric))")
+Base.show(io::IO, h::Hamiltonian) = print(io, "Hamiltonian(metric=$(h.metric), kinetic=$(h.kinetic))")
+
+# By default we use Gaussian kinetic energy; also to ensure backward compatibility at the time this was introduced
+Hamiltonian(metric::AbstractMetric, ℓπ::Function, ∂ℓπ∂θ::Function) = Hamiltonian(metric, GaussianKinetic(), ℓπ, ∂ℓπ∂θ)
 
 struct DualValue{V<:AbstractScalarOrVec{<:AbstractFloat}, G<:AbstractVecOrMat{<:AbstractFloat}}
     value::V    # cached value, e.g. logπ(θ)
@@ -150,7 +156,7 @@ phasepoint(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     θ::AbstractVecOrMat{T},
     h::Hamiltonian
-) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric))
+) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric, h.kinetic))
 
 abstract type AbstractMomentumRefreshment end
 
@@ -162,7 +168,7 @@ refresh(
     ::FullMomentumRefreshment,
     h::Hamiltonian,
     z::PhasePoint,
-) = phasepoint(h, z.θ, rand(rng, h.metric))
+) = phasepoint(h, z.θ, rand(rng, h.metric, h.kinetic))
 
 """
 Partial momentum refreshment with refresh rate `α`.
@@ -186,4 +192,4 @@ refresh(
     ref::PartialMomentumRefreshment,
     h::Hamiltonian,
     z::PhasePoint,
-) = phasepoint(h, z.θ, ref.α * z.r + sqrt(1 - ref.α^2) * rand(rng, h.metric))
+) = phasepoint(h, z.θ, ref.α * z.r + sqrt(1 - ref.α^2) * rand(rng, h.metric, h.kinetic))

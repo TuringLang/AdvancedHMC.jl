@@ -86,7 +86,8 @@ getname(m::T) where {T<:AbstractMetric} = getname(T)
 
 function _rand(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    metric::UnitEuclideanMetric{T}
+    metric::UnitEuclideanMetric{T},
+    kinetic,
 ) where {T}
     r = randn(rng, T, size(metric)...)
     return r
@@ -94,7 +95,8 @@ end
 
 function _rand(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    metric::DiagEuclideanMetric{T}
+    metric::DiagEuclideanMetric{T},
+    kinetic,
 ) where {T}
     r = randn(rng, T, size(metric)...)
     r ./= metric.sqrtM⁻¹
@@ -103,13 +105,15 @@ end
 
 function _rand(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    metric::DenseEuclideanMetric{T}
+    metric::DenseEuclideanMetric{T},
+    kinetic,
 ) where {T}
     r = randn(rng, T, size(metric)...)
     ldiv!(metric.cholM⁻¹, r)
     return r
 end
 
-Base.rand(rng::AbstractRNG, metric::AbstractMetric) = _rand(rng, metric)    # this disambiguity is required by Random.rand
-Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractMetric) = _rand(rng, metric)
-Base.rand(metric::AbstractMetric) = rand(GLOBAL_RNG, metric)
+# TODO The rand interface should be updated by rand from momentum distribution + optional affine transformation by metric
+Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic) = _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
+Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractMetric, kinetic) = _rand(rng, metric, kinetic)
+Base.rand(metric::AbstractMetric, kinetic) = rand(GLOBAL_RNG, metric, kinetic)
