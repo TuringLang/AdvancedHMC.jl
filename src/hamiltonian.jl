@@ -1,6 +1,6 @@
 abstract type AbstractKinetic end
 
-struct GaussianKinetic end
+struct GaussianKinetic <: AbstractKinetic end
 
 struct Hamiltonian{M<:AbstractMetric, K<:AbstractKinetic, Tlogπ, T∂logπ∂θ}
     metric::M
