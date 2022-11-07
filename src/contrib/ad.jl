@@ -1,9 +1,9 @@
 const ADSUPPORT = (:ForwardDiff, :Zygote)
 const ADAVAILABLE = Dict{Module, Function}()
 
-Hamiltonian(metric::AbstractMetric, ℓπ::Function, m::Module) = ADAVAILABLE[m](metric, ℓπ)
+Hamiltonian(metric::AbstractMetric, ℓπ, m::Module) = ADAVAILABLE[m](metric, ℓπ)
 
-function Hamiltonian(metric::AbstractMetric, ℓπ::Function)
+function Hamiltonian(metric::AbstractMetric, ℓπ)
     available = collect(keys(ADAVAILABLE))
     if length(available) == 0
         support_list_str = join(ADSUPPORT, " or ")
