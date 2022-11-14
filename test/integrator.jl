@@ -11,7 +11,7 @@ using Statistics: mean
 
     θ_init = randn(D)
     h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
-    r_init = AdvancedHMC.rand(h.metric)
+    r_init = AdvancedHMC.rand(h.metric, h.kinetic)
 
     n_steps = 10
 
@@ -116,7 +116,7 @@ using Statistics: mean
         ]
             q_init = randn(1)
             h = Hamiltonian(UnitEuclideanMetric(1), negU, ForwardDiff)
-            p_init = AdvancedHMC.rand(h.metric)
+            p_init = AdvancedHMC.rand(h.metric, h.kinetic)
 
             q, p = copy(q_init), copy(p_init)
             z = AdvancedHMC.phasepoint(h, q, p)
