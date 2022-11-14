@@ -30,6 +30,7 @@ include("utilities.jl")
 # r: momentum variables
 # z: phase point / a pair of θ and r
 
+include("kinetic.jl")
 include("metric.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
 
