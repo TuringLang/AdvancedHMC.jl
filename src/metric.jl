@@ -114,6 +114,6 @@ function _rand(
 end
 
 # TODO The rand interface should be updated by rand from momentum distribution + optional affine transformation by metric
-Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic) = _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
-Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractMetric, kinetic) = _rand(rng, metric, kinetic)
-Base.rand(metric::AbstractMetric, kinetic) = rand(GLOBAL_RNG, metric, kinetic)
+Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic::AbstractKinetic) = _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
+Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractMetric, kinetic::AbstractKinetic) = _rand(rng, metric, kinetic)
+Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic) = rand(GLOBAL_RNG, metric, kinetic)
