@@ -117,3 +117,7 @@ end
 Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic::AbstractKinetic) = _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
 Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractMetric, kinetic::AbstractKinetic) = _rand(rng, metric, kinetic)
 Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic) = rand(GLOBAL_RNG, metric, kinetic)
+Base.rand(metric::AbstractMetric) = rand(GLOBAL_RNG, metric, GaussianKinetic())
+Base.rand(rng::AbstractRNG, metric::AbstractMetric) = rand(rng, metric, GaussianKinetic())
+Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractMetric) = rand(rng, metric, GaussianKinetic())
+
