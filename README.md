@@ -1,6 +1,6 @@
 # AdvancedHMC.jl
 
-[![AdvancedHMC-CI](https://github.com/TuringLang/AdvancedHMC.jl/workflows/AdvancedHMC-CI/badge.svg?branch=master)](https://github.com/TuringLang/AdvancedHMC.jl/actions?query=workflow%3AAdvancedHMC-CI)
+[![CI](https://github.com/TuringLang/AdvancedHMC.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/TuringLang/AdvancedHMC.jl/actions/workflows/CI.yml)
 [![DOI](https://zenodo.org/badge/72657907.svg)](https://zenodo.org/badge/latestdoi/72657907)
 [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://turing.ml/stable/docs/library/advancedhmc/)
