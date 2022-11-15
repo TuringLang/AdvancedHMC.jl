@@ -87,7 +87,7 @@ getname(m::T) where {T<:AbstractMetric} = getname(T)
 function _rand(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     metric::UnitEuclideanMetric{T},
-    kinetic,
+    kinetic::GaussianKinetic,
 ) where {T}
     r = randn(rng, T, size(metric)...)
     return r
@@ -96,7 +96,7 @@ end
 function _rand(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     metric::DiagEuclideanMetric{T},
-    kinetic,
+    kinetic::GaussianKinetic,
 ) where {T}
     r = randn(rng, T, size(metric)...)
     r ./= metric.sqrtM⁻¹
@@ -106,10 +106,40 @@ end
 function _rand(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     metric::DenseEuclideanMetric{T},
-    kinetic,
+    kinetic::GaussianKinetic,
 ) where {T}
     r = randn(rng, T, size(metric)...)
     ldiv!(metric.cholM⁻¹, r)
+    return r
+end
+
+using AdaptiveRejectionSampling: RejectionSampler, run_sampler!
+
+
+# TODO Support AbstractVector{<:AbstractRNG}
+function _rand(
+    rng::AbstractRNG,
+    metric::UnitEuclideanMetric{T},
+    kinetic::RelativisticKinetic{T},
+) where {T}
+    h_temp = Hamiltonian(metric, kinetic, identity, identity)
+    densityfunc = x -> exp(neg_energy(h_temp, [x], [x]))
+    sampler = RejectionSampler(densityfunc, (-Inf, Inf); max_segments=5)
+    sz = size(metric)
+    r = run_sampler!(rng, sampler, prod(sz))
+    r = reshape(r, sz)
+    return r
+end
+
+# TODO Support AbstractVector{<:AbstractRNG}
+function _rand(
+    rng::AbstractRNG,
+    metric::DiagEuclideanMetric{T},
+    kinetic::RelativisticKinetic{T},
+) where {T}
+    r = _rand(rng, UnitEuclideanMetric(size(metric)), kinetic)
+    # p' = A p where A = sqrtM
+    r ./= metric.sqrtM⁻¹
     return r
 end
 

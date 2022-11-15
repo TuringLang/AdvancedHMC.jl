@@ -34,9 +34,20 @@ function ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat)
     return DualValue(res[1], -res[2])
 end
 
-∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric}, r::AbstractVecOrMat) = copy(r)
-∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVecOrMat) = h.metric.M⁻¹ .* r
-∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVecOrMat) = h.metric.M⁻¹ * r
+∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric, <:GaussianKinetic}, r::AbstractVecOrMat) = copy(r)
+∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric, <:GaussianKinetic}, r::AbstractVecOrMat) = h.metric.M⁻¹ .* r
+∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric, <:GaussianKinetic}, r::AbstractVecOrMat) = h.metric.M⁻¹ * r
+
+function ∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric,<:RelativisticKinetic}, r::AbstractVecOrMat)
+    mass = h.kinetic.m .* sqrt.(r.^2 ./ (h.kinetic.m.^2 * h.kinetic.c.^2) .+ 1)
+    return r ./ mass
+end
+function ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric,<:RelativisticKinetic}, r::AbstractVecOrMat)
+    r = h.metric.sqrtM⁻¹ .* r
+    mass = h.kinetic.m .* sqrt.(r.^2 ./ (h.kinetic.m.^2 * h.kinetic.c.^2) .+ 1)
+    retval = r ./ mass # red part of (15)
+    return h.metric.sqrtM⁻¹ .* retval # (15)
+end
 
 struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
     θ::T  # Position variables / model parameters.
@@ -109,37 +120,58 @@ neg_energy(z::PhasePoint) = z.ℓπ.value + z.ℓκ.value
 
 neg_energy(h::Hamiltonian, θ::AbstractVecOrMat) = h.ℓπ(θ)
 
+# GaussianKinetic
+
 neg_energy(
-    h::Hamiltonian{<:UnitEuclideanMetric},
+    h::Hamiltonian{<:UnitEuclideanMetric, <:GaussianKinetic},
     r::T,
     θ::T
 ) where {T<:AbstractVector} = -sum(abs2, r) / 2
 
 neg_energy(
-    h::Hamiltonian{<:UnitEuclideanMetric},
+    h::Hamiltonian{<:UnitEuclideanMetric, <:GaussianKinetic},
     r::T,
     θ::T
 ) where {T<:AbstractMatrix} = -vec(sum(abs2, r; dims=1)) / 2
 
 neg_energy(
-    h::Hamiltonian{<:DiagEuclideanMetric},
+    h::Hamiltonian{<:DiagEuclideanMetric, <:GaussianKinetic},
     r::T,
     θ::T
 ) where {T<:AbstractVector} = -sum(abs2.(r) .* h.metric.M⁻¹) / 2
 
 neg_energy(
-    h::Hamiltonian{<:DiagEuclideanMetric},
+    h::Hamiltonian{<:DiagEuclideanMetric, <:GaussianKinetic},
     r::T,
     θ::T
 ) where {T<:AbstractMatrix} = -vec(sum(abs2.(r) .* h.metric.M⁻¹; dims=1) ) / 2
 
 function neg_energy(
-    h::Hamiltonian{<:DenseEuclideanMetric},
+    h::Hamiltonian{<:DenseEuclideanMetric, <:GaussianKinetic},
     r::T,
     θ::T
 ) where {T<:AbstractVecOrMat}
     mul!(h.metric._temp, h.metric.M⁻¹, r)
     return -dot(r, h.metric._temp) / 2
+end
+
+# RelativisticKinetic
+
+function neg_energy(
+    h::Hamiltonian{<:UnitEuclideanMetric,<:RelativisticKinetic},
+    r::T,
+    θ::T
+) where {T<:AbstractVector}
+    return -sum(h.kinetic.m .* h.kinetic.c.^2 .* sqrt.(r.^2 ./ (h.kinetic.m.^2 .* h.kinetic.c.^2) .+ 1))
+end
+
+function neg_energy(
+    h::Hamiltonian{<:DiagEuclideanMetric,<:RelativisticKinetic},
+    r::T,
+    θ::T
+) where {T<:AbstractVector}
+    r = h.metric.sqrtM⁻¹ .* r
+    return -sum(h.kinetic.m .* h.kinetic.c.^2 .* sqrt.(r.^2 ./ (h.kinetic.m.^2 .* h.kinetic.c.^2) .+ 1))
 end
 
 energy(args...) = -neg_energy(args...)

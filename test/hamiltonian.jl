@@ -12,6 +12,8 @@ include("common.jl")
     h1 = Hamiltonian(metric, f, g)
     h2 = Hamiltonian(metric, GaussianKinetic(), f, g)
     @test h1 == h2
+    h3 = Hamiltonian(metric, RelativisticKinetic(1.0, 1.0), f, g)
+    @test h3.kinetic isa RelativisticKinetic
 end
 
 @testset "PhasePoint" begin
