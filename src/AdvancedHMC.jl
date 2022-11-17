@@ -17,6 +17,8 @@ using ArgCheck: @argcheck
 
 using DocStringExtensions
 
+using LogDensityProblems
+
 import AbstractMCMC
 
 import StatsBase: sample
@@ -48,6 +50,40 @@ export Trajectory, HMCKernel,
        find_good_stepsize
 
 # Useful defaults
+
+"""
+    $(TYPEDEF)
+
+Wrapper around something that implements the `LogDensityProblem` interface.
+
+This itself then implements the `LogDensityProblem` interface by simply deferring to the wrapped object.
+
+Since this is a sub-type of `AbstractMCMC.AbstractModel`, it is also compatible with the `AbstractMCMC` interface.
+"""
+struct LogDensityModel{L} <: AbstractMCMC.AbstractModel
+    logdensity::L
+end
+
+LogDensityModel(logdensity, ad) = LogDensityModel(ADgradient(ad, logdensity))
+
+function LogDensityProblems.ADgradient(kind::Symbol, ℓ::LogDensityModel)
+    return LogDensityModel(LogDensityProblems.ADgradient(kind, ℓ.logdensity))
+end
+
+for kind in [:ForwardDiff, :ReverseDiff, :Zygote, :Tracker, :Enzyme]
+    @eval function LogDensityProblems.ADgradient(
+        ::Val{$(QuoteNode(kind))}, ℓ::LogDensityModel
+    )
+        return LogDensityModel(LogDensityProblems.ADgradient(Val($(QuoteNode(kind))), ℓ.logdensity))
+    end
+end
+
+LogDensityProblems.dimension(model::LogDensityModel) = LogDensityProblems.dimension(model.logdensity)
+LogDensityProblems.capabilities(model::LogDensityModel) = LogDensityProblems.capabilities(model.logdensity)
+LogDensityProblems.logdensity(model::LogDensityModel, x) = LogDensityProblems.logdensity(model.logdensity, x)
+function LogDensityProblems.logdensity_and_gradient(model::LogDensityModel, x)
+    return LogDensityProblems.logdensity_and_gradient(model.logdensity, x)
+end
 
 struct NUTS{TS, TC} end
 
@@ -135,7 +171,18 @@ export sample
 include("abstractmcmc.jl")
 export DifferentiableDensityModel
 
-include("contrib/ad.jl")
+# include("contrib/ad.jl")
+Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel) = Hamiltonian(
+    metric,
+    Base.Fix1(LogDensityProblems.logdensity, ℓ),
+    Base.Fix1(LogDensityProblems.logdensity_and_gradient, ℓ)
+)
+function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val})
+    ℓ = LogDensityModel(LogDensityProblems.ADgradient(kind, ℓπ))
+    return Hamiltonian(metric, ℓ)
+end
+Hamiltonian(metric::AbstractMetric, ℓπ, m::Module) = Hamiltonian(metric, ℓπ, Val(Symbol(m)))
+Hamiltonian(metric::AbstractMetric, ℓπ) = Hamiltonian(metric, ℓπ, Val{:ForwardDiff}())
 
 ### Init
 
@@ -145,14 +192,6 @@ function __init__()
     @require OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed" begin
         export DiffEqIntegrator
         include("contrib/diffeq.jl")
-    end
-
-    @require ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210" begin
-        include("contrib/forwarddiff.jl")
-    end
-
-    @require Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f" begin
-        include("contrib/zygote.jl")
     end
 
     @require CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba" begin 
