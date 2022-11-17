@@ -54,13 +54,16 @@ using AdvancedHMC, Distributions, ForwardDiff
 using LogDensityProblems
 using LinearAlgebra
 
+# Define the target distribution using the `LogDensityProblem` interface
+struct Problem
+    dim::Int
+end
+LogDensityProblems.logdensity(p::Problem, θ) = logpdf(MvNormal(zeros(p.dim), I), θ)
+LogDensityProblems.dimension(p::Problem) = p.dim
+
 # Choose parameter dimensionality and initial parameter value
 D = 10; initial_θ = rand(D)
-
-# Define the target distribution using the `LogDensityProblem` interface
-ℓπ(θ) = logpdf(MvNormal(zeros(D), I), θ)
-LogDensityProblems.logdensity(::typeof(ℓπ), x) = ℓπ(x)
-LogDensityProblems.dimension(::typeof(ℓπ)) = D
+ℓπ = Problem(D)
 
 # Set the number of samples to draw and warmup iterations
 n_samples, n_adapts = 2_000, 1_000
