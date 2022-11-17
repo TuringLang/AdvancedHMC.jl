@@ -55,15 +55,15 @@ using LogDensityProblems
 using LinearAlgebra
 
 # Define the target distribution using the `LogDensityProblem` interface
-struct Problem
+struct LogTargetDensity
     dim::Int
 end
-LogDensityProblems.logdensity(p::Problem, θ) = logpdf(MvNormal(zeros(p.dim), I), θ)
-LogDensityProblems.dimension(p::Problem) = p.dim
+LogDensityProblems.logdensity(p::LogTargetDensity, θ) = logpdf(MvNormal(zeros(p.dim), I), θ)
+LogDensityProblems.dimension(p::LogTargetDensity) = p.dim
 
 # Choose parameter dimensionality and initial parameter value
 D = 10; initial_θ = rand(D)
-ℓπ = Problem(D)
+ℓπ = LogTargetDensity(D)
 
 # Set the number of samples to draw and warmup iterations
 n_samples, n_adapts = 2_000, 1_000
