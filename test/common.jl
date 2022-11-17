@@ -11,6 +11,16 @@ const DETATOL = 1e-3 * D * TRATIO
 # Random tolerance
 const RNDATOL = 5e-2 * D * TRATIO * 2
 
+# Convenience
+using Distributions: Distributions
+using Bijectors: Bijectors
+LogDensityProblems.dimension(d::Distributions.Distribution) = length(d)
+function LogDensityProblems.logdensity(d::Distributions.Distribution, y)
+    b = Bijectors.inverse(Bijectors.bijector(d))
+    x, logjac = Bijectors.with_logabsdet_jacobian(b, y)
+    return logpdf(d, x) + logjac
+end
+
 # Hand-coded multivariate Gaussian
 
 struct Gaussian{Tm, Ts}
@@ -23,6 +33,9 @@ function ℓπ_gaussian(g::AbstractVecOrMat{T}, s) where {T}
 end
 
 ℓπ_gaussian(m, s, x) = ℓπ_gaussian(m .- x, s)
+
+LogDensityProblems.dimension(g::Gaussian) = dim(g.m)
+LogDensityProblems.logdensity(g::Gaussian, x) = ℓπ_gaussian(g.m. g.s, x)
 
 function ∇ℓπ_gaussianl(m, s, x)
     g = m .- x
@@ -75,6 +88,10 @@ function ℓπ_gdemo(θ)
     loglikelihood = logpdf(Normal(m, sqrt(s)), 1.5) + logpdf(Normal(m, sqrt(s)), 2.0)
     return logprior + loglikelihood
 end
+
+# Make compat with `LogDensityProblems`.
+LogDensityProblems.dimension(::typeof(ℓπ_gdemo)) = 2
+LogDensityProblems.logdensity(::typeof(ℓπ_gdemo), θ) = ℓπ_gdemo(θ)
 
 test_show(x) = test_show(s -> length(s) > 0, x)
 function test_show(pred, x)

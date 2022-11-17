@@ -111,7 +111,7 @@ using Statistics: mean
             dim::Int
         end
         (::NegU)(q) = -dot(q, q) / 2
-        LogDensityProblems.logdensity(::NegU, x) = (x)
+        LogDensityProblems.logdensity(d::NegU, x) = d(x)
         LogDensityProblems.dimension(d::NegU) = d.dim
         negU = NegU(1)
 
