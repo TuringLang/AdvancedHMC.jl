@@ -106,8 +106,14 @@ using Statistics: mean
 
     end
 
-    @testset "Analyitcal solution to Eq (2.11) of Neal (2011)" begin
-        negU = q -> -dot(q, q) / 2
+    @testset "Analytical solution to Eq (2.11) of Neal (2011)" begin
+        struct NegU
+            dim::Int
+        end
+        (::NegU)(q) = -dot(q, q) / 2
+        LogDensityProblems.logdensity(::NegU, x) = (x)
+        LogDensityProblems.dimension(d::NegU) = d.dim
+        negU = NegU(1)
 
         ϵ = 0.01
         for lf in [
