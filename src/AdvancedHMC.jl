@@ -66,10 +66,13 @@ end
 
 LogDensityModel(logdensity, ad) = LogDensityModel(ADgradient(ad, logdensity))
 
+# Apply the `ADgradient` wrapper to the wrapped `logdensity` function since we
+# need to ensure that the outermost "wrapper" is a sub-type of `AbstractModel`.
 function LogDensityProblems.ADgradient(kind::Symbol, ℓ::LogDensityModel)
     return LogDensityModel(LogDensityProblems.ADgradient(kind, ℓ.logdensity))
 end
 
+# Otherwise we'll run into method ambiguities.
 for kind in [:ForwardDiff, :ReverseDiff, :Zygote, :Tracker, :Enzyme]
     @eval function LogDensityProblems.ADgradient(
         ::Val{$(QuoteNode(kind))}, ℓ::LogDensityModel
