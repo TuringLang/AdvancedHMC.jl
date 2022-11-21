@@ -185,7 +185,7 @@ function sample(
         # Update progress meter
         if progress
             percentage_divergent_transitions = num_divergent_transitions/i
-            if percentage_divergent_transitions > 30
+            if percentage_divergent_transitions > 0.3
                @warn "The level of numerical errors is high. Please check the model carefully."  maxlog=3
             end
             # Do include current iteration and mass matrix
