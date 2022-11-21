@@ -169,6 +169,7 @@ function sample(
     # Prepare containers to store sampling results
     n_keep = n_samples - (drop_warmup ? n_adapts : 0)
     θs, stats = Vector{T}(undef, n_keep), Vector{NamedTuple}(undef, n_keep)
+    num_divergent_transitions = 0
     # Initial sampling
     h, t = sample_init(rng, h, θ)
     # Progress meter
@@ -180,10 +181,11 @@ function sample(
         tstat = stat(t)
         h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
         tstat = merge(tstat, (is_adapt=isadapted,))
+        num_divergent_transitions += tstat.numerical_error 
         # Update progress meter
         if progress
             # Do include current iteration and mass matrix
-            pm_next!(pm, (iterations=i, tstat..., mass_matrix=h.metric))
+            pm_next!(pm, (iterations=i, percentage_divergent_transitions=num_divergent_transitions/i, tstat..., mass_matrix=h.metric))
         # Report finish of adapation
         elseif verbose && isadapted && i == n_adapts
             @info "Finished $n_adapts adapation steps" adaptor κ.τ.integrator h.metric
@@ -198,24 +200,20 @@ function sample(
     if verbose
         EBFMI_est = EBFMI(map(s -> s.hamiltonian_energy, stats))
         average_acceptance_rate = mean(map(s -> s.acceptance_rate, stats))
-        total_num_samples = drop_warmup ? n_samples : n_samples + n_adapts
-        percentage_numerical_error = 100 * sum(map(s -> s.numerical_error, stats)) ./ total_num_samples
         if θ isa AbstractVector
             n_chains = 1
         else
             n_chains = size(θ, 2)
             # Make sure that arrays are on CPU before printing.
             EBFMI_est = convert(Vector{eltype(EBFMI_est)}, EBFMI_est)
-            percentage_numerical_error = convert(Vector{eltype(percentage_numerical_error)}, percentage_numerical_error)
             average_acceptance_rate = convert(
                 Vector{eltype(average_acceptance_rate)},
                 average_acceptance_rate
             )
             EBFMI_est = "[" * join(EBFMI_est, ", ") * "]"
             average_acceptance_rate = "[" * join(average_acceptance_rate, ", ") * "]"
-            percentage_numerical_error = "[" * join(percentage_numerical_error, ", ") * "] %"
         end
-        @info "Finished $n_samples sampling steps for $n_chains chains in $time (s)" h κ EBFMI_est average_acceptance_rate percentage_numerical_error
+        @info "Finished $n_samples sampling steps for $n_chains chains in $time (s)" h κ EBFMI_est average_acceptance_rate 
     end
     return θs, stats
 end

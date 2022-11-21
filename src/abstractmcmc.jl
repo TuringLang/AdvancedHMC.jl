@@ -257,11 +257,13 @@ struct HMCProgressCallback{P}
     progress::Bool
     "If `progress` is not specified and this is `true` some information will be logged upon completion of adaptation."
     verbose::Bool
+    "Number of divergent transitions fo far."
+    num_divergent_transitions::Ref{Int} 
 end
 
 function HMCProgressCallback(n_samples; progress=true, verbose=false)
     pm = progress ? ProgressMeter.Progress(n_samples, desc="Sampling", barlen=31) : nothing
-    HMCProgressCallback(pm, progress, verbose)
+    HMCProgressCallback(pm, progress, verbose, Ref(0))
 end
 
 function (cb::HMCProgressCallback)(
@@ -278,13 +280,14 @@ function (cb::HMCProgressCallback)(
     κ = state.κ
     tstat = t.stat
     isadapted = tstat.is_adapt
+    cb.num_divergent_transitions[] += tstat.numerical_error
 
     # Update progress meter
     if progress
         # Do include current iteration and mass matrix
         pm_next!(
             pm,
-            (iterations=i, tstat..., mass_matrix=metric)
+            (iterations=i, percentage_divergent_transitions = cb.num_divergent_transitions[] / i, tstat..., mass_matrix=metric)
         )
         # Report finish of adapation
     elseif verbose && isadapted && i == nadapts
