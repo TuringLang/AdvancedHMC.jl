@@ -20,8 +20,9 @@ include("common.jl")
             DualValue(zero(T), [zero(T)])
         )
 
-        @test_logs (:warn, "The current proposal will be rejected due to numerical error(s).") init_z1()
-        @test_logs (:warn, "The current proposal will be rejected due to numerical error(s).") init_z2()
+        # (HongGe) we no longer throw warning messages for numerical errors.
+        # @test_logs (:warn, "The current proposal will be rejected due to numerical error(s).") init_z1()
+        # @test_logs (:warn, "The current proposal will be rejected due to numerical error(s).") init_z2()
 
         z1 = init_z1()
         z2 = init_z2()

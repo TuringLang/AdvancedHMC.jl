@@ -184,8 +184,12 @@ function sample(
         num_divergent_transitions += tstat.numerical_error 
         # Update progress meter
         if progress
+            percentage_divergent_transitions = num_divergent_transitions/i
+            if percentage_divergent_transitions > 30
+               @warn "The level of numerical errors is high. Please check the model carefully."  maxlog=3
+            end
             # Do include current iteration and mass matrix
-            pm_next!(pm, (iterations=i, percentage_divergent_transitions=num_divergent_transitions/i, tstat..., mass_matrix=h.metric))
+            pm_next!(pm, (iterations=i, percentage_divergent_transitions=percentage_divergent_transitions, tstat..., mass_matrix=h.metric))
         # Report finish of adapation
         elseif verbose && isadapted && i == n_adapts
             @info "Finished $n_adapts adapation steps" adaptor κ.τ.integrator h.metric

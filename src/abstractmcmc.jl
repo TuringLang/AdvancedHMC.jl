@@ -284,10 +284,14 @@ function (cb::HMCProgressCallback)(
 
     # Update progress meter
     if progress
+        percentage_divergent_transitions = cb.num_divergent_transitions[]/i
+        if percentage_divergent_transitions > 30
+           @warn "The level of numerical errors is high. Please check the model carefully."  maxlog=3
+        end
         # Do include current iteration and mass matrix
         pm_next!(
             pm,
-            (iterations=i, percentage_divergent_transitions = cb.num_divergent_transitions[] / i, tstat..., mass_matrix=metric)
+            (iterations=i, percentage_divergent_transitions=percentage_divergent_transitions, tstat..., mass_matrix=metric)
         )
         # Report finish of adapation
     elseif verbose && isadapted && i == nadapts
