@@ -198,20 +198,24 @@ function sample(
     if verbose
         EBFMI_est = EBFMI(map(s -> s.hamiltonian_energy, stats))
         average_acceptance_rate = mean(map(s -> s.acceptance_rate, stats))
+        total_num_samples = drop_warmup ? n_samples : n_samples + n_adapts
+        percentage_numerical_error = 100 * sum(map(s -> s.numerical_error, stats)) ./ total_num_samples
         if θ isa AbstractVector
             n_chains = 1
         else
             n_chains = size(θ, 2)
             # Make sure that arrays are on CPU before printing.
             EBFMI_est = convert(Vector{eltype(EBFMI_est)}, EBFMI_est)
+            percentage_numerical_error = convert(Vector{eltype(percentage_numerical_error)}, percentage_numerical_error)
             average_acceptance_rate = convert(
                 Vector{eltype(average_acceptance_rate)},
                 average_acceptance_rate
             )
             EBFMI_est = "[" * join(EBFMI_est, ", ") * "]"
             average_acceptance_rate = "[" * join(average_acceptance_rate, ", ") * "]"
+            percentage_numerical_error = "[" * join(percentage_numerical_error, ", ") * "] %"
         end
-        @info "Finished $n_samples sampling steps for $n_chains chains in $time (s)" h κ EBFMI_est average_acceptance_rate
+        @info "Finished $n_samples sampling steps for $n_chains chains in $time (s)" h κ EBFMI_est average_acceptance_rate percentage_numerical_error
     end
     return θs, stats
 end
