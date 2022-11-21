@@ -35,14 +35,10 @@ abstract type AbstractKinetic end
 
 struct GaussianKinetic <: AbstractKinetic end
 
-struct RelativisticKinetic{T} <: AbstractKinetic
-    "Mass"
-    m::T
-    "Speed of light"
-    c::T
-end
+export GaussianKinetic
 
-export GaussianKinetic, RelativisticKinetic
+include("experimental/relativistic_hmc.jl")
+export RelativisticKinetic
 
 include("metric.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric

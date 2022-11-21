@@ -113,36 +113,6 @@ function _rand(
     return r
 end
 
-using AdaptiveRejectionSampling: RejectionSampler, run_sampler!
-
-
-# TODO Support AbstractVector{<:AbstractRNG}
-function _rand(
-    rng::AbstractRNG,
-    metric::UnitEuclideanMetric{T},
-    kinetic::RelativisticKinetic{T},
-) where {T}
-    h_temp = Hamiltonian(metric, kinetic, identity, identity)
-    densityfunc = x -> exp(neg_energy(h_temp, [x], [x]))
-    sampler = RejectionSampler(densityfunc, (-Inf, Inf); max_segments=5)
-    sz = size(metric)
-    r = run_sampler!(rng, sampler, prod(sz))
-    r = reshape(r, sz)
-    return r
-end
-
-# TODO Support AbstractVector{<:AbstractRNG}
-function _rand(
-    rng::AbstractRNG,
-    metric::DiagEuclideanMetric{T},
-    kinetic::RelativisticKinetic{T},
-) where {T}
-    r = _rand(rng, UnitEuclideanMetric(size(metric)), kinetic)
-    # p' = A p where A = sqrtM
-    r ./= metric.sqrtM⁻¹
-    return r
-end
-
 # TODO The rand interface should be updated by rand from momentum distribution + optional affine transformation by metric
 Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic::AbstractKinetic) = _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
 Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractMetric, kinetic::AbstractKinetic) = _rand(rng, metric, kinetic)
