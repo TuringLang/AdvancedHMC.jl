@@ -180,8 +180,8 @@ function sample(
         # Adapt h and κ; what mutable is the adaptor
         tstat = stat(t)
         h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
+        num_divergent_transitions += tstat.numerical_error
         tstat = merge(tstat, (is_adapt=isadapted,))
-        num_divergent_transitions += tstat.numerical_error 
         # Update progress meter
         if progress
             percentage_divergent_transitions = num_divergent_transitions/i
