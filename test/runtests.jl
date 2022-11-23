@@ -33,7 +33,7 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
     end
 end
 
-if GROUP == "All" || GROUP == "AdvancedHMC"
+if GROUP == "All" || GROUP == "Experimental"
     using ReTest
 
     include(joinpath("experimental", "relativistic_hmc.jl"))
