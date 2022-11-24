@@ -1,4 +1,5 @@
 using ReTest, AdvancedHMC
+using AdvancedHMC, AdvancedHMC.Experimental
 using LinearAlgebra: dot
 
 @testset "Hamiltonian" begin

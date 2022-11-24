@@ -37,9 +37,6 @@ struct GaussianKinetic <: AbstractKinetic end
 
 export GaussianKinetic
 
-include("experimental/relativistic_hmc.jl")
-export RelativisticKinetic
-
 include("metric.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
 
@@ -145,6 +142,13 @@ include("abstractmcmc.jl")
 export DifferentiableDensityModel
 
 include("contrib/ad.jl")
+
+module Experimental
+
+include("experimental/relativistic_hmc.jl")
+export RelativisticKinetic
+
+end
 
 ### Init
 
