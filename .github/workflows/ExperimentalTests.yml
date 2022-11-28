@@ -1,0 +1,40 @@
+name: IntegrationTests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        version:
+          - '1'
+        os:
+          - ubuntu-latest
+          - macOS-latest
+          - windows-latest
+        arch:
+          - x86
+          - x64
+        exclude:
+          - os: ubuntu-latest
+            arch: x86
+          - os: macOS-latest
+            arch: x86
+          - os: windows-latest
+            arch: x86
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      - uses: julia-actions/julia-buildpkg@latest
+      - name: Run integration tests
+        uses: julia-actions/julia-runtest@latest
+        env:
+          AHMC_TEST_GROUP: Experimental

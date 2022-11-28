@@ -34,13 +34,7 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
 end
 
 if GROUP == "All" || GROUP == "Experimental"
-    using ReTest
-
-    include(joinpath("experimental", "relativistic_hmc.jl"))
-
-    @main function runtests(patterns...; dry::Bool=false)
-        retest(patterns...; dry=dry, verbose=Inf)
-    end
+    include(joinpath("experimental", "runtests.jl"))
 end
 
 if GROUP == "All" || GROUP == "Downstream"
