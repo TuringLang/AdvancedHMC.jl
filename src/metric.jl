@@ -87,7 +87,7 @@ getname(m::T) where {T<:AbstractMetric} = getname(T)
 function _rand(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     metric::UnitEuclideanMetric{T},
-    kinetic,
+    kinetic::GaussianKinetic,
 ) where {T}
     r = randn(rng, T, size(metric)...)
     return r
@@ -96,7 +96,7 @@ end
 function _rand(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     metric::DiagEuclideanMetric{T},
-    kinetic,
+    kinetic::GaussianKinetic,
 ) where {T}
     r = randn(rng, T, size(metric)...)
     r ./= metric.sqrtM⁻¹
@@ -106,7 +106,7 @@ end
 function _rand(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     metric::DenseEuclideanMetric{T},
-    kinetic,
+    kinetic::GaussianKinetic,
 ) where {T}
     r = randn(rng, T, size(metric)...)
     ldiv!(metric.cholM⁻¹, r)
