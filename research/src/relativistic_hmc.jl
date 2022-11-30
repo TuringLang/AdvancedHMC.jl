@@ -1,3 +1,5 @@
+using AdvancedHMC
+
 struct RelativisticKinetic{T} <: AbstractKinetic
     "Mass"
     m::T
