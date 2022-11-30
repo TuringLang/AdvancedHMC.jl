@@ -34,6 +34,11 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
 end
 
 if GROUP == "All" || GROUP == "Experimental"
+    using Pkg
+     # activate separate test environment
+     Pkg.activate(joinpath(DIRECTORY_AdvancedHMC, "research/tests"))
+     Pkg.develop(PackageSpec(; path=DIRECTORY_AdvancedHMC))
+     Pkg.instantiate()
     include(joinpath(DIRECTORY_AdvancedHMC, "research/tests", "runtests.jl"))
 end
 
