@@ -34,7 +34,7 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
 end
 
 if GROUP == "All" || GROUP == "Experimental"
-    include(joinpath("experimental", "runtests.jl"))
+    include(joinpath(DIRECTORY_AdvancedHMC, "research/tests", "runtests.jl"))
 end
 
 if GROUP == "All" || GROUP == "Downstream"
