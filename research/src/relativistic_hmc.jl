@@ -1,4 +1,5 @@
 using AdvancedHMC
+import AdvancedHMC: ∂H∂r, neg_energy, AbstractKinetic
 
 struct RelativisticKinetic{T} <: AbstractKinetic
     "Mass"
