@@ -1,3 +1,7 @@
+using AdvancedHMC
+import AdvancedHMC: ∂H∂r, neg_energy, AbstractKinetic
+import Random: AbstractRNG
+
 struct RelativisticKinetic{T} <: AbstractKinetic
     "Mass"
     m::T

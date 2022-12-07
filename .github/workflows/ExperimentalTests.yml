@@ -1,4 +1,4 @@
-name: IntegrationTests
+name: TestExperimentalFeatures
 
 on:
   push:

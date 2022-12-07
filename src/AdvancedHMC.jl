@@ -143,8 +143,6 @@ export DifferentiableDensityModel
 
 include("contrib/ad.jl")
 
-include("experimental/relativistic_hmc.jl")
-
 ### Init
 
 using Requires
