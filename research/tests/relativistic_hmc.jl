@@ -1,6 +1,5 @@
 using ReTest, AdvancedHMC
 using AdvancedHMC
-using AdvancedHMC: RelativisticKinetic
 using LinearAlgebra: dot
 
 @testset "Hamiltonian" begin
