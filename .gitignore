@@ -1,4 +1,6 @@
 .vscode
 .history
 .DS_Store
+.ipynb_checkpoints
 Manifest.toml
+!test/experimental/Manifest.toml
