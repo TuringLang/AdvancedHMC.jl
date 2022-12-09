@@ -18,8 +18,10 @@ using ArgCheck: @argcheck
 using DocStringExtensions
 
 using LogDensityProblems
+using LogDensityProblemsAD: LogDensityProblemsAD
 
 import AbstractMCMC
+using AbstractMCMC: LogDensityModel
 
 import StatsBase: sample
 
@@ -50,43 +52,6 @@ export Trajectory, HMCKernel,
        find_good_stepsize
 
 # Useful defaults
-
-"""
-    $(TYPEDEF)
-
-Wrapper around something that implements the `LogDensityProblem` interface.
-
-This itself then implements the `LogDensityProblem` interface by simply deferring to the wrapped object.
-
-Since this is a sub-type of `AbstractMCMC.AbstractModel`, it is also compatible with the `AbstractMCMC` interface.
-"""
-struct LogDensityModel{L} <: AbstractMCMC.AbstractModel
-    logdensity::L
-end
-
-LogDensityModel(logdensity, ad) = LogDensityModel(ADgradient(ad, logdensity))
-
-# Apply the `ADgradient` wrapper to the wrapped `logdensity` function since we
-# need to ensure that the outermost "wrapper" is a sub-type of `AbstractModel`.
-function LogDensityProblems.ADgradient(kind::Symbol, ℓ::LogDensityModel)
-    return LogDensityModel(LogDensityProblems.ADgradient(kind, ℓ.logdensity))
-end
-
-# Otherwise we'll run into method ambiguities.
-for kind in [:ForwardDiff, :ReverseDiff, :Zygote, :Tracker, :Enzyme]
-    @eval function LogDensityProblems.ADgradient(
-        ::Val{$(QuoteNode(kind))}, ℓ::LogDensityModel
-    )
-        return LogDensityModel(LogDensityProblems.ADgradient(Val($(QuoteNode(kind))), ℓ.logdensity))
-    end
-end
-
-LogDensityProblems.dimension(model::LogDensityModel) = LogDensityProblems.dimension(model.logdensity)
-LogDensityProblems.capabilities(model::LogDensityModel) = LogDensityProblems.capabilities(model.logdensity)
-LogDensityProblems.logdensity(model::LogDensityModel, x) = LogDensityProblems.logdensity(model.logdensity, x)
-function LogDensityProblems.logdensity_and_gradient(model::LogDensityModel, x)
-    return LogDensityProblems.logdensity_and_gradient(model.logdensity, x)
-end
 
 struct NUTS{TS, TC} end
 
@@ -180,8 +145,12 @@ Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel) = Hamiltonian(
     Base.Fix1(LogDensityProblems.logdensity, ℓ),
     Base.Fix1(LogDensityProblems.logdensity_and_gradient, ℓ)
 )
+function Hamiltonian(metric::AbstractMetric, ℓπ::LogDensityModel, kind::Union{Symbol,Val})
+    ℓ = LogDensityModel(LogDensityProblemsAD.ADgradient(kind, ℓπ.logdensity))
+    return Hamiltonian(metric, ℓ)
+end
 function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val})
-    ℓ = LogDensityModel(LogDensityProblems.ADgradient(kind, ℓπ))
+    ℓ = LogDensityModel(LogDensityProblemsAD.ADgradient(kind, ℓπ))
     return Hamiltonian(metric, ℓ)
 end
 Hamiltonian(metric::AbstractMetric, ℓπ, m::Module) = Hamiltonian(metric, ℓπ, Val(Symbol(m)))
