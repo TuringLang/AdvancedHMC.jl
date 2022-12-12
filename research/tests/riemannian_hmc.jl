@@ -3,7 +3,6 @@ versioninfo(); Pkg.status()
 
 import PyPlot; const plt = PyPlot
 using Random, LinearAlgebra, Statistics, ReverseDiff, VecTargets, AdvancedHMC
-includet("../../src/experimental/riemannian_hmc.jl")
 
 # Fisher information metric
 function gen_∂H∂x(func, x; f=identity)
