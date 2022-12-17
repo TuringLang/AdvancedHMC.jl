@@ -137,9 +137,7 @@ include("sampler.jl")
 export sample
 
 include("abstractmcmc.jl")
-export DifferentiableDensityModel
 
-# include("contrib/ad.jl")
 Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel) = Hamiltonian(
     metric,
     Base.Fix1(LogDensityProblems.logdensity, ℓ),
