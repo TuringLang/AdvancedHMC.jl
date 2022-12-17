@@ -140,8 +140,8 @@ include("abstractmcmc.jl")
 
 Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel) = Hamiltonian(
     metric,
-    Base.Fix1(LogDensityProblems.logdensity, ℓ),
-    Base.Fix1(LogDensityProblems.logdensity_and_gradient, ℓ)
+    Base.Fix1(LogDensityProblems.logdensity, ℓ.logdensity),
+    Base.Fix1(LogDensityProblems.logdensity_and_gradient, ℓ.logdensity),
 )
 function Hamiltonian(metric::AbstractMetric, ℓπ::LogDensityModel, kind::Union{Symbol,Val})
     ℓ = LogDensityModel(LogDensityProblemsAD.ADgradient(kind, ℓπ.logdensity))
