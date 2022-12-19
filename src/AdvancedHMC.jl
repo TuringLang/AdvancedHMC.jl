@@ -34,7 +34,13 @@ include("utilities.jl")
 # r: momentum variables
 # z: phase point / a pair of θ and r
 
-include("kinetic.jl")
+# TODO Move it back to hamiltonian.jl after the rand interface is updated
+abstract type AbstractKinetic end
+
+struct GaussianKinetic <: AbstractKinetic end
+
+export GaussianKinetic
+
 include("metric.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
 
