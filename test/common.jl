@@ -14,8 +14,12 @@ const RNDATOL = 5e-2 * D * TRATIO * 2
 # Convenience
 using Distributions: Distributions
 using Bijectors: Bijectors
-LogDensityProblems.dimension(d::Distributions.Distribution) = length(d)
-function LogDensityProblems.logdensity(d::Distributions.Distribution, y)
+struct LogDensityDistribution{D<:Distributions.Distribution}
+    dist::D
+end
+LogDensityProblems.dimension(d::LogDensityDistribution) = length(d.dist)
+function LogDensityProblems.logdensity(ld::LogDensityDistribution, y)
+    d = ld.dist
     b = Bijectors.inverse(Bijectors.bijector(d))
     x, logjac = Bijectors.with_logabsdet_jacobian(b, y)
     return logpdf(d, x) + logjac

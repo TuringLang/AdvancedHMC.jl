@@ -124,7 +124,7 @@ end
                 σ² = 1 .+ abs.(randn(D))
 
                 # Diagonal Gaussian
-                ℓπ = MvNormal(zeros(D), Diagonal(σ²))
+                ℓπ = LogDensityDistribution(MvNormal(zeros(D), Diagonal(σ²)))
 
                 res = runnuts(ℓπ, DiagEuclideanMetric(D))
                 @test res.adaptor.pc.var ≈ σ² rtol=0.2
@@ -141,7 +141,7 @@ end
                 Σ = m' * m
 
                 # Correlated Gaussian
-                ℓπ = MvNormal(zeros(D), Σ)
+                ℓπ = LogDensityDistribution(MvNormal(zeros(D), Σ))
 
                 res = runnuts(ℓπ, DiagEuclideanMetric(D))
                 @test res.adaptor.pc.var ≈ diag(Σ) rtol=0.2
@@ -154,7 +154,7 @@ end
     end
 
     @testset "Initialisation adaptor by metric" begin
-        ℓπ = MvNormal(zeros(D), I)
+        ℓπ = LogDensityDistribution(MvNormal(zeros(D), I))
 
         mass_init = fill(0.5, D)
         res = runnuts(ℓπ, DiagEuclideanMetric(mass_init); n_samples=1)
