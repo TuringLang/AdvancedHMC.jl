@@ -1,6 +1,7 @@
 using Comonicon
 using AdvancedHMC: AdvancedHMC
 using LogDensityProblems: LogDensityProblems
+using LogDensityProblemsAD: LogDensityProblemsAD
 
 println("Environment variables for testing")
 println(ENV)
