@@ -1,4 +1,5 @@
 using Comonicon
+using FillArrays
 using AdvancedHMC: AdvancedHMC
 using LogDensityProblems: LogDensityProblems
 using LogDensityProblemsAD: LogDensityProblemsAD
