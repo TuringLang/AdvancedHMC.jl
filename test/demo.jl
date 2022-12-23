@@ -1,5 +1,5 @@
 using ReTest
-using AdvancedHMC, Distributions, ForwardDiff, ComponentArrays
+using AdvancedHMC, Distributions, ForwardDiff, ComponentArrays, AbstractMCMC
 using LinearAlgebra
 
 @testset "Demo" begin
@@ -61,7 +61,18 @@ end
     metric = DiagEuclideanMetric(D)
 
     # choose AD framework or provide a function manually
-    hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
+    ℓπ_with_grad = LogDensityProblemsAD.ADgradient(
+        Val(:ForwardDiff),
+        ℓπ;
+        # NOTE: Have to manually construct the `gradientconfig` to ensure we're not using the default
+        # buffer in the config (which won't be of type `ComponentArray`).
+        gradientconfig = ForwardDiff.GradientConfig(
+            Base.Fix1(LogDensityProblems.logdensity, ℓπ),
+            similar(p1),
+            LogDensityProblemsAD._default_chunk(ℓπ),
+        )
+    )
+    hamiltonian = Hamiltonian(metric, AbstractMCMC.LogDensityModel(ℓπ_with_grad))
 
     # Define a leapfrog solver, with initial step size chosen heuristically
     initial_ϵ = find_good_stepsize(hamiltonian, p1)
