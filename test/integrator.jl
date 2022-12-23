@@ -110,8 +110,7 @@ using Statistics: mean
         struct NegU
             dim::Int
         end
-        (::NegU)(q) = -dot(q, q) / 2
-        LogDensityProblems.logdensity(d::NegU, x) = d(x)
+        LogDensityProblems.logdensity(d::NegU, x) = -dot(x, x) / 2
         LogDensityProblems.dimension(d::NegU) = d.dim
         negU = NegU(1)
 

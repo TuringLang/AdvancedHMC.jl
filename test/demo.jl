@@ -51,7 +51,7 @@ end
     p1 = ComponentVector(μ=2.0, σ=1)
     struct DemoProblemComponentArrays end
     function LogDensityProblems.logdensity(::DemoProblemComponentArrays, p::ComponentArray)
-        return -(1 .- p.μ)^2 / (p.σ)^2
+        return -((1 - p.μ) / p.σ)^2
     end
     LogDensityProblems.dimension(::DemoProblemComponentArrays) = 2
     ℓπ = DemoProblemComponentArrays()
