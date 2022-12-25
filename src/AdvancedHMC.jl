@@ -17,7 +17,11 @@ using ArgCheck: @argcheck
 
 using DocStringExtensions
 
+using LogDensityProblems
+using LogDensityProblemsAD: LogDensityProblemsAD
+
 import AbstractMCMC
+using AbstractMCMC: LogDensityModel
 
 import StatsBase: sample
 
@@ -139,9 +143,35 @@ include("sampler.jl")
 export sample
 
 include("abstractmcmc.jl")
-export DifferentiableDensityModel
 
-include("contrib/ad.jl")
+function Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel)
+    ℓπ = ℓ.logdensity
+
+    # Check we're capable of computing gradients.
+    cap = LogDensityProblems.capabilities(ℓπ)
+    if cap === nothing
+        throw(ArgumentError("The log density function does not support the LogDensityProblems.jl interface"))
+    end
+
+    if cap === LogDensityProblems.LogDensityOrder{0}()
+        throw(ArgumentError("The gradient of the log density function is not defined: Implement `LogDensityProblems.logdensity_and_gradient` or use automatic differentiation by calling `Hamiltionian(metric, model, AD; kwargs...)` where AD is one of the backends supported by LogDensityProblemsAD.jl"))
+    end
+
+    return Hamiltonian(
+        metric,
+        Base.Fix1(LogDensityProblems.logdensity, ℓ.logdensity),
+        Base.Fix1(LogDensityProblems.logdensity_and_gradient, ℓ.logdensity),
+    )
+end
+function Hamiltonian(metric::AbstractMetric, ℓπ::LogDensityModel, kind::Union{Symbol,Val}; kwargs...)
+    ℓ = LogDensityModel(LogDensityProblemsAD.ADgradient(kind, ℓπ.logdensity; kwargs...))
+    return Hamiltonian(metric, ℓ)
+end
+function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val} = Val{:ForwardDiff}(); kwargs...)
+    ℓ = LogDensityModel(LogDensityProblemsAD.ADgradient(kind, ℓπ; kwargs...))
+    return Hamiltonian(metric, ℓ)
+end
+Hamiltonian(metric::AbstractMetric, ℓπ, m::Module; kwargs...) = Hamiltonian(metric, ℓπ, Val(Symbol(m)); kwargs...)
 
 ### Init
 
@@ -151,14 +181,6 @@ function __init__()
     @require OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed" begin
         export DiffEqIntegrator
         include("contrib/diffeq.jl")
-    end
-
-    @require ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210" begin
-        include("contrib/forwarddiff.jl")
-    end
-
-    @require Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f" begin
-        include("contrib/zygote.jl")
     end
 
     @require CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba" begin 

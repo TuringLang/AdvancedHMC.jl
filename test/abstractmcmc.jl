@@ -10,7 +10,7 @@ include("common.jl")
 
     θ_init = randn(rng, 2)
 
-    model = AdvancedHMC.DifferentiableDensityModel(ℓπ_gdemo, ForwardDiff)
+    model = AdvancedHMC.LogDensityModel(LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ_gdemo))
     init_eps = Leapfrog(1e-3)
     κ = NUTS(init_eps)
     metric = DiagEuclideanMetric(2)
