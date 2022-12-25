@@ -149,15 +149,15 @@ Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel) = Hamiltonian(
     Base.Fix1(LogDensityProblems.logdensity, ℓ.logdensity),
     Base.Fix1(LogDensityProblems.logdensity_and_gradient, ℓ.logdensity),
 )
-function Hamiltonian(metric::AbstractMetric, ℓπ::LogDensityModel, kind::Union{Symbol,Val})
-    ℓ = LogDensityModel(LogDensityProblemsAD.ADgradient(kind, ℓπ.logdensity))
+function Hamiltonian(metric::AbstractMetric, ℓπ::LogDensityModel, kind::Union{Symbol,Val}; kwargs...)
+    ℓ = LogDensityModel(LogDensityProblemsAD.ADgradient(kind, ℓπ.logdensity; kwargs...))
     return Hamiltonian(metric, ℓ)
 end
-function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val} = Val{:ForwardDiff}())
-    ℓ = LogDensityModel(LogDensityProblemsAD.ADgradient(kind, ℓπ))
+function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val} = Val{:ForwardDiff}(); kwargs...)
+    ℓ = LogDensityModel(LogDensityProblemsAD.ADgradient(kind, ℓπ; kwargs...))
     return Hamiltonian(metric, ℓ)
 end
-Hamiltonian(metric::AbstractMetric, ℓπ, m::Module) = Hamiltonian(metric, ℓπ, Val(Symbol(m)))
+Hamiltonian(metric::AbstractMetric, ℓπ, m::Module; kwargs...) = Hamiltonian(metric, ℓπ, Val(Symbol(m)); kwargs...)
 
 ### Init
 
