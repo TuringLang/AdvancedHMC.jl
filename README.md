@@ -50,7 +50,7 @@ In this section we demonstrate a minimal example of sampling from a multivariate
 </details>
   
 ```julia
-using AdvancedHMC, Distributions, ForwardDiff
+using AdvancedHMC, ForwardDiff
 using LogDensityProblems
 using LinearAlgebra
 
@@ -58,7 +58,7 @@ using LinearAlgebra
 struct LogTargetDensity
     dim::Int
 end
-LogDensityProblems.logdensity(p::LogTargetDensity, θ) = logpdf(MvNormal(zeros(p.dim), I), θ)
+LogDensityProblems.logdensity(p::LogTargetDensity, θ) = -sum(abs2, θ) / 2  # standard multivariate normal
 LogDensityProblems.dimension(p::LogTargetDensity) = p.dim
 
 # Choose parameter dimensionality and initial parameter value
