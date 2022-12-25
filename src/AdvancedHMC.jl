@@ -146,12 +146,17 @@ include("abstractmcmc.jl")
 
 function Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel)
     ℓπ = ℓ.logdensity
+
+    # Check we're capable of computing gradients.
     cap = LogDensityProblems.capabilities(ℓπ)
     if cap === nothing
         throw(ArgumentError("The log density function does not support the LogDensityProblems.jl interface"))
     end
+
     if cap === LogDensityProblems.LogDensityOrder{0}()
         throw(ArgumentError("The gradient of the log density function is not defined: Implement `LogDensityProblems.logdensity_and_gradient` or use automatic differentiation by calling `Hamiltionian(metric, model, AD; kwargs...)` where AD is one of the backends supported by LogDensityProblemsAD.jl"))
+    end
+
     return Hamiltonian(
         metric,
         Base.Fix1(LogDensityProblems.logdensity, ℓ.logdensity),
