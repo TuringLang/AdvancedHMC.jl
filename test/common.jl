@@ -12,6 +12,7 @@ const DETATOL = 1e-3 * D * TRATIO
 const RNDATOL = 5e-2 * D * TRATIO * 2
 
 # Convenience
+# TODO: Remove this if made available in some other package.
 using Distributions: Distributions
 using Bijectors: Bijectors
 struct LogDensityDistribution{D<:Distributions.Distribution}
