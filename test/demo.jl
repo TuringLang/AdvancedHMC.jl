@@ -61,18 +61,7 @@ end
     metric = DiagEuclideanMetric(D)
 
     # choose AD framework or provide a function manually
-    ℓπ_with_grad = LogDensityProblemsAD.ADgradient(
-        Val(:ForwardDiff),
-        ℓπ;
-        # NOTE: Have to manually construct the `gradientconfig` to ensure we're not using the default
-        # buffer in the config (which won't be of type `ComponentArray`).
-        gradientconfig = ForwardDiff.GradientConfig(
-            Base.Fix1(LogDensityProblems.logdensity, ℓπ),
-            similar(p1),
-            LogDensityProblemsAD._default_chunk(ℓπ),
-        )
-    )
-    hamiltonian = Hamiltonian(metric, AbstractMCMC.LogDensityModel(ℓπ_with_grad))
+    hamiltonian = Hamiltonian(metric, ℓπ, Val(:ForwardDiff); x=p1)
 
     # Define a leapfrog solver, with initial step size chosen heuristically
     initial_ϵ = find_good_stepsize(hamiltonian, p1)
@@ -92,5 +81,4 @@ end
     labels = ComponentArrays.labels(samples[1])
     @test "μ" ∈ labels
     @test "σ" ∈ labels
-
 end
