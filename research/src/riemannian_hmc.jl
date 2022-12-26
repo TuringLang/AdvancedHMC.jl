@@ -198,23 +198,6 @@ function _rand(
     return r
 end
 
-# function _rand(
-#     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-#     metric::DenseRiemannianMetric{T, <:SoftAbsMap},
-#     kinetic,
-#     θ,
-# ) where {T}
-#     r = randn(rng, T, size(metric)...)
-#     # G⁻¹ = inv(metric.map(metric.G(θ)))
-#     H = metric.G(θ)
-#     G, Q, λ, softabsλ = softabs(H, metric.map.α)
-#     R = diagm(1 ./ softabsλ)
-#     G⁻¹ = Q * R * Q'
-#     chol = cholesky(Symmetric(G⁻¹))
-#     ldiv!(chol.U, r)
-#     return r
-# end
-
 Base.rand(rng::AbstractRNG, metric::AbstractRiemannianMetric, kinetic, θ) = _rand(rng, metric, kinetic, θ)
 Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractRiemannianMetric, kinetic, θ) = _rand(rng, metric, kinetic, θ)
 
