@@ -11,21 +11,9 @@ function gen_∂H∂x(func, x; f=identity)
     return x -> ReverseDiff.jacobian(x -> f(hess(x)[3]), x) # default output shape [∂H∂x₁; ∂H∂x₂; ...]
 end
 
-function reshape_J(J)
-    d = size(J, 2)
-    return cat((J[(i-1)*d+1:i*d,:] for i in 1:d)...; dims=3)
-end
-
-function make_J(G, α)
-    d = size(G, 1)
-    λ = eigen(G).values
-    J = Matrix(undef, d, d)
-    for i in 1:d, j in 1:d
-        J[i,j] = (λ[i] == λ[j]) ? 
-            (coth(α * λ[i]) + λ[i] * α * -csch(λ[i])^2) : 
-            ((λ[i] * coth(α * λ[i]) - λ[j] * coth(α * λ[j])) / (λ[i] - λ[j]))
-    end
-    return J
+function reshape_H(H)
+    d = size(H, 2)
+    return cat((H[(i-1)*d+1:i*d,:] for i in 1:d)...; dims=3)
 end
 
 function sample_target(hps; rng=MersenneTwister(1110))    
@@ -47,19 +35,16 @@ function sample_target(hps; rng=MersenneTwister(1110))
     _hess_func = VecTargets.gen_hess(neg_ℓπ, initial_θ) # x -> (value, gradient, hessian)
     hess_func = x -> copy.(_hess_func(x))
     
-    G = x -> hess_func(x)[3] + hps.λ * I
+    G = x -> begin
+        H = hess_func(x)[3] + hps.λ * I
+        any(.!(isfinite.(H))) ? diagm(ones(length(x))) : H
+    end
     _∂G∂θ = gen_∂H∂x(neg_ℓπ, initial_θ)
-    ∂G∂θ = x -> reshape_J(copy(_∂G∂θ(x)))
-    
-    G_softabs = x -> softabs(hess_func(x)[3] + hps.λ * I, hps.α)
-    # NOTE The implementation below attempts to diff through the softabs function which involves eigen that is not implemented in RD
-    #_∂G∂θ_softabs = gen_∂H∂x(neg_ℓπ, initial_θ; f=(X -> softabs(X + hps.λ * I, hps.α)))
-    _∂G∂θ_softabs = gen_∂H∂x(neg_ℓπ, initial_θ)
-    ∂G∂θ_softabs = x -> make_J(G_softabs(x), hps.α) .* reshape_J(copy(_∂G∂θ_softabs(x)))
+    ∂G∂θ = x -> reshape_H(copy(_∂G∂θ(x)))
 
     metric = hps.metric == :dense_euclidean          ? DenseEuclideanMetric(D) :
              hps.metric == :dense_riemannian         ? DenseRiemannianMetric((D,), G, ∂G∂θ) :
-             hps.metric == :dense_riemannian_softabs ? DenseRiemannianMetric((D,), G_softabs, ∂G∂θ_softabs) :
+             hps.metric == :dense_riemannian_softabs ? DenseRiemannianMetric((D,), G, ∂G∂θ, SoftAbsMap(hps.α)) :
              @error "Unknown metric $(hps.metric)"
     kinetic = GaussianKinetic()
     hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
@@ -115,7 +100,7 @@ end
 @info "Samples" mean(retval.samples) var(retval.samples)
 
 @time retval = with_logger(NullLogger()) do 
-    sample_target((; hps..., target=:funnel, metric=:dense_riemannian_softabs, integrator=:glf))
+    sample_target((; hps..., target=:funnel, metric=:dense_riemannian_softabs, integrator=:glf)) # ϵ=0.1
 end
 
 @info "Average acceptance ratio" mean(map(s -> s.is_accept, retval.stats))
@@ -127,5 +112,3 @@ let (fig, ax) = plt.subplots()
     
     fig
 end
-
-

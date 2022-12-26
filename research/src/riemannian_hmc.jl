@@ -54,18 +54,18 @@ function step(
                 @unpack value, gradient = ∂H∂θ(h, θ_init, r_half)
             end
             r_half = r_init - ϵ / 2 * gradient
-            # println(r_half)
+            # println("r_half: ", r_half)
         end
         # Eq (17) of Girolami & Calderhead (2011)
         θ_full = copy(θ_init)
-        for _ in 1:lf.n
+        for j in 1:lf.n
             θ_full = θ_init + ϵ / 2 * (∂H∂r(h, θ_init, r_half) + ∂H∂r(h, θ_full, r_half))
-            # println(θ_full)
+            # println("θ_full :", θ_full)
         end
         # Eq (18) of Girolami & Calderhead (2011)
         @unpack value, gradient = ∂H∂θ(h, θ_full, r_half)
         r_full = r_half - ϵ / 2 * gradient
-        # println(r_full)
+        # println("r_full: ", r_full)
         # Tempering
         #r = temper(lf, r, (i=i, is_half=false), n_steps)
         # Create a new phase point by caching the logdensity and gradient
@@ -129,12 +129,34 @@ Base.rand(metric::AbstractMetric, kinetic, θ) = rand(GLOBAL_RNG, metric, kineti
 
 import AdvancedHMC: _rand
 using AdvancedHMC: AbstractMetric
-using LinearAlgebra: cholesky, Symmetric
+using LinearAlgebra: eigen, cholesky, Symmetric
 
 abstract type AbstractRiemannianMetric <: AbstractMetric end
 
+abstract type AbstractHessianMap end
+
+struct IdentityMap <: AbstractHessianMap end
+
+(::IdentityMap)(x) = x
+
+struct SoftAbsMap{T} <: AbstractHessianMap 
+    α::T
+end
+
+# TODO Register softabs with ReverseDiff
+function softabs(X, α=20.0)
+    F = eigen(X) # ReverseDiff cannot diff through `eigen`
+    Q = hcat(F.vectors)
+    λ = F.values
+    softabsλ = λ .* coth.(α * λ)
+    return Q * diagm(softabsλ) * Q', Q, λ, softabsλ
+end
+
+(map::SoftAbsMap)(x) = softabs(x, map.α)[1]
+
 struct DenseRiemannianMetric{
     T,
+    TM<:AbstractHessianMap,
     A<:Union{Tuple{Int},Tuple{Int,Int}},
     AV<:AbstractVecOrMat{T},
     TG,
@@ -143,13 +165,14 @@ struct DenseRiemannianMetric{
     size::A
     G::TG
     ∂G∂θ::T∂G∂θ
+    map::TM
     _temp::AV
 end
 
 # TODO: make dense mass matrix support matrix-mode parallel
-function DenseRiemannianMetric(size, G, ∂G∂θ) where {T<:AbstractFloat}
+function DenseRiemannianMetric(size, G, ∂G∂θ, map=IdentityMap()) where {T<:AbstractFloat}
     _temp = Vector{Float64}(undef, size[1])
-    return DenseRiemannianMetric(size, G, ∂G∂θ, _temp)
+    return DenseRiemannianMetric(size, G, ∂G∂θ, map, _temp)
 end
 # DenseEuclideanMetric(::Type{T}, D::Int) where {T} = DenseEuclideanMetric(Matrix{T}(I, D, D))
 # DenseEuclideanMetric(D::Int) = DenseEuclideanMetric(Float64, D)
@@ -169,11 +192,28 @@ function _rand(
     θ,
 ) where {T}
     r = randn(rng, T, size(metric)...)
-    G⁻¹ = inv(metric.G(θ))
+    G⁻¹ = inv(metric.map(metric.G(θ)))
     chol = cholesky(Symmetric(G⁻¹))
     ldiv!(chol.U, r)
     return r
 end
+
+# function _rand(
+#     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
+#     metric::DenseRiemannianMetric{T, <:SoftAbsMap},
+#     kinetic,
+#     θ,
+# ) where {T}
+#     r = randn(rng, T, size(metric)...)
+#     # G⁻¹ = inv(metric.map(metric.G(θ)))
+#     H = metric.G(θ)
+#     G, Q, λ, softabsλ = softabs(H, metric.map.α)
+#     R = diagm(1 ./ softabsλ)
+#     G⁻¹ = Q * R * Q'
+#     chol = cholesky(Symmetric(G⁻¹))
+#     ldiv!(chol.U, r)
+#     return r
+# end
 
 Base.rand(rng::AbstractRNG, metric::AbstractRiemannianMetric, kinetic, θ) = _rand(rng, metric, kinetic, θ)
 Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractRiemannianMetric, kinetic, θ) = _rand(rng, metric, kinetic, θ)
@@ -199,27 +239,28 @@ function neg_energy(
     r::T,
     θ::T
 ) where {T<:AbstractVecOrMat}
-    G = h.metric.G(θ)
+    G = h.metric.map(h.metric.G(θ))
     D = size(G, 1)
     # Need to consider the normalizing term as it is no longer same for different θs
     lad, s = logabsdet(G)
-    if s == -1
-        return Inf # trigger numeric error to reject the current position
-                    # QUES Is this a valid work-around?
-    end
+    # NOTE Removed per Hong's suggestion as it's not the correct way to handle numeric issue here
+    # if s == -1
+    #     return Inf # trigger numeric error to reject the current position
+    #                 # QUES Is this a valid work-around?
+    # end
     logZ = 1 / 2 * (D * log(2π) + lad * s)
     mul!(h.metric._temp, inv(G), r)
     return -logZ - dot(r, h.metric._temp) / 2
 end
 
 # QUES L31 of hamiltonian.jl now reads a bit weird (semantically)
-function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric}, θ::AbstractVecOrMat, r::AbstractVecOrMat)
+function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}}, θ::AbstractVecOrMat{T}, r::AbstractVecOrMat{T}) where {T}
     ℓπ, ∂ℓπ∂θ = h.∂ℓπ∂θ(θ)
-    G = h.metric.G(θ)
+    G = h.metric.map(h.metric.G(θ))
     invG = inv(G)
     ∂G∂θ = h.metric.∂G∂θ(θ)
     
-    d = length(∂ℓπ∂θ)   
+    d = length(∂ℓπ∂θ)
     return DualValue(
         ℓπ, 
         # Eq (15) of Girolami & Calderhead (2011)
@@ -230,39 +271,59 @@ function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric}, θ::AbstractVecOrMat
     )
 end
 
+# Ref: https://www.wolframalpha.com/input?i=derivative+of+x+*+coth%28a+*+x%29
+dsoftabsdλ(α, λ) = coth(α * λ) + λ * α * -csch(λ * α)^2
+
+function make_J(λ::AbstractVector{T}, α::T) where {T<:AbstractFloat}
+    d = length(λ)
+    J = Matrix{T}(undef, d, d)
+    for i in 1:d, j in 1:d
+        J[i,j] = (λ[i] == λ[j]) ? 
+            dsoftabsdλ(α, λ[i]) : 
+            ((λ[i] * coth(α * λ[i]) - λ[j] * coth(α * λ[j])) / (λ[i] - λ[j]))
+    end
+    return J
+end
+
+function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ::AbstractVecOrMat{T}, r::AbstractVecOrMat{T}) where {T}
+    ℓπ, ∂ℓπ∂θ = h.∂ℓπ∂θ(θ)
+    H = h.metric.G(θ)
+    # println("H: ", H)
+    G, Q, λ, softabsλ = softabs(H, h.metric.map.α)
+    # println("Q: ", Q)
+    softabsΛ = diagm(softabsλ)
+    R = diagm(1 ./ softabsλ)
+    # println("R: ", R)
+    # M = inv(softabsΛ) * Q' * r
+    M = R * Q' * r
+    # println("M: ", M)
+    invG = inv(G)
+    ∂H∂θ = h.metric.∂G∂θ(θ)
+    # println("∂H∂θ: ", ∂H∂θ)
+    J = make_J(λ, h.metric.map.α)
+    # println("J: ", J)
+    
+    d = length(∂ℓπ∂θ)
+    g = -mapreduce(vcat, 1:d) do i
+        ∂H∂θᵢ = ∂H∂θ[:,:,i]
+        ∂ℓπ∂θ[i] - 1 / 2 * tr(Q * (R .* J) * Q' * ∂H∂θᵢ) + 1 / 2 * M' * (J .* Q' * ∂H∂θᵢ * Q) * M
+    end
+    # println("g: ", g)
+    return DualValue(
+        ℓπ, 
+        # Eq (15) of Girolami & Calderhead (2011)
+        g,
+    )
+end
+
 function ∂H∂r(h::Hamiltonian{<:DenseRiemannianMetric}, θ::AbstractVecOrMat, r::AbstractVecOrMat)
-    G = h.metric.G(θ)
+    H = h.metric.G(θ)
+    # if any(.!(isfinite.(H)))
+    #     println("θ: ", θ)
+    #     println("H: ", H)
+    # end
+    G = h.metric.map(H)
     # return inv(G) * r
+    # println("G \ r: ", G \ r)
     return G \ r
 end
-
-### 
-
-using LinearAlgebra: eigen
-
-function _rand(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    metric::DenseRiemannianMetric{T},
-    kinetic,
-    θ,
-) where {T}
-    r = randn(rng, T, size(metric)...)
-    G = metric.G(θ)
-    G⁻¹ = inv(G)
-    if !isposdef(Symmetric(G⁻¹))
-        println(θ, G, G⁻¹)
-    end
-    chol = cholesky(Symmetric(G⁻¹))
-    ldiv!(chol.U, r)
-    return r
-end
-
-function softabs(X, α=20.0)
-    F = eigen(X) # ReverseDiff cannot diff through `eigen`
-    Q = hcat(F.vectors)
-    λ = F.values
-    λ = λ .* coth.(α * λ)
-    return Q * diagm(λ) * Q'
-end
-
-# TODO Register softabs with ReverseDiff
