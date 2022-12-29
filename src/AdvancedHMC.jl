@@ -144,34 +144,42 @@ export sample
 
 include("abstractmcmc.jl")
 
-function Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel)
-    ℓπ = ℓ.logdensity
-
-    # Check we're capable of computing gradients.
-    cap = LogDensityProblems.capabilities(ℓπ)
-    if cap === nothing
-        throw(ArgumentError("The log density function does not support the LogDensityProblems.jl interface"))
-    end
-
-    if cap === LogDensityProblems.LogDensityOrder{0}()
-        throw(ArgumentError("The gradient of the log density function is not defined: Implement `LogDensityProblems.logdensity_and_gradient` or use automatic differentiation by calling `Hamiltionian(metric, model, AD; kwargs...)` where AD is one of the backends supported by LogDensityProblemsAD.jl"))
+## Without explicit AD backend
+function Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel; kwargs...)
+    # Check if we're capable of computing gradients.
+    # Note that a LogDensityModel's log density is guaranteed to support the LogDensityProblems interface.
+    logdensity = ℓ.logdensity
+    ℓπ = if LogDensityProblems.capabilities(logdensity) === LogDensityProblems.LogDensityOrder{0}()
+        # In this case logdensity does not support evaluation of the gradient of the log density function
+        # We use ForwardDiff to compute the gradient
+        LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), logdensity; kwargs...)
+    else
+        # In this case logdensity already supports evaluation of the gradient of the log density function
+        logdensity
     end
 
     return Hamiltonian(
         metric,
-        Base.Fix1(LogDensityProblems.logdensity, ℓ.logdensity),
-        Base.Fix1(LogDensityProblems.logdensity_and_gradient, ℓ.logdensity),
+        Base.Fix1(LogDensityProblems.logdensity, ℓπ),
+        Base.Fix1(LogDensityProblems.logdensity_and_gradient, ℓπ),
     )
 end
-function Hamiltonian(metric::AbstractMetric, ℓπ::LogDensityModel, kind::Union{Symbol,Val}; kwargs...)
-    ℓ = LogDensityModel(LogDensityProblemsAD.ADgradient(kind, ℓπ.logdensity; kwargs...))
-    return Hamiltonian(metric, ℓ)
+function Hamiltonian(metric::AbstractMetric, ℓ; kwargs...)
+    return Hamiltonian(metric, LogDensityModel(ℓ); kwargs...)
 end
-function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val} = Val{:ForwardDiff}(); kwargs...)
+
+## With explicit AD specification
+function Hamiltonian(metric::AbstractMetric, ℓπ::LogDensityModel, kind::Union{Symbol,Val,Module}; kwargs...)
+    return Hamiltonian(metric, ℓπ.logdensity, kind; kwargs...)
+end
+Hamiltonian(metric::AbstractMetric, ℓπ, m::Module; kwargs...) = Hamiltonian(metric, ℓπ, Val(Symbol(m)); kwargs...)
+function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val}; kwargs...)
+    if LogDensityProblems.capabilities(ℓπ) === nothing
+        throw(ArgumentError("The log density function does not support the LogDensityProblems.jl interface"))
+    end
     ℓ = LogDensityModel(LogDensityProblemsAD.ADgradient(kind, ℓπ; kwargs...))
     return Hamiltonian(metric, ℓ)
 end
-Hamiltonian(metric::AbstractMetric, ℓπ, m::Module; kwargs...) = Hamiltonian(metric, ℓπ, Val(Symbol(m)); kwargs...)
 
 ### Init
 
