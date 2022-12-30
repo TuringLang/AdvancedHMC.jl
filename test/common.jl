@@ -18,6 +18,7 @@ using Bijectors: Bijectors
 struct LogDensityDistribution{D<:Distributions.Distribution}
     dist::D
 end
+
 LogDensityProblems.dimension(d::LogDensityDistribution) = length(d.dist)
 function LogDensityProblems.logdensity(ld::LogDensityDistribution, y)
     d = ld.dist
@@ -25,6 +26,7 @@ function LogDensityProblems.logdensity(ld::LogDensityDistribution, y)
     x, logjac = Bijectors.with_logabsdet_jacobian(b, y)
     return logpdf(d, x) + logjac
 end
+LogDensityProblems.capabilities(::Type{<:LogDensityDistribution}) = LogDensityProblems.LogDensityOrder{0}()
 
 # Hand-coded multivariate Gaussian
 
@@ -41,6 +43,7 @@ end
 
 LogDensityProblems.dimension(g::Gaussian) = dim(g.m)
 LogDensityProblems.logdensity(g::Gaussian, x) = ℓπ_gaussian(g.m. g.s, x)
+LogDensityProblems.capabilities(::Type{<:Gaussian}) = LogDensityProblems.LogDensityOrder{0}()
 
 function ∇ℓπ_gaussianl(m, s, x)
     g = m .- x
@@ -97,6 +100,7 @@ end
 # Make compat with `LogDensityProblems`.
 LogDensityProblems.dimension(::typeof(ℓπ_gdemo)) = 2
 LogDensityProblems.logdensity(::typeof(ℓπ_gdemo), θ) = ℓπ_gdemo(θ)
+LogDensityProblems.capabilities(::Type{typeof(ℓπ_gdemo)}) = LogDensityProblems.LogDensityOrder{0}()
 
 test_show(x) = test_show(s -> length(s) > 0, x)
 function test_show(pred, x)
