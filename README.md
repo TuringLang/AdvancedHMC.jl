@@ -60,6 +60,7 @@ struct LogTargetDensity
 end
 LogDensityProblems.logdensity(p::LogTargetDensity, θ) = -sum(abs2, θ) / 2  # standard multivariate normal
 LogDensityProblems.dimension(p::LogTargetDensity) = p.dim
+LogDensityProblems.capabilities(::Type{LogTargetDensity}) = LogDensityProblems.LogDensityOrder{0}()
 
 # Choose parameter dimensionality and initial parameter value
 D = 10; initial_θ = rand(D)
