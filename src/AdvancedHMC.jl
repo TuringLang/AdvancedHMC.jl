@@ -195,6 +195,10 @@ function __init__()
     @require CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba" begin 
         include("contrib/cuda.jl")
     end
+
+    @require MCMCChains="c7f686f2-ff18-58e9-bc7b-31028e88f75d" begin
+        include("mcmcchains-connect.jl")
+    end
 end
 
 end # module
