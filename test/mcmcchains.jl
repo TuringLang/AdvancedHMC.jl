@@ -22,16 +22,13 @@ include("common.jl")
         init_params = θ_init,
         chain_type = Chains,
         progress=false,
+        bijector = invlink_gdemo,
         verbose=false
     );
 
     # Transform back to original space.
     # NOTE: We're not correcting for the `logabsdetjac` here since, but
     # we're only interested in the mean it doesn't matter.
-    for i in 1:size(samples, 1)
-        samples.value.data[i,1:end-1,1] .= invlink_gdemo(samples.value.data[i,1:end-1,1])
-    end
-
     m_est = mean(samples[n_adapts + 1:end]) 
 
     @test m_est[:,2] ≈ [49 / 24, 7 / 6] atol=RNDATOL
