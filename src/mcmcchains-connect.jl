@@ -14,7 +14,9 @@ function AbstractMCMC.bundle_samples(
     kwargs...
 )
     # Turn all the transitions into a vector-of-vectors.
-    vals = [vcat(bijector(t.z.θ), t.z.ℓπ.value) for t in ts]
+    tstat = merge((; lp = t.z.ℓπ.value), stat(t))
+    tstat_names = collect(keys(tstat))
+    vals = [vcat(bijector(t.z.θ), collect(tstat)) for t in ts]
 
     # Check if we received any parameter names.
     if ismissing(param_names)
@@ -26,7 +28,7 @@ function AbstractMCMC.bundle_samples(
 
     # Bundle everything up and return a Chains struct.
     return Chains(
-        vals, vcat(param_names, [:lp]), (parameters = param_names, internals = [:lp],);
+        vals, vcat(param_names, tstat_names), (parameters = param_names, internals = tstat_names,);
         start=discard_initial + 1, thin=thinning,
     )
 end
