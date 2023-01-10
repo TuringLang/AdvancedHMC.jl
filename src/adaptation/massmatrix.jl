@@ -54,15 +54,15 @@ function update!(ve::DiagMatrixEstimator)
 end
 
 # NOTE: this naive variance estimator is used only in testing
-struct NaiveVar{T<:AbstractFloat, E<:AbstractVector{<:AbstractVecOrMat{T}}} <: DiagMatrixEstimator{T}
-    S :: E
-    NaiveVar(S::E) where {E} = new{eltype(eltype(E)), E}(S)
+struct NaiveVar{T<:AbstractFloat,E<:AbstractVector{<:AbstractVecOrMat{T}}} <: DiagMatrixEstimator{T}
+    S::E
+    NaiveVar(S::E) where {E} = new{eltype(eltype(E)),E}(S)
 end
 
 NaiveVar{T}(sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveVar(Vector{Vector{T}}())
 NaiveVar{T}(sz::Tuple{Int,Int}) where {T<:AbstractFloat} = NaiveVar(Vector{Matrix{T}}())
 
-NaiveVar(sz::Union{Tuple{Int}, Tuple{Int,Int}}) = NaiveVar{Float64}(sz)
+NaiveVar(sz::Union{Tuple{Int},Tuple{Int,Int}}) = NaiveVar{Float64}(sz)
 
 Base.push!(nv::NaiveVar, s::AbstractVecOrMat) = push!(nv.S, s)
 
@@ -74,28 +74,28 @@ function get_estimation(nv::NaiveVar)
 end
 
 # Ref： https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_var_estimator.hpp
-mutable struct WelfordVar{T<:AbstractFloat, E<:AbstractVecOrMat{T}} <: DiagMatrixEstimator{T}
-    n     :: Int
-    n_min :: Int
-    μ     :: E
-    M     :: E
-    δ     :: E    # cache for diff
-    var   :: E    # cache for variance
+mutable struct WelfordVar{T<:AbstractFloat,E<:AbstractVecOrMat{T}} <: DiagMatrixEstimator{T}
+    n::Int
+    n_min::Int
+    μ::E
+    M::E
+    δ::E    # cache for diff
+    var::E    # cache for variance
     function WelfordVar(n::Int, n_min::Int, μ::E, M::E, δ::E, var::E) where {E}
-        return new{eltype(E), E}(n, n_min, μ, M, δ, var)
+        return new{eltype(E),E}(n, n_min, μ, M, δ, var)
     end
 end
 
 Base.show(io::IO, ::WelfordVar) = print(io, "WelfordVar")
 
 function WelfordVar{T}(
-    sz::Union{Tuple{Int}, Tuple{Int,Int}}; 
+    sz::Union{Tuple{Int},Tuple{Int,Int}};
     n_min::Int=10, var=ones(T, sz)
 ) where {T<:AbstractFloat}
     return WelfordVar(0, n_min, zeros(T, sz), zeros(T, sz), zeros(T, sz), var)
 end
 
-WelfordVar(sz::Union{Tuple{Int}, Tuple{Int,Int}}; kwargs...) = WelfordVar{Float64}(sz; kwargs...)
+WelfordVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...) = WelfordVar{Float64}(sz; kwargs...)
 
 function Base.resize!(wv::WelfordVar, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
     if size(θ) != size(wv.var)
@@ -130,6 +130,91 @@ function get_estimation(wv::WelfordVar{T}) where {T<:AbstractFloat}
     return n / ((n + 5) * (n - 1)) * M .+ ϵ * (5 / (n + 5))
 end
 
+# Rust implementation of NUTS used in Nutpie (comes from nuts-rs crate)
+# Source: https://github.com/pymc-devs/nuts-rs/blob/main/src/adapt_strategy.rs
+
+mutable struct ExpWeightedWelfordVar{T<:AbstractFloat,E<:AbstractVecOrMat{T}} <: DiagMatrixEstimator{T}
+    exp_variance_draw::WelfordVar{T,E}
+    exp_variance_grad::WelfordVar{T,E}
+    exp_variance_draw_bg::WelfordVar{T,E}
+    exp_variance_grad_bg::WelfordVar{T,E}
+    function ExpWeightedWelfordVar(exp_variance_draw::WelfordVar{T,E}, exp_variance_grad::WelfordVar{T,E}, exp_variance_draw_bg::WelfordVar{T,E}, exp_variance_grad_bg::WelfordVar{T,E}) where {T,E}
+        return new{eltype(E),E}(exp_variance_draw, exp_variance_grad, exp_variance_draw_bg, exp_variance_grad_bg)
+    end
+end
+
+Base.show(io::IO, ::ExpWeightedWelfordVar) = print(io, "ExpWeightedWelfordVar")
+
+function ExpWeightedWelfordVar{T}(
+    sz::Union{Tuple{Int},Tuple{Int,Int}};
+    n_min::Int=4, var=ones(T, sz)
+) where {T<:AbstractFloat}
+    # return ExpWeightedWelfordVar(0, n_min, zeros(T, sz), zeros(T, sz), zeros(T, sz), var)
+    return ExpWeightedWelfordVar(WelfordVar{T}(sz; n_min, var), WelfordVar{T}(sz; n_min, var), WelfordVar{T}(sz; n_min, var), WelfordVar{T}(sz; n_min, var))
+end
+
+ExpWeightedWelfordVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...) = ExpWeightedWelfordVar{Float64}(sz; kwargs...)
+
+function Base.resize!(wv::ExpWeightedWelfordVar, θ::AbstractVecOrMat{T}, g::AbstractVecOrMat{T}) where {T<:AbstractFloat}
+    @assert size(θ) == size(g) "Size of draw and grad must be the same."
+    resize!(wv.exp_variance_draw, θ)
+    resize!(wv.exp_variance_grad, g)
+    resize!(wv.exp_variance_draw_bg, θ)
+    resize!(wv.exp_variance_grad_bg, g)
+end
+
+function reset!(wv::ExpWeightedWelfordVar{T}) where {T<:AbstractFloat}
+    reset!(wv.exp_variance_draw)
+    reset!(wv.exp_variance_grad)
+    reset!(wv.exp_variance_draw_bg)
+    reset!(wv.exp_variance_grad_bg)
+end
+
+function Base.push!(wv::ExpWeightedWelfordVar, θ::AbstractVecOrMat{T}, g::AbstractVecOrMat{T}) where {T}
+    @assert size(θ) == size(g) "Size of draw and grad must be the same."
+    push!(wv.exp_variance_draw, θ)
+    push!(wv.exp_variance_grad, g)
+    push!(wv.exp_variance_draw_bg, θ)
+    push!(wv.exp_variance_grad_bg, g)
+end
+
+# swap the background and foreground estimators for both _draw and _grad variance
+# unlike the Rust implementation, we don't update the estimators inside of the switch as well (called separately)
+function switch!(wv::ExpWeightedWelfordVar)
+    wv.exp_variance_draw = wv.exp_variance_draw_bg
+    reset!(wv.exp_variance_draw_bg)
+    wv.exp_variance_grad = wv.exp_variance_grad_bg
+    reset!(wv.exp_variance_grad_bg)
+end
+current_count(wv) = wv.exp_variance_draw.n
+background_count(wv) = wv.exp_variance_draw_bg.n
+
+function adapt!(
+    adaptor::ExpWeightedWelfordVar,
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::AbstractScalarOrVec{<:AbstractFloat},
+    g::AbstractVecOrMat{<:AbstractFloat},
+    is_update::Bool=true
+)
+    resize!(adaptor, θ, g)
+    push!(adaptor, θ, g)
+    is_update && update!(adaptor)
+end
+
+# mimics: let val = (draw / grad).sqrt().clamp(LOWER_LIMIT, UPPER_LIMIT);
+# TODO: handle NaN
+function get_estimation(ad::ExpWeightedWelfordVar{T}) where {T<:AbstractFloat}
+    var_draw = get_estimation(ad.exp_variance_draw)
+    var_grad = get_estimation(ad.exp_variance_grad)
+    var = (var_draw ./ var_grad) .|> sqrt .|> x -> clamp(x, LOWER_LIMIT, UPPER_LIMIT)
+    # re-use the last estimate `var` if the current estimate is not valid
+    return all(isfinite.(var)) ? var : ad.exp_variance_draw.var
+end
+# reuse the `var` slot in `WelfordVar` to store the estimated variance of the draw (the "current" one)
+function update!(ad::ExpWeightedWelfordVar)
+    current_count(ad) >= ad.exp_variance_draw.n_min && (ad.exp_variance_draw.var .= get_estimation(ad))
+end
+
 ## Dense mass matrix adaptor
 
 abstract type DenseMatrixEstimator{T} <: MassMatrixAdaptor end
@@ -143,14 +228,14 @@ function update!(ce::DenseMatrixEstimator)
 end
 
 # NOTE: This naive covariance estimator is used only in testing.
-struct NaiveCov{F<:AbstractFloat, T<:AbstractVector{<:AbstractVector{F}}} <: DenseMatrixEstimator{T}
-    S :: T
-    NaiveCov(S::E) where {E} = new{eltype(eltype(E)), E}(S)
+struct NaiveCov{F<:AbstractFloat,T<:AbstractVector{<:AbstractVector{F}}} <: DenseMatrixEstimator{T}
+    S::T
+    NaiveCov(S::E) where {E} = new{eltype(eltype(E)),E}(S)
 end
 
 NaiveCov{T}(sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveCov(Vector{Vector{T}}())
 
-NaiveCov(sz::Union{Tuple{Int}, Tuple{Int,Int}}; kwargs...) = NaiveCov{Float64}(sz; kwargs...)
+NaiveCov(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...) = NaiveCov{Float64}(sz; kwargs...)
 
 Base.push!(nc::NaiveCov, s::AbstractVector) = push!(nc.S, s)
 
@@ -163,12 +248,12 @@ end
 
 # Ref: https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_covar_estimator.hpp
 mutable struct WelfordCov{F<:AbstractFloat} <: DenseMatrixEstimator{F}
-    n     :: Int
-    n_min :: Int
-    μ     :: Vector{F}
-    M     :: Matrix{F}
-    δ     :: Vector{F}  # cache for diff
-    cov   :: Matrix{F}
+    n::Int
+    n_min::Int
+    μ::Vector{F}
+    M::Matrix{F}
+    δ::Vector{F}  # cache for diff
+    cov::Matrix{F}
 end
 
 Base.show(io::IO, ::WelfordCov) = print(io, "WelfordCov")

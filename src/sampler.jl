@@ -2,7 +2,7 @@
 
 update(h::Hamiltonian, ::AbstractAdaptor) = h
 function update(
-    h::Hamiltonian, adaptor::Union{MassMatrixAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
+    h::Hamiltonian, adaptor::Union{MassMatrixAdaptor,NaiveHMCAdaptor,StanHMCAdaptor,NutpieHMCAdaptor}
 )
     metric = renew(h.metric, getM⁻¹(adaptor))
     return @set h.metric = metric
@@ -10,7 +10,7 @@ end
 
 update(τ::Trajectory, ::AbstractAdaptor) = τ
 function update(
-    τ::Trajectory, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
+    τ::Trajectory, adaptor::Union{StepSizeAdaptor,NaiveHMCAdaptor,StanHMCAdaptor}
 )
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
     integrator = update_nom_step_size(τ.integrator, getϵ(adaptor))
@@ -34,8 +34,8 @@ end
 ## Interface functions
 ##
 function sample_init(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
-    h::Hamiltonian, 
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    h::Hamiltonian,
     θ::AbstractVecOrMat{<:AbstractFloat}
 )
     # Ensure h.metric has the same dim as θ.
@@ -46,8 +46,8 @@ function sample_init(
 end
 
 function transition(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
-    h::Hamiltonian, 
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    h::Hamiltonian,
     κ::HMCKernel,
     z::PhasePoint,
 )
@@ -74,12 +74,36 @@ function Adaptation.adapt!(
     i::Int,
     n_adapts::Int,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat}
+    α::AbstractScalarOrVec{<:AbstractFloat},
+    z::PhasePoint # needs to be added for compat
 )
     isadapted = false
     if i <= n_adapts
         i == 1 && Adaptation.initialize!(adaptor, n_adapts)
         adapt!(adaptor, θ, α)
+        i == n_adapts && finalize!(adaptor)
+        h = update(h, adaptor)
+        κ = update(κ, adaptor)
+        isadapted = true
+    end
+    return h, κ, isadapted
+end
+
+# Nutpie adaptor requires access to gradients in the Hamiltonian
+function Adaptation.adapt!(
+    h::Hamiltonian,
+    κ::AbstractMCMCKernel,
+    adaptor::NutpieHMCAdaptor,
+    i::Int,
+    n_adapts::Int,
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::AbstractScalarOrVec{<:AbstractFloat},
+    z::PhasePoint
+)
+    isadapted = false
+    if i <= n_adapts
+        i == 1 && Adaptation.initialize!(adaptor, n_adapts, z)
+        adapt!(adaptor, θ, α, z)
         i == n_adapts && finalize!(adaptor)
         h = update(h, adaptor)
         κ = update(κ, adaptor)
@@ -126,7 +150,7 @@ sample(
     drop_warmup=drop_warmup,
     verbose=verbose,
     progress=progress,
-    (pm_next!)=pm_next!,
+    (pm_next!)=pm_next!
 )
 
 """
@@ -153,7 +177,7 @@ Sample `n_samples` samples using the proposal `κ` under Hamiltonian `h`.
 - `progress` controls whether to show the progress meter or not
 """
 function sample(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
     κ::HMCKernel,
     θ::T,
@@ -178,13 +202,13 @@ function sample(
         t = transition(rng, h, κ, t.z)
         # Adapt h and κ; what mutable is the adaptor
         tstat = stat(t)
-        h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
+        h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate, t.z)
         tstat = merge(tstat, (is_adapt=isadapted,))
         # Update progress meter
         if progress
             # Do include current iteration and mass matrix
             pm_next!(pm, (iterations=i, tstat..., mass_matrix=h.metric))
-        # Report finish of adapation
+            # Report finish of adapation
         elseif verbose && isadapted && i == n_adapts
             @info "Finished $n_adapts adapation steps" adaptor κ.τ.integrator h.metric
         end

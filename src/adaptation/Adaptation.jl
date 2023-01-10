@@ -5,7 +5,7 @@ using LinearAlgebra: LinearAlgebra
 using Statistics: Statistics
 using UnPack: @unpack, @pack!
 
-using ..AdvancedHMC: DEBUG, AbstractScalarOrVec
+using ..AdvancedHMC: DEBUG, AbstractScalarOrVec, PhasePoint
 
 abstract type AbstractAdaptor end
 function getM⁻¹ end
@@ -28,9 +28,9 @@ export MassMatrixAdaptor, UnitMassMatrix, WelfordVar, WelfordCov
 ## TODO: generalise this to a list of adaptors
 ##
 
-struct NaiveHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
-    pc  :: M
-    ssa :: Tssa
+struct NaiveHMCAdaptor{M<:MassMatrixAdaptor,Tssa<:StepSizeAdaptor} <: AbstractAdaptor
+    pc::M
+    ssa::Tssa
 end
 Base.show(io::IO, a::NaiveHMCAdaptor) = print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
 
@@ -55,5 +55,12 @@ finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)
 
 include("stan_adaptor.jl")
 export NaiveHMCAdaptor, StanHMCAdaptor
+
+const LOWER_LIMIT::Float64 = 1e-10
+const UPPER_LIMIT::Float64 = 1e10
+
+include("nutpie_adaptor.jl")
+export NutpieHMCAdaptor, ExpWeightedWelfordVar
+
 
 end # module
