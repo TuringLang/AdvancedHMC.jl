@@ -291,7 +291,7 @@ function (cb::HMCProgressCallback)(
         # Do include current iteration and mass matrix
         pm_next!(
             pm,
-            (iterations=i, percentage_divergent_transitions=percentage_divergent_transitions, tstat..., mass_matrix=metric)
+            (iterations=i, percentage_divergent_transitions=string(round(percentage_divergent_transitions; digits=2)), tstat..., mass_matrix=metric)
         )
         # Report finish of adapation
     elseif verbose && isadapted && i == nadapts
