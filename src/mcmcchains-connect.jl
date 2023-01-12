@@ -14,7 +14,8 @@ function AbstractMCMC.bundle_samples(
     kwargs...
 )
     # Turn all the transitions into a vector-of-vectors.
-    Tables.columntable([merge((; lp = t.z.ℓπ.value), stat(t)) for t in ts])
+    t = ts[1]
+    tstat = merge((; lp = t.z.ℓπ.value), stat(t))
     tstat_names = collect(keys(tstat))
     vals = [vcat(bijector(t.z.θ), collect(tstat)) for t in ts]
 
