@@ -17,7 +17,7 @@ function AbstractMCMC.bundle_samples(
     t = ts[1]
     tstat = merge((; lp = t.z.ℓπ.value), stat(t))
     tstat_names = collect(keys(tstat))
-    vals = [vcat(bijector(t.z.θ), collect(tstat)) for t in ts]
+    vals = [vcat(bijector(t.z.θ), t.z.ℓπ.value, collect(values(stat(t)))) for t in ts]
 
     # Check if we received any parameter names.
     if ismissing(param_names)
