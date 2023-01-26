@@ -249,17 +249,17 @@ function transition(
     # Reverse momentum variable to preserve reversibility
     z = PhasePoint(z.θ, -z.r, z.ℓπ, z.ℓκ)
     # Get cached hamiltonian energy 
-    H, H′ = energy(z), energy(z′)  
+    H, H′ = energy(z), energy(z′)
     tstat = merge(
         (
-            n_steps=nsteps(τ),
-            is_accept=is_accept,
-            acceptance_rate=α,
-            log_density=z.ℓπ.value,
-            hamiltonian_energy=H,
-            hamiltonian_energy_error=H - H0,
+            n_steps = nsteps(τ),
+            is_accept = is_accept,
+            acceptance_rate = α,
+            log_density = z.ℓπ.value,
+            hamiltonian_energy = H,
+            hamiltonian_energy_error = H - H0,
             # check numerical error in proposed phase point. 
-            numerical_error=isfinite(H′), 
+            numerical_error = isfinite(H′), 
         ),
         stat(τ.integrator),
     )
