@@ -7,11 +7,11 @@ function AbstractMCMC.bundle_samples(
     sampler::AbstractMCMC.AbstractSampler,
     state,
     chain_type::Type{Chains};
-    discard_initial=0,
-    thinning=1,
-    param_names=missing,
-    bijector=identity,
-    kwargs...
+    discard_initial = 0,
+    thinning = 1,
+    param_names = missing,
+    bijector = identity,
+    kwargs...,
 )
     # Turn all the transitions into a vector-of-vectors.
     t = ts[1]
@@ -21,7 +21,7 @@ function AbstractMCMC.bundle_samples(
 
     # Check if we received any parameter names.
     if ismissing(param_names)
-        param_names = [Symbol(:param_, i) for i in 1:length(keys(ts[1].z.θ))]
+        param_names = [Symbol(:param_, i) for i = 1:length(keys(ts[1].z.θ))]
     else
         # Generate new array to be thread safe.
         param_names = Symbol.(param_names)
@@ -29,7 +29,10 @@ function AbstractMCMC.bundle_samples(
 
     # Bundle everything up and return a Chains struct.
     return Chains(
-        vals, vcat(param_names, tstat_names), (parameters = param_names, internals = tstat_names,);
-        start=discard_initial + 1, thin=thinning,
+        vals,
+        vcat(param_names, tstat_names),
+        (parameters = param_names, internals = tstat_names);
+        start = discard_initial + 1,
+        thin = thinning,
     )
 end
