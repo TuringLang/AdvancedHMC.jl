@@ -259,11 +259,12 @@ struct HMCProgressCallback{P}
     verbose::Bool
     "Number of divergent transitions fo far."
     num_divergent_transitions::Ref{Int} 
+    num_divergent_transitions_during_adaption::Ref{Int} 
 end
 
 function HMCProgressCallback(n_samples; progress=true, verbose=false)
     pm = progress ? ProgressMeter.Progress(n_samples, desc="Sampling", barlen=31) : nothing
-    HMCProgressCallback(pm, progress, verbose, Ref(0))
+    HMCProgressCallback(pm, progress, verbose, Ref(0), Ref(0))
 end
 
 function (cb::HMCProgressCallback)(
@@ -280,18 +281,26 @@ function (cb::HMCProgressCallback)(
     κ = state.κ
     tstat = t.stat
     isadapted = tstat.is_adapt
-    cb.num_divergent_transitions[] += tstat.numerical_error
+    if isadapted
+        num_divergent_transitions_during_adaption[] += tstat.numerical_error
+    else
+        cb.num_divergent_transitions[] += tstat.numerical_error
+    end
 
     # Update progress meter
     if progress
         percentage_divergent_transitions = cb.num_divergent_transitions[]/i
-        if percentage_divergent_transitions > 0.3
+        if percentage_divergent_transitions > 0.25
            @warn "The level of numerical errors is high. Please check the model carefully."  maxlog=3
         end
         # Do include current iteration and mass matrix
         pm_next!(
             pm,
-            (iterations=i, percentage_divergent_transitions=string(round(percentage_divergent_transitions; digits=2)), tstat..., mass_matrix=metric)
+            (iterations=i, 
+                percentage_divergent_transitions=round(percentage_divergent_transitions; digits=2),
+                num_divergent_transitions_during_adaption=round(num_divergent_transitions_during_adaption; digits=2),
+                tstat..., mass_matrix=metric
+            )
         )
         # Report finish of adapation
     elseif verbose && isadapted && i == nadapts
