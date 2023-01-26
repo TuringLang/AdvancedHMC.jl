@@ -299,7 +299,7 @@ function (cb::HMCProgressCallback)(
             (iterations=i, 
                 percentage_divergent_transitions=round(percentage_divergent_transitions; digits=2),
                 num_divergent_transitions_during_adaption=round(num_divergent_transitions_during_adaption; digits=2),
-                tstat..., mass_matrix=metric
+                tstat..., mass_matrix=metric,
             )
         )
         # Report finish of adapation

@@ -196,9 +196,10 @@ function sample(
             end
             # Do include current iteration and mass matrix
             pm_next!(pm, (iterations=i, 
-                            percentage_divergent_transitions=round(percentage_divergent_transitions; digits=2)
-                            percentage_divergent_transitions_during_adaption=round(percentage_divergent_transitions_during_adaption; digits=2)
-                            , tstat..., mass_matrix=h.metric))
+                            percentage_divergent_transitions=round(percentage_divergent_transitions; digits=2),
+                            percentage_divergent_transitions_during_adaption=round(percentage_divergent_transitions_during_adaption; digits=2),
+                            tstat..., mass_matrix=h.metric),
+                            )
         # Report finish of adapation
         elseif verbose && isadapted && i == n_adapts
             @info "Finished $n_adapts adapation steps" adaptor κ.τ.integrator h.metric
