@@ -26,7 +26,7 @@ end
             [T(Inf)],
             [T(Inf)],
             DualValue(zero(T), [zero(T)]),
-            DualValue(zero(T), [zero(T)])
+            DualValue(zero(T), [zero(T)]),
         )
 
         # (HongGe) we no longer throw warning messages for numerical errors.

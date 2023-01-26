@@ -226,12 +226,14 @@ struct HMCProgressCallback{P}
     "If `progress` is not specified and this is `true` some information will be logged upon completion of adaptation."
     verbose::Bool
     "Number of divergent transitions fo far."
-    num_divergent_transitions::Ref{Int} 
-    num_divergent_transitions_during_adaption::Ref{Int} 
+    num_divergent_transitions::Ref{Int}
+    num_divergent_transitions_during_adaption::Ref{Int}
 end
 
-function HMCProgressCallback(n_samples; progress=true, verbose=false)
-    pm = progress ? ProgressMeter.Progress(n_samples, desc="Sampling", barlen=31) : nothing
+function HMCProgressCallback(n_samples; progress = true, verbose = false)
+    pm =
+        progress ? ProgressMeter.Progress(n_samples, desc = "Sampling", barlen = 31) :
+        nothing
     HMCProgressCallback(pm, progress, verbose, Ref(0), Ref(0))
 end
 
@@ -257,20 +259,29 @@ function (cb::HMCProgressCallback)(
 
     # Update progress meter
     if progress
-        percentage_divergent_transitions = cb.num_divergent_transitions[]/i
-        percentage_divergent_transitions_during_adaption = cb.num_divergent_transitions_during_adaption[]/i
+        percentage_divergent_transitions = cb.num_divergent_transitions[] / i
+        percentage_divergent_transitions_during_adaption =
+            cb.num_divergent_transitions_during_adaption[] / i
         if percentage_divergent_transitions > 0.25
-           @warn "The level of numerical errors is high. Please check the model carefully."  maxlog=3
+            @warn "The level of numerical errors is high. Please check the model carefully." maxlog =
+                3
         end
         # Do include current iteration and mass matrix
         pm_next!(
             pm,
             (
-                iterations=i, 
-                ratio_divergent_transitions=round(percentage_divergent_transitions; digits=2),
-                ratio_divergent_transitions_during_adaption=round(percentage_divergent_transitions_during_adaption; digits=2),
-                tstat..., mass_matrix=metric,
-            )
+                iterations = i,
+                ratio_divergent_transitions = round(
+                    percentage_divergent_transitions;
+                    digits = 2,
+                ),
+                ratio_divergent_transitions_during_adaption = round(
+                    percentage_divergent_transitions_during_adaption;
+                    digits = 2,
+                ),
+                tstat...,
+                mass_matrix = metric,
+            ),
         )
         # Report finish of adapation
     elseif verbose && isadapted && i == nadapts

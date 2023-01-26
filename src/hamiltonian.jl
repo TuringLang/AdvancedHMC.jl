@@ -43,7 +43,7 @@ struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
     r::T  # Momentum variables
     ℓπ::V # Cached neg potential energy for the current θ.
     ℓκ::V # Cached neg kinect energy for the current r.
-    function PhasePoint(θ::T, r::T, ℓπ::V, ℓκ::V) where {T, V}
+    function PhasePoint(θ::T, r::T, ℓπ::V, ℓκ::V) where {T,V}
         @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
         if any(isfinite.((θ, r, ℓπ, ℓκ)) .== false)
             # @warn "The current proposal will be rejected due to numerical error(s)." isfinite.((θ, r, ℓπ, ℓκ))
