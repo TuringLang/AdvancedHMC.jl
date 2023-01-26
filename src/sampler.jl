@@ -197,7 +197,6 @@ function sample(
             # Do include current iteration and mass matrix
             pm_next!(pm, (
                             iterations=i, 
-                            in_warmup_stage = isadapted,
                             ratio_divergent_transitions=round(percentage_divergent_transitions; digits=2),
                             ratio_divergent_transitions_during_adaption=round(percentage_divergent_transitions_during_adaption; digits=2),
                             tstat..., mass_matrix=h.metric,
