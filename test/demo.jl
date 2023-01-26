@@ -10,7 +10,8 @@ using LinearAlgebra
 
     LogDensityProblems.logdensity(p::DemoProblem, θ) = logpdf(MvNormal(zeros(p.dim), I), θ)
     LogDensityProblems.dimension(p::DemoProblem) = p.dim
-    LogDensityProblems.capabilities(::Type{DemoProblem}) = LogDensityProblems.LogDensityOrder{0}()
+    LogDensityProblems.capabilities(::Type{DemoProblem}) =
+        LogDensityProblems.LogDensityOrder{0}()
 
     # Choose parameter dimensionality and initial parameter value
     D = 10
@@ -38,7 +39,16 @@ using LinearAlgebra
     # Run the sampler to draw samples from the specified Gaussian, where
     #   - `samples` will store the samples
     #   - `stats` will store diagnostic statistics for each sample
-    samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; progress=false, verbose=false)
+    samples, stats = sample(
+        hamiltonian,
+        proposal,
+        initial_θ,
+        n_samples,
+        adaptor,
+        n_adapts;
+        progress = false,
+        verbose = false,
+    )
 
     @test length(samples) == n_samples
     @test length(stats) == n_samples
@@ -50,14 +60,15 @@ end
 @testset "Demo ComponentsArrays" begin
 
     # target distribution parametrized by ComponentsArray
-    p1 = ComponentVector(μ=2.0, σ=1)
+    p1 = ComponentVector(μ = 2.0, σ = 1)
     struct DemoProblemComponentArrays end
 
     function LogDensityProblems.logdensity(::DemoProblemComponentArrays, p::ComponentArray)
         return -((1 - p.μ) / p.σ)^2
     end
     LogDensityProblems.dimension(::DemoProblemComponentArrays) = 2
-    LogDensityProblems.capabilities(::Type{DemoProblemComponentArrays}) = LogDensityProblems.LogDensityOrder{0}()
+    LogDensityProblems.capabilities(::Type{DemoProblemComponentArrays}) =
+        LogDensityProblems.LogDensityOrder{0}()
 
     ℓπ = DemoProblemComponentArrays()
 
@@ -66,20 +77,28 @@ end
     metric = DiagEuclideanMetric(D)
 
     # choose AD framework or provide a function manually
-    hamiltonian = Hamiltonian(metric, ℓπ, Val(:ForwardDiff); x=p1)
+    hamiltonian = Hamiltonian(metric, ℓπ, Val(:ForwardDiff); x = p1)
 
     # Define a leapfrog solver, with initial step size chosen heuristically
     initial_ϵ = find_good_stepsize(hamiltonian, p1)
     integrator = Leapfrog(initial_ϵ)
 
     # Define an HMC sampler, with the following components
-    proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+    proposal = NUTS{MultinomialTS,GeneralisedNoUTurn}(integrator)
     adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
 
     # -- run sampler
     n_samples, n_adapts = 100, 50
-    samples, stats = sample(hamiltonian, proposal, p1, n_samples,
-                            adaptor, n_adapts; progress=false, verbose=false)
+    samples, stats = sample(
+        hamiltonian,
+        proposal,
+        p1,
+        n_samples,
+        adaptor,
+        n_adapts;
+        progress = false,
+        verbose = false,
+    )
 
     @test length(samples) == n_samples
     @test length(stats) == n_samples
