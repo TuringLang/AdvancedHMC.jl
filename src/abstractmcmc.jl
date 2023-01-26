@@ -282,7 +282,7 @@ function (cb::HMCProgressCallback)(
     tstat = t.stat
     isadapted = tstat.is_adapt
     if isadapted
-        num_divergent_transitions_during_adaption[] += tstat.numerical_error
+        cb.num_divergent_transitions_during_adaption[] += tstat.numerical_error
     else
         cb.num_divergent_transitions[] += tstat.numerical_error
     end
@@ -290,15 +290,18 @@ function (cb::HMCProgressCallback)(
     # Update progress meter
     if progress
         percentage_divergent_transitions = cb.num_divergent_transitions[]/i
+        percentage_divergent_transitions_during_adaption = cb.num_divergent_transitions_during_adaption[]/i
         if percentage_divergent_transitions > 0.25
            @warn "The level of numerical errors is high. Please check the model carefully."  maxlog=3
         end
         # Do include current iteration and mass matrix
         pm_next!(
             pm,
-            (iterations=i, 
-                percentage_divergent_transitions=round(percentage_divergent_transitions; digits=2),
-                num_divergent_transitions_during_adaption=round(num_divergent_transitions_during_adaption; digits=2),
+            (
+                iterations=i, 
+                in_warmup_stage = isadapted,
+                ratio_divergent_transitions=round(percentage_divergent_transitions; digits=2),
+                ratio_divergent_transitions_during_adaption=round(percentage_divergent_transitions_during_adaption; digits=2),
                 tstat..., mass_matrix=metric,
             )
         )
