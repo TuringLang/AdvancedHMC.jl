@@ -1,9 +1,18 @@
 using ReTest, AdvancedHMC
-using AdvancedHMC: DualValue, PhasePoint
+using AdvancedHMC: GaussianKinetic, DualValue, PhasePoint
 using LinearAlgebra: dot, diagm
 
 
 include("common.jl")
+
+@testset "Hamiltonian" begin
+    f = x -> dot(x, x)
+    g = x -> 2x
+    metric = UnitEuclideanMetric(10)
+    h1 = Hamiltonian(metric, f, g)
+    h2 = Hamiltonian(metric, GaussianKinetic(), f, g)
+    @test h1 == h2
+end
 
 @testset "PhasePoint" begin
     for T in [Float32, Float64]

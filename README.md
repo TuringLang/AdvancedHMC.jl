@@ -1,6 +1,6 @@
 # AdvancedHMC.jl
 
-[![AdvancedHMC-CI](https://github.com/TuringLang/AdvancedHMC.jl/workflows/AdvancedHMC-CI/badge.svg?branch=master)](https://github.com/TuringLang/AdvancedHMC.jl/actions?query=workflow%3AAdvancedHMC-CI)
+[![CI](https://github.com/TuringLang/AdvancedHMC.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/TuringLang/AdvancedHMC.jl/actions/workflows/CI.yml)
 [![DOI](https://zenodo.org/badge/72657907.svg)](https://zenodo.org/badge/latestdoi/72657907)
 [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://turing.ml/stable/docs/library/advancedhmc/)
@@ -50,14 +50,21 @@ In this section we demonstrate a minimal example of sampling from a multivariate
 </details>
   
 ```julia
-using AdvancedHMC, Distributions, ForwardDiff
+using AdvancedHMC, ForwardDiff
+using LogDensityProblems
 using LinearAlgebra
+
+# Define the target distribution using the `LogDensityProblem` interface
+struct LogTargetDensity
+    dim::Int
+end
+LogDensityProblems.logdensity(p::LogTargetDensity, θ) = -sum(abs2, θ) / 2  # standard multivariate normal
+LogDensityProblems.dimension(p::LogTargetDensity) = p.dim
+LogDensityProblems.capabilities(::Type{LogTargetDensity}) = LogDensityProblems.LogDensityOrder{0}()
 
 # Choose parameter dimensionality and initial parameter value
 D = 10; initial_θ = rand(D)
-
-# Define the target distribution
-ℓπ(θ) = logpdf(MvNormal(zeros(D), I), θ)
+ℓπ = LogTargetDensity(D)
 
 # Set the number of samples to draw and warmup iterations
 n_samples, n_adapts = 2_000, 1_000

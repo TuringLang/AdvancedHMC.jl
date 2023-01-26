@@ -26,38 +26,6 @@ end
 HMCSampler(kernel, metric) = HMCSampler(kernel, metric, Adaptation.NoAdaptation())
 
 """
-    DifferentiableDensityModel(ℓπ, ∂ℓπ∂θ)
-    DifferentiableDensityModel(ℓπ, m::Module)
-
-A `AbstractMCMC.AbstractMCMCModel` representing a differentiable log-density.
-
-If a module `m` is given as the second argument, then `m` is assumed to be an
-automatic-differentiation package and this will be used to compute the gradients.
-
-Note that the module `m` must be imported before usage, e.g.
-```julia
-using Zygote: Zygote
-model = DifferentiableDensityModel(ℓπ, Zygote)
-```
-results in a `model` which will use Zygote.jl as its AD-backend.
-
-# Fields
-$(FIELDS)
-"""
-struct DifferentiableDensityModel{Tlogπ, T∂logπ∂θ} <: AbstractMCMC.AbstractModel
-    "Log-density. Maps `AbstractArray` to value of the log-density."
-    ℓπ::Tlogπ
-    "Gradient of log-density. Returns a tuple of `ℓπ` and the gradient evaluated at the given point."
-    ∂ℓπ∂θ::T∂logπ∂θ
-end
-
-struct DummyMetric <: AbstractMetric end
-function DifferentiableDensityModel(ℓπ, m::Module)
-    h = Hamiltonian(DummyMetric(), ℓπ, m)
-    return DifferentiableDensityModel(h.ℓπ, h.∂ℓπ∂θ)
-end
-
-"""
     HMCState
 
 Represents the state of a [`HMCSampler`](@ref).
@@ -91,7 +59,7 @@ end
 A convenient wrapper around `AbstractMCMC.sample` avoiding explicit construction of [`HMCSampler`](@ref).
 """
 function AbstractMCMC.sample(
-    model::DifferentiableDensityModel,
+    model::LogDensityModel,
     kernel::AbstractMCMCKernel,
     metric::AbstractMetric,
     adaptor::AbstractAdaptor,
@@ -103,7 +71,7 @@ end
 
 function AbstractMCMC.sample(
     rng::Random.AbstractRNG,
-    model::DifferentiableDensityModel,
+    model::LogDensityModel,
     kernel::AbstractMCMCKernel,
     metric::AbstractMetric,
     adaptor::AbstractAdaptor,
@@ -129,7 +97,7 @@ function AbstractMCMC.sample(
 end
 
 function AbstractMCMC.sample(
-    model::DifferentiableDensityModel,
+    model::LogDensityModel,
     kernel::AbstractMCMCKernel,
     metric::AbstractMetric,
     adaptor::AbstractAdaptor,
@@ -146,7 +114,7 @@ end
 
 function AbstractMCMC.sample(
     rng::Random.AbstractRNG,
-    model::DifferentiableDensityModel,
+    model::LogDensityModel,
     kernel::AbstractMCMCKernel,
     metric::AbstractMetric,
     adaptor::AbstractAdaptor,
@@ -175,7 +143,7 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::DifferentiableDensityModel,
+    model::LogDensityModel,
     spl::HMCSampler;
     init_params = nothing,
     kwargs...
@@ -189,7 +157,7 @@ function AbstractMCMC.step(
     end
 
     # Construct the hamiltonian using the initial metric
-    hamiltonian = Hamiltonian(metric, model.ℓπ, model.∂ℓπ∂θ)
+    hamiltonian = Hamiltonian(metric, model)
 
     # Get an initial sample.
     h, t = AdvancedHMC.sample_init(rng, hamiltonian, init_params)
@@ -203,7 +171,7 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::DifferentiableDensityModel,
+    model::LogDensityModel,
     spl::HMCSampler,
     state::HMCState;
     nadapts::Int = 0,
@@ -220,7 +188,7 @@ function AbstractMCMC.step(
     metric = state.metric
 
     # Reconstruct hamiltonian.
-    h = Hamiltonian(metric, model.ℓπ, model.∂ℓπ∂θ)
+    h = Hamiltonian(metric, model)
 
     # Make new transition.
     t = transition(rng, h, κ, t_old.z)

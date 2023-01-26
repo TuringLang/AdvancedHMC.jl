@@ -1,13 +1,21 @@
 using ReTest
-using AdvancedHMC, Distributions, ForwardDiff, ComponentArrays
+using AdvancedHMC, Distributions, ForwardDiff, ComponentArrays, AbstractMCMC
 using LinearAlgebra
 
 @testset "Demo" begin
-    # Choose parameter dimensionality and initial parameter value
-    D = 10; initial_θ = rand(D)
+    # Define the target distribution using the `LogDensityProblem` interface
+    struct DemoProblem
+        dim::Int
+    end
 
-    # Define the target distribution
-    ℓπ(θ) = logpdf(MvNormal(zeros(D), I), θ)
+    LogDensityProblems.logdensity(p::DemoProblem, θ) = logpdf(MvNormal(zeros(p.dim), I), θ)
+    LogDensityProblems.dimension(p::DemoProblem) = p.dim
+    LogDensityProblems.capabilities(::Type{DemoProblem}) = LogDensityProblems.LogDensityOrder{0}()
+
+    # Choose parameter dimensionality and initial parameter value
+    D = 10
+    initial_θ = rand(D)
+    ℓπ = DemoProblem(D)
 
     # Set the number of samples to draw and warmup iterations
     n_samples, n_adapts = 2_000, 1_000
@@ -24,7 +32,7 @@ using LinearAlgebra
     #   - multinomial sampling scheme,
     #   - generalised No-U-Turn criteria, and
     #   - windowed adaption for step-size and diagonal mass matrix
-    proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+    proposal = NUTS{MultinomialTS,GeneralisedNoUTurn}(integrator)
     adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
 
     # Run the sampler to draw samples from the specified Gaussian, where
@@ -42,15 +50,23 @@ end
 @testset "Demo ComponentsArrays" begin
 
     # target distribution parametrized by ComponentsArray
-    p1 = ComponentVector(μ = 2.0, σ=1)
-    ℓπ(p::ComponentArray) = -(1 .- p.μ)^2/(p.σ)^2
+    p1 = ComponentVector(μ=2.0, σ=1)
+    struct DemoProblemComponentArrays end
+
+    function LogDensityProblems.logdensity(::DemoProblemComponentArrays, p::ComponentArray)
+        return -((1 - p.μ) / p.σ)^2
+    end
+    LogDensityProblems.dimension(::DemoProblemComponentArrays) = 2
+    LogDensityProblems.capabilities(::Type{DemoProblemComponentArrays}) = LogDensityProblems.LogDensityOrder{0}()
+
+    ℓπ = DemoProblemComponentArrays()
 
     # Define a Hamiltonian system
     D = length(p1)          # number of parameters
     metric = DiagEuclideanMetric(D)
 
     # choose AD framework or provide a function manually
-    hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
+    hamiltonian = Hamiltonian(metric, ℓπ, Val(:ForwardDiff); x=p1)
 
     # Define a leapfrog solver, with initial step size chosen heuristically
     initial_ϵ = find_good_stepsize(hamiltonian, p1)
@@ -70,5 +86,4 @@ end
     labels = ComponentArrays.labels(samples[1])
     @test "μ" ∈ labels
     @test "σ" ∈ labels
-
 end

@@ -1,5 +1,8 @@
 using Comonicon
+using FillArrays
 using AdvancedHMC: AdvancedHMC
+using LogDensityProblems: LogDensityProblems
+using LogDensityProblemsAD: LogDensityProblemsAD
 
 println("Environment variables for testing")
 println(ENV)
@@ -21,6 +24,7 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
     include("demo.jl")
     include("models.jl")
     include("abstractmcmc.jl")
+    include("mcmcchains.jl")
 
     if CUDA.functional()
         include("cuda.jl")
@@ -31,6 +35,15 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
     @main function runtests(patterns...; dry::Bool=false)
         retest(patterns...; dry=dry, verbose=Inf)
     end
+end
+
+if GROUP == "All" || GROUP == "Experimental"
+    using Pkg
+     # activate separate test environment
+     Pkg.activate(joinpath(DIRECTORY_AdvancedHMC, "research"))
+     Pkg.develop(PackageSpec(; path=DIRECTORY_AdvancedHMC))
+     Pkg.instantiate()
+    include(joinpath(DIRECTORY_AdvancedHMC, "research/tests", "runtests.jl"))
 end
 
 if GROUP == "All" || GROUP == "Downstream"

@@ -1,11 +1,13 @@
-# TODO: add a type for kinetic energy
-
-struct Hamiltonian{M<:AbstractMetric, Tlogπ, T∂logπ∂θ}
+struct Hamiltonian{M<:AbstractMetric, K<:AbstractKinetic, Tlogπ, T∂logπ∂θ}
     metric::M
+    kinetic::K
     ℓπ::Tlogπ
     ∂ℓπ∂θ::T∂logπ∂θ
 end
-Base.show(io::IO, h::Hamiltonian) = print(io, "Hamiltonian(metric=$(h.metric))")
+Base.show(io::IO, h::Hamiltonian) = print(io, "Hamiltonian(metric=$(h.metric), kinetic=$(h.kinetic))")
+
+# By default we use Gaussian kinetic energy; also to ensure backward compatibility at the time this was introduced
+Hamiltonian(metric::AbstractMetric, ℓπ::Function, ∂ℓπ∂θ::Function) = Hamiltonian(metric, GaussianKinetic(), ℓπ, ∂ℓπ∂θ)
 
 struct DualValue{V<:AbstractScalarOrVec{<:AbstractFloat}, G<:AbstractVecOrMat{<:AbstractFloat}}
     value::V    # cached value, e.g. logπ(θ)
@@ -32,9 +34,9 @@ function ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat)
     return DualValue(res[1], -res[2])
 end
 
-∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric}, r::AbstractVecOrMat) = copy(r)
-∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric}, r::AbstractVecOrMat) = h.metric.M⁻¹ .* r
-∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric}, r::AbstractVecOrMat) = h.metric.M⁻¹ * r
+∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric, <:GaussianKinetic}, r::AbstractVecOrMat) = copy(r)
+∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric, <:GaussianKinetic}, r::AbstractVecOrMat) = h.metric.M⁻¹ .* r
+∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric, <:GaussianKinetic}, r::AbstractVecOrMat) = h.metric.M⁻¹ * r
 
 struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
     θ::T  # Position variables / model parameters.
@@ -107,32 +109,34 @@ neg_energy(z::PhasePoint) = z.ℓπ.value + z.ℓκ.value
 
 neg_energy(h::Hamiltonian, θ::AbstractVecOrMat) = h.ℓπ(θ)
 
+# GaussianKinetic
+
 neg_energy(
-    h::Hamiltonian{<:UnitEuclideanMetric},
+    h::Hamiltonian{<:UnitEuclideanMetric, <:GaussianKinetic},
     r::T,
     θ::T
 ) where {T<:AbstractVector} = -sum(abs2, r) / 2
 
 neg_energy(
-    h::Hamiltonian{<:UnitEuclideanMetric},
+    h::Hamiltonian{<:UnitEuclideanMetric, <:GaussianKinetic},
     r::T,
     θ::T
 ) where {T<:AbstractMatrix} = -vec(sum(abs2, r; dims=1)) / 2
 
 neg_energy(
-    h::Hamiltonian{<:DiagEuclideanMetric},
+    h::Hamiltonian{<:DiagEuclideanMetric, <:GaussianKinetic},
     r::T,
     θ::T
 ) where {T<:AbstractVector} = -sum(abs2.(r) .* h.metric.M⁻¹) / 2
 
 neg_energy(
-    h::Hamiltonian{<:DiagEuclideanMetric},
+    h::Hamiltonian{<:DiagEuclideanMetric, <:GaussianKinetic},
     r::T,
     θ::T
 ) where {T<:AbstractMatrix} = -vec(sum(abs2.(r) .* h.metric.M⁻¹; dims=1) ) / 2
 
 function neg_energy(
-    h::Hamiltonian{<:DenseEuclideanMetric},
+    h::Hamiltonian{<:DenseEuclideanMetric, <:GaussianKinetic},
     r::T,
     θ::T
 ) where {T<:AbstractVecOrMat}
@@ -150,7 +154,7 @@ phasepoint(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     θ::AbstractVecOrMat{T},
     h::Hamiltonian
-) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric))
+) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric, h.kinetic))
 
 abstract type AbstractMomentumRefreshment end
 
@@ -162,7 +166,7 @@ refresh(
     ::FullMomentumRefreshment,
     h::Hamiltonian,
     z::PhasePoint,
-) = phasepoint(h, z.θ, rand(rng, h.metric))
+) = phasepoint(h, z.θ, rand(rng, h.metric, h.kinetic))
 
 """
 $(TYPEDEF)
@@ -190,4 +194,4 @@ refresh(
     ref::PartialMomentumRefreshment,
     h::Hamiltonian,
     z::PhasePoint,
-) = phasepoint(h, z.θ, ref.α * z.r + sqrt(1 - ref.α^2) * rand(rng, h.metric))
+) = phasepoint(h, z.θ, ref.α * z.r + sqrt(1 - ref.α^2) * rand(rng, h.metric, h.kinetic))

@@ -17,7 +17,11 @@ using ArgCheck: @argcheck
 
 using DocStringExtensions
 
+using LogDensityProblems
+using LogDensityProblemsAD: LogDensityProblemsAD
+
 import AbstractMCMC
+using AbstractMCMC: LogDensityModel
 
 import StatsBase: sample
 
@@ -29,6 +33,13 @@ include("utilities.jl")
 # ∂ℓπ∂θ: gradient of the log density of the target distribution w.r.t θ
 # r: momentum variables
 # z: phase point / a pair of θ and r
+
+# TODO Move it back to hamiltonian.jl after the rand interface is updated
+abstract type AbstractKinetic end
+
+struct GaussianKinetic <: AbstractKinetic end
+
+export GaussianKinetic
 
 include("metric.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
@@ -132,9 +143,44 @@ include("sampler.jl")
 export sample
 
 include("abstractmcmc.jl")
-export DifferentiableDensityModel
 
-include("contrib/ad.jl")
+## Without explicit AD backend
+function Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel; kwargs...)
+    return Hamiltonian(metric, ℓ.logdensity; kwargs...)
+end
+function Hamiltonian(metric::AbstractMetric, ℓ; kwargs...)
+    cap = LogDensityProblems.capabilities(ℓ)
+    if cap === nothing
+        throw(ArgumentError("The log density function does not support the LogDensityProblems.jl interface"))
+    end
+    # Check if we're capable of computing gradients.
+    ℓπ = if cap === LogDensityProblems.LogDensityOrder{0}()
+        # In this case ℓ does not support evaluation of the gradient of the log density function
+        # We use ForwardDiff to compute the gradient
+        LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓ; kwargs...)
+    else
+        # In this case ℓ already supports evaluation of the gradient of the log density function
+        ℓ
+    end
+    return Hamiltonian(
+        metric,
+        Base.Fix1(LogDensityProblems.logdensity, ℓπ),
+        Base.Fix1(LogDensityProblems.logdensity_and_gradient, ℓπ),
+    )
+end
+
+## With explicit AD specification
+function Hamiltonian(metric::AbstractMetric, ℓπ::LogDensityModel, kind::Union{Symbol,Val,Module}; kwargs...)
+    return Hamiltonian(metric, ℓπ.logdensity, kind; kwargs...)
+end
+Hamiltonian(metric::AbstractMetric, ℓπ, m::Module; kwargs...) = Hamiltonian(metric, ℓπ, Val(Symbol(m)); kwargs...)
+function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val}; kwargs...)
+    if LogDensityProblems.capabilities(ℓπ) === nothing
+        throw(ArgumentError("The log density function does not support the LogDensityProblems.jl interface"))
+    end
+    ℓ = LogDensityProblemsAD.ADgradient(kind, ℓπ; kwargs...)
+    return Hamiltonian(metric, ℓ)
+end
 
 ### Init
 
@@ -146,16 +192,12 @@ function __init__()
         include("contrib/diffeq.jl")
     end
 
-    @require ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210" begin
-        include("contrib/forwarddiff.jl")
-    end
-
-    @require Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f" begin
-        include("contrib/zygote.jl")
-    end
-
     @require CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba" begin 
         include("contrib/cuda.jl")
+    end
+
+    @require MCMCChains="c7f686f2-ff18-58e9-bc7b-31028e88f75d" begin
+        include("mcmcchains-connect.jl")
     end
 end
 
