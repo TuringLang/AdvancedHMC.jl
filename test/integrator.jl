@@ -25,10 +25,11 @@ using Statistics: mean
 
         t_step = @elapsed z_step = AdvancedHMC.step(lf, h, z, n_steps)
 
-        @info "Performance of loop of step() v.s. step()" n_steps t_step_loop t_step t_step_loop / t_step
+        @info "Performance of loop of step() v.s. step()" n_steps t_step_loop t_step t_step_loop /
+                                                                                     t_step
 
-        @test z_step_loop.θ ≈ z_step.θ atol=DETATOL
-        @test z_step_loop.r ≈ z_step.r atol=DETATOL
+        @test z_step_loop.θ ≈ z_step.θ atol = DETATOL
+        @test z_step_loop.r ≈ z_step.r atol = DETATOL
     end
 
     @testset "jitter" begin
@@ -88,21 +89,21 @@ using Statistics: mean
 
     @testset "temper" begin
         αsqrt = 2.0
-        lf = TemperedLeapfrog(ϵ, αsqrt ^ 2)
+        lf = TemperedLeapfrog(ϵ, αsqrt^2)
         r = ones(5)
-        r1 = AdvancedHMC.temper(lf, r, (i=1, is_half=true), 3)
-        r2 = AdvancedHMC.temper(lf, r, (i=1, is_half=false), 3)
-        r3 = AdvancedHMC.temper(lf, r, (i=2, is_half=true), 3)
-        r4 = AdvancedHMC.temper(lf, r, (i=2, is_half=false), 3)
-        r5 = AdvancedHMC.temper(lf, r, (i=3, is_half=true), 3)
-        r6 = AdvancedHMC.temper(lf, r, (i=3, is_half=false), 3)
+        r1 = AdvancedHMC.temper(lf, r, (i = 1, is_half = true), 3)
+        r2 = AdvancedHMC.temper(lf, r, (i = 1, is_half = false), 3)
+        r3 = AdvancedHMC.temper(lf, r, (i = 2, is_half = true), 3)
+        r4 = AdvancedHMC.temper(lf, r, (i = 2, is_half = false), 3)
+        r5 = AdvancedHMC.temper(lf, r, (i = 3, is_half = true), 3)
+        r6 = AdvancedHMC.temper(lf, r, (i = 3, is_half = false), 3)
         @test r1 == αsqrt * ones(5)
         @test r2 == αsqrt * ones(5)
         @test r3 == αsqrt * ones(5)
         @test r4 == inv(αsqrt) * ones(5)
         @test r5 == inv(αsqrt) * ones(5)
         @test r6 == inv(αsqrt) * ones(5)
-        @test_throws BoundsError AdvancedHMC.temper(lf, r, (i=4, is_half=false), 3)
+        @test_throws BoundsError AdvancedHMC.temper(lf, r, (i = 4, is_half = false), 3)
 
     end
 
@@ -113,15 +114,13 @@ using Statistics: mean
 
         LogDensityProblems.logdensity(::NegU, x) = -dot(x, x) / 2
         LogDensityProblems.dimension(d::NegU) = d.dim
-        LogDensityProblems.capabilities(::Type{NegU}) = LogDensityProblems.LogDensityOrder{0}()
+        LogDensityProblems.capabilities(::Type{NegU}) =
+            LogDensityProblems.LogDensityOrder{0}()
 
         negU = NegU(1)
 
         ϵ = 0.01
-        for lf in [
-            Leapfrog(ϵ),
-            DiffEqIntegrator(ϵ, VerletLeapfrog())
-        ]
+        for lf in [Leapfrog(ϵ), DiffEqIntegrator(ϵ, VerletLeapfrog())]
             q_init = randn(1)
             h = Hamiltonian(UnitEuclideanMetric(1), negU, ForwardDiff)
             p_init = AdvancedHMC.rand(h.metric, h.kinetic)
@@ -146,11 +145,11 @@ using Statistics: mean
             Hs = Hs[1_000:end]
 
             # Check if all points located at a cirle centered at the origin
-            rs = sqrt.(qs.^2 + ps.^2)
-            @test all(x-> abs(x - mean(rs)) < 2e-3, rs)
+            rs = sqrt.(qs .^ 2 + ps .^ 2)
+            @test all(x -> abs(x - mean(rs)) < 2e-3, rs)
 
             # Check if the Hamiltonian energy is stable
-            @test all(x-> abs(x - mean(Hs)) < 2e-3, Hs)
+            @test all(x -> abs(x - mean(Hs)) < 2e-3, Hs)
         end
     end
 

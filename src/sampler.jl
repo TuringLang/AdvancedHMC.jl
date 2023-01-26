@@ -2,7 +2,8 @@
 
 update(h::Hamiltonian, ::AbstractAdaptor) = h
 function update(
-    h::Hamiltonian, adaptor::Union{MassMatrixAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
+    h::Hamiltonian,
+    adaptor::Union{MassMatrixAdaptor,NaiveHMCAdaptor,StanHMCAdaptor},
 )
     metric = renew(h.metric, getM⁻¹(adaptor))
     return @set h.metric = metric
@@ -10,7 +11,8 @@ end
 
 update(τ::Trajectory, ::AbstractAdaptor) = τ
 function update(
-    τ::Trajectory, adaptor::Union{StepSizeAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
+    τ::Trajectory,
+    adaptor::Union{StepSizeAdaptor,NaiveHMCAdaptor,StanHMCAdaptor},
 )
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
     integrator = update_nom_step_size(τ.integrator, getϵ(adaptor))
@@ -34,9 +36,9 @@ end
 ## Interface functions
 ##
 function sample_init(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
-    h::Hamiltonian, 
-    θ::AbstractVecOrMat{<:AbstractFloat}
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    h::Hamiltonian,
+    θ::AbstractVecOrMat{<:AbstractFloat},
 )
     # Ensure h.metric has the same dim as θ.
     h = resize(h, θ)
@@ -46,8 +48,8 @@ function sample_init(
 end
 
 function transition(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
-    h::Hamiltonian, 
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    h::Hamiltonian,
     κ::HMCKernel,
     z::PhasePoint,
 )
@@ -64,7 +66,7 @@ Adaptation.adapt!(
     i::Int,
     n_adapts::Int,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat}
+    α::AbstractScalarOrVec{<:AbstractFloat},
 ) = h, κ, false
 
 function Adaptation.adapt!(
@@ -74,7 +76,7 @@ function Adaptation.adapt!(
     i::Int,
     n_adapts::Int,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat}
+    α::AbstractScalarOrVec{<:AbstractFloat},
 )
     isadapted = false
     if i <= n_adapts
@@ -92,7 +94,7 @@ end
 Progress meter update with all trajectory stats, iteration number and metric shown.
 """
 function pm_next!(pm, stat::NamedTuple)
-    ProgressMeter.next!(pm; showvalues=[tuple(s...) for s in pairs(stat)])
+    ProgressMeter.next!(pm; showvalues = [tuple(s...) for s in pairs(stat)])
 end
 
 """
@@ -109,12 +111,12 @@ sample(
     κ::AbstractMCMCKernel,
     θ::AbstractVecOrMat{<:AbstractFloat},
     n_samples::Int,
-    adaptor::AbstractAdaptor=NoAdaptation(),
-    n_adapts::Int=min(div(n_samples, 10), 1_000);
-    drop_warmup=false,
-    verbose::Bool=true,
-    progress::Bool=false,
-    (pm_next!)::Function=pm_next!
+    adaptor::AbstractAdaptor = NoAdaptation(),
+    n_adapts::Int = min(div(n_samples, 10), 1_000);
+    drop_warmup = false,
+    verbose::Bool = true,
+    progress::Bool = false,
+    (pm_next!)::Function = pm_next!,
 ) = sample(
     GLOBAL_RNG,
     h,
@@ -123,10 +125,10 @@ sample(
     n_samples,
     adaptor,
     n_adapts;
-    drop_warmup=drop_warmup,
-    verbose=verbose,
-    progress=progress,
-    (pm_next!)=pm_next!,
+    drop_warmup = drop_warmup,
+    verbose = verbose,
+    progress = progress,
+    (pm_next!) = pm_next!,
 )
 
 """
@@ -153,17 +155,17 @@ Sample `n_samples` samples using the proposal `κ` under Hamiltonian `h`.
 - `progress` controls whether to show the progress meter or not
 """
 function sample(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
     κ::HMCKernel,
     θ::T,
     n_samples::Int,
-    adaptor::AbstractAdaptor=NoAdaptation(),
-    n_adapts::Int=min(div(n_samples, 10), 1_000);
-    drop_warmup=false,
-    verbose::Bool=true,
-    progress::Bool=false,
-    (pm_next!)::Function=pm_next!
+    adaptor::AbstractAdaptor = NoAdaptation(),
+    n_adapts::Int = min(div(n_samples, 10), 1_000);
+    drop_warmup = false,
+    verbose::Bool = true,
+    progress::Bool = false,
+    (pm_next!)::Function = pm_next!,
 ) where {T<:AbstractVecOrMat{<:AbstractFloat}}
     @assert !(drop_warmup && (adaptor isa Adaptation.NoAdaptation)) "Cannot drop warmup samples if there is no adaptation phase."
     # Prepare containers to store sampling results
@@ -172,19 +174,22 @@ function sample(
     # Initial sampling
     h, t = sample_init(rng, h, θ)
     # Progress meter
-    pm = progress ? ProgressMeter.Progress(n_samples, desc="Sampling", barlen=31) : nothing
+    pm =
+        progress ? ProgressMeter.Progress(n_samples, desc = "Sampling", barlen = 31) :
+        nothing
     time = @elapsed for i = 1:n_samples
         # Make a transition
         t = transition(rng, h, κ, t.z)
         # Adapt h and κ; what mutable is the adaptor
         tstat = stat(t)
-        h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
-        tstat = merge(tstat, (is_adapt=isadapted,))
+        h, κ, isadapted =
+            adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
+        tstat = merge(tstat, (is_adapt = isadapted,))
         # Update progress meter
         if progress
             # Do include current iteration and mass matrix
-            pm_next!(pm, (iterations=i, tstat..., mass_matrix=h.metric))
-        # Report finish of adapation
+            pm_next!(pm, (iterations = i, tstat..., mass_matrix = h.metric))
+            # Report finish of adapation
         elseif verbose && isadapted && i == n_adapts
             @info "Finished $n_adapts adapation steps" adaptor κ.τ.integrator h.metric
         end
@@ -204,10 +209,8 @@ function sample(
             n_chains = size(θ, 2)
             # Make sure that arrays are on CPU before printing.
             EBFMI_est = convert(Vector{eltype(EBFMI_est)}, EBFMI_est)
-            average_acceptance_rate = convert(
-                Vector{eltype(average_acceptance_rate)},
-                average_acceptance_rate
-            )
+            average_acceptance_rate =
+                convert(Vector{eltype(average_acceptance_rate)}, average_acceptance_rate)
             EBFMI_est = "[" * join(EBFMI_est, ", ") * "]"
             average_acceptance_rate = "[" * join(average_acceptance_rate, ", ") * "]"
         end

@@ -11,7 +11,7 @@ function adapt!(
     adaptor::MassMatrixAdaptor,
     θ::AbstractVecOrMat{<:AbstractFloat},
     α::AbstractScalarOrVec{<:AbstractFloat},
-    is_update::Bool=true
+    is_update::Bool = true,
 )
     resize!(adaptor, θ)
     push!(adaptor, θ)
@@ -38,7 +38,7 @@ adapt!(
     ::UnitMassMatrix,
     ::AbstractVecOrMat{<:AbstractFloat},
     ::AbstractScalarOrVec{<:AbstractFloat},
-    is_update::Bool=true
+    is_update::Bool = true,
 ) = nothing
 
 ## Diagonal mass matrix adaptor
@@ -54,15 +54,16 @@ function update!(ve::DiagMatrixEstimator)
 end
 
 # NOTE: this naive variance estimator is used only in testing
-struct NaiveVar{T<:AbstractFloat, E<:AbstractVector{<:AbstractVecOrMat{T}}} <: DiagMatrixEstimator{T}
-    S :: E
-    NaiveVar(S::E) where {E} = new{eltype(eltype(E)), E}(S)
+struct NaiveVar{T<:AbstractFloat,E<:AbstractVector{<:AbstractVecOrMat{T}}} <:
+       DiagMatrixEstimator{T}
+    S::E
+    NaiveVar(S::E) where {E} = new{eltype(eltype(E)),E}(S)
 end
 
 NaiveVar{T}(sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveVar(Vector{Vector{T}}())
 NaiveVar{T}(sz::Tuple{Int,Int}) where {T<:AbstractFloat} = NaiveVar(Vector{Matrix{T}}())
 
-NaiveVar(sz::Union{Tuple{Int}, Tuple{Int,Int}}) = NaiveVar{Float64}(sz)
+NaiveVar(sz::Union{Tuple{Int},Tuple{Int,Int}}) = NaiveVar{Float64}(sz)
 
 Base.push!(nv::NaiveVar, s::AbstractVecOrMat) = push!(nv.S, s)
 
@@ -74,28 +75,30 @@ function get_estimation(nv::NaiveVar)
 end
 
 # Ref： https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_var_estimator.hpp
-mutable struct WelfordVar{T<:AbstractFloat, E<:AbstractVecOrMat{T}} <: DiagMatrixEstimator{T}
-    n     :: Int
-    n_min :: Int
-    μ     :: E
-    M     :: E
-    δ     :: E    # cache for diff
-    var   :: E    # cache for variance
+mutable struct WelfordVar{T<:AbstractFloat,E<:AbstractVecOrMat{T}} <: DiagMatrixEstimator{T}
+    n::Int
+    n_min::Int
+    μ::E
+    M::E
+    δ::E    # cache for diff
+    var::E    # cache for variance
     function WelfordVar(n::Int, n_min::Int, μ::E, M::E, δ::E, var::E) where {E}
-        return new{eltype(E), E}(n, n_min, μ, M, δ, var)
+        return new{eltype(E),E}(n, n_min, μ, M, δ, var)
     end
 end
 
 Base.show(io::IO, ::WelfordVar) = print(io, "WelfordVar")
 
 function WelfordVar{T}(
-    sz::Union{Tuple{Int}, Tuple{Int,Int}}; 
-    n_min::Int=10, var=ones(T, sz)
+    sz::Union{Tuple{Int},Tuple{Int,Int}};
+    n_min::Int = 10,
+    var = ones(T, sz),
 ) where {T<:AbstractFloat}
     return WelfordVar(0, n_min, zeros(T, sz), zeros(T, sz), zeros(T, sz), var)
 end
 
-WelfordVar(sz::Union{Tuple{Int}, Tuple{Int,Int}}; kwargs...) = WelfordVar{Float64}(sz; kwargs...)
+WelfordVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...) =
+    WelfordVar{Float64}(sz; kwargs...)
 
 function Base.resize!(wv::WelfordVar, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
     if size(θ) != size(wv.var)
@@ -143,14 +146,15 @@ function update!(ce::DenseMatrixEstimator)
 end
 
 # NOTE: This naive covariance estimator is used only in testing.
-struct NaiveCov{F<:AbstractFloat, T<:AbstractVector{<:AbstractVector{F}}} <: DenseMatrixEstimator{T}
-    S :: T
-    NaiveCov(S::E) where {E} = new{eltype(eltype(E)), E}(S)
+struct NaiveCov{F<:AbstractFloat,T<:AbstractVector{<:AbstractVector{F}}} <:
+       DenseMatrixEstimator{T}
+    S::T
+    NaiveCov(S::E) where {E} = new{eltype(eltype(E)),E}(S)
 end
 
 NaiveCov{T}(sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveCov(Vector{Vector{T}}())
 
-NaiveCov(sz::Union{Tuple{Int}, Tuple{Int,Int}}; kwargs...) = NaiveCov{Float64}(sz; kwargs...)
+NaiveCov(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...) = NaiveCov{Float64}(sz; kwargs...)
 
 Base.push!(nc::NaiveCov, s::AbstractVector) = push!(nc.S, s)
 
@@ -163,18 +167,20 @@ end
 
 # Ref: https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_covar_estimator.hpp
 mutable struct WelfordCov{F<:AbstractFloat} <: DenseMatrixEstimator{F}
-    n     :: Int
-    n_min :: Int
-    μ     :: Vector{F}
-    M     :: Matrix{F}
-    δ     :: Vector{F}  # cache for diff
-    cov   :: Matrix{F}
+    n::Int
+    n_min::Int
+    μ::Vector{F}
+    M::Matrix{F}
+    δ::Vector{F}  # cache for diff
+    cov::Matrix{F}
 end
 
 Base.show(io::IO, ::WelfordCov) = print(io, "WelfordCov")
 
 function WelfordCov{T}(
-    sz::Tuple{Int}; n_min::Int=10, cov=LinearAlgebra.diagm(0 => ones(T, first(sz)))
+    sz::Tuple{Int};
+    n_min::Int = 10,
+    cov = LinearAlgebra.diagm(0 => ones(T, first(sz))),
 ) where {T<:AbstractFloat}
     d = first(sz)
     return WelfordCov(0, n_min, zeros(T, d), zeros(T, d, d), zeros(T, d), cov)
