@@ -171,6 +171,8 @@ function sample(
     # Prepare containers to store sampling results
     n_keep = n_samples - (drop_warmup ? n_adapts : 0)
     θs, stats = Vector{T}(undef, n_keep), Vector{NamedTuple}(undef, n_keep)
+    num_divergent_transitions = 0
+    num_divergent_transitions_during_adaption = 0
     # Initial sampling
     h, t = sample_init(rng, h, θ)
     # Progress meter
@@ -184,11 +186,38 @@ function sample(
         tstat = stat(t)
         h, κ, isadapted =
             adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
+        if isadapted
+            num_divergent_transitions_during_adaption += tstat.numerical_error
+        else
+            num_divergent_transitions += tstat.numerical_error
+        end
         tstat = merge(tstat, (is_adapt = isadapted,))
         # Update progress meter
         if progress
+            percentage_divergent_transitions = num_divergent_transitions / i
+            percentage_divergent_transitions_during_adaption =
+                num_divergent_transitions_during_adaption / i
+            if percentage_divergent_transitions > 0.25
+                @warn "The level of numerical errors is high. Please check the model carefully." maxlog =
+                    3
+            end
             # Do include current iteration and mass matrix
-            pm_next!(pm, (iterations = i, tstat..., mass_matrix = h.metric))
+            pm_next!(
+                pm,
+                (
+                    iterations = i,
+                    ratio_divergent_transitions = round(
+                        percentage_divergent_transitions;
+                        digits = 2,
+                    ),
+                    ratio_divergent_transitions_during_adaption = round(
+                        percentage_divergent_transitions_during_adaption;
+                        digits = 2,
+                    ),
+                    tstat...,
+                    mass_matrix = h.metric,
+                ),
+            )
             # Report finish of adapation
         elseif verbose && isadapted && i == n_adapts
             @info "Finished $n_adapts adapation steps" adaptor κ.τ.integrator h.metric

@@ -248,7 +248,8 @@ function transition(
     z = accept_phasepoint!(z, z′, is_accept)    # NOTE: this function changes `z′` in place in matrix-parallel mode
     # Reverse momentum variable to preserve reversibility
     z = PhasePoint(z.θ, -z.r, z.ℓπ, z.ℓκ)
-    H = energy(z)
+    # Get cached hamiltonian energy 
+    H, H′ = energy(z), energy(z′)
     tstat = merge(
         (
             n_steps = nsteps(τ),
@@ -257,6 +258,8 @@ function transition(
             log_density = z.ℓπ.value,
             hamiltonian_energy = H,
             hamiltonian_energy_error = H - H0,
+            # check numerical error in proposed phase point. 
+            numerical_error = isfinite(H′),
         ),
         stat(τ.integrator),
     )
