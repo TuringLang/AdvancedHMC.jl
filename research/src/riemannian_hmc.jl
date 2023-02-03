@@ -44,7 +44,7 @@ function step(
         θ_init, r_init = z.θ, z.r
         # Tempering
         #r = temper(lf, r, (i=i, is_half=true), n_steps)
-        # Eq (16) of Girolami & Calderhead (2011)
+        #! Eq (16) of Girolami & Calderhead (2011)
         r_half = copy(r_init)
         for j in 1:lf.n
             # Reuse cache for the first iteration
@@ -56,13 +56,13 @@ function step(
             r_half = r_init - ϵ / 2 * gradient
             # println("r_half: ", r_half)
         end
-        # Eq (17) of Girolami & Calderhead (2011)
+        #! Eq (17) of Girolami & Calderhead (2011)
         θ_full = copy(θ_init)
         for j in 1:lf.n
             θ_full = θ_init + ϵ / 2 * (∂H∂r(h, θ_init, r_half) + ∂H∂r(h, θ_full, r_half))
             # println("θ_full :", θ_full)
         end
-        # Eq (18) of Girolami & Calderhead (2011)
+        #! Eq (18) of Girolami & Calderhead (2011)
         @unpack value, gradient = ∂H∂θ(h, θ_full, r_half)
         r_full = r_half - ϵ / 2 * gradient
         # println("r_full: ", r_full)
@@ -144,6 +144,7 @@ struct SoftAbsMap{T} <: AbstractHessianMap
 end
 
 # TODO Register softabs with ReverseDiff
+#! The definition of SoftAbs from Page 3 of Betancourt (2012)
 function softabs(X, α=20.0)
     F = eigen(X) # ReverseDiff cannot diff through `eigen`
     Q = hcat(F.vectors)
@@ -163,13 +164,13 @@ struct DenseRiemannianMetric{
     T∂G∂θ,
 } <: AbstractRiemannianMetric
     size::A
-    G::TG
+    G::TG # TODO store G⁻¹ here instead
     ∂G∂θ::T∂G∂θ
     map::TM
     _temp::AV
 end
 
-# TODO: make dense mass matrix support matrix-mode parallel
+# TODO Make dense mass matrix support matrix-mode parallel
 function DenseRiemannianMetric(size, G, ∂G∂θ, map=IdentityMap()) where {T<:AbstractFloat}
     _temp = Vector{Float64}(undef, size[1])
     return DenseRiemannianMetric(size, G, ∂G∂θ, map, _temp)
@@ -217,6 +218,7 @@ phasepoint(
 ) where {T<:AbstractVecOrMat} = PhasePoint(θ, r, ℓπ, ℓκ)
 
 # Negative kinetic energy
+#! Eq (13) of Girolami & Calderhead (2011)
 function neg_energy(
     h::Hamiltonian{<:DenseRiemannianMetric},
     r::T,
@@ -255,8 +257,10 @@ function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}}, θ:
 end
 
 # Ref: https://www.wolframalpha.com/input?i=derivative+of+x+*+coth%28a+*+x%29
+#! Based on middle of the right column of Page 3 of Betancourt (2012) "Note that whenλi=λj, such as for the diagonal elementsor degenerate eigenvalues, this becomes the derivative"
 dsoftabsdλ(α, λ) = coth(α * λ) + λ * α * -csch(λ * α)^2
 
+#! J as defined in middle of the right column of Page 3 of Betancourt (2012)
 function make_J(λ::AbstractVector{T}, α::T) where {T<:AbstractFloat}
     d = length(λ)
     J = Matrix{T}(undef, d, d)
@@ -287,6 +291,7 @@ function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ:
     # println("J: ", J)
     
     d = length(∂ℓπ∂θ)
+    #! Based on the two equations from the right column of Page 3 of Betancourt (2012)
     g = -mapreduce(vcat, 1:d) do i
         ∂H∂θᵢ = ∂H∂θ[:,:,i]
         ∂ℓπ∂θ[i] - 1 / 2 * tr(Q * (R .* J) * Q' * ∂H∂θᵢ) + 1 / 2 * M' * (J .* Q' * ∂H∂θᵢ * Q) * M
@@ -294,11 +299,11 @@ function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ:
     # println("g: ", g)
     return DualValue(
         ℓπ, 
-        # Eq (15) of Girolami & Calderhead (2011)
         g,
     )
 end
 
+#! Eq (14) of Girolami & Calderhead (2011)
 function ∂H∂r(h::Hamiltonian{<:DenseRiemannianMetric}, θ::AbstractVecOrMat, r::AbstractVecOrMat)
     H = h.metric.G(θ)
     # if any(.!(isfinite.(H)))
