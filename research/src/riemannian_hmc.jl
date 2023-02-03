@@ -248,7 +248,7 @@ function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}}, θ:
     d = length(∂ℓπ∂θ)
     return DualValue(
         ℓπ, 
-        # Eq (15) of Girolami & Calderhead (2011)
+        #! Eq (15) of Girolami & Calderhead (2011)
         -mapreduce(vcat, 1:d) do i
             ∂G∂θᵢ = ∂G∂θ[:,:,i]
             ∂ℓπ∂θ[i] - 1 / 2 * tr(invG * ∂G∂θᵢ) + 1 / 2 * r' * invG * ∂G∂θᵢ * invG * r
