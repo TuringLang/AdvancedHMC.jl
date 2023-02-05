@@ -1,6 +1,6 @@
 name = "AdvancedHMC"
 uuid = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
-version = "0.4.1"
+version = "0.4.3"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
@@ -37,3 +37,6 @@ StatsBase = "0.31, 0.32, 0.33"
 StatsFuns = "0.8, 0.9, 1"
 UnPack = "1"
 julia = "1"
+
+[extras]
+MCMCChains = "c7f686f2-ff18-58e9-bc7b-31028e88f75d"

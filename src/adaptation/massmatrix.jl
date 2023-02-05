@@ -11,7 +11,7 @@ function adapt!(
     adaptor::MassMatrixAdaptor,
     θ::AbstractVecOrMat{<:AbstractFloat},
     α::AbstractScalarOrVec{<:AbstractFloat},
-    is_update::Bool=true
+    is_update::Bool=true,
 )
     resize!(adaptor, θ)
     push!(adaptor, θ)
@@ -38,7 +38,7 @@ adapt!(
     ::UnitMassMatrix,
     ::AbstractVecOrMat{<:AbstractFloat},
     ::AbstractScalarOrVec{<:AbstractFloat},
-    is_update::Bool=true
+    is_update::Bool=true,
 ) = nothing
 
 ## Diagonal mass matrix adaptor
@@ -54,7 +54,8 @@ function update!(ve::DiagMatrixEstimator)
 end
 
 # NOTE: this naive variance estimator is used only in testing
-struct NaiveVar{T<:AbstractFloat,E<:AbstractVector{<:AbstractVecOrMat{T}}} <: DiagMatrixEstimator{T}
+struct NaiveVar{T<:AbstractFloat,E<:AbstractVector{<:AbstractVecOrMat{T}}} <:
+       DiagMatrixEstimator{T}
     S::E
     NaiveVar(S::E) where {E} = new{eltype(eltype(E)),E}(S)
 end
@@ -90,12 +91,14 @@ Base.show(io::IO, ::WelfordVar) = print(io, "WelfordVar")
 
 function WelfordVar{T}(
     sz::Union{Tuple{Int},Tuple{Int,Int}};
-    n_min::Int=10, var=ones(T, sz)
+    n_min::Int=10,
+    var=ones(T, sz)
 ) where {T<:AbstractFloat}
     return WelfordVar(0, n_min, zeros(T, sz), zeros(T, sz), zeros(T, sz), var)
 end
 
-WelfordVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...) = WelfordVar{Float64}(sz; kwargs...)
+WelfordVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...) =
+    WelfordVar{Float64}(sz; kwargs...)
 
 function Base.resize!(wv::WelfordVar, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
     if size(θ) != size(wv.var)
@@ -228,7 +231,8 @@ function update!(ce::DenseMatrixEstimator)
 end
 
 # NOTE: This naive covariance estimator is used only in testing.
-struct NaiveCov{F<:AbstractFloat,T<:AbstractVector{<:AbstractVector{F}}} <: DenseMatrixEstimator{T}
+struct NaiveCov{F<:AbstractFloat,T<:AbstractVector{<:AbstractVector{F}}} <:
+       DenseMatrixEstimator{T}
     S::T
     NaiveCov(S::E) where {E} = new{eltype(eltype(E)),E}(S)
 end
@@ -259,7 +263,9 @@ end
 Base.show(io::IO, ::WelfordCov) = print(io, "WelfordCov")
 
 function WelfordCov{T}(
-    sz::Tuple{Int}; n_min::Int=10, cov=LinearAlgebra.diagm(0 => ones(T, first(sz)))
+    sz::Tuple{Int};
+    n_min::Int=10,
+    cov=LinearAlgebra.diagm(0 => ones(T, first(sz)))
 ) where {T<:AbstractFloat}
     d = first(sz)
     return WelfordCov(0, n_min, zeros(T, d), zeros(T, d, d), zeros(T, d), cov)

@@ -15,7 +15,7 @@ and `adaptor` after sampling.
 
 To access the updated fields use the resulting [`HMCState`](@ref).
 """
-struct HMCSampler{K, M, A} <: AbstractMCMC.AbstractSampler
+struct HMCSampler{K,M,A} <: AbstractMCMC.AbstractSampler
     "Initial [`AbstractMCMCKernel`](@ref)."
     initial_kernel::K
     "Initial [`AbstractMetric`](@ref)."
@@ -39,7 +39,7 @@ struct HMCState{
     TTrans<:Transition,
     TMetric<:AbstractMetric,
     TKernel<:AbstractMCMCKernel,
-    TAdapt<:Adaptation.AbstractAdaptor
+    TAdapt<:Adaptation.AbstractAdaptor,
 }
     "Index of current iteration."
     i::Int
@@ -64,9 +64,17 @@ function AbstractMCMC.sample(
     metric::AbstractMetric,
     adaptor::AbstractAdaptor,
     N::Integer;
-    kwargs...
+    kwargs...,
 )
-    return AbstractMCMC.sample(Random.GLOBAL_RNG, model, kernel, metric, adaptor, N; kwargs...)
+    return AbstractMCMC.sample(
+        Random.GLOBAL_RNG,
+        model,
+        kernel,
+        metric,
+        adaptor,
+        N;
+        kwargs...,
+    )
 end
 
 function AbstractMCMC.sample(
@@ -79,7 +87,7 @@ function AbstractMCMC.sample(
     progress = true,
     verbose = false,
     callback = nothing,
-    kwargs...
+    kwargs...,
 )
     sampler = HMCSampler(kernel, metric, adaptor)
     if callback === nothing
@@ -88,11 +96,14 @@ function AbstractMCMC.sample(
     end
 
     return AbstractMCMC.mcmcsample(
-        rng, model, sampler, N;
+        rng,
+        model,
+        sampler,
+        N;
         progress = progress,
         verbose = verbose,
         callback = callback,
-        kwargs...
+        kwargs...,
     )
 end
 
@@ -104,11 +115,17 @@ function AbstractMCMC.sample(
     parallel::AbstractMCMC.AbstractMCMCEnsemble,
     N::Integer,
     nchains::Integer;
-    kwargs...
+    kwargs...,
 )
     return AbstractMCMC.sample(
-        Random.GLOBAL_RNG, model, kernel, metric, adaptor, N, nchains;
-        kwargs...
+        Random.GLOBAL_RNG,
+        model,
+        kernel,
+        metric,
+        adaptor,
+        N,
+        nchains;
+        kwargs...,
     )
 end
 
@@ -124,7 +141,7 @@ function AbstractMCMC.sample(
     progress = true,
     verbose = false,
     callback = nothing,
-    kwargs...
+    kwargs...,
 )
     sampler = HMCSampler(kernel, metric, adaptor)
     if callback === nothing
@@ -133,11 +150,16 @@ function AbstractMCMC.sample(
     end
 
     return AbstractMCMC.mcmcsample(
-        rng, model, sampler, parallel, N, nchains;
+        rng,
+        model,
+        sampler,
+        parallel,
+        N,
+        nchains;
         progress = progress,
         verbose = verbose,
         callback = callback,
-        kwargs...
+        kwargs...,
     )
 end
 
@@ -146,7 +168,7 @@ function AbstractMCMC.step(
     model::LogDensityModel,
     spl::HMCSampler;
     init_params = nothing,
-    kwargs...
+    kwargs...,
 )
     metric = spl.initial_metric
     κ = spl.initial_kernel
@@ -175,7 +197,7 @@ function AbstractMCMC.step(
     spl::HMCSampler,
     state::HMCState;
     nadapts::Int = 0,
-    kwargs...
+    kwargs...,
 )
     # Get step size
     @debug "current ϵ" getstepsize(spl, state)
@@ -196,7 +218,7 @@ function AbstractMCMC.step(
     # Adapt h and spl.
     tstat = stat(t)
     h, κ, isadapted = adapt!(h, κ, adaptor, i, nadapts, t.z.θ, tstat.acceptance_rate)
-    tstat = merge(tstat, (is_adapt=isadapted,))
+    tstat = merge(tstat, (is_adapt = isadapted,))
 
     # Compute next transition and state.
     newstate = HMCState(i, t, h.metric, κ, adaptor)
@@ -225,34 +247,59 @@ struct HMCProgressCallback{P}
     progress::Bool
     "If `progress` is not specified and this is `true` some information will be logged upon completion of adaptation."
     verbose::Bool
+    "Number of divergent transitions fo far."
+    num_divergent_transitions::Ref{Int}
+    num_divergent_transitions_during_adaption::Ref{Int}
 end
 
-function HMCProgressCallback(n_samples; progress=true, verbose=false)
-    pm = progress ? ProgressMeter.Progress(n_samples, desc="Sampling", barlen=31) : nothing
-    HMCProgressCallback(pm, progress, verbose)
+function HMCProgressCallback(n_samples; progress = true, verbose = false)
+    pm =
+        progress ? ProgressMeter.Progress(n_samples, desc = "Sampling", barlen = 31) :
+        nothing
+    HMCProgressCallback(pm, progress, verbose, Ref(0), Ref(0))
 end
 
-function (cb::HMCProgressCallback)(
-    rng, model, spl, t, state, i;
-    nadapts = 0,
-    kwargs...
-)
+function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; nadapts = 0, kwargs...)
     progress = cb.progress
     verbose = cb.verbose
     pm = cb.pm
-    
+
     metric = state.metric
     adaptor = state.adaptor
     κ = state.κ
     tstat = t.stat
     isadapted = tstat.is_adapt
+    if isadapted
+        cb.num_divergent_transitions_during_adaption[] += tstat.numerical_error
+    else
+        cb.num_divergent_transitions[] += tstat.numerical_error
+    end
 
     # Update progress meter
     if progress
+        percentage_divergent_transitions = cb.num_divergent_transitions[] / i
+        percentage_divergent_transitions_during_adaption =
+            cb.num_divergent_transitions_during_adaption[] / i
+        if percentage_divergent_transitions > 0.25
+            @warn "The level of numerical errors is high. Please check the model carefully." maxlog =
+                3
+        end
         # Do include current iteration and mass matrix
         pm_next!(
             pm,
-            (iterations=i, tstat..., mass_matrix=metric)
+            (
+                iterations = i,
+                ratio_divergent_transitions = round(
+                    percentage_divergent_transitions;
+                    digits = 2,
+                ),
+                ratio_divergent_transitions_during_adaption = round(
+                    percentage_divergent_transitions_during_adaption;
+                    digits = 2,
+                ),
+                tstat...,
+                mass_matrix = metric,
+            ),
         )
         # Report finish of adapation
     elseif verbose && isadapted && i == nadapts

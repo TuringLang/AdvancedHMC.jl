@@ -32,7 +32,8 @@ struct NaiveHMCAdaptor{M<:MassMatrixAdaptor,Tssa<:StepSizeAdaptor} <: AbstractAd
     pc::M
     ssa::Tssa
 end
-Base.show(io::IO, a::NaiveHMCAdaptor) = print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
+Base.show(io::IO, a::NaiveHMCAdaptor) =
+    print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
 
 getM⁻¹(ca::NaiveHMCAdaptor) = getM⁻¹(ca.pc)
 getϵ(ca::NaiveHMCAdaptor) = getϵ(ca.ssa)
@@ -41,7 +42,7 @@ getϵ(ca::NaiveHMCAdaptor) = getϵ(ca.ssa)
 function adapt!(
     nca::NaiveHMCAdaptor,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat}
+    α::AbstractScalarOrVec{<:AbstractFloat},
 )
     adapt!(nca.ssa, θ, α)
     adapt!(nca.pc, θ, α)

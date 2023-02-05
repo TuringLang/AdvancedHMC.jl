@@ -2,7 +2,8 @@
 
 update(h::Hamiltonian, ::AbstractAdaptor) = h
 function update(
-    h::Hamiltonian, adaptor::Union{MassMatrixAdaptor,NaiveHMCAdaptor,StanHMCAdaptor,NutpieHMCAdaptor}
+    h::Hamiltonian,
+    adaptor::Union{MassMatrixAdaptor,NaiveHMCAdaptor,StanHMCAdaptor},
 )
     metric = renew(h.metric, getM⁻¹(adaptor))
     return @set h.metric = metric
@@ -10,7 +11,8 @@ end
 
 update(τ::Trajectory, ::AbstractAdaptor) = τ
 function update(
-    τ::Trajectory, adaptor::Union{StepSizeAdaptor,NaiveHMCAdaptor,StanHMCAdaptor}
+    τ::Trajectory,
+    adaptor::Union{StepSizeAdaptor,NaiveHMCAdaptor,StanHMCAdaptor},
 )
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
     integrator = update_nom_step_size(τ.integrator, getϵ(adaptor))
@@ -36,7 +38,7 @@ end
 function sample_init(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
-    θ::AbstractVecOrMat{<:AbstractFloat}
+    θ::AbstractVecOrMat{<:AbstractFloat},
 )
     # Ensure h.metric has the same dim as θ.
     h = resize(h, θ)
@@ -64,7 +66,7 @@ Adaptation.adapt!(
     i::Int,
     n_adapts::Int,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat}
+    α::AbstractScalarOrVec{<:AbstractFloat},
 ) = h, κ, false
 
 function Adaptation.adapt!(
@@ -75,7 +77,6 @@ function Adaptation.adapt!(
     n_adapts::Int,
     θ::AbstractVecOrMat{<:AbstractFloat},
     α::AbstractScalarOrVec{<:AbstractFloat},
-    z::PhasePoint # needs to be added for compat
 )
     isadapted = false
     if i <= n_adapts
@@ -193,21 +194,53 @@ function sample(
     # Prepare containers to store sampling results
     n_keep = n_samples - (drop_warmup ? n_adapts : 0)
     θs, stats = Vector{T}(undef, n_keep), Vector{NamedTuple}(undef, n_keep)
+    num_divergent_transitions = 0
+    num_divergent_transitions_during_adaption = 0
     # Initial sampling
     h, t = sample_init(rng, h, θ)
     # Progress meter
-    pm = progress ? ProgressMeter.Progress(n_samples, desc="Sampling", barlen=31) : nothing
+    pm =
+        progress ? ProgressMeter.Progress(n_samples, desc="Sampling", barlen=31) :
+        nothing
     time = @elapsed for i = 1:n_samples
         # Make a transition
         t = transition(rng, h, κ, t.z)
         # Adapt h and κ; what mutable is the adaptor
         tstat = stat(t)
-        h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate, t.z)
+        h, κ, isadapted =
+            adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
+        if isadapted
+            num_divergent_transitions_during_adaption += tstat.numerical_error
+        else
+            num_divergent_transitions += tstat.numerical_error
+        end
         tstat = merge(tstat, (is_adapt=isadapted,))
         # Update progress meter
         if progress
+            percentage_divergent_transitions = num_divergent_transitions / i
+            percentage_divergent_transitions_during_adaption =
+                num_divergent_transitions_during_adaption / i
+            if percentage_divergent_transitions > 0.25
+                @warn "The level of numerical errors is high. Please check the model carefully." maxlog =
+                    3
+            end
             # Do include current iteration and mass matrix
-            pm_next!(pm, (iterations=i, tstat..., mass_matrix=h.metric))
+            pm_next!(
+                pm,
+                (
+                    iterations=i,
+                    ratio_divergent_transitions=round(
+                        percentage_divergent_transitions;
+                        digits=2
+                    ),
+                    ratio_divergent_transitions_during_adaption=round(
+                        percentage_divergent_transitions_during_adaption;
+                        digits=2
+                    ),
+                    tstat...,
+                    mass_matrix=h.metric,
+                ),
+            )
             # Report finish of adapation
         elseif verbose && isadapted && i == n_adapts
             @info "Finished $n_adapts adapation steps" adaptor κ.τ.integrator h.metric
@@ -228,10 +261,8 @@ function sample(
             n_chains = size(θ, 2)
             # Make sure that arrays are on CPU before printing.
             EBFMI_est = convert(Vector{eltype(EBFMI_est)}, EBFMI_est)
-            average_acceptance_rate = convert(
-                Vector{eltype(average_acceptance_rate)},
-                average_acceptance_rate
-            )
+            average_acceptance_rate =
+                convert(Vector{eltype(average_acceptance_rate)}, average_acceptance_rate)
             EBFMI_est = "[" * join(EBFMI_est, ", ") * "]"
             average_acceptance_rate = "[" * join(average_acceptance_rate, ", ") * "]"
         end
