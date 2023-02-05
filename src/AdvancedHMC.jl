@@ -47,14 +47,17 @@ export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
 include("hamiltonian.jl")
 export Hamiltonian
 
+include("constraints.jl")
+export LinearConstraint
+
 include("integrator.jl")
-export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
+export Leapfrog, JitteredLeapfrog, TemperedLeapfrog, ConstrainedLeapfrog
 
 include("trajectory.jl")
 export Trajectory, HMCKernel,
        FixedNSteps, FixedIntegrationTime,
        ClassicNoUTurn, GeneralisedNoUTurn, StrictGeneralisedNoUTurn,
-       EndPointTS, SliceTS, MultinomialTS, 
+       EndPointTS, SliceTS, MultinomialTS,
        find_good_stepsize
 
 # Useful defaults
@@ -72,9 +75,9 @@ This falls back to `HMCKernel(Trajectory{TS}(int, TC(args...; kwargs...)))` wher
 
 See [`ClassicNoUTurn`](@ref), [`GeneralisedNoUTurn`](@ref) and [`StrictGeneralisedNoUTurn`](@ref) for details in parameters.
 """
-NUTS{TS, TC}(int::AbstractIntegrator, args...; kwargs...) where {TS, TC} = 
+NUTS{TS, TC}(int::AbstractIntegrator, args...; kwargs...) where {TS, TC} =
     HMCKernel(Trajectory{TS}(int, TC(args...; kwargs...)))
-NUTS(int::AbstractIntegrator, args...; kwargs...) = 
+NUTS(int::AbstractIntegrator, args...; kwargs...) =
     HMCKernel(Trajectory{MultinomialTS}(int, GeneralisedNoUTurn(args...; kwargs...)))
 NUTS(ϵ::AbstractScalarOrVec{<:Real}) =
     HMCKernel(Trajectory{MultinomialTS}(Leapfrog(ϵ), GeneralisedNoUTurn()))
@@ -105,7 +108,7 @@ import .Adaptation: StepSizeAdaptor, MassMatrixAdaptor, StanHMCAdaptor, Nesterov
 
 # Helpers for initializing adaptors via AHMC structs
 
-StepSizeAdaptor(δ::AbstractFloat, stepsize::AbstractScalarOrVec{<:AbstractFloat}) = 
+StepSizeAdaptor(δ::AbstractFloat, stepsize::AbstractScalarOrVec{<:AbstractFloat}) =
     NesterovDualAveraging(δ, stepsize)
 StepSizeAdaptor(δ::AbstractFloat, i::AbstractIntegrator) = StepSizeAdaptor(δ, nom_step_size(i))
 
@@ -133,8 +136,8 @@ MassMatrixAdaptor(
 @deprecate NesterovDualAveraging(δ::AbstractFloat, i::AbstractIntegrator) StepSizeAdaptor(δ, i)
 @deprecate Preconditioner(args...) MassMatrixAdaptor(args...)
 
-export StepSizeAdaptor, NesterovDualAveraging, 
-       MassMatrixAdaptor, UnitMassMatrix, WelfordVar, WelfordCov, 
+export StepSizeAdaptor, NesterovDualAveraging,
+       MassMatrixAdaptor, UnitMassMatrix, WelfordVar, WelfordCov,
        NaiveHMCAdaptor, StanHMCAdaptor
 
 include("diagnosis.jl")
@@ -192,7 +195,7 @@ function __init__()
         include("contrib/diffeq.jl")
     end
 
-    @require CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba" begin 
+    @require CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba" begin
         include("contrib/cuda.jl")
     end
 end

@@ -106,6 +106,30 @@ using Statistics: mean
 
     end
 
+    @testset "constraints" begin
+        @testset "Linear constraint" begin
+            ϵ0 = 1.0
+
+            θ_init = [0.8, 0.9]
+            h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
+            r_init = [0.3, 0.2]
+
+            z = AdvancedHMC.phasepoint(h, copy(θ_init), copy(r_init))
+
+            constraints = [
+                LinearConstraint([-1.0, 0.0], 1.0),
+                LinearConstraint([0.0, -1.0], 1.0),
+            ]
+
+            lf = ConstrainedLeapfrog(ϵ0, constraints)
+
+            z = AdvancedHMC.step(lf, h, z)
+
+            @test z.θ == [0.9, 0.9]
+            @test z.r == [-0.3, -0.2]
+        end
+    end
+
     @testset "Analytical solution to Eq (2.11) of Neal (2011)" begin
         struct NegU
             dim::Int

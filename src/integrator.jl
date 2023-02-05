@@ -82,8 +82,7 @@ function step(
         # Take a half leapfrog step for momentum variable
         r = r - ϵ / 2 .* gradient
         # Take a full leapfrog step for position variable
-        ∇r = ∂H∂r(h, r)
-        θ = θ + ϵ .* ∇r
+        θ, r = position_step(lf, h, θ, r, ϵ)
         # Take a half leapfrog step for momentum variable
         @unpack value, gradient = ∂H∂θ(h, θ)
         r = r - ϵ / 2 .* gradient
@@ -106,6 +105,17 @@ function step(
         end
     end
     return res
+end
+
+function position_step(
+    ::AbstractLeapfrog{T},
+    h::Hamiltonian,
+    θ::AbstractVector{T},
+    r::AbstractVector{T},
+    ϵ::T,
+) where {T<:AbstractFloat}
+    ∇r = ∂H∂r(h, r)
+    return θ + ϵ .* ∇r, r
 end
 
 """
@@ -135,14 +145,14 @@ Leapfrog integrator with randomly "jittered" step size `ϵ` for every trajectory
 $(TYPEDFIELDS)
 
 # Description
-This is the same as `LeapFrog`(@ref) but with a "jittered" step size. This means 
-that at the beginning of each trajectory we sample a step size `ϵ` by adding or 
-subtracting from the nominal/base step size `ϵ0` some random proportion of `ϵ0`, 
+This is the same as `LeapFrog`(@ref) but with a "jittered" step size. This means
+that at the beginning of each trajectory we sample a step size `ϵ` by adding or
+subtracting from the nominal/base step size `ϵ0` some random proportion of `ϵ0`,
 with the proportion specified by `jitter`, i.e. `ϵ = ϵ0 - jitter * ϵ0 * rand()`.
 p
 Jittering might help alleviate issues related to poor interactions with a fixed step size:
-- In regions with high "curvature" the current choice of step size might mean over-shoot 
-  leading to almost all steps being rejected. Randomly sampling the step size at the 
+- In regions with high "curvature" the current choice of step size might mean over-shoot
+  leading to almost all steps being rejected. Randomly sampling the step size at the
   beginning of the trajectories can therefore increase the probability of escaping such
   high-curvature regions.
 - Exact periodicity of the simulated trajectories might occur, i.e. you might be so
@@ -203,7 +213,7 @@ $(TYPEDFIELDS)
 
 # Description
 
-Tempering can potentially allow greater exploration of the posterior, e.g. 
+Tempering can potentially allow greater exploration of the posterior, e.g.
 in a multi-modal posterior jumps between the modes can be more likely to occur.
 """
 struct TemperedLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractLeapfrog{T}
@@ -230,4 +240,100 @@ function temper(lf::TemperedLeapfrog, r, step::NamedTuple{(:i, :is_half),<:Tuple
     end
     i_temper = 2(step.i - 1) + 1 + !step.is_half    # counter for half temper steps
     return i_temper <= n_steps ? r * sqrt(lf.α) : r / sqrt(lf.α)
+end
+
+### Constraints
+"""
+$(TYPEDEF)
+
+A constrained leapfrog integrator that reflects the momentum at the boundaries.
+
+# Fields
+
+$(TYPEDFIELDS)
+
+# Description
+
+A modification of the leapfrog integrator for constrained problems. Whenever the leapfrog
+step encounters a boundary, the momentum is reflected (see [1] for further details).
+
+The feasible region is defined by an array of `AbstractConstraint`s, all of which must be
+satisfied simultaneously.
+
+# References
+1. Afshar and Domke (2015). Reflection, Refraction, and Hamiltonian Monte Carlo. ([NIPS](https://papers.nips.cc/paper/2015/hash/8303a79b1e19a194f1875981be5bdb6f-Abstract.html))
+"""
+struct ConstrainedLeapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
+    "Step size."
+    ϵ::T
+    "Constraints."
+    constraints::AbstractArray{<:AbstractConstraint}
+end
+
+function first_collision(constraints, θ, ∇r, ϵ)
+    # TODO: this approach is too harsh. Relax it
+    # Perhaps the way forwards is to only reflect off the "inside" of the constraint
+    # if any(abs.(θ) .> 1.0)
+    #     return nothing
+    # end
+
+    t_first_collision = ϵ
+    θ_first_collision = nothing
+    constraint_first_collision = nothing
+    for constraint in constraints
+        intersection = intersect_line(constraint, θ, ∇r)
+        if isnothing(intersection)
+            continue
+        end
+        θ_candidate, t_candidate = intersection
+        if 0 < t_candidate < t_first_collision
+            t_first_collision = t_candidate
+            θ_first_collision = θ_candidate
+            constraint_first_collision = constraint
+        end
+    end
+
+    if isnothing(θ_first_collision)
+        return nothing
+    end
+
+    normal = get_normal(constraint_first_collision, θ_first_collision)
+
+    return θ_first_collision, t_first_collision, normal
+end
+
+function position_step(
+    lf::ConstrainedLeapfrog{T},
+    h::Hamiltonian{<:AbstractMetric},
+    θ::AbstractVector{T},
+    r::AbstractVector{T},
+    ϵ::T
+) where {T<:AbstractFloat}
+    # TODO: make implementation agnostic to sign of ϵ
+    ϵ_abs, ϵ_sign = abs(ϵ), sign(ϵ)
+    r = ϵ_sign .* r
+    ∇r = ∂H∂r(h, r)
+    t0 = 0
+    collisions = 0
+    while true
+        collision = first_collision(lf.constraints, θ, ∇r, ϵ_abs - t0)
+        collision === nothing && break
+        collisions += 1
+
+        θ_first_collision, t_first_collision, normal = collision
+        θ = θ_first_collision
+        t0 += t_first_collision
+        r_perp = dot(normal, r) * normal
+        r_par = r - r_perp
+        r = -r_perp + r_par
+        ∇r = ∂H∂r(h, r)
+
+        if t0 >= ϵ_abs
+            break
+        end
+    end
+
+    θ += (ϵ_abs - t0) .* ∇r  # remainder of whole step
+    r = ϵ_sign .* r
+    return θ, r
 end
