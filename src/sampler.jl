@@ -75,9 +75,11 @@ function Adaptation.adapt!(
     adaptor::AbstractAdaptor,
     i::Int,
     n_adapts::Int,
-    θ::AbstractVecOrMat{<:AbstractFloat},
+    z::PhasePoint,
+    # θ::AbstractVecOrMat{<:AbstractFloat},
     α::AbstractScalarOrVec{<:AbstractFloat},
 )
+    θ = z.θ
     isadapted = false
     if i <= n_adapts
         i == 1 && Adaptation.initialize!(adaptor, n_adapts)
@@ -94,17 +96,19 @@ end
 function Adaptation.adapt!(
     h::Hamiltonian,
     κ::AbstractMCMCKernel,
-    adaptor::NutpieHMCAdaptor,
+    adaptor::AbstractHMCAdaptorWithGradients,
     i::Int,
     n_adapts::Int,
-    θ::AbstractVecOrMat{<:AbstractFloat},
+    z::PhasePoint,
+    # θ::AbstractVecOrMat{<:AbstractFloat},
     α::AbstractScalarOrVec{<:AbstractFloat},
-    z::PhasePoint
 )
+    θ = z.θ
+    ∇logπ = z.ℓπ.gradient
     isadapted = false
     if i <= n_adapts
-        i == 1 && Adaptation.initialize!(adaptor, n_adapts, z)
-        adapt!(adaptor, θ, α, z)
+        i == 1 && Adaptation.initialize!(adaptor, n_adapts,∇logπ)
+        adapt!(adaptor, θ, α,∇logπ)
         i == n_adapts && finalize!(adaptor)
         h = update(h, adaptor)
         κ = update(κ, adaptor)
@@ -208,7 +212,7 @@ function sample(
         # Adapt h and κ; what mutable is the adaptor
         tstat = stat(t)
         h, κ, isadapted =
-            adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
+            adapt!(h, κ, adaptor, i, n_adapts, t.z, tstat.acceptance_rate)
         if isadapted
             num_divergent_transitions_during_adaption += tstat.numerical_error
         else

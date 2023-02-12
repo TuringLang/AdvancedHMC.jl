@@ -146,6 +146,9 @@ mutable struct ExpWeightedWelfordVar{T<:AbstractFloat,E<:AbstractVecOrMat{T}} <:
     end
 end
 
+# save the best estimate of the variance in the "current" WelfordVar
+getM⁻¹(ve::ExpWeightedWelfordVar) = ve.exp_variance_draw.var
+
 Base.show(io::IO, ::ExpWeightedWelfordVar) = print(io, "ExpWeightedWelfordVar")
 
 function ExpWeightedWelfordVar{T}(
@@ -158,12 +161,12 @@ end
 
 ExpWeightedWelfordVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...) = ExpWeightedWelfordVar{Float64}(sz; kwargs...)
 
-function Base.resize!(wv::ExpWeightedWelfordVar, θ::AbstractVecOrMat{T}, g::AbstractVecOrMat{T}) where {T<:AbstractFloat}
-    @assert size(θ) == size(g) "Size of draw and grad must be the same."
+function Base.resize!(wv::ExpWeightedWelfordVar, θ::AbstractVecOrMat{T}, ∇logπ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
+    @assert size(θ) == size(∇logπ) "Size of draw and grad must be the same."
     resize!(wv.exp_variance_draw, θ)
-    resize!(wv.exp_variance_grad, g)
+    resize!(wv.exp_variance_grad, ∇logπ)
     resize!(wv.exp_variance_draw_bg, θ)
-    resize!(wv.exp_variance_grad_bg, g)
+    resize!(wv.exp_variance_grad_bg, ∇logπ)
 end
 
 function reset!(wv::ExpWeightedWelfordVar{T}) where {T<:AbstractFloat}
@@ -173,12 +176,12 @@ function reset!(wv::ExpWeightedWelfordVar{T}) where {T<:AbstractFloat}
     reset!(wv.exp_variance_grad_bg)
 end
 
-function Base.push!(wv::ExpWeightedWelfordVar, θ::AbstractVecOrMat{T}, g::AbstractVecOrMat{T}) where {T}
-    @assert size(θ) == size(g) "Size of draw and grad must be the same."
+function Base.push!(wv::ExpWeightedWelfordVar, θ::AbstractVecOrMat{T}, ∇logπ::AbstractVecOrMat{T}) where {T}
+    @assert size(θ) == size(∇logπ) "Size of draw and grad must be the same."
     push!(wv.exp_variance_draw, θ)
-    push!(wv.exp_variance_grad, g)
+    push!(wv.exp_variance_grad, ∇logπ)
     push!(wv.exp_variance_draw_bg, θ)
-    push!(wv.exp_variance_grad_bg, g)
+    push!(wv.exp_variance_grad_bg, ∇logπ)
 end
 
 # swap the background and foreground estimators for both _draw and _grad variance
@@ -196,27 +199,29 @@ function adapt!(
     adaptor::ExpWeightedWelfordVar,
     θ::AbstractVecOrMat{<:AbstractFloat},
     α::AbstractScalarOrVec{<:AbstractFloat},
-    g::AbstractVecOrMat{<:AbstractFloat},
+    ∇logπ::AbstractVecOrMat{<:AbstractFloat},
     is_update::Bool=true
 )
-    resize!(adaptor, θ, g)
-    push!(adaptor, θ, g)
+    resize!(adaptor, θ, ∇logπ)
+    push!(adaptor, θ, ∇logπ)
     is_update && update!(adaptor)
 end
 
-# mimics: let val = (draw / grad).sqrt().clamp(LOWER_LIMIT, UPPER_LIMIT);
 # TODO: handle NaN
 function get_estimation(ad::ExpWeightedWelfordVar{T}) where {T<:AbstractFloat}
     var_draw = get_estimation(ad.exp_variance_draw)
     var_grad = get_estimation(ad.exp_variance_grad)
+    # mimics: let val = (draw / grad).sqrt().clamp(LOWER_LIMIT, UPPER_LIMIT);
     var = (var_draw ./ var_grad) .|> sqrt .|> x -> clamp(x, LOWER_LIMIT, UPPER_LIMIT)
     # re-use the last estimate `var` if the current estimate is not valid
     return all(isfinite.(var)) ? var : ad.exp_variance_draw.var
 end
-# reuse the `var` slot in `WelfordVar` to store the estimated variance of the draw (the "current" one)
+# reuse the `var` slot in the `exp_variance_draw` (which is `WelfordVar`) 
+# to store the estimated variance of the draw (the "current" / "foreground" one)
 function update!(ad::ExpWeightedWelfordVar)
     current_count(ad) >= ad.exp_variance_draw.n_min && (ad.exp_variance_draw.var .= get_estimation(ad))
 end
+
 
 ## Dense mass matrix adaptor
 
