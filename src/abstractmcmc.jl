@@ -199,9 +199,6 @@ function AbstractMCMC.step(
     nadapts::Int = 0,
     kwargs...,
 )
-    # Get step size
-    @debug "current ϵ" getstepsize(spl, state)
-
     # Compute transition.
     i = state.i + 1
     t_old = state.transition
