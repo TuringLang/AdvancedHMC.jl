@@ -75,8 +75,3 @@ end
 function get_normal(s::LinearStepFunction, ::AbstractVector)
     return s.a / norm(s.a)
 end
-
-# struct DiscontinuousLogDensityModel <: LogDensityModel
-#     logdensity::L
-#     step_functions::Vector{<:AbstractStepFunction}
-# end
