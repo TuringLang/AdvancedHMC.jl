@@ -106,27 +106,59 @@ using Statistics: mean
 
     end
 
-    @testset "constraints" begin
-        @testset "Linear constraint" begin
+    @testset "discontinuities" begin
+        @testset "Linear discontinuity" begin
             ϵ0 = 1.0
 
-            θ_init = [0.8, 0.9]
-            h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
-            r_init = [0.3, 0.2]
-
-            z = AdvancedHMC.phasepoint(h, copy(θ_init), copy(r_init))
-
-            constraints = [
-                LinearConstraint([-1.0, 0.0], 1.0),
-                LinearConstraint([0.0, -1.0], 1.0),
+            step_functions = [
+                LinearStepFunction([-1.0, 0.0], 1.0),
+                LinearStepFunction([0.0, -1.0], 1.0),
             ]
 
-            lf = ConstrainedLeapfrog(ϵ0, constraints)
+            function discontinuous_ℓπ(θ, signature)
+                if all(signature)
+                    log_prob = -sum(abs2, θ) / 2
+                else
+                    log_prob = -Inf
+                end
+            end
+            function discontinuous_ℓπ(θ)
+                signature = [
+                    evaluate(s, θ)
+                    for s in step_functions
+                ]
+                return discontinuous_ℓπ(θ, signature)
+            end
 
-            z = AdvancedHMC.step(lf, h, z)
+            function discountinuous_∂ℓπ∂θ(θ, signature)
+                if all(signature)
+                    ∂ℓπ∂θ = -θ
+                else
+                    ∂ℓπ∂θ = zeros(θ)
+                end
+            end
+            function discontinuous_∂ℓπ∂θ(θ)
+                signature = [
+                    evaluate(s, θ)
+                    for s in step_functions
+                ]
+                return discontinuous_∂ℓπ∂θ(θ, signature)
+            end
 
-            @test z.θ == [0.9, 0.9]
-            @test z.r == [-0.3, -0.2]
+            θ_init = [0.8, 0.9]
+            r_init = [0.3, 0.2]
+            h = DiscontinuousHamiltonian(
+                UnitEuclideanMetric(D),
+                discontinuous_ℓπ,
+                discontinuous_∂ℓπ∂θ,
+                step_functions
+            )
+            lf = DiscontinuousLeapfrog(ϵ0)
+
+            θ, r = AdvancedHMC.position_step(lf, h, θ_init, r_init, ϵ0)
+
+            @test θ == [0.9, 0.9]
+            @test r == [-0.3, -0.2]
         end
     end
 

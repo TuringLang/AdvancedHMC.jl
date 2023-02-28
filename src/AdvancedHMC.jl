@@ -45,13 +45,13 @@ include("metric.jl")
 export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
 
 include("hamiltonian.jl")
-export Hamiltonian
+export Hamiltonian, DiscontinuousHamiltonian
 
-include("constraints.jl")
-export LinearConstraint
+include("discontinuities.jl")
+export LinearStepFunction, evaluate
 
 include("integrator.jl")
-export Leapfrog, JitteredLeapfrog, TemperedLeapfrog, ConstrainedLeapfrog
+export Leapfrog, JitteredLeapfrog, TemperedLeapfrog, DiscontinuousLeapfrog
 
 include("trajectory.jl")
 export Trajectory, HMCKernel,

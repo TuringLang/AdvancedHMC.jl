@@ -1,13 +1,24 @@
-struct Hamiltonian{M<:AbstractMetric, K<:AbstractKinetic, Tlogπ, T∂logπ∂θ}
+abstract type AbstractHamiltonian end
+struct Hamiltonian{M<:AbstractMetric, K<:AbstractKinetic, Tlogπ, T∂logπ∂θ} <: AbstractHamiltonian
     metric::M
     kinetic::K
     ℓπ::Tlogπ
     ∂ℓπ∂θ::T∂logπ∂θ
 end
-Base.show(io::IO, h::Hamiltonian) = print(io, "Hamiltonian(metric=$(h.metric), kinetic=$(h.kinetic))")
+Base.show(io::IO, h::AbstractHamiltonian) = print(io, "Hamiltonian(metric=$(h.metric), kinetic=$(h.kinetic))")
+
+struct DiscontinuousHamiltonian{M<:AbstractMetric, K<:AbstractKinetic, Tlogπ, T∂logπ∂θ} <: AbstractHamiltonian
+    metric::M
+    kinetic::K
+    step_functions::Vector
+    ℓπ::Tlogπ
+    ∂ℓπ∂θ::T∂logπ∂θ
+end
 
 # By default we use Gaussian kinetic energy; also to ensure backward compatibility at the time this was introduced
 Hamiltonian(metric::AbstractMetric, ℓπ::Function, ∂ℓπ∂θ::Function) = Hamiltonian(metric, GaussianKinetic(), ℓπ, ∂ℓπ∂θ)
+DiscontinuousHamiltonian(metric::AbstractMetric, ℓπ::Function, ∂ℓπ∂θ::Function, step_functions::Vector) =
+    DiscontinuousHamiltonian(metric, GaussianKinetic(), step_functions, ℓπ, ∂ℓπ∂θ)
 
 struct DualValue{V<:AbstractScalarOrVec{<:AbstractFloat}, G<:AbstractVecOrMat{<:AbstractFloat}}
     value::V    # cached value, e.g. logπ(θ)
@@ -25,11 +36,11 @@ struct DualValue{V<:AbstractScalarOrVec{<:AbstractFloat}, G<:AbstractVecOrMat{<:
     end
 end
 
-Base.similar(dv::DualValue{<:AbstractVecOrMat{T}}) where {T<:AbstractFloat} = 
+Base.similar(dv::DualValue{<:AbstractVecOrMat{T}}) where {T<:AbstractFloat} =
     DualValue(zeros(T, size(dv.value)...), zeros(T, size(dv.gradient)...))
 
 # `∂H∂θ` now returns `(logprob, -∂ℓπ∂θ)`
-function ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat)
+function ∂H∂θ(h::AbstractHamiltonian, θ::AbstractVecOrMat)
     res = h.∂ℓπ∂θ(θ)
     return DualValue(res[1], -res[2])
 end
@@ -37,6 +48,7 @@ end
 ∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric, <:GaussianKinetic}, r::AbstractVecOrMat) = copy(r)
 ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric, <:GaussianKinetic}, r::AbstractVecOrMat) = h.metric.M⁻¹ .* r
 ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric, <:GaussianKinetic}, r::AbstractVecOrMat) = h.metric.M⁻¹ * r
+∂H∂r(h::DiscontinuousHamiltonian, r::AbstractVecOrMat) = ∂H∂r(Hamiltonian(h.metric, h.kinetic, h.ℓπ, h.∂ℓπ∂θ), r)
 
 struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
     θ::T  # Position variables / model parameters.
@@ -61,16 +73,16 @@ struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat}, V<:DualValue}
     end
 end
 
-Base.similar(z::PhasePoint{<:AbstractVecOrMat{T}}) where {T<:AbstractFloat} = 
+Base.similar(z::PhasePoint{<:AbstractVecOrMat{T}}) where {T<:AbstractFloat} =
     PhasePoint(
-        zeros(T, size(z.θ)...), 
-        zeros(T, size(z.r)...), 
-        similar(z.ℓπ), 
+        zeros(T, size(z.θ)...),
+        zeros(T, size(z.r)...),
+        similar(z.ℓπ),
         similar(z.ℓκ),
     )
 
 phasepoint(
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     θ::T,
     r::T;
     ℓπ=∂H∂θ(h, θ),
@@ -81,7 +93,7 @@ phasepoint(
 # move the momentum variable to that of the position variable.
 # This is needed for AHMC to work with CuArrays and other Arrays (without depending on it).
 phasepoint(
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     θ::T1,
     _r::T2;
     r=safe_rsimilar(θ, _r),
@@ -107,9 +119,15 @@ Base.isfinite(z::PhasePoint) = isfinite(z.ℓπ) && isfinite(z.ℓκ)
 
 neg_energy(z::PhasePoint) = z.ℓπ.value + z.ℓκ.value
 
-neg_energy(h::Hamiltonian, θ::AbstractVecOrMat) = h.ℓπ(θ)
+neg_energy(h::AbstractHamiltonian, θ::AbstractVecOrMat) = h.ℓπ(θ)
 
 # GaussianKinetic
+
+
+
+function neg_energy(h::DiscontinuousHamiltonian, r::T, θ::T) where {T<:AbstractVector}
+    return neg_energy(Hamiltonian(h.metric, h.kinetic, h.ℓπ, h.∂ℓπ∂θ), r, θ)
+end
 
 neg_energy(
     h::Hamiltonian{<:UnitEuclideanMetric, <:GaussianKinetic},
@@ -153,7 +171,7 @@ energy(args...) = -neg_energy(args...)
 phasepoint(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     θ::AbstractVecOrMat{T},
-    h::Hamiltonian
+    h::AbstractHamiltonian
 ) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric, h.kinetic))
 
 abstract type AbstractMomentumRefreshment end
@@ -164,7 +182,7 @@ struct FullMomentumRefreshment <: AbstractMomentumRefreshment end
 refresh(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     ::FullMomentumRefreshment,
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     z::PhasePoint,
 ) = phasepoint(h, z.θ, rand(rng, h.metric, h.kinetic))
 
@@ -188,6 +206,6 @@ end
 refresh(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     ref::PartialMomentumRefreshment,
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     z::PhasePoint,
 ) = phasepoint(h, z.θ, ref.α * z.r + sqrt(1 - ref.α^2) * rand(rng, h.metric, h.kinetic))

@@ -1,8 +1,8 @@
 # Update of hamiltonian and proposal
 
-update(h::Hamiltonian, ::AbstractAdaptor) = h
+update(h::AbstractHamiltonian, ::AbstractAdaptor) = h
 function update(
-    h::Hamiltonian, adaptor::Union{MassMatrixAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
+    h::AbstractHamiltonian, adaptor::Union{MassMatrixAdaptor, NaiveHMCAdaptor, StanHMCAdaptor}
 )
     metric = renew(h.metric, getM⁻¹(adaptor))
     return @set h.metric = metric
@@ -21,7 +21,7 @@ function update(κ::AbstractMCMCKernel, adaptor::AbstractAdaptor)
     @set κ.τ = update(κ.τ, adaptor)
 end
 
-function resize(h::Hamiltonian, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
+function resize(h::AbstractHamiltonian, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
     metric = h.metric
     if size(metric) != size(θ)
         metric = ConstructionBase.constructorof(typeof(metric))(size(θ))
@@ -35,7 +35,7 @@ end
 ##
 function sample_init(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     θ::AbstractVecOrMat{<:AbstractFloat}
 )
     # Ensure h.metric has the same dim as θ.
@@ -47,7 +47,7 @@ end
 
 function transition(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     κ::HMCKernel,
     z::PhasePoint,
 )
@@ -58,7 +58,7 @@ function transition(
 end
 
 Adaptation.adapt!(
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     κ::AbstractMCMCKernel,
     adaptor::Adaptation.NoAdaptation,
     i::Int,
@@ -68,7 +68,7 @@ Adaptation.adapt!(
 ) = h, κ, false
 
 function Adaptation.adapt!(
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     κ::AbstractMCMCKernel,
     adaptor::AbstractAdaptor,
     i::Int,
@@ -103,9 +103,8 @@ simple_pm_next!(pm, stat::NamedTuple) = ProgressMeter.next!(pm)
 ##
 ## Sampling functions
 ##
-
 sample(
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     κ::AbstractMCMCKernel,
     θ::AbstractVecOrMat{<:AbstractFloat},
     n_samples::Int,
@@ -132,7 +131,7 @@ sample(
 """
     sample(
         rng::AbstractRNG,
-        h::Hamiltonian,
+        h::AbstractHamiltonian,
         κ::AbstractMCMCKernel,
         θ::AbstractVecOrMat{T},
         n_samples::Int,
@@ -154,7 +153,7 @@ Sample `n_samples` samples using the proposal `κ` under Hamiltonian `h`.
 """
 function sample(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     κ::HMCKernel,
     θ::T,
     n_samples::Int,

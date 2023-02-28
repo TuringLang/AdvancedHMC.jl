@@ -57,7 +57,7 @@ update_nom_step_size(lf::AbstractLeapfrog, ϵ) = @set lf.ϵ = ϵ
 
 function step(
     lf::AbstractLeapfrog{T},
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     z::P,
     n_steps::Int=1;
     fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
@@ -109,7 +109,7 @@ end
 
 function position_step(
     ::AbstractLeapfrog{T},
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     θ::AbstractVector{T},
     r::AbstractVector{T},
     ϵ::T,
@@ -246,7 +246,7 @@ end
 """
 $(TYPEDEF)
 
-A constrained leapfrog integrator that reflects the momentum at the boundaries.
+A leapfrog integrator that reflects or refracts the momentum at the discontinuities.
 
 # Fields
 
@@ -254,42 +254,38 @@ $(TYPEDFIELDS)
 
 # Description
 
-A modification of the leapfrog integrator for constrained problems. Whenever the leapfrog
-step encounters a boundary, the momentum is reflected (see [1] for further details).
-
-The feasible region is defined by an array of `AbstractConstraint`s, all of which must be
-satisfied simultaneously.
+A modification of the leapfrog integrator for problems with discontinuous densities.
+Whenever the leapfrog step encounters a discontinuity, the momentum is either reflected
+or refracted based energy delta at that point (see [1] for further details).
 
 # References
 1. Afshar and Domke (2015). Reflection, Refraction, and Hamiltonian Monte Carlo. ([NIPS](https://papers.nips.cc/paper/2015/hash/8303a79b1e19a194f1875981be5bdb6f-Abstract.html))
 """
-struct ConstrainedLeapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
+struct DiscontinuousLeapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     "Step size."
     ϵ::T
-    "Constraints."
-    constraints::AbstractArray{<:AbstractConstraint}
 end
 
-function first_collision(constraints, θ, ∇r, ϵ)
-    # TODO: this approach is too harsh. Relax it
-    # Perhaps the way forwards is to only reflect off the "inside" of the constraint
-    # if any(abs.(θ) .> 1.0)
-    #     return nothing
-    # end
-
+function first_discontinuity(step_functions, signature, θ, ∇r, ϵ)
     t_first_collision = ϵ
     θ_first_collision = nothing
-    constraint_first_collision = nothing
-    for constraint in constraints
-        intersection = intersect_line(constraint, θ, ∇r)
+    i_first_collision = nothing
+    jump_up_first_collision = nothing
+    for (i, s) in enumerate(step_functions)
+        intersection = intersect_line(s, θ, ∇r)
         if isnothing(intersection)
             continue
         end
-        θ_candidate, t_candidate = intersection
+
+        θ_candidate, t_candidate, jump_up_candidate = intersection
+        if jump_up_candidate == signature[i]
+            continue
+        end
         if 0 < t_candidate < t_first_collision
             t_first_collision = t_candidate
             θ_first_collision = θ_candidate
-            constraint_first_collision = constraint
+            i_first_collision = i
+            jump_up_first_collision = jump_up_candidate
         end
     end
 
@@ -297,14 +293,15 @@ function first_collision(constraints, θ, ∇r, ϵ)
         return nothing
     end
 
-    normal = get_normal(constraint_first_collision, θ_first_collision)
+    normal = get_normal(step_functions[i_first_collision], θ_first_collision)
 
-    return θ_first_collision, t_first_collision, normal
+    return θ_first_collision, t_first_collision, i_first_collision, jump_up_first_collision, normal
 end
 
 function position_step(
-    lf::ConstrainedLeapfrog{T},
-    h::Hamiltonian{<:AbstractMetric},
+    lf::DiscontinuousLeapfrog{T},
+    # TODO: do we need a discontinuous Hamiltonian?
+    h::DiscontinuousHamiltonian,
     θ::AbstractVector{T},
     r::AbstractVector{T},
     ϵ::T
@@ -315,17 +312,39 @@ function position_step(
     ∇r = ∂H∂r(h, r)
     t0 = 0
     collisions = 0
+
+    # TODO: Could this be stored between steps?
+    signature = [
+        evaluate(s, θ)
+        for s in h.step_functions
+    ]
+
     while true
-        collision = first_collision(lf.constraints, θ, ∇r, ϵ_abs - t0)
+        collision = first_discontinuity(h.step_functions, signature, θ, ∇r, ϵ_abs - t0)
         collision === nothing && break
         collisions += 1
 
-        θ_first_collision, t_first_collision, normal = collision
+        θ_first_collision, t_first_collision, i_first_collision, jump_up_first_collision, normal = collision
         θ = θ_first_collision
         t0 += t_first_collision
+
         r_perp = dot(normal, r) * normal
         r_par = r - r_perp
-        r = -r_perp + r_par
+
+        new_signature = copy(signature)
+        new_signature[i_first_collision] = jump_up_first_collision
+        ΔU = -(h.ℓπ(θ, new_signature) - h.ℓπ(θ, signature))
+
+        mag = norm(r_perp)
+        if mag^2 > 2 * ΔU
+            # Refraction
+            r_perp = sqrt(mag^2 - 2 * ΔU) * r_perp / mag
+            signature = new_signature
+        else
+            # Reflection
+            r_perp = -r_perp
+        end
+        r = r_perp + r_par
         ∇r = ∂H∂r(h, r)
 
         if t0 >= ϵ_abs

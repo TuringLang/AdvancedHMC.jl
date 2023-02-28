@@ -56,7 +56,7 @@ Standard HMC implementation with a fixed integration time.
 $(TYPEDFIELDS)
 
 # References
-1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901)) 
+1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
 """
 struct FixedIntegrationTime{F<:AbstractFloat} <: StaticTerminationCriterion
     "Total length of the trajectory, i.e. take `floor(λ / integrator_step_size)` number of leapfrog steps."
@@ -186,8 +186,8 @@ $(TYPEDEF)
 Numerically simulated Hamiltonian trajectories.
 """
 struct Trajectory{
-    TS<:AbstractTrajectorySampler, 
-    I<:AbstractIntegrator, 
+    TS<:AbstractTrajectorySampler,
+    I<:AbstractIntegrator,
     TC<:AbstractTerminationCriterion,
 }
     "Integrator used to simulate trajectory."
@@ -196,7 +196,7 @@ struct Trajectory{
     termination_criterion::TC
 end
 
-Trajectory{TS}(integrator::I, termination_criterion::TC) where {TS, I, TC} = 
+Trajectory{TS}(integrator::I, termination_criterion::TC) where {TS, I, TC} =
     Trajectory{TS, I, TC}(integrator, termination_criterion)
 
 ConstructionBase.constructorof(::Type{<:Trajectory{TS}}) where {TS} = Trajectory{TS}
@@ -206,7 +206,7 @@ function Base.show(io::IO, τ::Trajectory{TS}) where {TS}
 end
 
 nsteps(τ::Trajectory{TS, I, TC}) where {TS, I, TC<:FixedNSteps} = τ.termination_criterion.L
-nsteps(τ::Trajectory{TS, I, TC}) where {TS, I, TC<:FixedIntegrationTime} = 
+nsteps(τ::Trajectory{TS, I, TC}) where {TS, I, TC<:FixedIntegrationTime} =
     max(1, floor(Int, τ.termination_criterion.λ / nom_step_size(τ.integrator)))
 
 ##
@@ -227,7 +227,7 @@ Make a MCMC transition from phase point `z` using the trajectory `τ` under Hami
 
 NOTE: This is a RNG-implicit fallback function for `transition(GLOBAL_RNG, τ, h, z)`
 """
-function transition(τ::Trajectory, h::Hamiltonian, z::PhasePoint)
+function transition(τ::Trajectory, h::AbstractHamiltonian, z::PhasePoint)
     return transition(GLOBAL_RNG, τ, h, z)
 end
 
@@ -238,7 +238,7 @@ end
 function transition(
     rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
     τ::Trajectory{TS, I, TC},
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     z::PhasePoint,
 ) where {TS<:AbstractTrajectorySampler, I, TC<:StaticTerminationCriterion}
     H0 = energy(z)
@@ -331,7 +331,7 @@ function sample_phasepoint(rng, τ::Trajectory{MultinomialTS}, h, z)
     n_steps = abs(nsteps(τ))
     # TODO: Deal with vectorized-mode generically.
     #       Currently the direction of multiple chains are always coupled
-    n_steps_fwd = rand_coupled(rng, 0:n_steps) 
+    n_steps_fwd = rand_coupled(rng, 0:n_steps)
     zs_fwd = step(τ.integrator, h, z, n_steps_fwd; fwd=true, full_trajectory=Val(true))
     n_steps_bwd = n_steps - n_steps_fwd
     zs_bwd = step(τ.integrator, h, z, n_steps_bwd; fwd=false, full_trajectory=Val(true))
@@ -394,7 +394,7 @@ end
 
 """
 $(TYPEDEF)
-Generalised No-U-Turn criterion as described in Section A.4.2 in [1] with 
+Generalised No-U-Turn criterion as described in Section A.4.2 in [1] with
 added U-turn check as described in [2].
 
 # Fields
@@ -417,7 +417,7 @@ end
 TurnStatistic() = TurnStatistic(undef)
 
 TurnStatistic(::ClassicNoUTurn, ::PhasePoint) = TurnStatistic()
-TurnStatistic(::Union{GeneralisedNoUTurn, StrictGeneralisedNoUTurn}, z::PhasePoint) = 
+TurnStatistic(::Union{GeneralisedNoUTurn, StrictGeneralisedNoUTurn}, z::PhasePoint) =
     TurnStatistic(z.r)
 
 combine(ts::TurnStatistic{T}, ::TurnStatistic{T}) where {T<:UndefInitializer} = ts
@@ -503,7 +503,7 @@ using the (original) no-U-turn cirterion.
 
 Ref: https://arxiv.org/abs/1111.4246, https://arxiv.org/abs/1701.02434
 """
-function isterminated(::ClassicNoUTurn, h::Hamiltonian, t::BinaryTree)
+function isterminated(::ClassicNoUTurn, h::AbstractHamiltonian, t::BinaryTree)
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
     Δθ = z1.θ - z0.θ
@@ -518,7 +518,7 @@ using the generalised no-U-turn criterion.
 
 Ref: https://arxiv.org/abs/1701.02434
 """
-function isterminated(::GeneralisedNoUTurn, h::Hamiltonian, t::BinaryTree)
+function isterminated(::GeneralisedNoUTurn, h::AbstractHamiltonian, t::BinaryTree)
     rho = t.ts.rho
     s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, t.zright.r))
     return Termination(s, false)
@@ -532,7 +532,7 @@ using the generalised no-U-turn criterion with additional U-turn checks.
 Ref: https://arxiv.org/abs/1701.02434 https://github.com/stan-dev/stan/pull/2800
 """
 function isterminated(
-    tc::StrictGeneralisedNoUTurn, h::Hamiltonian, t, tleft, tright
+    tc::StrictGeneralisedNoUTurn, h::AbstractHamiltonian, t, tleft, tright
 )
     # (Non-strict) generalised U-turn check
     s1 = isterminated(GeneralisedNoUTurn(tc), h, t)
@@ -547,11 +547,11 @@ end
 
 """
 $(SIGNATURES)
-Do a U-turn check between the leftmost phase point of `t` and the leftmost 
+Do a U-turn check between the leftmost phase point of `t` and the leftmost
 phase point of `tright`, the right subtree.
 """
 function check_left_subtree(
-    h::Hamiltonian, t::T, tleft::T, tright::T
+    h::AbstractHamiltonian, t::T, tleft::T, tright::T
 ) where {T<:BinaryTree}
     rho = tleft.ts.rho + tright.zleft.r
     s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, tright.zleft.r))
@@ -564,7 +564,7 @@ Do a U-turn check between the rightmost phase point of `t` and the rightmost
 phase point of `tleft`, the left subtree.
 """
 function check_right_subtree(
-    h::Hamiltonian, t::T, tleft::T, tright::T
+    h::AbstractHamiltonian, t::T, tleft::T, tright::T
 ) where {T<:BinaryTree}
     rho = tleft.zright.r + tright.ts.rho
     s = generalised_uturn_criterion(rho, ∂H∂r(h, tleft.zright.r), ∂H∂r(h, t.zright.r))
@@ -575,7 +575,7 @@ function generalised_uturn_criterion(rho, p_sharp_minus, p_sharp_plus)
     return (dot(rho, p_sharp_minus) <= 0) || (dot(rho, p_sharp_plus) <= 0)
 end
 
-function isterminated(tc::TC, h::Hamiltonian, t::BinaryTree, _tleft, _tright) where {TC<:Union{ClassicNoUTurn, GeneralisedNoUTurn}}
+function isterminated(tc::TC, h::AbstractHamiltonian, t::BinaryTree, _tleft, _tright) where {TC<:Union{ClassicNoUTurn, GeneralisedNoUTurn}}
     return isterminated(tc, h, t)
 end
 
@@ -583,7 +583,7 @@ end
 function build_tree(
     rng::AbstractRNG,
     nt::Trajectory{TS, I, TC},
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     z::PhasePoint,
     sampler::AbstractTrajectorySampler,
     v::Int,
@@ -623,7 +623,7 @@ end
 function transition(
     rng::AbstractRNG,
     τ::Trajectory{TS, I, TC},
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     z0::PhasePoint,
 ) where {TS<:AbstractTrajectorySampler, I<:AbstractIntegrator, TC<:DynamicTerminationCriterion}
     H0 = energy(z0)
@@ -697,7 +697,7 @@ end
 "Find a good initial leap-frog step-size via heuristic search."
 function find_good_stepsize(
     rng::AbstractRNG,
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     θ::AbstractVector{T};
     max_n_iters::Int=100,
 ) where {T<:Real}
@@ -763,7 +763,7 @@ function find_good_stepsize(
 end
 
 function find_good_stepsize(
-    h::Hamiltonian,
+    h::AbstractHamiltonian,
     θ::AbstractVector{<:AbstractFloat};
     max_n_iters::Int=100,
 )
@@ -789,8 +789,8 @@ function mh_accept_ratio(
     α = min.(one(T), exp.(Horiginal .- Hproposal))
     # NOTE: There is a chance that sharing the RNG over multiple
     #       chains for accepting / rejecting might couple
-    #       the chains. We need to revisit this more rigirously 
-    #       in the future. See discussions at 
+    #       the chains. We need to revisit this more rigirously
+    #       in the future. See discussions at
     #       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
     accept = rand(rng, T, length(Horiginal)) .< α
     return accept, α
