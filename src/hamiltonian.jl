@@ -14,6 +14,7 @@ struct DiscontinuousHamiltonian{M<:AbstractMetric, K<:AbstractKinetic, Tlogπ, T
     ℓπ::Tlogπ
     ∂ℓπ∂θ::T∂logπ∂θ
 end
+Base.show(io::IO, h::DiscontinuousHamiltonian) = print(io, "DiscontinuousHamiltonian(metric=$(h.metric), kinetic=$(h.kinetic))")
 
 # By default we use Gaussian kinetic energy; also to ensure backward compatibility at the time this was introduced
 Hamiltonian(metric::AbstractMetric, ℓπ::Function, ∂ℓπ∂θ::Function) = Hamiltonian(metric, GaussianKinetic(), ℓπ, ∂ℓπ∂θ)
