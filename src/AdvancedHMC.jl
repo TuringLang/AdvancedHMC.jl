@@ -48,7 +48,7 @@ include("hamiltonian.jl")
 export Hamiltonian, DiscontinuousHamiltonian
 
 include("discontinuities.jl")
-export LinearStepFunction, evaluate
+export LinearStepFunction, QuadraticStepFunction, DifferentiableStepFunction, evaluate
 
 include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog, DiscontinuousLeapfrog
