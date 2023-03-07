@@ -292,6 +292,7 @@ function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ:
     # println("R: ", R)
     # M = inv(softabsΛ) * Q' * r
     M = R * Q' * r
+    D = diagm((Q' * r) ./ softabsλ)
     # println("M: ", M)
     invG = inv(G)
     ∂H∂θ = h.metric.∂G∂θ(θ)
@@ -303,7 +304,12 @@ function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ:
     #! Based on the two equations from the right column of Page 3 of Betancourt (2012)
     g = -mapreduce(vcat, 1:d) do i
         ∂H∂θᵢ = ∂H∂θ[:,:,i]
-        ∂ℓπ∂θ[i] - 1 / 2 * tr(Q * (R .* J) * Q' * ∂H∂θᵢ) + 1 / 2 * M' * (J .* Q' * ∂H∂θᵢ * Q) * M
+        # ∂ℓπ∂θ[i] - 1 / 2 * tr(Q * (R .* J) * Q' * ∂H∂θᵢ) + 1 / 2 * M' * (J .* Q' * ∂H∂θᵢ * Q) * M
+        ∂ℓπ∂θ[i] - 1 / 2 * tr(Q * (R .* J) * Q' * ∂H∂θᵢ) + 1 / 2 * tr(Q * D * J * D * Q' * ∂H∂θᵢ)
+        # -1 / 2 * tr(Q * (R .* J) * Q' * ∂H∂θᵢ) # first term checks out
+        # TODO Figure out why v1 doesn't work
+        # +1 / 2 * M' * (J .* Q' * ∂H∂θᵢ * Q) * M # second term (v1)
+        # +1 / 2 * tr(Q * D * J * D * Q' * ∂H∂θᵢ) # second term (v2) checks out
     end
     # println("g: ", g)
     return DualValue(
