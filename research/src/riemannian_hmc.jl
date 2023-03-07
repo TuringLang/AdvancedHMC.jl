@@ -254,7 +254,13 @@ function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}}, θ:
         #! Eq (15) of Girolami & Calderhead (2011)
         -mapreduce(vcat, 1:d) do i
             ∂G∂θᵢ = ∂G∂θ[:,:,i]
-            ∂ℓπ∂θ[i] - 1 / 2 * tr(invG * ∂G∂θᵢ) + 1 / 2 * r' * invG * ∂G∂θᵢ * invG * r
+            #! Looks like the first negative sign is a typo in (15)
+            # ∂ℓπ∂θ[i] - 1 / 2 * tr(invG * ∂G∂θᵢ) + 1 / 2 * r' * invG * ∂G∂θᵢ * invG * r
+            ∂ℓπ∂θ[i] + 1 / 2 * tr(invG * ∂G∂θᵢ) + 1 / 2 * r' * invG * ∂G∂θᵢ * invG * r
+            # Gr = G \ r
+            # ∂ℓπ∂θ[i] - 1 / 2 * tr(G \ ∂G∂θᵢ) + 1 / 2 * Gr' * ∂G∂θᵢ * Gr
+            # 1 / 2 * tr(invG * ∂G∂θᵢ)
+            # 1 / 2 * r' * invG * ∂G∂θᵢ * invG * r
         end,
     )
 end
