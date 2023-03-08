@@ -134,7 +134,7 @@ function adapt_stepsize!(
     end
 
     state.m = m
-    state.ϵ = 
+    state.ϵ = ϵ
     state.x_bar = x_bar
     state.H_bar = H_bar
 end
