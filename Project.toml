@@ -1,6 +1,6 @@
 name = "AdvancedHMC"
 uuid = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
-version = "0.4.3"
+version = "0.4.4"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
@@ -14,10 +14,10 @@ ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
+SimpleUnPack = "ce78b400-467f-4804-87d8-8f486da07d0a"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsFuns = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
-UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
 AbstractMCMC = "4.2"
@@ -29,9 +29,9 @@ LogDensityProblemsAD = "1"
 ProgressMeter = "1"
 Requires = "0.5, 1"
 Setfield = "0.7, 0.8, 1"
+SimpleUnPack = "1"
 StatsBase = "0.31, 0.32, 0.33"
 StatsFuns = "0.8, 0.9, 1"
-UnPack = "1"
 julia = "1"
 
 [extras]

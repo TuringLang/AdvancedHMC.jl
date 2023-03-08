@@ -133,7 +133,10 @@ function adapt_stepsize!(
         @unpack m, ϵ, x_bar, H_bar = state
     end
 
-    @pack! state = m, ϵ, x_bar, H_bar
+    state.m = m
+    state.ϵ = 
+    state.x_bar = x_bar
+    state.H_bar = H_bar
 end
 
 adapt!(
