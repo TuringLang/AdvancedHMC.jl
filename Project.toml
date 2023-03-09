@@ -46,3 +46,8 @@ StatsBase = "0.31, 0.32, 0.33"
 StatsFuns = "0.8, 0.9, 1"
 UnPack = "1"
 julia = "1.6"
+
+[extras]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+MCMCChains = "c7f686f2-ff18-58e9-bc7b-31028e88f75d"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
