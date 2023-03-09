@@ -225,7 +225,7 @@ end
 ### Init
 
 struct DiffEqIntegrator{T<:AbstractScalarOrVec{<:AbstractFloat},DiffEqSolver} <:
-    AbstractLeapfrog{T}
+       AbstractLeapfrog{T}
     ϵ::T
     solver::DiffEqSolver
 end
@@ -238,10 +238,13 @@ function __init__()
     # Better error message if users forgot to load OrdinaryDiffEq
     Base.Experimental.register_error_hint(MethodError) do io, exc, arg_types, kwargs
         n = length(arg_types)
-        if exc.f === step && (n == 3 || n == 4) && arg_types[1] <: DiffEqIntegrator &&
-            arg_types[2] <: Hamiltonian && arg_types[3] <: PhasePoint &&
-            (n == 3 || arg_types[4] === Int)
-              
+        if exc.f === step &&
+           (n == 3 || n == 4) &&
+           arg_types[1] <: DiffEqIntegrator &&
+           arg_types[2] <: Hamiltonian &&
+           arg_types[3] <: PhasePoint &&
+           (n == 3 || arg_types[4] === Int)
+
             print(io, "\\nDid you forget to load OrdinaryDiffEq?")
         end
     end

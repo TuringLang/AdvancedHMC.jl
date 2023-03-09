@@ -18,7 +18,6 @@ function AdvancedHMC.step(
 ) where {P<:AdvancedHMC.PhasePoint}
 
     AdvancedHMC.@unpack θ, r = z
-    
     # For DynamicalODEProblem `u` is `θ` and `v` is `r`
     # f1 is dr/dt RHS function
     # f2 is dθ/dt RHS function
