@@ -9,7 +9,7 @@ using StatsFuns: logaddexp, logsumexp
 import Random
 using Random: GLOBAL_RNG, AbstractRNG
 using ProgressMeter: ProgressMeter
-using UnPack: @unpack
+using SimpleUnPack: @unpack
 
 using Setfield
 import Setfield: ConstructionBase
