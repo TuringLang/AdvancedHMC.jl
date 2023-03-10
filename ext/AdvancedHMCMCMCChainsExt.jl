@@ -1,10 +1,10 @@
 module AdvancedHMCMCMCChainsExt
 
 if isdefined(Base, :get_extension)
-    using AdvancedHMC: AbstractMCMC, Transition
+    using AdvancedHMC: AbstractMCMC, Transition, stat
     using MCMCChains: Chains
 else
-    using ..AdvancedHMC: AbstractMCMC, Transition
+    using ..AdvancedHMC: AbstractMCMC, Transition, stat
     using ..MCMCChains: Chains
 end
 
