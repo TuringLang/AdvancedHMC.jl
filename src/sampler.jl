@@ -131,6 +131,68 @@ sample(
     (pm_next!) = pm_next!,
 )
 
+###
+# Allows to pass Turing model to build Hamiltonian
+
+function sample(
+    model::DynamicPPL.Model,
+    metric::AbstractMetric,
+    κ::AbstractMCMCKernel,
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    n_samples::Int,
+    adaptor::AbstractAdaptor = NoAdaptation(),
+    n_adapts::Int = min(div(n_samples, 10), 1_000);
+    drop_warmup = false,
+    verbose::Bool = true,
+    progress::Bool = false,
+    (pm_next!)::Function = pm_next!,
+)
+    ctxt = model.context
+    vi = DynamicPPL.VarInfo(model, ctxt)
+
+    # We will need to implement this but it is going to be
+    # Interesting how to plug the transforms along the sampling
+    # processes
+
+    #vi_t = Turing.link!!(vi, model)
+
+    ℓ = LogDensityProblemsAD.ADgradient(DynamicPPL.LogDensityFunction(vi, model, ctxt))
+    h = Hamiltonian(metric, ℓ)
+    return sample(
+        GLOBAL_RNG,
+        h,
+        κ,
+        θ,
+        n_samples,
+        adaptor,
+        n_adapts;
+        drop_warmup = drop_warmup,
+        verbose = verbose,
+        progress = progress,
+        (pm_next!) = pm_next!,
+    )
+end
+
+function sample(model::DynamicPPL.Model, ϵ::Number, TAP::Number, n_samples::Int, n_adapts::Int;
+                initial_θ=initial_θ, progress=true, kwargs...)
+    ctxt = model.context
+    vi = VarInfo(model, ctxt)
+
+    dists = _get_dists(vi)
+    dist_lengths = [length(dist) for dist in dists]
+    vsyms = _name_variables(vi, dist_lengths)
+    d = length(vsyms)
+
+    metric =  DiagEuclideanMetric(d)
+    integrator = Leapfrog(ϵ)
+    proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(TAP, integrator))
+    return sample(model, metric, proposal, initial_θ, n_samples, adaptor, n_adapts;
+                  progress=progress, kwargs...)
+end
+
+###
+
 """
     sample(
         rng::AbstractRNG,

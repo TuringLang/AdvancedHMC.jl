@@ -23,6 +23,7 @@ using LogDensityProblemsAD: LogDensityProblemsAD
 
 import AbstractMCMC
 using AbstractMCMC: LogDensityModel
+using DynamicPPL
 
 import StatsBase: sample
 
@@ -221,6 +222,9 @@ function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val}; kwa
     ℓ = LogDensityProblemsAD.ADgradient(kind, ℓπ; kwargs...)
     return Hamiltonian(metric, ℓ)
 end
+
+### Turing Interface
+include("turing_utils.jl")
 
 ### Init
 
