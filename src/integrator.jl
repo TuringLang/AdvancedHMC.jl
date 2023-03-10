@@ -193,7 +193,8 @@ end
 
 # `step` method for integrators above
 # method for `DiffEqIntegrator` is defined in the OrdinaryDiffEq extension
-const DefaultLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} = Union{Leapfrog{T},JitteredLeapfrog{FT,T},TemperedLeapfrog{FT,T}}
+const DefaultLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} =
+    Union{Leapfrog{T},JitteredLeapfrog{FT,T},TemperedLeapfrog{FT,T}}
 function step(
     lf::DefaultLeapfrog{FT,T},
     h::Hamiltonian,
