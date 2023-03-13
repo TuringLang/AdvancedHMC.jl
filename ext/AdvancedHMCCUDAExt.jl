@@ -1,22 +1,30 @@
-import .CUDA
+module AdvancedHMCCUDAExt
 
-CUDA.allowscalar(false)
+if isdefined(Base, :get_extension)
+    import AdvancedHMC
+    import CUDA
+    import Random
+else
+    import ..AdvancedHMC
+    import ..CUDA
+    import ..Random
+end
 
-function refresh(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
-    ::FullMomentumRefreshment,
-    h::Hamiltonian,
-    z::PhasePoint{TA},
+function AdvancedHMC.refresh(
+    rng::Union{Random.AbstractRNG,AbstractVector{<:Random.AbstractRNG}},
+    ::AdvancedHMC.FullMomentumRefreshment,
+    h::AdvancedHMC.Hamiltonian,
+    z::AdvancedHMC.PhasePoint{TA},
 ) where {T<:AbstractFloat,TA<:CUDA.CuArray{<:T}}
     r = CUDA.CuArray{T,2}(undef, size(h.metric)...)
     CUDA.CURAND.randn!(r)
-    return phasepoint(h, z.θ, r)
+    return AdvancedHMC.phasepoint(h, z.θ, r)
 end
 
 # TODO: Ideally this should be merged with the CPU version. The function is 
 #       essentially the same but sampling requires a custom call to CUDA.
-function mh_accept_ratio(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+function AdvancedHMC.mh_accept_ratio(
+    rng::Union{Random.AbstractRNG,AbstractVector{<:Random.AbstractRNG}},
     Horiginal::TA,
     Hproposal::TA,
 ) where {T<:AbstractFloat,TA<:CUDA.CuArray{<:T}}
@@ -31,3 +39,5 @@ function mh_accept_ratio(
     accept = r .< α
     return accept, α
 end
+
+end # module

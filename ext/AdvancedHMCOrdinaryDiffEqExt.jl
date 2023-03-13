@@ -1,31 +1,32 @@
-import .OrdinaryDiffEq
+module AdvancedHMCOrdinaryDiffEqExt
 
-struct DiffEqIntegrator{T<:AbstractScalarOrVec{<:AbstractFloat},DiffEqSolver} <:
-       AbstractLeapfrog{T}
-    ϵ::T
-    solver::DiffEqSolver
+if isdefined(Base, :get_extension)
+    import AdvancedHMC
+    import OrdinaryDiffEq
+else
+    import ..AdvancedHMC
+    import ..OrdinaryDiffEq
 end
 
-function step(
-    integrator::DiffEqIntegrator,
-    h::Hamiltonian,
+function AdvancedHMC.step(
+    integrator::AdvancedHMC.DiffEqIntegrator,
+    h::AdvancedHMC.Hamiltonian,
     z::P,
     n_steps::Int = 1;
     fwd::Bool = n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
     res::Union{Vector{P},P} = z,
-) where {P<:PhasePoint}
+) where {P<:AdvancedHMC.PhasePoint}
 
-    @unpack θ, r = z
-
+    AdvancedHMC.@unpack θ, r = z
     # For DynamicalODEProblem `u` is `θ` and `v` is `r`
     # f1 is dr/dt RHS function
     # f2 is dθ/dt RHS function
     v0, u0 = r, θ
 
-    f1(v, u, p, t) = -∂H∂θ(h, u).gradient
-    f2(v, u, p, t) = ∂H∂r(h, v)
+    f1(v, u, p, t) = -AdvancedHMC.∂H∂θ(h, u).gradient
+    f2(v, u, p, t) = AdvancedHMC.∂H∂r(h, v)
 
-    ϵ = fwd ? step_size(integrator) : -step_size(integrator)
+    ϵ = fwd ? AdvancedHMC.step_size(integrator) : -AdvancedHMC.step_size(integrator)
     tspan = (0.0, sign(n_steps))
     problem = OrdinaryDiffEq.DynamicalODEProblem(f1, f2, v0, u0, tspan)
     diffeq_integrator = OrdinaryDiffEq.init(
@@ -40,7 +41,7 @@ function step(
     for i = 1:abs(n_steps)
         OrdinaryDiffEq.step!(diffeq_integrator)
         solution = diffeq_integrator.u.x  # (r, θ) at the proposed step
-        z = phasepoint(h, solution[2], solution[1])
+        z = AdvancedHMC.phasepoint(h, solution[2], solution[1])
         !isfinite(z) && break
         if res isa Vector
             res[i] = z
@@ -50,3 +51,5 @@ function step(
     end
     return res
 end
+
+end # module
