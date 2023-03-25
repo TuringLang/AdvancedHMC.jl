@@ -300,11 +300,8 @@ function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ:
     term_2_cached = Q * D * J * D * Q'
     g = -mapreduce(vcat, 1:d) do i
         ∂H∂θᵢ = ∂H∂θ[:,:,i]
-        # ∂ℓπ∂θ[i] - 1 / 2 * tr(Q * (R .* J) * Q' * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M
-        # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ)
-        # -1 / 2 * tr(Q * (R .* J) * Q' * ∂H∂θᵢ) # first term checks out
-        # +1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # second term (v1) checks out
-        # +1 / 2 * tr(Q * D * J * D * Q' * ∂H∂θᵢ) # second term (v2) checks out
+        # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
+        ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
     end
     # println("g: ", g)
     return DualValue(
