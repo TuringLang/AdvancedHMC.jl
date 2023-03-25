@@ -232,7 +232,8 @@ function neg_energy(
     # Need to consider the normalizing term as it is no longer same for different θs
     logZ = 1 / 2 * (D * log(2π) + logdet(G)) # it will be user's responsibility to make sure G is SPD and logdet(G) is defined
     mul!(h.metric._temp, inv(G), r)
-    return -logZ - dot(r, h.metric._temp) / 2
+    # return -logZ 
+    return - dot(r, h.metric._temp) / 2
 end
 
 # QUES L31 of hamiltonian.jl now reads a bit weird (semantically)
@@ -285,6 +286,7 @@ function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ:
     # M = inv(softabsΛ) * Q' * r
     M = R * Q' * r
     D = diagm((Q' * r) ./ softabsλ)
+    @show M D
     # println("M: ", M)
     invG = inv(G)
     ∂H∂θ = h.metric.∂G∂θ(θ)
@@ -298,11 +300,10 @@ function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ:
     term_2_cached = Q * D * J * D * Q'
     g = -mapreduce(vcat, 1:d) do i
         ∂H∂θᵢ = ∂H∂θ[:,:,i]
-        # ∂ℓπ∂θ[i] - 1 / 2 * tr(Q * (R .* J) * Q' * ∂H∂θᵢ) + 1 / 2 * M' * (J .* Q' * ∂H∂θᵢ * Q) * M
-        ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ)
+        # ∂ℓπ∂θ[i] - 1 / 2 * tr(Q * (R .* J) * Q' * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M
+        # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ)
         # -1 / 2 * tr(Q * (R .* J) * Q' * ∂H∂θᵢ) # first term checks out
-        # TODO Figure out why v1 doesn't work
-        # +1 / 2 * M' * (J .* Q' * ∂H∂θᵢ * Q) * M # second term (v1)
+        # +1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # second term (v1) checks out
         # +1 / 2 * tr(Q * D * J * D * Q' * ∂H∂θᵢ) # second term (v2) checks out
     end
     # println("g: ", g)
