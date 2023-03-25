@@ -17,37 +17,21 @@ using AdvancedHMC: neg_energy, energy
     @testset "$(nameof(typeof(target)))" for target in [HighDimGaussian(2), Funnel()]
         rng = MersenneTwister(1110)
 
+        _, ℓπ, ∂ℓπ∂θ, Vfunc, Hfunc, Gfunc, ∂G∂θfunc = prepare_sample_target(rng, hps, target)
+
         D = dim(target) # ==2 for this test
-        initial_θ = rand(rng, D)
-
-        ℓπ = x -> logpdf(target, x)
-        neg_ℓπ = x -> -logpdf(target, x)
-
-        _∂ℓπ∂θ = gen_logpdf_grad(target, initial_θ)
-        ∂ℓπ∂θ = x -> copy.(_∂ℓπ∂θ(x))
-        
-        _hess_func = VecTargets.gen_hess(neg_ℓπ, initial_θ) # x -> (value, gradient, hessian)
-        hess_func = x -> copy.(_hess_func(x))
-
-        G = x -> begin
-            H = hess_func(x)[3] + hps.λ * I
-            any(.!(isfinite.(H))) ? diagm(ones(length(x))) : H
-        end
-        _∂G∂θ = gen_∂H∂x(neg_ℓπ, initial_θ) # size==(4, 2)
-        ∂G∂θ = x -> reshape_∂H∂x(copy(_∂G∂θ(x))) # size==(2, 2, 2)
-
-        x = randn(rng, 2)
-        r = randn(rng, 2)
+        x = zeros(D) # randn(rng, D)
+        r = randn(rng, D)
 
         @testset "Autodiff" begin
             @test δ(finite_difference_gradient(ℓπ, x), ∂ℓπ∂θ(x)[end]) < 1e-4
-            @test δ(finite_difference_hessian(neg_ℓπ, x), hess_func(x)[end]) < 1e-4
-            # finite_difference_jacobian returns shape of (4, 2)
-            @test δ(finite_difference_jacobian(G, x), _∂G∂θ(x)) < 1e-4
+            @test δ(finite_difference_hessian(Vfunc, x), Hfunc(x)[end]) < 1e-4
+            # finite_difference_jacobian returns shape of (4, 2), reshape_∂G∂x turns it into (2, 2, 2)
+            @test δ(reshape_∂G∂x(finite_difference_jacobian(Gfunc, x)), ∂G∂θfunc(x)) < 1e-4
         end
-
+        
         @testset "$(nameof(typeof(hessmap)))" for hessmap in [IdentityMap(), SoftAbsMap(hps.α)]
-            metric = DenseRiemannianMetric((D,), G, ∂G∂θ, hessmap)
+            metric = DenseRiemannianMetric((D,), Gfunc, ∂G∂θfunc, hessmap)
             kinetic = GaussianKinetic()
             hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
 
