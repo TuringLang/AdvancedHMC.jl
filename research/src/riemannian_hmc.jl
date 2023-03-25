@@ -230,13 +230,7 @@ function neg_energy(
     G = h.metric.map(h.metric.G(θ))
     D = size(G, 1)
     # Need to consider the normalizing term as it is no longer same for different θs
-    lad, s = logabsdet(G)
-    # NOTE Removed per Hong's suggestion as it's not the correct way to handle numeric issue here
-    # if s == -1
-    #     return Inf # trigger numeric error to reject the current position
-    #                 # QUES Is this a valid work-around?
-    # end
-    logZ = 1 / 2 * (D * log(2π) + lad * s)
+    logZ = 1 / 2 * (D * log(2π) + logdet(G)) # it will be user's responsibility to make sure G is SPD and logdet(G) is defined
     mul!(h.metric._temp, inv(G), r)
     return -logZ - dot(r, h.metric._temp) / 2
 end
@@ -254,9 +248,7 @@ function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}}, θ:
         #! Eq (15) of Girolami & Calderhead (2011)
         -mapreduce(vcat, 1:d) do i
             ∂G∂θᵢ = ∂G∂θ[:,:,i]
-            #! Looks like the first negative sign is a typo in (15)
-            # ∂ℓπ∂θ[i] - 1 / 2 * tr(invG * ∂G∂θᵢ) + 1 / 2 * r' * invG * ∂G∂θᵢ * invG * r
-            ∂ℓπ∂θ[i] + 1 / 2 * tr(invG * ∂G∂θᵢ) + 1 / 2 * r' * invG * ∂G∂θᵢ * invG * r
+            ∂ℓπ∂θ[i] - 1 / 2 * tr(invG * ∂G∂θᵢ) + 1 / 2 * r' * invG * ∂G∂θᵢ * invG * r
             # Gr = G \ r
             # ∂ℓπ∂θ[i] - 1 / 2 * tr(G \ ∂G∂θᵢ) + 1 / 2 * Gr' * ∂G∂θᵢ * Gr
             # 1 / 2 * tr(invG * ∂G∂θᵢ)
