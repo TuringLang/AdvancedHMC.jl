@@ -232,8 +232,7 @@ function neg_energy(
     # Need to consider the normalizing term as it is no longer same for different θs
     logZ = 1 / 2 * (D * log(2π) + logdet(G)) # it will be user's responsibility to make sure G is SPD and logdet(G) is defined
     mul!(h.metric._temp, inv(G), r)
-    # return -logZ 
-    return - dot(r, h.metric._temp) / 2
+    return -logZ - dot(r, h.metric._temp) / 2
 end
 
 # QUES L31 of hamiltonian.jl now reads a bit weird (semantically)
