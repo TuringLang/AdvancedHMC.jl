@@ -276,23 +276,21 @@ end
 function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ::AbstractVecOrMat{T}, r::AbstractVecOrMat{T}) where {T}
     ℓπ, ∂ℓπ∂θ = h.∂ℓπ∂θ(θ)
     H = h.metric.G(θ)
-    # println("H: ", H)
+
     G, Q, λ, softabsλ = softabs(H, h.metric.map.α)
-    # println("Q: ", Q)
-    softabsΛ = diagm(softabsλ)
+
     R = diagm(1 ./ softabsλ)
-    # println("R: ", R)
+
+    # softabsΛ = diagm(softabsλ)
     # M = inv(softabsΛ) * Q' * r
-    M = R * Q' * r
-    D = diagm((Q' * r) ./ softabsλ)
-    @show M D
-    # println("M: ", M)
-    invG = inv(G)
-    ∂H∂θ = h.metric.∂G∂θ(θ)
-    # println("∂H∂θ: ", ∂H∂θ)
-    J = make_J(λ, h.metric.map.α)
-    # println("J: ", J)
+    # M = R * Q' * r # equiv to above but avoid inv
     
+    D = diagm((Q' * r) ./ softabsλ)
+
+    ∂H∂θ = h.metric.∂G∂θ(θ)
+
+    J = make_J(λ, h.metric.map.α)
+
     d = length(∂ℓπ∂θ)
     #! Based on the two equations from the right column of Page 3 of Betancourt (2012)
     term_1_cached = Q * (R .* J) * Q'
@@ -302,7 +300,7 @@ function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ:
         # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
         ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
     end
-    # println("g: ", g)
+
     return DualValue(
         ℓπ, 
         g,
