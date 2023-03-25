@@ -35,23 +35,24 @@ using AdvancedHMC: neg_energy, energy
             kinetic = GaussianKinetic()
             hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
 
-            if hessmap isa SoftAbsMap # only test kinetic energy for SoftAbsMap as that of IdentityMap can be non-PD
+            if hessmap isa SoftAbsMap || # only test kinetic energy for SoftAbsMap as that of IdentityMap can be non-PD
+                all(iszero.(x)) # or for x==0 that I know it's PD
                 @testset "Kinetic energy" begin
                     Σ = hamiltonian.metric.map(hamiltonian.metric.G(x))
                     @test neg_energy(hamiltonian, r, x) ≈ logpdf(MvNormal(zeros(D), Σ), r)
                 end
             end
 
-            H_func = (x, r) -> energy(hamiltonian, r, x) + energy(hamiltonian, x)
-            Hx = x -> H_func(x, r)
-            Hr = r -> H_func(x, r)
+            Hamifunc = (x, r) -> energy(hamiltonian, r, x) + energy(hamiltonian, x)
+            Hamifuncx = x -> Hamifunc(x, r)
+            Hamifuncr = r -> Hamifunc(x, r)
 
             @testset "∂H∂θ" begin
-                @test δ(finite_difference_gradient(Hx, x), ∂H∂θ(hamiltonian, x, r).gradient) < 1e-4
+                @test δ(finite_difference_gradient(Hamifuncx, x), ∂H∂θ(hamiltonian, x, r).gradient) < 1e-4
             end
 
             @testset "∂H∂r" begin
-                @test δ(finite_difference_gradient(Hr, r), ∂H∂r(hamiltonian, x, r)) < 1e-4
+                @test δ(finite_difference_gradient(Hamifuncr, r), ∂H∂r(hamiltonian, x, r)) < 1e-4
             end
         end
 
