@@ -12,15 +12,10 @@ function reshape_∂G∂θ(H)
     return cat((H[(i-1)*d+1:i*d,:] for i in 1:d)...; dims=3)
 end
 
-function prepare_sample_target(rng, hps, target)
-    θ₀ = rand(rng, dim(target))
-    
-    ℓπ = VecTargets.gen_logpdf(target)
-    ∂ℓπ∂θ = VecTargets.gen_logpdf_grad(target, θ₀)
-    
+function prepare_sample_target(hps, θ₀, ℓπ)
     Vfunc = x -> -ℓπ(x) # potential energy is the negative log-probability
     _Hfunc = VecTargets.gen_hess(Vfunc, θ₀) # x -> (value, gradient, hessian)
-    Hfunc = x -> copy.(_Hfunc(x))
+    Hfunc = x -> copy.(_Hfunc(x)) # _Hfunc do in-place computation, copy to avoid bug
     
     fstabilize = H -> H + hps.λ * I
     Gfunc = x -> begin
@@ -28,9 +23,9 @@ function prepare_sample_target(rng, hps, target)
         any(.!(isfinite.(H))) ? diagm(ones(length(x))) : H
     end
     _∂G∂θfunc = gen_∂G∂θ(Vfunc, θ₀; f=fstabilize) # size==(4, 2)
-    ∂G∂θfunc = x -> reshape_∂G∂θ(copy(_∂G∂θfunc(x))) # size==(2, 2, 2)
+    ∂G∂θfunc = x -> reshape_∂G∂θ(_∂G∂θfunc(x)) # size==(2, 2, 2)
 
-    return θ₀, ℓπ, ∂ℓπ∂θ, Vfunc, Hfunc, Gfunc, ∂G∂θfunc
+    return Vfunc, Hfunc, Gfunc, ∂G∂θfunc
 end
 
 function prepare_sample(hps; rng=MersenneTwister(1110))
@@ -41,8 +36,13 @@ function prepare_sample(hps; rng=MersenneTwister(1110))
              hps.target == :spiral    ? Spiral(8, 0.1) :
              hps.target == :mogs      ? TwoDimGaussianMixtures() :
              @error "Unknown target $(hps.target)"
+
+    θ₀ = rand(rng, dim(target))
+
+    ℓπ = VecTargets.gen_logpdf(target)
+    ∂ℓπ∂θ = VecTargets.gen_logpdf_grad(target, θ₀)
     
-    θ₀, ℓπ, ∂ℓπ∂θ, _, _, Gfunc, ∂G∂θfunc = prepare_sample_target(rng, hps, target)
+    _, _, Gfunc, ∂G∂θfunc = prepare_sample_target(hps, θ₀, ℓπ)
 
     D = dim(target)
     metric = hps.metric == :dense_euclidean          ? DenseEuclideanMetric(D) :

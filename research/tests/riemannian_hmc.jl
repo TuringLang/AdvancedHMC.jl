@@ -17,7 +17,12 @@ using AdvancedHMC: neg_energy, energy
     @testset "$(nameof(typeof(target)))" for target in [HighDimGaussian(2), Funnel()]
         rng = MersenneTwister(1110)
 
-        _, ℓπ, ∂ℓπ∂θ, Vfunc, Hfunc, Gfunc, ∂G∂θfunc = prepare_sample_target(rng, hps, target)
+        θ₀ = rand(rng, dim(target))
+
+        ℓπ = VecTargets.gen_logpdf(target)
+        ∂ℓπ∂θ = VecTargets.gen_logpdf_grad(target, θ₀)
+
+        Vfunc, Hfunc, Gfunc, ∂G∂θfunc = prepare_sample_target(hps, θ₀, ℓπ)
 
         D = dim(target) # ==2 for this test
         x = zeros(D) # randn(rng, D)
