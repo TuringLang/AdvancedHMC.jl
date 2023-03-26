@@ -1,13 +1,13 @@
 using Random, LinearAlgebra, ReverseDiff, VecTargets
 
 # Fisher information metric
-function gen_∂G∂x(Vfunc, x; f=identity)
+function gen_∂G∂θ(Vfunc, x; f=identity)
     Hfunc = VecTargets.gen_hess(Vfunc, ReverseDiff.track.(x))
     # QUES What's the best output format of this function?
     return x -> ReverseDiff.jacobian(x -> f(Hfunc(x)[3]), x) # default output shape [∂H∂x₁; ∂H∂x₂; ...]
 end
 
-function reshape_∂G∂x(H)
+function reshape_∂G∂θ(H)
     d = size(H, 2)
     return cat((H[(i-1)*d+1:i*d,:] for i in 1:d)...; dims=3)
 end
@@ -18,7 +18,7 @@ function prepare_sample_target(rng, hps, target)
     ℓπ = VecTargets.gen_logpdf(target)
     ∂ℓπ∂θ = VecTargets.gen_logpdf_grad(target, θ₀)
     
-    Vfunc = x -> -logpdf(target, x) # potential energy is the negative log-probability
+    Vfunc = x -> -ℓπ(x) # potential energy is the negative log-probability
     _Hfunc = VecTargets.gen_hess(Vfunc, θ₀) # x -> (value, gradient, hessian)
     Hfunc = x -> copy.(_Hfunc(x))
     
@@ -27,8 +27,8 @@ function prepare_sample_target(rng, hps, target)
         H = fstabilize(Hfunc(x)[3])
         any(.!(isfinite.(H))) ? diagm(ones(length(x))) : H
     end
-    _∂G∂θfunc = gen_∂G∂x(Vfunc, θ₀; f=fstabilize) # size==(4, 2)
-    ∂G∂θfunc = x -> reshape_∂G∂x(copy(_∂G∂θfunc(x))) # size==(2, 2, 2)
+    _∂G∂θfunc = gen_∂G∂θ(Vfunc, θ₀; f=fstabilize) # size==(4, 2)
+    ∂G∂θfunc = x -> reshape_∂G∂θ(copy(_∂G∂θfunc(x))) # size==(2, 2, 2)
 
     return θ₀, ℓπ, ∂ℓπ∂θ, Vfunc, Hfunc, Gfunc, ∂G∂θfunc
 end
@@ -63,11 +63,11 @@ function prepare_sample(hps; rng=MersenneTwister(1110))
     
     proposal = HMCKernel(Trajectory{TS}(integrator, tc))
     
-    return (; rng, hamiltonian, proposal, θ₀)
+    return (; rng, target, hamiltonian, proposal, θ₀)
 end
 
 function sample_target(hps; rng=MersenneTwister(1110))    
-    rng, hamiltonian, proposal, θ₀ = prepare_sample(hps; rng=rng)
+    rng, target, hamiltonian, proposal, θ₀ = prepare_sample(hps; rng=rng)
 
     samples, stats = sample(
         rng, hamiltonian, proposal, θ₀, hps.n_samples; progress=false, verbose=true

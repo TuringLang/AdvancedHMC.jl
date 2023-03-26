@@ -26,8 +26,8 @@ using AdvancedHMC: neg_energy, energy
         @testset "Autodiff" begin
             @test δ(finite_difference_gradient(ℓπ, x), ∂ℓπ∂θ(x)[end]) < 1e-4
             @test δ(finite_difference_hessian(Vfunc, x), Hfunc(x)[end]) < 1e-4
-            # finite_difference_jacobian returns shape of (4, 2), reshape_∂G∂x turns it into (2, 2, 2)
-            @test δ(reshape_∂G∂x(finite_difference_jacobian(Gfunc, x)), ∂G∂θfunc(x)) < 1e-4
+            # finite_difference_jacobian returns shape of (4, 2), reshape_∂G∂θ turns it into (2, 2, 2)
+            @test δ(reshape_∂G∂θ(finite_difference_jacobian(Gfunc, x)), ∂G∂θfunc(x)) < 1e-4
         end
         
         @testset "$(nameof(typeof(hessmap)))" for hessmap in [IdentityMap(), SoftAbsMap(hps.α)]
