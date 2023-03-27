@@ -21,6 +21,12 @@ struct GeneralizedLeapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractL
 end
 Base.show(io::IO, l::GeneralizedLeapfrog) = print(io, "GeneralizedLeapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)), n=$(l.n))")
 
+# Fallback to ignore return_cache & cache kwargs for other ∂H∂θ
+function ∂H∂θ_cache(h, θ, r; return_cache=false, cache=nothing) where {T}
+    dv = ∂H∂θ(h, θ, r)
+    return return_cache ? (dv, nothing) : dv
+end
+
 # TODO Make sure vectorization works
 # TODO Check if tempering is valid
 function step(
@@ -48,20 +54,25 @@ function step(
         #r = temper(lf, r, (i=i, is_half=true), n_steps)
         #! Eq (16) of Girolami & Calderhead (2011)
         r_half = copy(r_init)
+        local cache
         for j in 1:lf.n
             # Reuse cache for the first iteration
             if j == 1
                 @unpack value, gradient = z.ℓπ
-            else
-                @unpack value, gradient = ∂H∂θ(h, θ_init, r_half)
+            elseif j == 2 # cache intermediate values that depends on θ only (which are unchanged)
+                retval, cache = ∂H∂θ_cache(h, θ_init, r_half; return_cache=true)
+                @unpack value, gradient = retval
+            else # reuse cache
+                @unpack value, gradient = ∂H∂θ_cache(h, θ_init, r_half; cache=cache)
             end
             r_half = r_init - ϵ / 2 * gradient
             # println("r_half: ", r_half)
         end
         #! Eq (17) of Girolami & Calderhead (2011)
         θ_full = copy(θ_init)
+        term_1 = ∂H∂r(h, θ_init, r_half) # unchanged across the loop
         for j in 1:lf.n
-            θ_full = θ_init + ϵ / 2 * (∂H∂r(h, θ_init, r_half) + ∂H∂r(h, θ_full, r_half))
+            θ_full = θ_init + ϵ / 2 * (term_1 + ∂H∂r(h, θ_full, r_half))
             # println("θ_full :", θ_full)
         end
         #! Eq (18) of Girolami & Calderhead (2011)
@@ -273,38 +284,41 @@ function make_J(λ::AbstractVector{T}, α::T) where {T<:AbstractFloat}
     return J
 end
 
-function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ::AbstractVecOrMat{T}, r::AbstractVecOrMat{T}) where {T}
-    ℓπ, ∂ℓπ∂θ = h.∂ℓπ∂θ(θ)
-    H = h.metric.G(θ)
+∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ::AbstractVecOrMat{T}, r::AbstractVecOrMat{T}) where {T} = ∂H∂θ_cache(h, θ, r)
+function ∂H∂θ_cache(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ::AbstractVecOrMat{T}, r::AbstractVecOrMat{T}; return_cache=false, cache=nothing) where {T}
+    # Terms that only dependent on θ can be cached in θ-unchanged loops
+    if isnothing(cache)
+        ℓπ, ∂ℓπ∂θ = h.∂ℓπ∂θ(θ)
+        H = h.metric.G(θ)
+        ∂H∂θ = h.metric.∂G∂θ(θ)
 
-    G, Q, λ, softabsλ = softabs(H, h.metric.map.α)
+        G, Q, λ, softabsλ = softabs(H, h.metric.map.α)
 
-    R = diagm(1 ./ softabsλ)
+        R = diagm(1 ./ softabsλ)
 
-    # softabsΛ = diagm(softabsλ)
-    # M = inv(softabsΛ) * Q' * r
-    # M = R * Q' * r # equiv to above but avoid inv
-    
-    D = diagm((Q' * r) ./ softabsλ)
+        # softabsΛ = diagm(softabsλ)
+        # M = inv(softabsΛ) * Q' * r
+        # M = R * Q' * r # equiv to above but avoid inv
 
-    ∂H∂θ = h.metric.∂G∂θ(θ)
-
-    J = make_J(λ, h.metric.map.α)
-
+        J = make_J(λ, h.metric.map.α)
+        
+        #! Based on the two equations from the right column of Page 3 of Betancourt (2012)
+        term_1_cached = Q * (R .* J) * Q'
+    else
+        ℓπ, ∂ℓπ∂θ, ∂H∂θ, Q, softabsλ, J, term_1_cached = cache
+    end
     d = length(∂ℓπ∂θ)
-    #! Based on the two equations from the right column of Page 3 of Betancourt (2012)
-    term_1_cached = Q * (R .* J) * Q'
+    D = diagm((Q' * r) ./ softabsλ)
     term_2_cached = Q * D * J * D * Q'
     g = -mapreduce(vcat, 1:d) do i
         ∂H∂θᵢ = ∂H∂θ[:,:,i]
         # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
+        # NOTE Some further optimization can be done here: cache the 1st product all together
         ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
     end
 
-    return DualValue(
-        ℓπ, 
-        g,
-    )
+    dv = DualValue(ℓπ, g)
+    return return_cache ? (dv, (; ℓπ, ∂ℓπ∂θ, ∂H∂θ, Q, softabsλ, J, term_1_cached)) : dv
 end
 
 #! Eq (14) of Girolami & Calderhead (2011)
