@@ -1,7 +1,7 @@
 using ReTest, AdvancedHMC
 
 include("../src/riemannian_hmc.jl")
-include("../src/riemannian_hmc-sampler.jl")
+include("../src/riemannian_hmc_utility.jl")
 
 using FiniteDiff: finite_difference_gradient, finite_difference_hessian, finite_difference_jacobian
 using Distributions: MvNormal
