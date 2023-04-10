@@ -10,13 +10,19 @@ struct RelativisticKinetic{T} <: AbstractKinetic
 end
 
 
-function ∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric,<:RelativisticKinetic}, r::AbstractVecOrMat)
-    mass = h.kinetic.m .* sqrt.(r.^2 ./ (h.kinetic.m.^2 * h.kinetic.c.^2) .+ 1)
+function ∂H∂r(
+    h::Hamiltonian{<:UnitEuclideanMetric,<:RelativisticKinetic},
+    r::AbstractVecOrMat,
+)
+    mass = h.kinetic.m .* sqrt.(r .^ 2 ./ (h.kinetic.m .^ 2 * h.kinetic.c .^ 2) .+ 1)
     return r ./ mass
 end
-function ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric,<:RelativisticKinetic}, r::AbstractVecOrMat)
+function ∂H∂r(
+    h::Hamiltonian{<:DiagEuclideanMetric,<:RelativisticKinetic},
+    r::AbstractVecOrMat,
+)
     r = h.metric.sqrtM⁻¹ .* r
-    mass = h.kinetic.m .* sqrt.(r.^2 ./ (h.kinetic.m.^2 * h.kinetic.c.^2) .+ 1)
+    mass = h.kinetic.m .* sqrt.(r .^ 2 ./ (h.kinetic.m .^ 2 * h.kinetic.c .^ 2) .+ 1)
     retval = r ./ mass # red part of (15)
     return h.metric.sqrtM⁻¹ .* retval # (15)
 end
@@ -25,18 +31,24 @@ end
 function neg_energy(
     h::Hamiltonian{<:UnitEuclideanMetric,<:RelativisticKinetic},
     r::T,
-    θ::T
+    θ::T,
 ) where {T<:AbstractVector}
-    return -sum(h.kinetic.m .* h.kinetic.c.^2 .* sqrt.(r.^2 ./ (h.kinetic.m.^2 .* h.kinetic.c.^2) .+ 1))
+    return -sum(
+        h.kinetic.m .* h.kinetic.c .^ 2 .*
+        sqrt.(r .^ 2 ./ (h.kinetic.m .^ 2 .* h.kinetic.c .^ 2) .+ 1),
+    )
 end
 
 function neg_energy(
     h::Hamiltonian{<:DiagEuclideanMetric,<:RelativisticKinetic},
     r::T,
-    θ::T
+    θ::T,
 ) where {T<:AbstractVector}
     r = h.metric.sqrtM⁻¹ .* r
-    return -sum(h.kinetic.m .* h.kinetic.c.^2 .* sqrt.(r.^2 ./ (h.kinetic.m.^2 .* h.kinetic.c.^2) .+ 1))
+    return -sum(
+        h.kinetic.m .* h.kinetic.c .^ 2 .*
+        sqrt.(r .^ 2 ./ (h.kinetic.m .^ 2 .* h.kinetic.c .^ 2) .+ 1),
+    )
 end
 
 
@@ -51,7 +63,7 @@ function _rand(
 ) where {T}
     h_temp = Hamiltonian(metric, kinetic, identity, identity)
     densityfunc = x -> exp(neg_energy(h_temp, [x], [x]))
-    sampler = RejectionSampler(densityfunc, (-Inf, Inf); max_segments=5)
+    sampler = RejectionSampler(densityfunc, (-Inf, Inf); max_segments = 5)
     sz = size(metric)
     r = run_sampler!(rng, sampler, prod(sz))
     r = reshape(r, sz)

@@ -13,7 +13,7 @@ end
 
 function Base.randn(rng::AbstractVector{<:AbstractRNG}, T, dim::Int, n_chains::Int)
     @argcheck length(rng) == n_chains
-    return cat(randn.(rng, T, dim)...; dims=2)
+    return cat(randn.(rng, T, dim)...; dims = 2)
 end
 
 """ 
@@ -77,11 +77,11 @@ Then `C .< u'` is
 thus `convert.(Int, vec(sum(C .< u'; dims=1))) .+ 1` equals `[1, 2]`.
 """
 function randcat(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, 
-    P::AbstractMatrix{T}
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    P::AbstractMatrix{T},
 ) where {T}
     u = rand(rng, T, size(P, 2))
-    C = cumsum(P; dims=1)
-    indices = convert.(Int, vec(sum(C .< u'; dims=1))) .+ 1
+    C = cumsum(P; dims = 1)
+    indices = convert.(Int, vec(sum(C .< u'; dims = 1))) .+ 1
     return max.(indices, 1)  # prevent numerical issue for Float32
 end

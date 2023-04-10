@@ -49,64 +49,12 @@ function update_nom_step_size end
 abstract type AbstractLeapfrog{T} <: AbstractIntegrator end
 
 step_size(lf::AbstractLeapfrog) = lf.ϵ
-jitter(::Union{AbstractRNG, AbstractVector{<:AbstractRNG}}, lf::AbstractLeapfrog) = lf
-temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int) = r
-stat(lf::AbstractLeapfrog) = (step_size=step_size(lf), nom_step_size=nom_step_size(lf))
+jitter(::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, lf::AbstractLeapfrog) = lf
+temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int) =
+    r
+stat(lf::AbstractLeapfrog) = (step_size = step_size(lf), nom_step_size = nom_step_size(lf))
 
 update_nom_step_size(lf::AbstractLeapfrog, ϵ) = @set lf.ϵ = ϵ
-
-function step(
-    lf::AbstractLeapfrog{T},
-    h::Hamiltonian,
-    z::P,
-    n_steps::Int=1;
-    fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
-    full_trajectory::Val{FullTraj} = Val(false)
-) where {T<:AbstractScalarOrVec{<:AbstractFloat}, P<:PhasePoint, FullTraj}
-    n_steps = abs(n_steps)  # to support `n_steps < 0` cases
-
-    ϵ = fwd ? step_size(lf) : -step_size(lf)
-    ϵ = ϵ'
-
-    res = if FullTraj
-        Vector{P}(undef, n_steps)
-    else
-        z
-    end
-
-    @unpack θ, r = z
-    @unpack value, gradient = z.ℓπ
-    for i = 1:n_steps
-        # Tempering
-        r = temper(lf, r, (i=i, is_half=true), n_steps)
-        # Take a half leapfrog step for momentum variable
-        r = r - ϵ / 2 .* gradient
-        # Take a full leapfrog step for position variable
-        ∇r = ∂H∂r(h, r)
-        θ = θ + ϵ .* ∇r
-        # Take a half leapfrog step for momentum variable
-        @unpack value, gradient = ∂H∂θ(h, θ)
-        r = r - ϵ / 2 .* gradient
-        # Tempering
-        r = temper(lf, r, (i=i, is_half=false), n_steps)
-        # Create a new phase point by caching the logdensity and gradient
-        z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
-        # Update result
-        if FullTraj
-            res[i] = z
-        else
-            res = z
-        end
-        if !isfinite(z)
-            # Remove undef
-            if FullTraj
-                res = res[isassigned.(Ref(res), 1:n_steps)]
-            end
-            break
-        end
-    end
-    return res
-end
 
 """
 $(TYPEDEF)
@@ -119,7 +67,7 @@ $(TYPEDFIELDS)
 """
 struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     "Step size."
-    ϵ       ::  T
+    ϵ::T
 end
 Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)))")
 
@@ -157,17 +105,20 @@ Jittering might help alleviate issues related to poor interactions with a fixed 
 """
 struct JitteredLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractLeapfrog{T}
     "Nominal (non-jittered) step size."
-    ϵ0      ::  T
+    ϵ0::T
     "The proportion of the nominal step size `ϵ0` that may be added or subtracted."
-    jitter  ::  FT
+    jitter::FT
     "Current (jittered) step size."
-    ϵ       ::  T
+    ϵ::T
 end
 
 JitteredLeapfrog(ϵ0, jitter) = JitteredLeapfrog(ϵ0, jitter, ϵ0)
 
 function Base.show(io::IO, l::JitteredLeapfrog)
-    print(io, "JitteredLeapfrog(ϵ0=$(round.(l.ϵ0; sigdigits=3)), jitter=$(round.(l.jitter; sigdigits=3)), ϵ=$(round.(l.ϵ; sigdigits=3)))")
+    print(
+        io,
+        "JitteredLeapfrog(ϵ0=$(round.(l.ϵ0; sigdigits=3)), jitter=$(round.(l.jitter; sigdigits=3)), ϵ=$(round.(l.ϵ; sigdigits=3)))",
+    )
 end
 
 nom_step_size(lf::JitteredLeapfrog) = lf.ϵ0
@@ -176,8 +127,8 @@ update_nom_step_size(lf::JitteredLeapfrog, ϵ0) = @set lf.ϵ0 = ϵ0
 
 # Jitter step size; ref: https://github.com/stan-dev/stan/blob/1bb054027b01326e66ec610e95ef9b2a60aa6bec/src/stan/mcmc/hmc/base_hmc.hpp#L177-L178
 function _jitter(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
-    lf::JitteredLeapfrog{FT,T}
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    lf::JitteredLeapfrog{FT,T},
 ) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}}
     ϵ = lf.ϵ0 .* (1 .+ lf.jitter .* (2 .* rand(rng) .- 1))
     return @set lf.ϵ = ϵ
@@ -187,7 +138,7 @@ jitter(rng::AbstractRNG, lf::JitteredLeapfrog) = _jitter(rng, lf)
 
 jitter(
     rng::AbstractVector{<:AbstractRNG},
-    lf::JitteredLeapfrog{FT,T}
+    lf::JitteredLeapfrog{FT,T},
 ) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} = _jitter(rng, lf)
 
 ### Tempering
@@ -208,13 +159,16 @@ in a multi-modal posterior jumps between the modes can be more likely to occur.
 """
 struct TemperedLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractLeapfrog{T}
     "Step size."
-    ϵ       ::  T
+    ϵ::T
     "Temperature parameter."
-    α       ::  FT
+    α::FT
 end
 
 function Base.show(io::IO, l::TemperedLeapfrog)
-    print(io, "TemperedLeapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)), α=$(round.(l.α; sigdigits=3)))")
+    print(
+        io,
+        "TemperedLeapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)), α=$(round.(l.α; sigdigits=3)))",
+    )
 end
 
 """
@@ -224,10 +178,72 @@ Tempering step. `step` is a named tuple with
 - `i` being the current leapfrog iteration and
 - `is_half` indicating whether or not it's (the first) half momentum/tempering step
 """
-function temper(lf::TemperedLeapfrog, r, step::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, n_steps::Int)
+function temper(
+    lf::TemperedLeapfrog,
+    r,
+    step::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}},
+    n_steps::Int,
+)
     if step.i > n_steps
         throw(BoundsError("Current leapfrog iteration exceeds the total number of steps."))
     end
     i_temper = 2(step.i - 1) + 1 + !step.is_half    # counter for half temper steps
     return i_temper <= n_steps ? r * sqrt(lf.α) : r / sqrt(lf.α)
+end
+
+# `step` method for integrators above
+# method for `DiffEqIntegrator` is defined in the OrdinaryDiffEq extension
+const DefaultLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} =
+    Union{Leapfrog{T},JitteredLeapfrog{FT,T},TemperedLeapfrog{FT,T}}
+function step(
+    lf::DefaultLeapfrog{FT,T},
+    h::Hamiltonian,
+    z::P,
+    n_steps::Int = 1;
+    fwd::Bool = n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
+    full_trajectory::Val{FullTraj} = Val(false),
+) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT},P<:PhasePoint,FullTraj}
+    n_steps = abs(n_steps)  # to support `n_steps < 0` cases
+
+    ϵ = fwd ? step_size(lf) : -step_size(lf)
+    ϵ = ϵ'
+
+    res = if FullTraj
+        Vector{P}(undef, n_steps)
+    else
+        z
+    end
+
+    @unpack θ, r = z
+    @unpack value, gradient = z.ℓπ
+    for i = 1:n_steps
+        # Tempering
+        r = temper(lf, r, (i = i, is_half = true), n_steps)
+        # Take a half leapfrog step for momentum variable
+        r = r - ϵ / 2 .* gradient
+        # Take a full leapfrog step for position variable
+        ∇r = ∂H∂r(h, r)
+        θ = θ + ϵ .* ∇r
+        # Take a half leapfrog step for momentum variable
+        @unpack value, gradient = ∂H∂θ(h, θ)
+        r = r - ϵ / 2 .* gradient
+        # Tempering
+        r = temper(lf, r, (i = i, is_half = false), n_steps)
+        # Create a new phase point by caching the logdensity and gradient
+        z = phasepoint(h, θ, r; ℓπ = DualValue(value, gradient))
+        # Update result
+        if FullTraj
+            res[i] = z
+        else
+            res = z
+        end
+        if !isfinite(z)
+            # Remove undef
+            if FullTraj
+                res = res[isassigned.(Ref(res), 1:n_steps)]
+            end
+            break
+        end
+    end
+    return res
 end

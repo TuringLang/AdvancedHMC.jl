@@ -8,6 +8,6 @@ include("../src/riemannian_hmc.jl")
 include("relativistic_hmc.jl")
 include("riemannian_hmc.jl")
 
-@main function runtests(patterns...; dry::Bool=false)
-    retest(patterns...; dry=dry, verbose=Inf)
+@main function runtests(patterns...; dry::Bool = false)
+    retest(patterns...; dry = dry, verbose = Inf)
 end

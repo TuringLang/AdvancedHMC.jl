@@ -3,7 +3,7 @@ export Adaptation
 
 using LinearAlgebra: LinearAlgebra
 using Statistics: Statistics
-using UnPack: @unpack, @pack!
+using SimpleUnPack: @unpack, @pack!
 
 using ..AdvancedHMC: DEBUG, AbstractScalarOrVec
 
@@ -28,11 +28,12 @@ export MassMatrixAdaptor, UnitMassMatrix, WelfordVar, WelfordCov
 ## TODO: generalise this to a list of adaptors
 ##
 
-struct NaiveHMCAdaptor{M<:MassMatrixAdaptor, Tssa<:StepSizeAdaptor} <: AbstractAdaptor
-    pc  :: M
-    ssa :: Tssa
+struct NaiveHMCAdaptor{M<:MassMatrixAdaptor,Tssa<:StepSizeAdaptor} <: AbstractAdaptor
+    pc::M
+    ssa::Tssa
 end
-Base.show(io::IO, a::NaiveHMCAdaptor) = print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
+Base.show(io::IO, a::NaiveHMCAdaptor) =
+    print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
 
 getM⁻¹(ca::NaiveHMCAdaptor) = getM⁻¹(ca.pc)
 getϵ(ca::NaiveHMCAdaptor) = getϵ(ca.ssa)
@@ -41,7 +42,7 @@ getϵ(ca::NaiveHMCAdaptor) = getϵ(ca.ssa)
 function adapt!(
     nca::NaiveHMCAdaptor,
     θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat}
+    α::AbstractScalarOrVec{<:AbstractFloat},
 )
     adapt!(nca.ssa, θ, α)
     adapt!(nca.pc, θ, α)

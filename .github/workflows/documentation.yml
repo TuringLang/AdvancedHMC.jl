@@ -18,7 +18,6 @@ jobs:
       - name: Install dependencies
         run: julia --project=docs/ -e '
               using Pkg; 
-              Pkg.add(url="https://github.com/TuringLang/beta.turing.ml"); 
               Pkg.develop(PackageSpec(path=pwd())); 
               Pkg.instantiate()'
       - name: Build and deploy

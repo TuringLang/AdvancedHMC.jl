@@ -16,12 +16,23 @@ include("common.jl")
         h = Hamiltonian(metric, ℓπ_gdemo, ForwardDiff)
         init_eps = Leapfrog(0.1)
         κ = NUTS(init_eps)
-        adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, κ.τ.integrator))
+        adaptor =
+            StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, κ.τ.integrator))
 
-        samples, _ = sample(rng, h, κ, θ_init, n_samples, adaptor, n_adapts; progress=false, verbose=false)
+        samples, _ = sample(
+            rng,
+            h,
+            κ,
+            θ_init,
+            n_samples,
+            adaptor,
+            n_adapts;
+            progress = false,
+            verbose = false,
+        )
 
         m_est = mean(map(invlink_gdemo, samples[1000:end]))
 
-        @test m_est ≈ [49 / 24, 7 / 6] atol=RNDATOL
+        @test m_est ≈ [49 / 24, 7 / 6] atol = RNDATOL
     end
 end
