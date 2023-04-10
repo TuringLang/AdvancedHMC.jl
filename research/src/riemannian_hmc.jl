@@ -24,7 +24,7 @@ Base.show(io::IO, l::GeneralizedLeapfrog) =
     print(io, "GeneralizedLeapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)), n=$(l.n))")
 
 # Fallback to ignore return_cache & cache kwargs for other ∂H∂θ
-function ∂H∂θ_cache(h, θ, r; return_cache=false, cache=nothing) where {T}
+function ∂H∂θ_cache(h, θ, r; return_cache = false, cache = nothing) where {T}
     dv = ∂H∂θ(h, θ, r)
     return return_cache ? (dv, nothing) : dv
 end
@@ -62,10 +62,10 @@ function step(
             if j == 1
                 @unpack value, gradient = z.ℓπ
             elseif j == 2 # cache intermediate values that depends on θ only (which are unchanged)
-                retval, cache = ∂H∂θ_cache(h, θ_init, r_half; return_cache=true)
+                retval, cache = ∂H∂θ_cache(h, θ_init, r_half; return_cache = true)
                 @unpack value, gradient = retval
             else # reuse cache
-                @unpack value, gradient = ∂H∂θ_cache(h, θ_init, r_half; cache=cache)
+                @unpack value, gradient = ∂H∂θ_cache(h, θ_init, r_half; cache = cache)
             end
             r_half = r_init - ϵ / 2 * gradient
             # println("r_half: ", r_half)
@@ -301,8 +301,18 @@ function make_J(λ::AbstractVector{T}, α::T) where {T<:AbstractFloat}
     return J
 end
 
-∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ::AbstractVecOrMat{T}, r::AbstractVecOrMat{T}) where {T} = ∂H∂θ_cache(h, θ, r)
-function ∂H∂θ_cache(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}}, θ::AbstractVecOrMat{T}, r::AbstractVecOrMat{T}; return_cache=false, cache=nothing) where {T}
+∂H∂θ(
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap}},
+    θ::AbstractVecOrMat{T},
+    r::AbstractVecOrMat{T},
+) where {T} = ∂H∂θ_cache(h, θ, r)
+function ∂H∂θ_cache(
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap}},
+    θ::AbstractVecOrMat{T},
+    r::AbstractVecOrMat{T};
+    return_cache = false,
+    cache = nothing,
+) where {T}
     # Terms that only dependent on θ can be cached in θ-unchanged loops
     if isnothing(cache)
         ℓπ, ∂ℓπ∂θ = h.∂ℓπ∂θ(θ)
@@ -318,7 +328,7 @@ function ∂H∂θ_cache(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}
         # M = R * Q' * r # equiv to above but avoid inv
 
         J = make_J(λ, h.metric.map.α)
-        
+
         #! Based on the two equations from the right column of Page 3 of Betancourt (2012)
         term_1_cached = Q * (R .* J) * Q'
     else
@@ -327,12 +337,13 @@ function ∂H∂θ_cache(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}
     d = length(∂ℓπ∂θ)
     D = diagm((Q' * r) ./ softabsλ)
     term_2_cached = Q * D * J * D * Q'
-    g = -mapreduce(vcat, 1:d) do i
-        ∂H∂θᵢ = ∂H∂θ[:,:,i]
-        # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
-        # NOTE Some further optimization can be done here: cache the 1st product all together
-        ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
-    end
+    g =
+        -mapreduce(vcat, 1:d) do i
+            ∂H∂θᵢ = ∂H∂θ[:, :, i]
+            # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
+            # NOTE Some further optimization can be done here: cache the 1st product all together
+            ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
+        end
 
     dv = DualValue(ℓπ, g)
     return return_cache ? (dv, (; ℓπ, ∂ℓπ∂θ, ∂H∂θ, Q, softabsλ, J, term_1_cached)) : dv
