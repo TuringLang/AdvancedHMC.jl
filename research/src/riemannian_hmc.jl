@@ -3,7 +3,8 @@ using Random
 ### integrator.jl
 
 import AdvancedHMC: ∂H∂θ, ∂H∂r, DualValue, PhasePoint, phasepoint, step
-using AdvancedHMC: @unpack, TYPEDEF, TYPEDFIELDS, AbstractScalarOrVec, AbstractLeapfrog, step_size
+using AdvancedHMC:
+    @unpack, TYPEDEF, TYPEDFIELDS, AbstractScalarOrVec, AbstractLeapfrog, step_size
 
 """
 $(TYPEDEF)
@@ -19,7 +20,8 @@ struct GeneralizedLeapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractL
     ϵ::T
     n::Int
 end
-Base.show(io::IO, l::GeneralizedLeapfrog) = print(io, "GeneralizedLeapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)), n=$(l.n))")
+Base.show(io::IO, l::GeneralizedLeapfrog) =
+    print(io, "GeneralizedLeapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)), n=$(l.n))")
 
 # Fallback to ignore return_cache & cache kwargs for other ∂H∂θ
 function ∂H∂θ_cache(h, θ, r; return_cache=false, cache=nothing) where {T}
@@ -33,10 +35,10 @@ function step(
     lf::GeneralizedLeapfrog{T},
     h::Hamiltonian,
     z::P,
-    n_steps::Int=1;
-    fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
-    full_trajectory::Val{FullTraj} = Val(false)
-) where {T<:AbstractScalarOrVec{<:AbstractFloat}, P<:PhasePoint, FullTraj}
+    n_steps::Int = 1;
+    fwd::Bool = n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
+    full_trajectory::Val{FullTraj} = Val(false),
+) where {T<:AbstractScalarOrVec{<:AbstractFloat},P<:PhasePoint,FullTraj}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
 
     ϵ = fwd ? step_size(lf) : -step_size(lf)
@@ -55,7 +57,7 @@ function step(
         #! Eq (16) of Girolami & Calderhead (2011)
         r_half = copy(r_init)
         local cache
-        for j in 1:lf.n
+        for j = 1:lf.n
             # Reuse cache for the first iteration
             if j == 1
                 @unpack value, gradient = z.ℓπ
@@ -71,7 +73,7 @@ function step(
         #! Eq (17) of Girolami & Calderhead (2011)
         θ_full = copy(θ_init)
         term_1 = ∂H∂r(h, θ_init, r_half) # unchanged across the loop
-        for j in 1:lf.n
+        for j = 1:lf.n
             θ_full = θ_init + ϵ / 2 * (term_1 + ∂H∂r(h, θ_full, r_half))
             # println("θ_full :", θ_full)
         end
@@ -82,7 +84,7 @@ function step(
         # Tempering
         #r = temper(lf, r, (i=i, is_half=false), n_steps)
         # Create a new phase point by caching the logdensity and gradient
-        z = phasepoint(h, θ_full, r_full; ℓπ=DualValue(value, gradient))
+        z = phasepoint(h, θ_full, r_full; ℓπ = DualValue(value, gradient))
         # Update result
         if FullTraj
             res[i] = z
@@ -112,14 +114,14 @@ using AdvancedHMC: FullMomentumRefreshment, PartialMomentumRefreshment, Abstract
 
 # To change L180 of hamiltonian.jl
 phasepoint(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     θ::AbstractVecOrMat{T},
-    h::Hamiltonian
+    h::Hamiltonian,
 ) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric, h.kinetic, θ))
 
 # To change L191 of hamiltonian.jl
 refresh(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     ::FullMomentumRefreshment,
     h::Hamiltonian,
     z::PhasePoint,
@@ -127,16 +129,22 @@ refresh(
 
 # To change L215 of hamiltonian.jl
 refresh(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     ref::PartialMomentumRefreshment,
     h::Hamiltonian,
     z::PhasePoint,
-) = phasepoint(h, z.θ, ref.α * z.r + sqrt(1 - ref.α^2) * rand(rng, h.metric, h.kinetic, z.θ))
+) = phasepoint(
+    h,
+    z.θ,
+    ref.α * z.r + sqrt(1 - ref.α^2) * rand(rng, h.metric, h.kinetic, z.θ),
+)
 
 # To change L146 of metric.jl
 # Ignore θ by default (i.e. not position-dependent)
-Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic, θ) = _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
-Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractMetric, kinetic, θ) = _rand(rng, metric, kinetic)
+Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic, θ) =
+    _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
+Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractMetric, kinetic, θ) =
+    _rand(rng, metric, kinetic)
 Base.rand(metric::AbstractMetric, kinetic, θ) = rand(GLOBAL_RNG, metric, kinetic)
 
 ### metric.jl
@@ -153,13 +161,13 @@ struct IdentityMap <: AbstractHessianMap end
 
 (::IdentityMap)(x) = x
 
-struct SoftAbsMap{T} <: AbstractHessianMap 
+struct SoftAbsMap{T} <: AbstractHessianMap
     α::T
 end
 
 # TODO Register softabs with ReverseDiff
 #! The definition of SoftAbs from Page 3 of Betancourt (2012)
-function softabs(X, α=20.0)
+function softabs(X, α = 20.0)
     F = eigen(X) # ReverseDiff cannot diff through `eigen`
     Q = hcat(F.vectors)
     λ = F.values
@@ -185,7 +193,7 @@ struct DenseRiemannianMetric{
 end
 
 # TODO Make dense mass matrix support matrix-mode parallel
-function DenseRiemannianMetric(size, G, ∂G∂θ, map=IdentityMap()) where {T<:AbstractFloat}
+function DenseRiemannianMetric(size, G, ∂G∂θ, map = IdentityMap()) where {T<:AbstractFloat}
     _temp = Vector{Float64}(undef, size[1])
     return DenseRiemannianMetric(size, G, ∂G∂θ, map, _temp)
 end
@@ -201,7 +209,7 @@ Base.size(e::DenseRiemannianMetric, dim::Int) = e.size[dim]
 Base.show(io::IO, dem::DenseRiemannianMetric) = print(io, "DenseRiemannianMetric(...)")
 
 function _rand(
-    rng::Union{AbstractRNG, AbstractVector{<:AbstractRNG}},
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::DenseRiemannianMetric{T},
     kinetic,
     θ,
@@ -213,8 +221,14 @@ function _rand(
     return r
 end
 
-Base.rand(rng::AbstractRNG, metric::AbstractRiemannianMetric, kinetic, θ) = _rand(rng, metric, kinetic, θ)
-Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractRiemannianMetric, kinetic, θ) = _rand(rng, metric, kinetic, θ)
+Base.rand(rng::AbstractRNG, metric::AbstractRiemannianMetric, kinetic, θ) =
+    _rand(rng, metric, kinetic, θ)
+Base.rand(
+    rng::AbstractVector{<:AbstractRNG},
+    metric::AbstractRiemannianMetric,
+    kinetic,
+    θ,
+) = _rand(rng, metric, kinetic, θ)
 
 ### hamiltonian.jl
 
@@ -227,8 +241,8 @@ phasepoint(
     h::Hamiltonian{<:DenseRiemannianMetric},
     θ::T,
     r::T;
-    ℓπ=∂H∂θ(h, θ),
-    ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, r, θ))
+    ℓπ = ∂H∂θ(h, θ),
+    ℓκ = DualValue(neg_energy(h, r, θ), ∂H∂r(h, r, θ)),
 ) where {T<:AbstractVecOrMat} = PhasePoint(θ, r, ℓπ, ℓκ)
 
 # Negative kinetic energy
@@ -236,7 +250,7 @@ phasepoint(
 function neg_energy(
     h::Hamiltonian{<:DenseRiemannianMetric},
     r::T,
-    θ::T
+    θ::T,
 ) where {T<:AbstractVecOrMat}
     G = h.metric.map(h.metric.G(θ))
     D = size(G, 1)
@@ -247,18 +261,21 @@ function neg_energy(
 end
 
 # QUES L31 of hamiltonian.jl now reads a bit weird (semantically)
-function ∂H∂θ(h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}}, θ::AbstractVecOrMat{T}, r::AbstractVecOrMat{T}) where {T}
+function ∂H∂θ(
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}},
+    θ::AbstractVecOrMat{T},
+    r::AbstractVecOrMat{T},
+) where {T}
     ℓπ, ∂ℓπ∂θ = h.∂ℓπ∂θ(θ)
     G = h.metric.map(h.metric.G(θ))
     invG = inv(G)
     ∂G∂θ = h.metric.∂G∂θ(θ)
-    
     d = length(∂ℓπ∂θ)
     return DualValue(
-        ℓπ, 
+        ℓπ,
         #! Eq (15) of Girolami & Calderhead (2011)
         -mapreduce(vcat, 1:d) do i
-            ∂G∂θᵢ = ∂G∂θ[:,:,i]
+            ∂G∂θᵢ = ∂G∂θ[:, :, i]
             ∂ℓπ∂θ[i] - 1 / 2 * tr(invG * ∂G∂θᵢ) + 1 / 2 * r' * invG * ∂G∂θᵢ * invG * r
             # Gr = G \ r
             # ∂ℓπ∂θ[i] - 1 / 2 * tr(G \ ∂G∂θᵢ) + 1 / 2 * Gr' * ∂G∂θᵢ * Gr
@@ -276,9 +293,9 @@ dsoftabsdλ(α, λ) = coth(α * λ) + λ * α * -csch(λ * α)^2
 function make_J(λ::AbstractVector{T}, α::T) where {T<:AbstractFloat}
     d = length(λ)
     J = Matrix{T}(undef, d, d)
-    for i in 1:d, j in 1:d
-        J[i,j] = (λ[i] == λ[j]) ? 
-            dsoftabsdλ(α, λ[i]) : 
+    for i = 1:d, j = 1:d
+        J[i, j] =
+            (λ[i] == λ[j]) ? dsoftabsdλ(α, λ[i]) :
             ((λ[i] * coth(α * λ[i]) - λ[j] * coth(α * λ[j])) / (λ[i] - λ[j]))
     end
     return J
@@ -322,7 +339,11 @@ function ∂H∂θ_cache(h::Hamiltonian{<:DenseRiemannianMetric{T, <:SoftAbsMap}
 end
 
 #! Eq (14) of Girolami & Calderhead (2011)
-function ∂H∂r(h::Hamiltonian{<:DenseRiemannianMetric}, θ::AbstractVecOrMat, r::AbstractVecOrMat)
+function ∂H∂r(
+    h::Hamiltonian{<:DenseRiemannianMetric},
+    θ::AbstractVecOrMat,
+    r::AbstractVecOrMat,
+)
     H = h.metric.G(θ)
     # if any(.!(isfinite.(H)))
     #     println("θ: ", θ)
