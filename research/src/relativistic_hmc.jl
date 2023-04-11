@@ -53,6 +53,7 @@ end
 
 
 using AdaptiveRejectionSampling: RejectionSampler, run_sampler!
+import AdvancedHMC: _rand
 
 # TODO Support AbstractVector{<:AbstractRNG}
 function _rand(
