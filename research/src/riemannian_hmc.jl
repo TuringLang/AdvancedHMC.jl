@@ -104,6 +104,7 @@ function step(
 end
 
 # TODO Make the order of θ and r consistent with neg_energy
+# TODO Add stricter types to block hamiltonian.jl#L32 from working on unknown metric/kinetic
 ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat, r::AbstractVecOrMat) = ∂H∂θ(h, θ)
 ∂H∂r(h::Hamiltonian, θ::AbstractVecOrMat, r::AbstractVecOrMat) = ∂H∂r(h, r)
 
@@ -211,13 +212,13 @@ Base.show(io::IO, dem::DenseRiemannianMetric) = print(io, "DenseRiemannianMetric
 function _rand(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::DenseRiemannianMetric{T},
-    kinetic,
+    kinetic::Union{GaussianKinetic, <:AbstractRelativisticKinetic{T}},
     θ,
 ) where {T}
-    r = randn(rng, T, size(metric)...)
-    G⁻¹ = inv(metric.map(metric.G(θ)))
-    chol = cholesky(Symmetric(G⁻¹))
-    ldiv!(chol.U, r)
+    r = _rand(rng, UnitEuclideanMetric(size(metric)), kinetic)
+    M⁻¹ = inv(metric.map(metric.G(θ)))
+    cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
+    ldiv!(cholM⁻¹, r)
     return r
 end
 
@@ -248,21 +249,42 @@ phasepoint(
 # Negative kinetic energy
 #! Eq (13) of Girolami & Calderhead (2011)
 function neg_energy(
-    h::Hamiltonian{<:DenseRiemannianMetric},
+    h::Hamiltonian{<:DenseRiemannianMetric, <:GaussianKinetic},
     r::T,
     θ::T,
 ) where {T<:AbstractVecOrMat}
     G = h.metric.map(h.metric.G(θ))
-    D = size(G, 1)
     # Need to consider the normalizing term as it is no longer same for different θs
-    logZ = 1 / 2 * (D * log(2π) + logdet(G)) # it will be user's responsibility to make sure G is SPD and logdet(G) is defined
+    logZ = 1 / 2 * (size(G, 1) * log(2π) + logdet(G)) # it will be user's responsibility to make sure G is SPD and logdet(G) is defined
     mul!(h.metric._temp, inv(G), r)
     return -logZ - dot(r, h.metric._temp) / 2
 end
 
+# TODO This is position dependent now so we should compute the normalizing constant.
+function neg_energy(
+    h::Hamiltonian{<:DenseRiemannianMetric, <:RelativisticKinetic},
+    r::T,
+    θ::T
+) where {T<:AbstractVecOrMat}
+    M⁻¹ = inv(h.metric.map(h.metric.G(θ)))
+    cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
+    r = cholM⁻¹ * r
+    return -sum(h.kinetic.m * h.kinetic.c ^ 2 * sqrt(dot(r, r) / (h.kinetic.m ^ 2 * h.kinetic.c ^ 2) + 1))
+end
+function neg_energy(
+    h::Hamiltonian{<:DenseRiemannianMetric, <:DimensionwiseRelativisticKinetic},
+    r::T,
+    θ::T
+) where {T<:AbstractVecOrMat}
+    M⁻¹ = inv(h.metric.map(h.metric.G(θ)))
+    cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
+    r = cholM⁻¹ * r
+    return -sum(h.kinetic.m .* h.kinetic.c .^ 2 .* sqrt.(r .^ 2 ./ (h.kinetic.m .^ 2 .* h.kinetic.c .^ 2) .+ 1))
+end
+
 # QUES L31 of hamiltonian.jl now reads a bit weird (semantically)
 function ∂H∂θ(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}},
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}, <:GaussianKinetic},
     θ::AbstractVecOrMat{T},
     r::AbstractVecOrMat{T},
 ) where {T}
@@ -285,6 +307,14 @@ function ∂H∂θ(
     )
 end
 
+function ∂H∂θ(
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}, <:AbstractRelativisticKinetic},
+    θ::AbstractVecOrMat{T},
+    r::AbstractVecOrMat{T},
+) where {T}
+    error("unimplemented")
+end
+
 # Ref: https://www.wolframalpha.com/input?i=derivative+of+x+*+coth%28a+*+x%29
 #! Based on middle of the right column of Page 3 of Betancourt (2012) "Note that whenλi=λj, such as for the diagonal elementsor degenerate eigenvalues, this becomes the derivative"
 dsoftabsdλ(α, λ) = coth(α * λ) + λ * α * -csch(λ * α)^2
@@ -301,13 +331,14 @@ function make_J(λ::AbstractVector{T}, α::T) where {T<:AbstractFloat}
     return J
 end
 
+# TODO Add stricter types to block hamiltonian.jl#L37 from working on unknown metric/kinetic
 ∂H∂θ(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap}},
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap},<:GaussianKinetic},
     θ::AbstractVecOrMat{T},
     r::AbstractVecOrMat{T},
 ) where {T} = ∂H∂θ_cache(h, θ, r)
 function ∂H∂θ_cache(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap}},
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap},<:GaussianKinetic},
     θ::AbstractVecOrMat{T},
     r::AbstractVecOrMat{T};
     return_cache = false,
@@ -349,9 +380,91 @@ function ∂H∂θ_cache(
     return return_cache ? (dv, (; ℓπ, ∂ℓπ∂θ, ∂H∂θ, Q, softabsλ, J, term_1_cached)) : dv
 end
 
+function ∂H∂θ(
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap},<:RelativisticKinetic}, 
+    θ::AbstractVecOrMat{T}, 
+    r::AbstractVecOrMat{T},
+) where {T}
+    ℓπ, ∂ℓπ∂θ = h.∂ℓπ∂θ(θ)
+    H = h.metric.G(θ)
+    ∂H∂θ = h.metric.∂G∂θ(θ)
+
+    G, Q, λ, softabsλ = softabs(H, h.metric.map.α)
+
+    R = diagm(1 ./ softabsλ)
+
+    # softabsΛ = diagm(softabsλ)
+    # M = inv(softabsΛ) * Q' * r
+    # M = R * Q' * r # equiv to above but avoid inv
+
+    J = make_J(λ, h.metric.map.α)
+
+
+    d = length(∂ℓπ∂θ)
+    D = diagm((Q' * r) ./ softabsλ)
+
+    #! (18) of Overleaf note
+    M⁻¹ = inv(h.metric.map(G))
+    cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
+    r = cholM⁻¹ * r
+    mass = h.kinetic.m * sqrt(dot(r, r) / (h.kinetic.m ^ 2 * h.kinetic.c ^ 2) + 1)
+    term_1_cached = 1 / mass
+
+    term_2_cached = Q * D * J * D * Q'
+    g = -mapreduce(vcat, 1:d) do i
+        ∂H∂θᵢ = ∂H∂θ[:,:,i]
+        # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
+        # NOTE Some further optimization can be done here: cache the 1st product all together
+        ∂ℓπ∂θ[i] - 1 / 2 * term_1_cached * -tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
+    end
+
+    return DualValue(ℓπ, g)
+end
+# FIXME This implementation for dimensionwise is incorrect
+function ∂H∂θ(
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap},<:DimensionwiseRelativisticKinetic}, 
+    θ::AbstractVecOrMat{T}, 
+    r::AbstractVecOrMat{T},
+) where {T}
+    ℓπ, ∂ℓπ∂θ = h.∂ℓπ∂θ(θ)
+    H = h.metric.G(θ)
+    ∂H∂θ = h.metric.∂G∂θ(θ)
+
+    G, Q, λ, softabsλ = softabs(H, h.metric.map.α)
+
+    R = diagm(1 ./ softabsλ)
+
+    # softabsΛ = diagm(softabsλ)
+    # M = inv(softabsΛ) * Q' * r
+    # M = R * Q' * r # equiv to above but avoid inv
+
+    J = make_J(λ, h.metric.map.α)
+
+
+    d = length(∂ℓπ∂θ)
+    D = diagm((Q' * r) ./ softabsλ)
+
+    #! (18) of Overleaf note
+    M⁻¹ = inv(h.metric.map(G))
+    cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
+    r = cholM⁻¹ * r
+    mass = h.kinetic.m .* sqrt.(r .^ 2 ./ (h.kinetic.m .^ 2 * h.kinetic.c .^ 2) .+ 1)
+    term_1_cached = 1 ./ mass
+
+    term_2_cached = Q * D * J * D * Q'
+    g = -mapreduce(vcat, 1:d) do i
+        ∂H∂θᵢ = ∂H∂θ[:,:,i]
+        # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
+        # NOTE Some further optimization can be done here: cache the 1st product all together
+        ∂ℓπ∂θ[i] - 1 / 2 * term_1_cached[i] * -tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
+    end
+
+    return DualValue(ℓπ, g)
+end
+
 #! Eq (14) of Girolami & Calderhead (2011)
 function ∂H∂r(
-    h::Hamiltonian{<:DenseRiemannianMetric},
+    h::Hamiltonian{<:DenseRiemannianMetric,<:GaussianKinetic},
     θ::AbstractVecOrMat,
     r::AbstractVecOrMat,
 )
@@ -364,4 +477,27 @@ function ∂H∂r(
     # return inv(G) * r
     # println("G \ r: ", G \ r)
     return G \ r # NOTE it's actually pretty weird that ∂H∂θ returns DualValue but ∂H∂r doesn't
+end
+
+function ∂H∂r(h::Hamiltonian{<:DenseRiemannianMetric, <:RelativisticKinetic}, θ::AbstractVecOrMat, r::AbstractVecOrMat)
+    M⁻¹ = inv(h.metric.map(h.metric.G(θ)))
+
+    cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
+    r = cholM⁻¹ * r
+    mass = h.kinetic.m .* sqrt.(dot(r, r) ./ (h.kinetic.m .^ 2 * h.kinetic.c .^ 2) .+ 1)
+    red_term = r ./ mass
+    return cholM⁻¹ * red_term
+
+    # Equivalent implementation that avoid cholesky decomposition
+    # mass = h.kinetic.m .* sqrt.((r' * M⁻¹ * r) ./ (h.kinetic.m.^2 * h.kinetic.c.^2) .+ 1)
+    # return M⁻¹ * r ./ mass
+end
+function ∂H∂r(h::Hamiltonian{<:DenseRiemannianMetric, <:DimensionwiseRelativisticKinetic}, θ::AbstractVecOrMat, r::AbstractVecOrMat)
+    M⁻¹ = inv(h.metric.map(h.metric.G(θ)))
+    cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
+
+    r = cholM⁻¹ * r
+    mass = h.kinetic.m .* sqrt.(r .^ 2 ./ (h.kinetic.m .^ 2 * h.kinetic.c .^ 2) .+ 1)
+    red_term = r ./ mass
+    return cholM⁻¹ * red_term
 end
