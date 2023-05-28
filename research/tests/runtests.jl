@@ -1,6 +1,7 @@
 using Comonicon, ReTest
 
-using Pkg;
+using Pkg
+Pkg.develop(path = dirname(dirname(@__DIR__)))
 Pkg.add(url = "https://github.com/xukai92/VecTargets.jl.git");
 
 # include the source code for experimental HMC
