@@ -71,7 +71,9 @@ function prepare_sample(hps; rng=MersenneTwister(1110))
              hps.metric == :dense_riemannian         ? DenseRiemannianMetric((D,), Gfunc, ∂G∂θfunc) :
              hps.metric == :dense_riemannian_softabs ? DenseRiemannianMetric((D,), Gfunc, ∂G∂θfunc, SoftAbsMap(hps.α)) :
              @error "Unknown metric $(hps.metric)"
-    kinetic = GaussianKinetic()
+    kinetic = get(hps, :kinetic, :gaussian) == :gaussian ? GaussianKinetic() : # support missing kinetic in hps
+              hps.kinetic == :relativistic ? RelativisticKinetic(hps.m, hps.c) :
+              @error "Unknown kinetic $(hps.kinetic)"
 
     hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
 
