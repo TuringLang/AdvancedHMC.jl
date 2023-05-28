@@ -2,13 +2,21 @@ using AdvancedHMC
 import AdvancedHMC: ∂H∂r, neg_energy, AbstractKinetic
 import Random: AbstractRNG
 
-struct RelativisticKinetic{T} <: AbstractKinetic
+abstract type AbstrctRelativisticKinetic <: AbstractKinetic end
+
+struct RelativisticKinetic{T} <: AbstrctRelativisticKinetic
     "Mass"
     m::T
     "Speed of light"
     c::T
 end
 
+struct DimensionwiseRelativisticKinetic{T} <: AbstrctRelativisticKinetic
+    "Mass"
+    m::T
+    "Speed of light"
+    c::T
+end
 
 function ∂H∂r(
     h::Hamiltonian{<:UnitEuclideanMetric,<:RelativisticKinetic},
