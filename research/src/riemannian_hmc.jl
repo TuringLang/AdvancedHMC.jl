@@ -262,24 +262,14 @@ end
 
 # TODO This is position dependent now so we should compute the normalizing constant.
 function neg_energy(
-    h::Hamiltonian{<:DenseRiemannianMetric, <:RelativisticKinetic},
+    h::Hamiltonian{<:DenseRiemannianMetric, <:AbstractiveRelativisticKinetic},
     r::T,
     θ::T
 ) where {T<:AbstractVecOrMat}
     M⁻¹ = inv(h.metric.map(h.metric.G(θ)))
     cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
     r = cholM⁻¹ * r
-    return -sum(h.kinetic.m * h.kinetic.c ^ 2 * sqrt(dot(r, r) / (h.kinetic.m ^ 2 * h.kinetic.c ^ 2) + 1))
-end
-function neg_energy(
-    h::Hamiltonian{<:DenseRiemannianMetric, <:DimensionwiseRelativisticKinetic},
-    r::T,
-    θ::T
-) where {T<:AbstractVecOrMat}
-    M⁻¹ = inv(h.metric.map(h.metric.G(θ)))
-    cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
-    r = cholM⁻¹ * r
-    return -sum(h.kinetic.m .* h.kinetic.c .^ 2 .* sqrt.(r .^ 2 ./ (h.kinetic.m .^ 2 .* h.kinetic.c .^ 2) .+ 1))
+    return -relativistic_energy(h.kinetic, r)
 end
 
 # QUES L31 of hamiltonian.jl now reads a bit weird (semantically)
@@ -407,7 +397,7 @@ function ∂H∂θ(
     M⁻¹ = inv(h.metric.map(G))
     cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
     r = cholM⁻¹ * r
-    mass = h.kinetic.m * sqrt(dot(r, r) / (h.kinetic.m ^ 2 * h.kinetic.c ^ 2) + 1)
+    mass = relativistic_mass(h.kinetic, r)
     term_1_cached = 1 / mass
 
     term_2_cached = Q * D * J * D * Q'
@@ -448,7 +438,7 @@ function ∂H∂θ(
     M⁻¹ = inv(h.metric.map(G))
     cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
     r = cholM⁻¹ * r
-    mass = h.kinetic.m .* sqrt.(r .^ 2 ./ (h.kinetic.m .^ 2 * h.kinetic.c .^ 2) .+ 1)
+    mass = relativistic_mass(h.kinetic, r)
     term_1_cached = 1 ./ mass
 
     term_2_cached = Q * D * J * D * Q'
@@ -479,25 +469,16 @@ function ∂H∂r(
     return G \ r # NOTE it's actually pretty weird that ∂H∂θ returns DualValue but ∂H∂r doesn't
 end
 
-function ∂H∂r(h::Hamiltonian{<:DenseRiemannianMetric, <:RelativisticKinetic}, θ::AbstractVecOrMat, r::AbstractVecOrMat)
+function ∂H∂r(h::Hamiltonian{<:DenseRiemannianMetric, <:AbstractRelativisticKinetic}, θ::AbstractVecOrMat, r::AbstractVecOrMat)
     M⁻¹ = inv(h.metric.map(h.metric.G(θ)))
-
     cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
+
     r = cholM⁻¹ * r
-    mass = h.kinetic.m .* sqrt.(dot(r, r) ./ (h.kinetic.m .^ 2 * h.kinetic.c .^ 2) .+ 1)
+    mass = relativistic_mass(h.kinetic, r)
     red_term = r ./ mass
     return cholM⁻¹ * red_term
 
-    # Equivalent implementation that avoid cholesky decomposition
+    # Equivalent RelativisticKinetic implementation that avoid cholesky decomposition
     # mass = h.kinetic.m .* sqrt.((r' * M⁻¹ * r) ./ (h.kinetic.m.^2 * h.kinetic.c.^2) .+ 1)
     # return M⁻¹ * r ./ mass
-end
-function ∂H∂r(h::Hamiltonian{<:DenseRiemannianMetric, <:DimensionwiseRelativisticKinetic}, θ::AbstractVecOrMat, r::AbstractVecOrMat)
-    M⁻¹ = inv(h.metric.map(h.metric.G(θ)))
-    cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
-
-    r = cholM⁻¹ * r
-    mass = h.kinetic.m .* sqrt.(r .^ 2 ./ (h.kinetic.m .^ 2 * h.kinetic.c .^ 2) .+ 1)
-    red_term = r ./ mass
-    return cholM⁻¹ * red_term
 end
