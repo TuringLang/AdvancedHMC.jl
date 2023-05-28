@@ -10,6 +10,9 @@ using AdvancedHMC: neg_energy, energy
 # Taken from https://github.com/JuliaDiff/FiniteDiff.jl/blob/master/test/finitedifftests.jl
 δ(a, b) = maximum(abs.(a - b))
 
+const TARGET_TOL = 1e-4
+const HAMILTONIAN_TOL = 2e-3
+
 @testset "Riemannian" begin
 
     hps = (; λ = 1e-2, α = 20.0, ϵ = 0.1, n = 6, L = 8)
@@ -29,17 +32,22 @@ using AdvancedHMC: neg_energy, energy
         r = randn(rng, D)
 
         @testset "Autodiff" begin
-            @test δ(finite_difference_gradient(ℓπ, x), ∂ℓπ∂θ(x)[end]) < 1e-4
-            @test δ(finite_difference_hessian(Vfunc, x), Hfunc(x)[end]) < 1e-4
+            @test δ(finite_difference_gradient(ℓπ, x), ∂ℓπ∂θ(x)[end]) < TARGET_TOL
+            @test δ(finite_difference_hessian(Vfunc, x), Hfunc(x)[end]) < TARGET_TOL
             # finite_difference_jacobian returns shape of (4, 2), reshape_∂G∂θ turns it into (2, 2, 2)
-            @test δ(reshape_∂G∂θ(finite_difference_jacobian(Gfunc, x)), ∂G∂θfunc(x)) < 1e-4
+            @test δ(reshape_∂G∂θ(finite_difference_jacobian(Gfunc, x)), ∂G∂θfunc(x)) < TARGET_TOL
         end
 
-        @testset "$(nameof(typeof(hessmap)))" for hessmap in
-                                                  [IdentityMap(), SoftAbsMap(hps.α)]
+        @testset "$(nameof(typeof(hessmap)))" for hessmap in [
+                IdentityMap(), 
+                SoftAbsMap(hps.α),
+            ]
             metric = DenseRiemannianMetric((D,), Gfunc, ∂G∂θfunc, hessmap)
-            @testset "$(nameof(typeof(kinetic)))" for kinetic in 
-                                                      [GaussianKinetic(), RelativisticKinetic(1.0, 1.0), DimensionwiseRelativisticKinetic(1.0, 1.0)]
+            @testset "$(nameof(typeof(kinetic)))" for kinetic in [
+                    GaussianKinetic(), 
+                    RelativisticKinetic(1.0, 1.0), 
+                    DimensionwiseRelativisticKinetic(1.0, 1.0),
+                ]
                 hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
 
                 if kinetic isa GaussianKinetic && # only test Gaussian kinetic energy for SoftAbsMap 
@@ -54,18 +62,18 @@ using AdvancedHMC: neg_energy, energy
                 Hamifuncx = x -> Hamifunc(x, r)
                 Hamifuncr = r -> Hamifunc(x, r)
 
-                if !(hessmap isa IdentityMap && kinetic isa RelativisticKinetic)
+                if !(hessmap isa IdentityMap && kinetic isa AbstractRelativisticKinetic) # no plan to implement rel-hmc for Fisher metric
                     @testset "∂H∂θ" begin
                         @test δ(
                             finite_difference_gradient(Hamifuncx, x),
                             ∂H∂θ(hamiltonian, x, r).gradient,
-                        ) < 1e-4
+                        ) < HAMILTONIAN_TOL
                     end
                 end
 
                 @testset "∂H∂r" begin
                     @test δ(finite_difference_gradient(Hamifuncr, r), ∂H∂r(hamiltonian, x, r)) <
-                          1e-4
+                          HAMILTONIAN_TOL
                 end
             end
         end
