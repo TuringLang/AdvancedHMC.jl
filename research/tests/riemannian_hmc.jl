@@ -7,11 +7,10 @@ using FiniteDiff:
 using Distributions: MvNormal
 using AdvancedHMC: neg_energy, energy
 
-# Taken from https://github.com/JuliaDiff/FiniteDiff.jl/blob/master/test/finitedifftests.jl
-δ(a, b) = maximum(abs.(a - b))
-
 const TARGET_TOL = 1e-4
 const HAMILTONIAN_TOL = 2e-3
+# Taken from https://github.com/JuliaDiff/FiniteDiff.jl/blob/master/test/finitedifftests.jl
+δ(a, b) = maximum(abs.(a - b))
 
 @testset "Riemannian" begin
 
