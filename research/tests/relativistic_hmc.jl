@@ -1,5 +1,7 @@
 using ReTest, AdvancedHMC
 
+include("../src/relativistic_hmc.jl")
+
 using LinearAlgebra: dot
 
 @testset "Relativistic" begin

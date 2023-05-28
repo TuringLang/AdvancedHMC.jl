@@ -1,6 +1,5 @@
 using ReTest, AdvancedHMC
 
-include("../src/riemannian_hmc.jl")
 include("../src/riemannian_hmc_utility.jl")
 
 using FiniteDiff:
