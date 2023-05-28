@@ -2,16 +2,16 @@ using AdvancedHMC
 import AdvancedHMC: ∂H∂r, neg_energy, AbstractKinetic
 import Random: AbstractRNG
 
-abstract type AbstrctRelativisticKinetic <: AbstractKinetic end
+abstract type AbstrctRelativisticKinetic{T} <: AbstractKinetic end
 
-struct RelativisticKinetic{T} <: AbstrctRelativisticKinetic
+struct RelativisticKinetic{T} <: AbstrctRelativisticKinetic{T}
     "Mass"
     m::T
     "Speed of light"
     c::T
 end
 
-struct DimensionwiseRelativisticKinetic{T} <: AbstrctRelativisticKinetic
+struct DimensionwiseRelativisticKinetic{T} <: AbstrctRelativisticKinetic{T}
     "Mass"
     m::T
     "Speed of light"
