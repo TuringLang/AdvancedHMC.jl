@@ -1,6 +1,6 @@
 using ReTest, AdvancedHMC
 
-include("../src/relativistic_hmc.jl")
+include("../src/riemannian_hmc_utility.jl")
 
 using LinearAlgebra: dot
 
