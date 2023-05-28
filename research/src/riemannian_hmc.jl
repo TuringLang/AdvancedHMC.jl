@@ -262,7 +262,7 @@ end
 
 # TODO This is position dependent now so we should compute the normalizing constant.
 function neg_energy(
-    h::Hamiltonian{<:DenseRiemannianMetric, <:AbstractiveRelativisticKinetic},
+    h::Hamiltonian{<:DenseRiemannianMetric, <:AbstractRelativisticKinetic},
     r::T,
     θ::T
 ) where {T<:AbstractVecOrMat}
