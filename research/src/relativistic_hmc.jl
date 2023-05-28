@@ -12,7 +12,7 @@ struct RelativisticKinetic{T} <: AbstractRelativisticKinetic{T}
 end
 
 relativistic_mass(kinetic::RelativisticKinetic, r) = 
-    kinetic.m * sqrt(dot(r, r) / (kinetic.m^2 * kinetic.c^2) + 1)
+    kinetic.m * sqrt(dot(r, r) / (kinetic.m ^ 2 * kinetic.c ^ 2) + 1)
 relativistic_energy(kinetic::RelativisticKinetic, r) = sum(
     kinetic.c ^ 2 * relativistic_mass(kinetic, r)
 )
