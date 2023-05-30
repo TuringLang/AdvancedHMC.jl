@@ -53,6 +53,77 @@ struct HMCState{
     adaptor::TAdapt
 end
 
+################
+# No glue code #
+################
+struct HMCSamplerSettings
+    ϵ::Float64
+    TAP::Float64
+end
+
+function AbstractMCMC.sample(
+    model::LogDensityModel,
+    settings::HMCSamplerSettings,
+    N::Integer;
+    progress = true,
+    verbose = false,
+    callback = nothing,
+    kwargs...,
+)
+    return AbstractMCMC.sample(
+        Random.GLOBAL_RNG,
+        model,
+        sampler,
+        N;
+        progress = progress,
+        verbose = verbose,
+        callback = callback,
+        kwargs...,
+    )
+end
+
+function AbstractMCMC.sample(
+    rng::Random.AbstractRNG,
+    model::LogDensityModel,
+    settings::HMCSamplerSettings,
+    N::Integer;
+    progress = true,
+    verbose = false,
+    callback = nothing,
+    kwargs...,
+)
+    # obtain dimensions of the model
+    ctxt = model.context
+    vi = DynamicPPL.VarInfo(model, ctxt)
+    dists = _get_dists(vi)
+    dist_lengths = [length(dist) for dist in dists]
+    vsyms = _name_variables(vi, dist_lengths)
+    d = length(vsyms)
+
+    # wrap metric, kernel and adaptor into HMCSampler
+    metric =  DiagEuclideanMetric(d)
+    integrator = Leapfrog(settings.ϵ)
+    kernel = AdvancedHMC.NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(settings.TAP, integrator))
+    sampler = HMCSampler(kernel, metric, adaptor)
+
+    if callback === nothing
+        callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
+        progress = false # don't use AMCMC's progress-funtionality
+    end
+
+    return AbstractMCMC.mcmcsample(
+        rng,
+        model,
+        sampler,
+        N;
+        progress = progress,
+        verbose = verbose,
+        callback = callback,
+        kwargs...,
+    )
+end
+
 """
     $(TYPEDSIGNATURES)
 
