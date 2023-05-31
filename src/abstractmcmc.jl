@@ -62,7 +62,7 @@ struct HMCSamplerSettings
 end
 
 function AbstractMCMC.sample(
-    model::LogDensityModel,
+    model, # what's this type ::LogDensityModel,
     settings::HMCSamplerSettings,
     N::Integer;
     progress = true,
@@ -73,7 +73,7 @@ function AbstractMCMC.sample(
     return AbstractMCMC.sample(
         Random.GLOBAL_RNG,
         model,
-        sampler,
+        settings,
         N;
         progress = progress,
         verbose = verbose,
@@ -84,7 +84,7 @@ end
 
 function AbstractMCMC.sample(
     rng::Random.AbstractRNG,
-    model::LogDensityModel,
+    model, #::LogDensityModel,
     settings::HMCSamplerSettings,
     N::Integer;
     progress = true,
@@ -95,6 +95,13 @@ function AbstractMCMC.sample(
     # obtain dimensions of the model
     ctxt = model.context
     vi = DynamicPPL.VarInfo(model, ctxt)
+    # We will need to implement this but it is going to be
+    # Interesting how to plug the transforms along the sampling
+    # processes
+    #vi_t = Turing.link!!(vi, model)
+    ℓ = LogDensityProblemsAD.ADgradient(DynamicPPL.LogDensityFunction(vi, model, ctxt))
+    ℓ = AbstractMCMC.LogDensityModel(ℓ)
+
     dists = _get_dists(vi)
     dist_lengths = [length(dist) for dist in dists]
     vsyms = _name_variables(vi, dist_lengths)
@@ -114,7 +121,7 @@ function AbstractMCMC.sample(
 
     return AbstractMCMC.mcmcsample(
         rng,
-        model,
+        ℓ,
         sampler,
         N;
         progress = progress,
@@ -123,6 +130,7 @@ function AbstractMCMC.sample(
         kwargs...,
     )
 end
+###
 
 """
     $(TYPEDSIGNATURES)
@@ -236,7 +244,7 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::LogDensityModel,
+    model, #::LogDensityModel,
     spl::HMCSampler;
     init_params = nothing,
     kwargs...,
@@ -264,7 +272,7 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::LogDensityModel,
+    model, #::LogDensityModel,
     spl::HMCSampler,
     state::HMCState;
     nadapts::Int = 0,
