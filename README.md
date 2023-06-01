@@ -3,8 +3,8 @@
 [![CI](https://github.com/TuringLang/AdvancedHMC.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/TuringLang/AdvancedHMC.jl/actions/workflows/CI.yml)
 [![DOI](https://zenodo.org/badge/72657907.svg)](https://zenodo.org/badge/latestdoi/72657907)
 [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://turinglang.org/AdvancedHMC.jl/stable/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://turinglang.org/AdvancedHMC.jl/dev/)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://turinglang.github.io/AdvancedHMC.jl/stable/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://turinglang.github.io/AdvancedHMC.jl/dev/)
 
 AdvancedHMC.jl provides a robust, modular and efficient implementation of advanced HMC algorithms. An illustrative example for AdvancedHMC's usage is given below. AdvancedHMC.jl is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia. 
 If you are interested in using AdvancedHMC.jl through a probabilistic programming language, please check it out!
@@ -93,7 +93,7 @@ samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n
 ### Parallel sampling 
 
 AdvancedHMC enables parallel sampling (either distributed or multi-thread) via Julia's [parallel computing functions](https://docs.julialang.org/en/v1/manual/parallel-computing/).
-It also supports vectorized sampling for static HMC and has been discussed in more detail in the documentation [here](https://turinglang.org/AdvancedHMC.jl/stable/#Parallel-sampling).
+It also supports vectorized sampling for static HMC and has been discussed in more detail in the documentation [here](https://turinglang.github.io/AdvancedHMC.jl/stable/#Parallel-sampling).
 
 The below example utilizes the `@threads` macro to sample 4 chains across 4 threads.
 
