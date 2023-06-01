@@ -3,7 +3,7 @@
 [![CI](https://github.com/TuringLang/AdvancedHMC.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/TuringLang/AdvancedHMC.jl/actions/workflows/CI.yml)
 [![DOI](https://zenodo.org/badge/72657907.svg)](https://zenodo.org/badge/latestdoi/72657907)
 [![Coverage Status](https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix)](https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix)
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://turing.ml/stable/docs/library/advancedhmc/)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://turinglang.github.io/AdvancedHMC.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://turinglang.github.io/AdvancedHMC.jl/dev/)
 
 AdvancedHMC.jl provides a robust, modular and efficient implementation of advanced HMC algorithms. An illustrative example for AdvancedHMC's usage is given below. AdvancedHMC.jl is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia. 
@@ -93,7 +93,7 @@ samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n
 ### Parallel sampling 
 
 AdvancedHMC enables parallel sampling (either distributed or multi-thread) via Julia's [parallel computing functions](https://docs.julialang.org/en/v1/manual/parallel-computing/).
-It also supports vectorized sampling for static HMC and has been discussed in more detail in the documentation [here](https://turing.ml/dev/docs/library/advancedhmc/parallel_sampling).
+It also supports vectorized sampling for static HMC and has been discussed in more detail in the documentation [here](https://turinglang.github.io/AdvancedHMC.jl/stable/#Parallel-sampling).
 
 The below example utilizes the `@threads` macro to sample 4 chains across 4 threads.
 
@@ -194,7 +194,7 @@ Draw `n_samples` samples using the proposal `κ` under the Hamiltonian system `h
 - `verbose` controls the verbosity.
 - `progress` controls whether to show the progress meter or not.
 
-Note that the function signature of the `sample` function exported by `AdvancedHMC.jl` differs from the [`sample`](https://turing.ml/dev/docs/using-turing/guide#modelling-syntax-explained) function used by `Turing.jl`. We refer to the documentation of `Turing.jl` for more details on the latter.
+Note that the function signature of the `sample` function exported by `AdvancedHMC.jl` differs from the [`sample`](https://turinglang.org/dev/docs/using-turing/guide#modelling-syntax-explained) function used by `Turing.jl`. We refer to the documentation of `Turing.jl` for more details on the latter.
 
 ## Citing AdvancedHMC.jl ##
 If you use AdvancedHMC.jl for your own research, please consider citing the following publication:
