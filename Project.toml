@@ -1,6 +1,6 @@
 name = "AdvancedHMC"
 uuid = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
-version = "0.4.4"
+version = "0.4.6"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
@@ -23,17 +23,32 @@ StatsFuns = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 [compat]
 AbstractMCMC = "4.2"
 ArgCheck = "1, 2"
+CUDA = "3, 4"
 DocStringExtensions = "0.8, 0.9"
 InplaceOps = "0.3"
 LogDensityProblems = "2"
 LogDensityProblemsAD = "1"
+MCMCChains = "5, 6"
+OrdinaryDiffEq = "6"
 ProgressMeter = "1"
 Requires = "0.5, 1"
 Setfield = "0.7, 0.8, 1"
 SimpleUnPack = "1.1"
-StatsBase = "0.31, 0.32, 0.33"
+StatsBase = "0.31, 0.32, 0.33, 0.34"
 StatsFuns = "0.8, 0.9, 1"
-julia = "1"
+julia = "1.6"
+
+[extensions]
+AdvancedHMCCUDAExt = "CUDA"
+AdvancedHMCMCMCChainsExt = "MCMCChains"
+AdvancedHMCOrdinaryDiffEqExt = "OrdinaryDiffEq"
 
 [extras]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 MCMCChains = "c7f686f2-ff18-58e9-bc7b-31028e88f75d"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+
+[weakdeps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+MCMCChains = "c7f686f2-ff18-58e9-bc7b-31028e88f75d"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
