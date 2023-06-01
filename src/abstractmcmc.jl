@@ -25,6 +25,15 @@ struct HMCSampler{K,M,A} <: AbstractMCMC.AbstractSampler
 end
 HMCSampler(kernel, metric) = HMCSampler(kernel, metric, Adaptation.NoAdaptation())
 
+# Convinience constructor
+function NUTSSampler(ϵ::Float64, TAP::Float64, d::Int)
+    metric =  DiagEuclideanMetric(d)
+    integrator = Leapfrog(ϵ)
+    kernel = AdvancedHMC.NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(TAP, integrator))
+    return HMCSampler(kernel, metric, adaptor)
+end    
+
 """
     HMCState
 
@@ -56,14 +65,9 @@ end
 ################
 # No glue code #
 ################
-struct HMCSamplerSettings
-    ϵ::Float64
-    TAP::Float64
-end
-
 function AbstractMCMC.sample(
-    model, # what's this type ::LogDensityModel,
-    settings::HMCSamplerSettings,
+    model::DynamicPPL.Model, 
+    sampler::AbstractMCMC.AbstractSampler,
     N::Integer;
     progress = true,
     verbose = false,
@@ -73,7 +77,7 @@ function AbstractMCMC.sample(
     return AbstractMCMC.sample(
         Random.GLOBAL_RNG,
         model,
-        settings,
+        sampler,
         N;
         progress = progress,
         verbose = verbose,
@@ -84,8 +88,8 @@ end
 
 function AbstractMCMC.sample(
     rng::Random.AbstractRNG,
-    model, #::LogDensityModel,
-    settings::HMCSamplerSettings,
+    model::DynamicPPL.Model,
+    sampler::AbstractMCMC.AbstractSampler,
     N::Integer;
     progress = true,
     verbose = false,
@@ -100,19 +104,11 @@ function AbstractMCMC.sample(
     # processes
     #vi_t = Turing.link!!(vi, model)
     ℓ = LogDensityProblemsAD.ADgradient(DynamicPPL.LogDensityFunction(vi, model, ctxt))
-    ℓ = AbstractMCMC.LogDensityModel(ℓ)
 
     dists = _get_dists(vi)
     dist_lengths = [length(dist) for dist in dists]
     vsyms = _name_variables(vi, dist_lengths)
-    d = length(vsyms)
-
-    # wrap metric, kernel and adaptor into HMCSampler
-    metric =  DiagEuclideanMetric(d)
-    integrator = Leapfrog(settings.ϵ)
-    kernel = AdvancedHMC.NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
-    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(settings.TAP, integrator))
-    sampler = HMCSampler(kernel, metric, adaptor)
+    d = LogDensityProblems.dimension(ℓ)
 
     if callback === nothing
         callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
@@ -121,9 +117,10 @@ function AbstractMCMC.sample(
 
     return AbstractMCMC.mcmcsample(
         rng,
-        ℓ,
+        AbstractMCMC.LogDensityModel(ℓ),
         sampler,
         N;
+        param_names = vsyms,
         progress = progress,
         verbose = verbose,
         callback = callback,
@@ -244,7 +241,7 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model, #::LogDensityModel,
+    model::LogDensityModel,
     spl::HMCSampler;
     init_params = nothing,
     kwargs...,
@@ -272,7 +269,7 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model, #::LogDensityModel,
+    model::LogDensityModel,
     spl::HMCSampler,
     state::HMCState;
     nadapts::Int = 0,
