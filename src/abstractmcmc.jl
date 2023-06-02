@@ -1,38 +1,3 @@
-"""
-    HMCSampler
-
-A `AbstractMCMC.AbstractSampler` for kernels in AdvancedHMC.jl.
-
-# Fields
-
-$(FIELDS)
-
-# Notes
-
-Note that all the fields have the prefix `initial_` to indicate
-that these will not necessarily correspond to the `kernel`, `metric`,
-and `adaptor` after sampling.
-
-To access the updated fields use the resulting [`HMCState`](@ref).
-"""
-struct HMCSampler{K,M,A} <: AbstractMCMC.AbstractSampler
-    "Initial [`AbstractMCMCKernel`](@ref)."
-    initial_kernel::K
-    "Initial [`AbstractMetric`](@ref)."
-    initial_metric::M
-    "Initial [`AbstractAdaptor`](@ref)."
-    initial_adaptor::A
-end
-HMCSampler(kernel, metric) = HMCSampler(kernel, metric, Adaptation.NoAdaptation())
-
-# Convinience constructor
-function NUTSSampler(ϵ::Float64, TAP::Float64, d::Int)
-    metric =  DiagEuclideanMetric(d)
-    integrator = Leapfrog(ϵ)
-    kernel = AdvancedHMC.NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
-    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(TAP, integrator))
-    return HMCSampler(kernel, metric, adaptor)
-end    
 
 """
     HMCState
@@ -95,29 +60,14 @@ function AbstractMCMC.sample(
     verbose = false,
     callback = nothing,
     kwargs...,
-)
-    # obtain dimensions of the model
-    ctxt = model.context
-    vi = DynamicPPL.VarInfo(model, ctxt)
-    # We will need to implement this but it is going to be
-    # Interesting how to plug the transforms along the sampling
-    # processes
-    #vi_t = Turing.link!!(vi, model)
-    ℓ = LogDensityProblemsAD.ADgradient(DynamicPPL.LogDensityFunction(vi, model, ctxt))
-
-    dists = _get_dists(vi)
-    dist_lengths = [length(dist) for dist in dists]
-    vsyms = _name_variables(vi, dist_lengths)
-    d = LogDensityProblems.dimension(ℓ)
-
+)   
     if callback === nothing
         callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
         progress = false # don't use AMCMC's progress-funtionality
     end
-
     return AbstractMCMC.mcmcsample(
         rng,
-        AbstractMCMC.LogDensityModel(ℓ),
+        model,
         sampler,
         N;
         param_names = vsyms,
@@ -241,21 +191,56 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::LogDensityModel,
-    spl::HMCSampler;
+    model::DynamicPPL.model,
+    spl::HMCSampler,
+    vi # what type is this?;
     init_params = nothing,
     kwargs...,
-)
-    metric = spl.initial_metric
-    κ = spl.initial_kernel
-    adaptor = spl.initial_adaptor
+)   
+    # unpack model
+    ctxt = model.context
+    vi = DynamicPPL.VarInfo(model, ctxt)
+    # make model from Turing output
+    ℓ = LogDensityProblemsAD.ADgradient(DynamicPPL.LogDensityFunction(vi, model, ctxt))
+    model = AbstractMCMC.LogDensityModel(ℓ)
 
-    if init_params === nothing
-        init_params = randn(rng, size(metric, 1))
+    # We will need to implement this but it is going to be
+    # Interesting how to plug the transforms along the sampling
+    # processes
+    #vi_t = Turing.link!!(vi, model)
+    dists = _get_dists(vi)
+    dist_lengths = [length(dist) for dist in dists]
+    vsyms = _name_variables(vi, dist_lengths)
+    d = LogDensityProblems.dimension(ℓ)
+
+    # Define metric
+    if spl.metric == nothing
+        metric = DiagEuclideanMetric(d)
+    else
+        metric = spl.metric    
     end
 
     # Construct the hamiltonian using the initial metric
     hamiltonian = Hamiltonian(metric, model)
+
+    # Find good eps if not provided one
+    if iszero(spl.alg.ϵ)
+        # Extract parameters.
+        theta = vi[spl]
+        ϵ = AHMC.find_good_stepsize(rng, hamiltonian, theta)
+        @info "Found initial step size" ϵ
+    else
+        ϵ = spl.alg.ϵ
+    end
+
+    integrator = spl.integrator(ϵ)
+    κ = spl.kernel(integrator)
+    adaptor = spl.adaptor(metric, integrator)
+    spl = HMCSampler(kernel, metric, adaptor)
+
+    if init_params === nothing
+        init_params = randn(rng, size(metric, 1))
+    end
 
     # Get an initial sample.
     h, t = AdvancedHMC.sample_init(rng, hamiltonian, init_params)
