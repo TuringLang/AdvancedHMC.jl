@@ -1,4 +1,3 @@
-
 """
     HMCState
 
@@ -25,71 +24,6 @@ struct HMCState{
     κ::TKernel
     "Current [`AbstractAdaptor`](@ref)."
     adaptor::TAdapt
-end
-
-function AbstractMCMC.sample(
-    model::DynamicPPL.Model, 
-    sampler::AbstractMCMC.AbstractSampler,
-    N::Integer;
-    progress = true,
-    verbose = false,
-    callback = nothing,
-    kwargs...,
-)
-    return AbstractMCMC.sample(
-        Random.GLOBAL_RNG,
-        model,
-        sampler,
-        N;
-        progress = progress,
-        verbose = verbose,
-        callback = callback,
-        kwargs...,
-    )
-end
-
-function AbstractMCMC.sample(
-    rng::Random.AbstractRNG,
-    model::DynamicPPL.Model,
-    sampler::AbstractMCMC.AbstractSampler,
-    N::Integer;
-    progress = true,
-    verbose = false,
-    callback = nothing,
-    kwargs...,
-)   
-    if callback === nothing
-        callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
-        progress = false # don't use AMCMC's progress-funtionality
-    end
-
-    # unpack model
-    # TODO: is there a more efficient way to do this?
-    ctxt = model.context
-    vi = DynamicPPL.VarInfo(model, ctxt)
-    dists = _get_dists(vi)
-    dist_lengths = [length(dist) for dist in dists]
-    vsyms = _name_variables(vi, dist_lengths)
-
-    # make model from Turing output
-    ℓ = LogDensityProblemsAD.ADgradient(DynamicPPL.LogDensityFunction(vi, model, ctxt))
-    d = LogDensityProblems.dimension(ℓ)
-    model = AbstractMCMC.LogDensityModel(ℓ)
-    
-
-    return AbstractMCMC.mcmcsample(
-        rng,
-        model,
-        sampler,
-        N;
-        param_names = vsyms,
-        progress = progress,
-        verbose = verbose,
-        callback = callback,
-        vi = vi,
-        d = d,
-        kwargs...,
-    )
 end
 
 function AbstractMCMC.step(

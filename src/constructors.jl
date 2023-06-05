@@ -32,27 +32,9 @@ HMCSampler(kernel, metric) = HMCSampler(kernel, metric, Adaptation.NoAdaptation(
 # NUTS #
 ########
 
-struct NUTS_kernel{TS,TC} end
-
-"""
-$(SIGNATURES)
-
-Convenient constructor for the no-U-turn sampler (NUTS).
-This falls back to `HMCKernel(Trajectory{TS}(int, TC(args...; kwargs...)))` where
-
-- `TS<:Union{MultinomialTS, SliceTS}` is the type for trajectory sampler
-- `TC<:Union{ClassicNoUTurn, GeneralisedNoUTurn, StrictGeneralisedNoUTurn}` is the type for termination criterion.
-
-See [`ClassicNoUTurn`](@ref), [`GeneralisedNoUTurn`](@ref) and [`StrictGeneralisedNoUTurn`](@ref) for details in parameters.
-"""
-NUTS_kernel{TS,TC}(int::AbstractIntegrator, args...; kwargs...) where {TS,TC} =
-    HMCKernel(Trajectory{TS}(int, TC(args...; kwargs...)))
-NUTS_kernel(int::AbstractIntegrator, args...; kwargs...) =
-    HMCKernel(Trajectory{MultinomialTS}(int, GeneralisedNoUTurn(args...; kwargs...)))
-NUTS_kernel(ϵ::AbstractScalarOrVec{<:Real}) =
-    HMCKernel(Trajectory{MultinomialTS}(Leapfrog(ϵ), GeneralisedNoUTurn()))
-
-export NUTS
+function NUTS_kernel(integrator)
+    return HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+end    
 
 """
     NUTS(n_adapts::Int, δ::Float64; max_depth::Int=10, Δ_max::Float64=1000.0, init_ϵ::Float64=0.0)
@@ -77,7 +59,7 @@ Arguments:
 """
 struct NUTS <: AdaptiveHamiltonian
     n_adapts::Int     # number of samples with adaption for ϵ
-    TAP::Float64        # target accept rate
+    TAP::Float64      # target accept rate
     max_depth::Int    # maximum tree depth
     Δ_max::Float64    # maximum error
     ϵ::Float64        # (initial) step size
@@ -94,12 +76,131 @@ function NUTS(
     Δ_max::Float64=1000.0,
     init_ϵ::Float64=0.0,
     metric=nothing,
-    integrator=Leapfrog,
-    kernel = NUTS_kernel{MultinomialTS, GeneralisedNoUTurn}
-)   
+    integrator=Leapfrog)   
     function adaptor(metric, integrator)
         return StanHMCAdaptor(MassMatrixAdaptor(metric),
                               StepSizeAdaptor(TAP, integrator))
     end                          
-    NUTS(n_adapts, TAP, max_depth, Δ_max, init_ϵ, metric, integrator, kernel, adaptor)
+    NUTS(n_adapts, TAP, max_depth, Δ_max, init_ϵ, metric, integrator, NUTS_kernel, adaptor)
 end 
+
+export NUTS 
+#######
+# HMC #
+#######
+
+function HMC_kernel(n_leapfrog)
+    function kernel(integrator)
+        return HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(n_leapfrog)))
+    end
+    return kernel    
+end
+
+"""
+    HMC(ϵ::Float64, n_leapfrog::Int)
+
+Hamiltonian Monte Carlo sampler with static trajectory.
+
+Arguments:
+
+- `ϵ::Float64` : The leapfrog step size to use.
+- `n_leapfrog::Int` : The number of leapfrog steps to use.
+
+Usage:
+
+```julia
+HMC(0.05, 10)
+```
+
+Tips:
+
+- If you are receiving gradient errors when using `HMC`, try reducing the leapfrog step size `ϵ`, e.g.
+
+```julia
+# Original step size
+sample(gdemo([1.5, 2]), HMC(0.1, 10), 1000)
+
+# Reduced step size
+sample(gdemo([1.5, 2]), HMC(0.01, 10), 1000)
+```
+"""
+struct HMC <: StaticHamiltonian
+    ϵ::Float64 # leapfrog step size
+    n_leapfrog::Int # leapfrog step number
+    metric
+    integrator
+    kernel
+end
+
+function HMC(
+    ϵ::Float64,
+    n_leapfrog::Int;
+    metric=nothing,
+    integrator=Leapfrog)
+    kernel = HMC_kernel(n_leapfrog)
+    adaptor = Adaptation.NoAdaptation()
+    return HMC(ϵ, n_leapfrog, metric, integrator, kernel, adaptor)
+end
+
+export HMC
+#########
+# HMCDA #
+#########
+
+function HMCDA_kernel(λ)
+    function kernel(integrator)
+        return HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(λ)))
+    end
+    return kernel    
+end
+
+"""
+    HMCDA(n_adapts::Int, δ::Float64, λ::Float64; ϵ::Float64=0.0)
+
+Hamiltonian Monte Carlo sampler with Dual Averaging algorithm.
+
+Usage:
+
+```julia
+HMCDA(200, 0.65, 0.3)
+```
+
+Arguments:
+
+- `n_adapts::Int` : Numbers of samples to use for adaptation.
+- `δ::Float64` : Target acceptance rate. 65% is often recommended.
+- `λ::Float64` : Target leapfrog length.
+- `ϵ::Float64=0.0` : Initial step size; 0 means automatically search by Turing.
+
+For more information, please view the following paper ([arXiv link](https://arxiv.org/abs/1111.4246)):
+
+- Hoffman, Matthew D., and Andrew Gelman. "The No-U-turn sampler: adaptively
+  setting path lengths in Hamiltonian Monte Carlo." Journal of Machine Learning
+  Research 15, no. 1 (2014): 1593-1623.
+"""
+struct HMCDA <: AdaptiveHamiltonian
+    n_adapts    ::  Int         # number of samples with adaption for ϵ
+    TAP         ::  Float64     # target accept rate
+    λ           ::  Float64     # target leapfrog length
+    ϵ           ::  Float64     # (initial) step size
+    metric
+    integrator
+    kernel
+end
+
+function HMCDA(
+    n_adapts::Int,
+    TAP::Float64,
+    λ::Float64;
+    ϵ::Float64=0.0,
+    metric=nothing,
+    integrator=Leapfrog)
+    kernel = HMCDA_kernel(λ)
+    function adaptor(metric, integrator)
+        return StanHMCAdaptor(MassMatrixAdaptor(metric),
+                              StepSizeAdaptor(TAP, integrator))
+    end    
+    return HMCDA(n_adapts, TAP, λ, ϵ, metric, integrator, kernel, adaptor)
+end
+
+export HMCDA
