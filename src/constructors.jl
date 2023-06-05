@@ -28,6 +28,32 @@ struct HMCSampler{K,M,A} <: AbstractMCMC.AbstractSampler
 end
 HMCSampler(kernel, metric) = HMCSampler(kernel, metric, Adaptation.NoAdaptation())
 
+########
+# NUTS #
+########
+
+struct NUTS_kernel{TS,TC} end
+
+"""
+$(SIGNATURES)
+
+Convenient constructor for the no-U-turn sampler (NUTS).
+This falls back to `HMCKernel(Trajectory{TS}(int, TC(args...; kwargs...)))` where
+
+- `TS<:Union{MultinomialTS, SliceTS}` is the type for trajectory sampler
+- `TC<:Union{ClassicNoUTurn, GeneralisedNoUTurn, StrictGeneralisedNoUTurn}` is the type for termination criterion.
+
+See [`ClassicNoUTurn`](@ref), [`GeneralisedNoUTurn`](@ref) and [`StrictGeneralisedNoUTurn`](@ref) for details in parameters.
+"""
+NUTS_kernel{TS,TC}(int::AbstractIntegrator, args...; kwargs...) where {TS,TC} =
+    HMCKernel(Trajectory{TS}(int, TC(args...; kwargs...)))
+NUTS_kernel(int::AbstractIntegrator, args...; kwargs...) =
+    HMCKernel(Trajectory{MultinomialTS}(int, GeneralisedNoUTurn(args...; kwargs...)))
+NUTS_kernel(ϵ::AbstractScalarOrVec{<:Real}) =
+    HMCKernel(Trajectory{MultinomialTS}(Leapfrog(ϵ), GeneralisedNoUTurn()))
+
+export NUTS
+
 """
     NUTS(n_adapts::Int, δ::Float64; max_depth::Int=10, Δ_max::Float64=1000.0, init_ϵ::Float64=0.0)
 
@@ -51,31 +77,29 @@ Arguments:
 """
 struct NUTS <: AdaptiveHamiltonian
     n_adapts::Int     # number of samples with adaption for ϵ
-    δ::Float64        # target accept rate
+    TAP::Float64        # target accept rate
     max_depth::Int    # maximum tree depth
     Δ_max::Float64    # maximum error
     ϵ::Float64        # (initial) step size
     metric
     integrator
+    kernel
+    adaptor
 end
 
 function NUTS(
     n_adapts::Int,
-    δ::Float64,
-    space::Symbol...;
+    TAP::Float64; # Target Acceptance Probability 
     max_depth::Int=10,
     Δ_max::Float64=1000.0,
     init_ϵ::Float64=0.0,
     metric=nothing,
     integrator=Leapfrog,
-)
-    NUTS(n_adapts, δ, max_depth, Δ_max, init_ϵ, metric, integrator)
-end
-
-function NUTS(ϵ::Float64, TAP::Float64)
-    metric =  DiagEuclideanMetric(d)
-    integrator = Leapfrog(ϵ)
-    kernel = NUTS{MultinomialTS, GeneralisedNoUTurn}
-    adaptor(metric, integrator) = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(TAP, integrator))
-    return HMCSampler(kernel, metric, adaptor)
-end    
+    kernel = NUTS_kernel{MultinomialTS, GeneralisedNoUTurn}
+)   
+    function adaptor(metric, integrator)
+        return StanHMCAdaptor(MassMatrixAdaptor(metric),
+                              StepSizeAdaptor(TAP, integrator))
+    end                          
+    NUTS(n_adapts, TAP, max_depth, Δ_max, init_ϵ, metric, integrator, kernel, adaptor)
+end 

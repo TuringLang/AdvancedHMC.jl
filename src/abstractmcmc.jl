@@ -27,9 +27,6 @@ struct HMCState{
     adaptor::TAdapt
 end
 
-################
-# No glue code #
-################
 function AbstractMCMC.sample(
     model::DynamicPPL.Model, 
     sampler::AbstractMCMC.AbstractSampler,
@@ -65,6 +62,21 @@ function AbstractMCMC.sample(
         callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
         progress = false # don't use AMCMC's progress-funtionality
     end
+
+    # unpack model
+    # TODO: is there a more efficient way to do this?
+    ctxt = model.context
+    vi = DynamicPPL.VarInfo(model, ctxt)
+    dists = _get_dists(vi)
+    dist_lengths = [length(dist) for dist in dists]
+    vsyms = _name_variables(vi, dist_lengths)
+
+    # make model from Turing output
+    ℓ = LogDensityProblemsAD.ADgradient(DynamicPPL.LogDensityFunction(vi, model, ctxt))
+    d = LogDensityProblems.dimension(ℓ)
+    model = AbstractMCMC.LogDensityModel(ℓ)
+    
+
     return AbstractMCMC.mcmcsample(
         rng,
         model,
@@ -74,144 +86,27 @@ function AbstractMCMC.sample(
         progress = progress,
         verbose = verbose,
         callback = callback,
-        kwargs...,
-    )
-end
-###
-
-"""
-    $(TYPEDSIGNATURES)
-
-A convenient wrapper around `AbstractMCMC.sample` avoiding explicit construction of [`HMCSampler`](@ref).
-"""
-function AbstractMCMC.sample(
-    model::LogDensityModel,
-    kernel::AbstractMCMCKernel,
-    metric::AbstractMetric,
-    adaptor::AbstractAdaptor,
-    N::Integer;
-    kwargs...,
-)
-    return AbstractMCMC.sample(
-        Random.GLOBAL_RNG,
-        model,
-        kernel,
-        metric,
-        adaptor,
-        N;
-        kwargs...,
-    )
-end
-
-function AbstractMCMC.sample(
-    rng::Random.AbstractRNG,
-    model::LogDensityModel,
-    kernel::AbstractMCMCKernel,
-    metric::AbstractMetric,
-    adaptor::AbstractAdaptor,
-    N::Integer;
-    progress = true,
-    verbose = false,
-    callback = nothing,
-    kwargs...,
-)
-    sampler = HMCSampler(kernel, metric, adaptor)
-    if callback === nothing
-        callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
-        progress = false # don't use AMCMC's progress-funtionality
-    end
-
-    return AbstractMCMC.mcmcsample(
-        rng,
-        model,
-        sampler,
-        N;
-        progress = progress,
-        verbose = verbose,
-        callback = callback,
-        kwargs...,
-    )
-end
-
-function AbstractMCMC.sample(
-    model::LogDensityModel,
-    kernel::AbstractMCMCKernel,
-    metric::AbstractMetric,
-    adaptor::AbstractAdaptor,
-    parallel::AbstractMCMC.AbstractMCMCEnsemble,
-    N::Integer,
-    nchains::Integer;
-    kwargs...,
-)
-    return AbstractMCMC.sample(
-        Random.GLOBAL_RNG,
-        model,
-        kernel,
-        metric,
-        adaptor,
-        N,
-        nchains;
-        kwargs...,
-    )
-end
-
-function AbstractMCMC.sample(
-    rng::Random.AbstractRNG,
-    model::LogDensityModel,
-    kernel::AbstractMCMCKernel,
-    metric::AbstractMetric,
-    adaptor::AbstractAdaptor,
-    parallel::AbstractMCMC.AbstractMCMCEnsemble,
-    N::Integer,
-    nchains::Integer;
-    progress = true,
-    verbose = false,
-    callback = nothing,
-    kwargs...,
-)
-    sampler = HMCSampler(kernel, metric, adaptor)
-    if callback === nothing
-        callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
-        progress = false # don't use AMCMC's progress-funtionality
-    end
-
-    return AbstractMCMC.mcmcsample(
-        rng,
-        model,
-        sampler,
-        parallel,
-        N,
-        nchains;
-        progress = progress,
-        verbose = verbose,
-        callback = callback,
+        vi = vi,
+        d = d,
         kwargs...,
     )
 end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::DynamicPPL.model,
-    spl::HMCSampler,
-    vi # what type is this?;
+    model,#::DynamicPPL.model,
+    spl::AbstractMCMC.AbstractSampler;
     init_params = nothing,
     kwargs...,
 )   
-    # unpack model
-    ctxt = model.context
-    vi = DynamicPPL.VarInfo(model, ctxt)
-    # make model from Turing output
-    ℓ = LogDensityProblemsAD.ADgradient(DynamicPPL.LogDensityFunction(vi, model, ctxt))
-    model = AbstractMCMC.LogDensityModel(ℓ)
+    vi = kwargs[:vi]
+    d = kwargs[:d]
+    n_adapts = spl.n_adapts
 
     # We will need to implement this but it is going to be
     # Interesting how to plug the transforms along the sampling
     # processes
-    #vi_t = Turing.link!!(vi, model)
-    dists = _get_dists(vi)
-    dist_lengths = [length(dist) for dist in dists]
-    vsyms = _name_variables(vi, dist_lengths)
-    d = LogDensityProblems.dimension(ℓ)
+    # vi_t = Turing.link!!(vi, model)
 
     # Define metric
     if spl.metric == nothing
@@ -224,17 +119,18 @@ function AbstractMCMC.step(
     hamiltonian = Hamiltonian(metric, model)
 
     # Find good eps if not provided one
-    if iszero(spl.alg.ϵ)
+    # Before it was spl.alg.ϵ to allow prior sampling
+    if iszero(spl.ϵ)
         # Extract parameters.
         theta = vi[spl]
-        ϵ = AHMC.find_good_stepsize(rng, hamiltonian, theta)
-        @info "Found initial step size" ϵ
+        ϵ = find_good_stepsize(rng, hamiltonian, theta)
+        println(string("Found initial step size ", ϵ))
     else
-        ϵ = spl.alg.ϵ
+        ϵ = spl.ϵ
     end
 
     integrator = spl.integrator(ϵ)
-    κ = spl.kernel(integrator)
+    kernel = spl.kernel(integrator)
     adaptor = spl.adaptor(metric, integrator)
     spl = HMCSampler(kernel, metric, adaptor)
 
@@ -246,16 +142,22 @@ function AbstractMCMC.step(
     h, t = AdvancedHMC.sample_init(rng, hamiltonian, init_params)
 
     # Compute next transition and state.
-    state = HMCState(0, t, h.metric, κ, adaptor)
+    state = HMCState(0, t, h.metric, kernel, adaptor)
 
     # Take actual first step.
-    return AbstractMCMC.step(rng, model, spl, state; kwargs...)
+    return AbstractMCMC.step(
+        rng,
+        model,
+        spl,
+        state;
+        n_adapts = n_adapts,
+        kwargs...)
 end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
     model::LogDensityModel,
-    spl::HMCSampler,
+    spl::AbstractMCMC.AbstractSampler,
     state::HMCState;
     nadapts::Int = 0,
     kwargs...,
