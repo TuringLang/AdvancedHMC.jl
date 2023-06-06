@@ -130,6 +130,7 @@ struct HMC <: StaticHamiltonian
     metric
     integrator
     kernel
+    adaptor
 end
 
 function HMC(
@@ -186,6 +187,7 @@ struct HMCDA <: AdaptiveHamiltonian
     metric
     integrator
     kernel
+    adaptor
 end
 
 function HMCDA(

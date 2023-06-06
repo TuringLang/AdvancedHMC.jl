@@ -34,8 +34,7 @@ function AbstractMCMC.step(
     kwargs...,
 )   
     vi = kwargs[:vi]
-    d = kwargs[:d]
-    n_adapts = spl.n_adapts
+    d = kwargs[:d]       
 
     # We will need to implement this but it is going to be
     # Interesting how to plug the transforms along the sampling
@@ -65,7 +64,15 @@ function AbstractMCMC.step(
 
     integrator = spl.integrator(ϵ)
     kernel = spl.kernel(integrator)
-    adaptor = spl.adaptor(metric, integrator)
+
+    if typeof(spl) <: AdvancedHMC.AdaptiveHamiltonian
+        adaptor = spl.adaptor(metric, integrator)
+        n_adapts = spl.n_adapts
+    else
+        adaptor = spl.adaptor
+        n_adapts = 0
+    end
+
     spl = HMCSampler(kernel, metric, adaptor)
 
     if init_params === nothing
