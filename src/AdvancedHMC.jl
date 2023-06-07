@@ -23,7 +23,6 @@ using LogDensityProblemsAD: LogDensityProblemsAD
 
 import AbstractMCMC
 using AbstractMCMC: LogDensityModel
-using DynamicPPL
 
 import StatsBase: sample
 
