@@ -24,19 +24,24 @@ struct HMCState{
     κ::TKernel
     "Current [`AbstractAdaptor`](@ref)."
     adaptor::TAdapt
+    "Current [`Hamiltonian`](@ref)."
+    hamiltonian::Hamiltonian
 end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    logdensitymodel::AbstractMCMC.LogDensityModel,
+    model::DynamicPPL.Model,
     spl::AbstractMCMC.AbstractSampler;
     init_params = nothing,
     kwargs...,
 )   
     # Unpack model
-    model = getmodel(logdensitymodel)
     ctxt = model.context
     vi = DynamicPPL.VarInfo(model, ctxt)
+    logdensityfunction = DynamicPPL.LogDensityFunction(vi, model, ctxt)
+    logdensityproblem = LogDensityProblemsAD.ADgradient(logdensityfunction)
+    logdensitymodel = AbstractMCMC.LogDensityModel(logdensityproblem)
+    #model = getmodel(logdensitymodel)
 
     # We will need to implement this but it is going to be
     # Interesting how to plug the transforms along the sampling
@@ -45,7 +50,8 @@ function AbstractMCMC.step(
 
     # Define metric
     if spl.metric == nothing
-        d = getdimensions(logdensitymodel)
+        d = LogDensityProblems.dimension(logdensityproblem)
+        #d = getdimensions(logdensitymodel)
         metric = DiagEuclideanMetric(d)
     else
         metric = spl.metric    
@@ -86,11 +92,12 @@ function AbstractMCMC.step(
     h, t = AdvancedHMC.sample_init(rng, hamiltonian, init_params)
 
     # Compute next transition and state.
-    state = HMCState(0, t, h.metric, kernel, adaptor)
+    state = HMCState(0, t, h.metric, kernel, adaptor, hamiltonian)
     # Take actual first step.
+    println(typeof(hamiltonian)<:Hamiltonian)
     return AbstractMCMC.step(
         rng,
-        logdensitymodel,
+        model,
         spl,
         state;
         n_adapts = n_adapts,
@@ -99,7 +106,7 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    logdensitymodel::AbstractMCMC.LogDensityModel,
+    model::DynamicPPL.Model,
     spl::AbstractMCMC.AbstractSampler,
     state::HMCState;
     nadapts::Int = 0,
@@ -111,9 +118,10 @@ function AbstractMCMC.step(
     adaptor = state.adaptor
     κ = state.κ
     metric = state.metric
+    h = state.hamiltonian
 
     # Reconstruct hamiltonian.
-    h = Hamiltonian(metric, logdensitymodel)
+    #h = Hamiltonian(metric, logdensitymodel)
 
     # Make new transition.
     t = transition(rng, h, κ, t_old.z)
@@ -124,7 +132,7 @@ function AbstractMCMC.step(
     tstat = merge(tstat, (is_adapt = isadapted,))
 
     # Compute next transition and state.
-    newstate = HMCState(i, t, h.metric, κ, adaptor)
+    newstate = HMCState(i, t, h.metric, κ, adaptor, h)
 
     # Return `Transition` with additional stats added.
     return Transition(t.z, tstat), newstate
