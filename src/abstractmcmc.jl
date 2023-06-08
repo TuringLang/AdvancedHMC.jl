@@ -33,12 +33,10 @@ function AbstractMCMC.step(
     init_params = nothing,
     kwargs...,
 )   
-
+    # Unpack model
     model = getmodel(logdensitymodel)
     ctxt = model.context
     vi = DynamicPPL.VarInfo(model, ctxt)
-    #vi = kwargs[:vi]
-    d = kwargs[:d]       
 
     # We will need to implement this but it is going to be
     # Interesting how to plug the transforms along the sampling
@@ -47,6 +45,7 @@ function AbstractMCMC.step(
 
     # Define metric
     if spl.metric == nothing
+        d = getdimensions(logdensitymodel)
         metric = DiagEuclideanMetric(d)
     else
         metric = spl.metric    
@@ -88,7 +87,6 @@ function AbstractMCMC.step(
 
     # Compute next transition and state.
     state = HMCState(0, t, h.metric, kernel, adaptor)
-
     # Take actual first step.
     return AbstractMCMC.step(
         rng,
@@ -101,12 +99,12 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    logdensity::LogDensityModel,
+    logdensitymodel::AbstractMCMC.LogDensityModel,
     spl::AbstractMCMC.AbstractSampler,
     state::HMCState;
     nadapts::Int = 0,
     kwargs...,
-)
+)   
     # Compute transition.
     i = state.i + 1
     t_old = state.transition
@@ -115,7 +113,7 @@ function AbstractMCMC.step(
     metric = state.metric
 
     # Reconstruct hamiltonian.
-    h = Hamiltonian(metric, logdensity)
+    h = Hamiltonian(metric, logdensitymodel)
 
     # Make new transition.
     t = transition(rng, h, κ, t_old.z)
@@ -139,6 +137,9 @@ end
 getmodel(f::DynamicPPL.LogDensityFunction) = f.model
 getmodel(f::AbstractMCMC.LogDensityModel) = getmodel(f.logdensity)
 getmodel(f::LogDensityProblemsAD.ADGradientWrapper) = getmodel(parent(f))
+function getdimensions(f::AbstractMCMC.LogDensityModel)
+    return LogDensityProblems.dimension(f.logdensity)
+end    
 
 ################
 ### Callback ###
