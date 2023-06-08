@@ -30,7 +30,7 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::DynamicPPL.Model,
+    model::AbstractMCMC.AbstractModel,
     spl::AbstractMCMC.AbstractSampler;
     init_params = nothing,
     kwargs...,
@@ -41,7 +41,6 @@ function AbstractMCMC.step(
     logdensityfunction = DynamicPPL.LogDensityFunction(vi, model, ctxt)
     logdensityproblem = LogDensityProblemsAD.ADgradient(logdensityfunction)
     logdensitymodel = AbstractMCMC.LogDensityModel(logdensityproblem)
-    #model = getmodel(logdensitymodel)
 
     # We will need to implement this but it is going to be
     # Interesting how to plug the transforms along the sampling
@@ -106,7 +105,7 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::DynamicPPL.Model,
+    model::AbstractMCMC.AbstractModel,
     spl::AbstractMCMC.AbstractSampler,
     state::HMCState;
     nadapts::Int = 0,
