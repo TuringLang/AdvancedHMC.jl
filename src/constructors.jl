@@ -19,12 +19,12 @@ and `adaptor` after sampling.
 To access the updated fields use the resulting [`HMCState`](@ref).
 """
 struct HMCSampler{K,M,A} <: AbstractMCMC.AbstractSampler
-    "Initial [`AbstractMCMCKernel`](@ref)."
-    initial_kernel::K
-    "Initial [`AbstractMetric`](@ref)."
-    initial_metric::M
-    "Initial [`AbstractAdaptor`](@ref)."
-    initial_adaptor::A
+    "[`AbstractMCMCKernel`](@ref)."
+    kernel::K
+    "[`AbstractMetric`](@ref)."
+    metric::M
+    "[`AbstractAdaptor`](@ref)."
+    adaptor::A
 end
 HMCSampler(kernel, metric) = HMCSampler(kernel, metric, Adaptation.NoAdaptation())
 
@@ -57,7 +57,7 @@ Arguments:
 - `init_ϵ::Float64` : Initial step size; 0 means automatically searching using a heuristic procedure.
 
 """
-struct NUTS <: AdaptiveHamiltonian
+struct AHMC_NUTS <: AdaptiveHamiltonian
     n_adapts::Int     # number of samples with adaption for ϵ
     TAP::Float64      # target accept rate
     max_depth::Int    # maximum tree depth
@@ -81,10 +81,10 @@ function NUTS(
         return StanHMCAdaptor(MassMatrixAdaptor(metric),
                               StepSizeAdaptor(TAP, integrator))
     end                          
-    NUTS(n_adapts, TAP, max_depth, Δ_max, init_ϵ, metric, integrator, NUTS_kernel, adaptor)
+    AHMC_NUTS(n_adapts, TAP, max_depth, Δ_max, init_ϵ, metric, integrator, NUTS_kernel, adaptor)
 end 
 
-export NUTS 
+export AHMC_NUTS 
 #######
 # HMC #
 #######
@@ -124,7 +124,7 @@ sample(gdemo([1.5, 2]), HMC(0.1, 10), 1000)
 sample(gdemo([1.5, 2]), HMC(0.01, 10), 1000)
 ```
 """
-struct HMC <: StaticHamiltonian
+struct AHMC_HMC <: StaticHamiltonian
     ϵ::Float64 # leapfrog step size
     n_leapfrog::Int # leapfrog step number
     metric
@@ -140,10 +140,10 @@ function HMC(
     integrator=Leapfrog)
     kernel = HMC_kernel(n_leapfrog)
     adaptor = Adaptation.NoAdaptation()
-    return HMC(ϵ, n_leapfrog, metric, integrator, kernel, adaptor)
+    return AHMC_HMC(ϵ, n_leapfrog, metric, integrator, kernel, adaptor)
 end
 
-export HMC
+export AHMC_HMC
 #########
 # HMCDA #
 #########
@@ -179,7 +179,7 @@ For more information, please view the following paper ([arXiv link](https://arxi
   setting path lengths in Hamiltonian Monte Carlo." Journal of Machine Learning
   Research 15, no. 1 (2014): 1593-1623.
 """
-struct HMCDA <: AdaptiveHamiltonian
+struct AHMC_HMCDA <: AdaptiveHamiltonian
     n_adapts    ::  Int         # number of samples with adaption for ϵ
     TAP         ::  Float64     # target accept rate
     λ           ::  Float64     # target leapfrog length
@@ -202,7 +202,7 @@ function HMCDA(
         return StanHMCAdaptor(MassMatrixAdaptor(metric),
                               StepSizeAdaptor(TAP, integrator))
     end    
-    return HMCDA(n_adapts, TAP, λ, ϵ, metric, integrator, kernel, adaptor)
+    return AHMC_HMCDA(n_adapts, TAP, λ, ϵ, metric, integrator, kernel, adaptor)
 end
 
-export HMCDA
+export AHMC_HMCDA

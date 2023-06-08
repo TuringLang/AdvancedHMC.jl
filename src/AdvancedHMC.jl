@@ -65,6 +65,30 @@ export Trajectory,
     MultinomialTS,
     find_good_stepsize
 
+# Useful defaults
+
+struct NUTS{TS,TC} end
+
+"""
+$(SIGNATURES)
+
+Convenient constructor for the no-U-turn sampler (NUTS).
+This falls back to `HMCKernel(Trajectory{TS}(int, TC(args...; kwargs...)))` where
+
+- `TS<:Union{MultinomialTS, SliceTS}` is the type for trajectory sampler
+- `TC<:Union{ClassicNoUTurn, GeneralisedNoUTurn, StrictGeneralisedNoUTurn}` is the type for termination criterion.
+
+See [`ClassicNoUTurn`](@ref), [`GeneralisedNoUTurn`](@ref) and [`StrictGeneralisedNoUTurn`](@ref) for details in parameters.
+"""
+NUTS{TS,TC}(int::AbstractIntegrator, args...; kwargs...) where {TS,TC} =
+    HMCKernel(Trajectory{TS}(int, TC(args...; kwargs...)))
+NUTS(int::AbstractIntegrator, args...; kwargs...) =
+    HMCKernel(Trajectory{MultinomialTS}(int, GeneralisedNoUTurn(args...; kwargs...)))
+NUTS(ϵ::AbstractScalarOrVec{<:Real}) =
+    HMCKernel(Trajectory{MultinomialTS}(Leapfrog(ϵ), GeneralisedNoUTurn()))
+
+export NUTS
+
 # Deprecations for trajectory.jl
 
 abstract type AbstractTrajectory end
@@ -80,7 +104,6 @@ struct StaticTrajectory{TS} end
     Trajectory{EndPointTS}(Leapfrog(ϵ), FixedNSteps(L)),
 )
 
-#=
 struct HMCDA{TS} end
 @deprecate HMCDA{TS}(int::AbstractIntegrator, λ) where {TS} HMCKernel(
     Trajectory{TS}(int, FixedIntegrationTime(λ)),
@@ -91,11 +114,10 @@ struct HMCDA{TS} end
 @deprecate HMCDA(ϵ::AbstractScalarOrVec{<:Real}, λ) HMCKernel(
     Trajectory{EndPointTS}(Leapfrog(ϵ), FixedIntegrationTime(λ)),
 )
-=#
 
 @deprecate find_good_eps find_good_stepsize
 
-export StaticTrajectory, find_good_eps #HMCDA,
+export StaticTrajectory, HMCDA, find_good_eps
 
 include("adaptation/Adaptation.jl")
 using .Adaptation
@@ -147,8 +169,8 @@ include("diagnosis.jl")
 include("sampler.jl")
 export sample
 
-include("constructors.jl")
 include("abstractmcmc.jl")
+include("constructors.jl")
 
 ## Without explicit AD backend
 function Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel; kwargs...)
