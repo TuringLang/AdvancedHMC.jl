@@ -28,12 +28,16 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model,#::DynamicPPL.model,
+    logdensitymodel::AbstractMCMC.LogDensityModel,
     spl::AbstractMCMC.AbstractSampler;
     init_params = nothing,
     kwargs...,
 )   
-    vi = kwargs[:vi]
+
+    model = getmodel(logdensitymodel)
+    ctxt = model.context
+    vi = DynamicPPL.VarInfo(model, ctxt)
+    #vi = kwargs[:vi]
     d = kwargs[:d]       
 
     # We will need to implement this but it is going to be
@@ -49,7 +53,7 @@ function AbstractMCMC.step(
     end
 
     # Construct the hamiltonian using the initial metric
-    hamiltonian = Hamiltonian(metric, model)
+    hamiltonian = Hamiltonian(metric, logdensitymodel)
 
     # Find good eps if not provided one
     # Before it was spl.alg.ϵ to allow prior sampling
@@ -88,7 +92,7 @@ function AbstractMCMC.step(
     # Take actual first step.
     return AbstractMCMC.step(
         rng,
-        model,
+        logdensitymodel,
         spl,
         state;
         n_adapts = n_adapts,
@@ -97,7 +101,7 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::LogDensityModel,
+    logdensity::LogDensityModel,
     spl::AbstractMCMC.AbstractSampler,
     state::HMCState;
     nadapts::Int = 0,
@@ -111,7 +115,7 @@ function AbstractMCMC.step(
     metric = state.metric
 
     # Reconstruct hamiltonian.
-    h = Hamiltonian(metric, model)
+    h = Hamiltonian(metric, logdensity)
 
     # Make new transition.
     t = transition(rng, h, κ, t_old.z)
@@ -128,6 +132,13 @@ function AbstractMCMC.step(
     return Transition(t.z, tstat), newstate
 end
 
+#########
+# Utils #
+#########
+
+getmodel(f::DynamicPPL.LogDensityFunction) = f.model
+getmodel(f::AbstractMCMC.LogDensityModel) = getmodel(f.logdensity)
+getmodel(f::LogDensityProblemsAD.ADGradientWrapper) = getmodel(parent(f))
 
 ################
 ### Callback ###

@@ -20,6 +20,7 @@ using DocStringExtensions
 
 using LogDensityProblems
 using LogDensityProblemsAD: LogDensityProblemsAD
+using DynamicPPL
 
 import AbstractMCMC
 using AbstractMCMC: LogDensityModel
