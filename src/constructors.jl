@@ -1,5 +1,6 @@
-abstract type StaticHamiltonian <: AbstractMCMC.AbstractSampler end
-abstract type AdaptiveHamiltonian <: AbstractMCMC.AbstractSampler end
+abstract type SamplingAlgorithm end
+abstract type StaticHamiltonian <: SamplingAlgorithm end
+abstract type AdaptiveHamiltonian <: SamplingAlgorithm end
 
 """
     HMCSampler
@@ -18,7 +19,10 @@ and `adaptor` after sampling.
 
 To access the updated fields use the resulting [`HMCState`](@ref).
 """
-struct HMCSampler{K,M,A} <: AbstractMCMC.AbstractSampler
+struct HMCSampler{I,K,M,A} <: AbstractMCMC.AbstractSampler
+    alg::SamplingAlgorithm
+    "[`integrator`](@ref)."
+    integrator::I
     "[`AbstractMCMCKernel`](@ref)."
     kernel::K
     "[`AbstractMetric`](@ref)."
@@ -26,16 +30,19 @@ struct HMCSampler{K,M,A} <: AbstractMCMC.AbstractSampler
     "[`AbstractAdaptor`](@ref)."
     adaptor::A
 end
-HMCSampler(kernel, metric) = HMCSampler(kernel, metric, Adaptation.NoAdaptation())
+# Basic use
+HMCSampler(algorithm) = HMCSampler(algorithm, nothing, nothing, nothing, nothing)
+# Expert use
+HMCSampler(integrator, kernel, metric, adaptor) = HMCSampler(Custom_alg, integrator, kernel, metric, adaptor)
+
+##########
+# Custom #
+##########
+struct Custom_alg<:SamplingAlgorithm end
 
 ########
 # NUTS #
 ########
-
-function NUTS_kernel(integrator)
-    return HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
-end    
-
 """
     NUTS(n_adapts::Int, δ::Float64; max_depth::Int=10, Δ_max::Float64=1000.0, init_ϵ::Float64=0.0)
 
@@ -57,45 +64,26 @@ Arguments:
 - `init_ϵ::Float64` : Initial step size; 0 means automatically searching using a heuristic procedure.
 
 """
-struct AHMC_NUTS <: AdaptiveHamiltonian
+struct NUTS_alg <: AdaptiveHamiltonian
     n_adapts::Int     # number of samples with adaption for ϵ
     TAP::Float64      # target accept rate
     max_depth::Int    # maximum tree depth
     Δ_max::Float64    # maximum error
     ϵ::Float64        # (initial) step size
-    metric
-    integrator
-    kernel
-    adaptor
 end
 
 function NUTS(
     n_adapts::Int,
-    TAP::Float64; # Target Acceptance Probability 
+    TAP::Float64;
     max_depth::Int=10,
     Δ_max::Float64=1000.0,
-    init_ϵ::Float64=0.0,
-    metric=nothing,
-    integrator=Leapfrog)   
-    function adaptor(metric, integrator)
-        return StanHMCAdaptor(MassMatrixAdaptor(metric),
-                              StepSizeAdaptor(TAP, integrator))
-    end                          
-    AHMC_NUTS(n_adapts, TAP, max_depth, Δ_max, init_ϵ, metric, integrator, NUTS_kernel, adaptor)
+    ϵ::Float64=0.0)   
+    return HMCSampler(NUTS_alg(n_adapts, TAP, max_depth, Δ_max, ϵ))
 end 
 
-export AHMC_NUTS 
 #######
 # HMC #
 #######
-
-function HMC_kernel(n_leapfrog)
-    function kernel(integrator)
-        return HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(n_leapfrog)))
-    end
-    return kernel    
-end
-
 """
     HMC(ϵ::Float64, n_leapfrog::Int)
 
@@ -124,37 +112,21 @@ sample(gdemo([1.5, 2]), HMC(0.1, 10), 1000)
 sample(gdemo([1.5, 2]), HMC(0.01, 10), 1000)
 ```
 """
-struct AHMC_HMC <: StaticHamiltonian
+struct HMC_alg <: StaticHamiltonian
     ϵ::Float64 # leapfrog step size
     n_leapfrog::Int # leapfrog step number
-    metric
-    integrator
-    kernel
-    adaptor
 end
 
 function HMC(
     ϵ::Float64,
-    n_leapfrog::Int;
-    metric=nothing,
-    integrator=Leapfrog)
-    kernel = HMC_kernel(n_leapfrog)
-    adaptor = Adaptation.NoAdaptation()
-    return AHMC_HMC(ϵ, n_leapfrog, metric, integrator, kernel, adaptor)
+    n_leapfrog::Int)
+
+    return HMCSampler(HMC_alg(ϵ, n_leapfrog))
 end
 
-export AHMC_HMC
 #########
 # HMCDA #
 #########
-
-function HMCDA_kernel(λ)
-    function kernel(integrator)
-        return HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(λ)))
-    end
-    return kernel    
-end
-
 """
     HMCDA(n_adapts::Int, δ::Float64, λ::Float64; ϵ::Float64=0.0)
 
@@ -179,30 +151,42 @@ For more information, please view the following paper ([arXiv link](https://arxi
   setting path lengths in Hamiltonian Monte Carlo." Journal of Machine Learning
   Research 15, no. 1 (2014): 1593-1623.
 """
-struct AHMC_HMCDA <: AdaptiveHamiltonian
+struct HMCDA_alg <: AdaptiveHamiltonian
     n_adapts    ::  Int         # number of samples with adaption for ϵ
     TAP         ::  Float64     # target accept rate
     λ           ::  Float64     # target leapfrog length
     ϵ           ::  Float64     # (initial) step size
-    metric
-    integrator
-    kernel
-    adaptor
 end
 
 function HMCDA(
     n_adapts::Int,
     TAP::Float64,
     λ::Float64;
-    ϵ::Float64=0.0,
-    metric=nothing,
-    integrator=Leapfrog)
-    kernel = HMCDA_kernel(λ)
-    function adaptor(metric, integrator)
-        return StanHMCAdaptor(MassMatrixAdaptor(metric),
-                              StepSizeAdaptor(TAP, integrator))
-    end    
-    return AHMC_HMCDA(n_adapts, TAP, λ, ϵ, metric, integrator, kernel, adaptor)
+    ϵ::Float64=0.0) 
+    return HMCSampler(HMCDA_alg(n_adapts, TAP, λ, ϵ))
 end
 
-export AHMC_HMCDA
+############
+# Adaptors #
+############
+
+function makea_daptor(alg::AdaptiveHamiltonian, metric, integrator)
+    return StanHMCAdaptor(MassMatrixAdaptor(metric, integrator),
+                          StepSizeAdaptor(alg.TAP, integrator))
+ end 
+
+###########
+# Kernels #
+###########
+
+function make_kernel(alg::NUTS_alg, integrator)
+    return HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+end    
+
+function make_kernel(alg::HMC_alg, integrator)
+    return HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(alg.n_leapfrog)))
+end 
+
+function make_kernel(alg::HMCDA_alg, integrator)
+    return HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(alg.λ)))
+end 

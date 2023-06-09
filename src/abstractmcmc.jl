@@ -50,7 +50,6 @@ function AbstractMCMC.step(
     # Define metric
     if spl.metric == nothing
         d = LogDensityProblems.dimension(logdensityproblem)
-        #d = getdimensions(logdensitymodel)
         metric = DiagEuclideanMetric(d)
     else
         metric = spl.metric    
@@ -59,32 +58,42 @@ function AbstractMCMC.step(
     # Construct the hamiltonian using the initial metric
     hamiltonian = Hamiltonian(metric, logdensitymodel)
 
-    # Find good eps if not provided one
-    # Before it was spl.alg.ϵ to allow prior sampling
-    if iszero(spl.ϵ)
-        # Extract parameters.
-        theta = vi[spl]
-        ϵ = find_good_stepsize(rng, hamiltonian, theta)
-        println(string("Found initial step size ", ϵ))
+    # Define integration algorithm
+    if spl.integrator == nothing
+        # Find good eps if not provided one
+        if iszero(spl.alg.ϵ)
+            # Extract parameters.
+            theta = vi[spl]
+            ϵ = find_good_stepsize(rng, hamiltonian, theta)
+            println(string("Found initial step size ", ϵ))
+        else
+            ϵ = spl.alg.ϵ
+        end
+        integrator = Leapfrog(ϵ)
     else
-        ϵ = spl.ϵ
+        integrator = spl.integrator
     end
 
-    integrator = spl.integrator(ϵ)
-    kernel = spl.kernel(integrator)
+    # Make kernel
+    kernel = make_kernel(spl.alg, integrator)
 
-    if typeof(spl) <: AdvancedHMC.AdaptiveHamiltonian
-        adaptor = spl.adaptor(metric, integrator)
-        n_adapts = spl.n_adapts
+    # Make adaptor
+    if spl.adaptor == nothing
+        if typeof(spl.alg) <: AdvancedHMC.AdaptiveHamiltonian
+            adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric),
+                                     StepSizeAdaptor(spl.alg.TAP, integrator))
+            n_adapts = spl.alg.n_adapts
+        else
+            adaptor = NoAdaptation()
+            n_adapts = 0
+        end
     else
         adaptor = spl.adaptor
-        n_adapts = 0
-    end
+        n_adapts = kwargs[:n_adapts]
+    end        
 
-    spl = HMCSampler(kernel, metric, adaptor)
-
-    if init_params === nothing
-        init_params = randn(rng, size(metric, 1))
+    if init_params == nothing
+        init_params = vi[DynamicPPL.SampleFromPrior()]
     end
 
     # Get an initial sample.
@@ -93,7 +102,6 @@ function AbstractMCMC.step(
     # Compute next transition and state.
     state = HMCState(0, t, h.metric, kernel, adaptor, hamiltonian)
     # Take actual first step.
-    println(typeof(hamiltonian)<:Hamiltonian)
     return AbstractMCMC.step(
         rng,
         model,
@@ -111,6 +119,10 @@ function AbstractMCMC.step(
     nadapts::Int = 0,
     kwargs...,
 )   
+
+    # Get step size
+    @debug "current ϵ" getstepsize(spl, state)
+
     # Compute transition.
     i = state.i + 1
     t_old = state.transition
@@ -118,9 +130,6 @@ function AbstractMCMC.step(
     κ = state.κ
     metric = state.metric
     h = state.hamiltonian
-
-    # Reconstruct hamiltonian.
-    #h = Hamiltonian(metric, logdensitymodel)
 
     # Make new transition.
     t = transition(rng, h, κ, t_old.z)
@@ -136,17 +145,6 @@ function AbstractMCMC.step(
     # Return `Transition` with additional stats added.
     return Transition(t.z, tstat), newstate
 end
-
-#########
-# Utils #
-#########
-
-getmodel(f::DynamicPPL.LogDensityFunction) = f.model
-getmodel(f::AbstractMCMC.LogDensityModel) = getmodel(f.logdensity)
-getmodel(f::LogDensityProblemsAD.ADGradientWrapper) = getmodel(parent(f))
-function getdimensions(f::AbstractMCMC.LogDensityModel)
-    return LogDensityProblems.dimension(f.logdensity)
-end    
 
 ################
 ### Callback ###
