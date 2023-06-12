@@ -13,7 +13,10 @@ struct HMCState{
     TMetric<:AbstractMetric,
     TKernel<:AbstractMCMCKernel,
     TAdapt<:Adaptation.AbstractAdaptor,
+    TV<:AbstractVarInfo,
 }
+    "Current Var Info"
+    vi::TV
     "Index of current iteration."
     i::Int
     "Current [`Transition`](@ref)."
@@ -38,14 +41,10 @@ function AbstractMCMC.step(
     # Unpack model
     ctxt = model.context
     vi = DynamicPPL.VarInfo(model, ctxt)
-    logdensityfunction = DynamicPPL.LogDensityFunction(vi, model, ctxt)
+    vi_t = DynamicPPL.link!!(vi, model)
+    logdensityfunction = DynamicPPL.LogDensityFunction(vi_t, model, ctxt)
     logdensityproblem = LogDensityProblemsAD.ADgradient(logdensityfunction)
     logdensitymodel = AbstractMCMC.LogDensityModel(logdensityproblem)
-
-    # We will need to implement this but it is going to be
-    # Interesting how to plug the transforms along the sampling
-    # processes
-    # vi_t = Turing.link!!(vi, model)
 
     # Define metric
     if spl.metric == nothing
@@ -63,7 +62,7 @@ function AbstractMCMC.step(
         # Find good eps if not provided one
         if iszero(spl.alg.ϵ)
             # Extract parameters.
-            theta = vi[spl]
+            theta = vi_t[spl]
             ϵ = find_good_stepsize(rng, hamiltonian, theta)
             println(string("Found initial step size ", ϵ))
         else
@@ -93,21 +92,25 @@ function AbstractMCMC.step(
     end        
 
     if init_params == nothing
-        init_params = vi[DynamicPPL.SampleFromPrior()]
+        init_params = vi_t[DynamicPPL.SampleFromPrior()]
+    else
+        init_params = init_params
+        # We have to think of a way of transforming the initial parameters 
+        # init_params = DynamicPPL.link!!()
     end
 
     # Get an initial sample.
     h, t = AdvancedHMC.sample_init(rng, hamiltonian, init_params)
 
     # Compute next transition and state.
-    state = HMCState(0, t, h.metric, kernel, adaptor, hamiltonian)
+    state = HMCState(vi, 0, t, h.metric, kernel, adaptor, hamiltonian)
     # Take actual first step.
     return AbstractMCMC.step(
         rng,
         model,
         spl,
         state;
-        n_adapts = n_adapts,
+        n_adapts=n_adapts,
         kwargs...)
 end
 
@@ -116,10 +119,9 @@ function AbstractMCMC.step(
     model::AbstractMCMC.AbstractModel,
     spl::AbstractMCMC.AbstractSampler,
     state::HMCState;
-    nadapts::Int = 0,
+    nadapts::Int=0,
     kwargs...,
 )   
-
     # Get step size
     @debug "current ϵ" getstepsize(spl, state)
 
@@ -130,6 +132,8 @@ function AbstractMCMC.step(
     κ = state.κ
     metric = state.metric
     h = state.hamiltonian
+    vi = state.vi
+    vi_t = DynamicPPL.link!!(vi, model)
 
     # Make new transition.
     t = transition(rng, h, κ, t_old.z)
@@ -139,11 +143,17 @@ function AbstractMCMC.step(
     h, κ, isadapted = adapt!(h, κ, adaptor, i, nadapts, t.z.θ, tstat.acceptance_rate)
     tstat = merge(tstat, (is_adapt = isadapted,))
 
+    # Convert variables back
+    vii_t = DynamicPPL.unflatten(vi_t, t.z.θ)  
+    vii = DynamicPPL.invlink!!(vii_t, model)
+    θ = vii[spl]
+    zz = phasepoint(rng, θ, h)
+
     # Compute next transition and state.
-    newstate = HMCState(i, t, h.metric, κ, adaptor, h)
+    newstate = HMCState(vii, i, t, h.metric, κ, adaptor, h)
 
     # Return `Transition` with additional stats added.
-    return Transition(t.z, tstat), newstate
+    return Transition(zz, tstat), newstate
 end
 
 ################
