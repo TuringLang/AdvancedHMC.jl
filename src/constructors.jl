@@ -66,7 +66,7 @@ Arguments:
 """
 struct NUTS_alg <: AdaptiveHamiltonian
     n_adapts::Int     # number of samples with adaption for ϵ
-    TAP::Float64      # target accept rate
+    δ::Float64      # target accept rate
     max_depth::Int    # maximum tree depth
     Δ_max::Float64    # maximum error
     ϵ::Float64        # (initial) step size
@@ -74,11 +74,11 @@ end
 
 function NUTS(
     n_adapts::Int,
-    TAP::Float64;
+    δ::Float64;
     max_depth::Int=10,
     Δ_max::Float64=1000.0,
     ϵ::Float64=0.0)   
-    return HMCSampler(NUTS_alg(n_adapts, TAP, max_depth, Δ_max, ϵ))
+    return HMCSampler(NUTS_alg(n_adapts, δ, max_depth, Δ_max, ϵ))
 end 
 
 #######
@@ -153,17 +153,17 @@ For more information, please view the following paper ([arXiv link](https://arxi
 """
 struct HMCDA_alg <: AdaptiveHamiltonian
     n_adapts    ::  Int         # number of samples with adaption for ϵ
-    TAP         ::  Float64     # target accept rate
+    δ         ::  Float64     # target accept rate
     λ           ::  Float64     # target leapfrog length
     ϵ           ::  Float64     # (initial) step size
 end
 
 function HMCDA(
     n_adapts::Int,
-    TAP::Float64,
+    δ::Float64,
     λ::Float64;
     ϵ::Float64=0.0) 
-    return HMCSampler(HMCDA_alg(n_adapts, TAP, λ, ϵ))
+    return HMCSampler(HMCDA_alg(n_adapts, δ, λ, ϵ))
 end
 
 ############
@@ -172,7 +172,7 @@ end
 
 function makea_daptor(alg::AdaptiveHamiltonian, metric, integrator)
     return StanHMCAdaptor(MassMatrixAdaptor(metric, integrator),
-                          StepSizeAdaptor(alg.TAP, integrator))
+                          StepSizeAdaptor(alg.δ, integrator))
  end 
 
 ###########

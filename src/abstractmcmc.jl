@@ -13,10 +13,7 @@ struct HMCState{
     TMetric<:AbstractMetric,
     TKernel<:AbstractMCMCKernel,
     TAdapt<:Adaptation.AbstractAdaptor,
-    TV<:AbstractVarInfo,
 }
-    "Current Var Info"
-    vi::TV
     "Index of current iteration."
     i::Int
     "Current [`Transition`](@ref)."
@@ -27,44 +24,147 @@ struct HMCState{
     κ::TKernel
     "Current [`AbstractAdaptor`](@ref)."
     adaptor::TAdapt
-    "Current [`Hamiltonian`](@ref)."
-    hamiltonian::Hamiltonian
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+A convenient wrapper around `AbstractMCMC.sample` avoiding explicit construction of [`HMCSampler`](@ref).
+"""
+function AbstractMCMC.sample(
+    model::LogDensityModel,
+    kernel::AbstractMCMCKernel,
+    metric::AbstractMetric,
+    adaptor::AbstractAdaptor,
+    N::Integer;
+    kwargs...,
+)
+    return AbstractMCMC.sample(
+        Random.GLOBAL_RNG,
+        model,
+        kernel,
+        metric,
+        adaptor,
+        N;
+        kwargs...,
+    )
+end
+
+function AbstractMCMC.sample(
+    rng::Random.AbstractRNG,
+    model::LogDensityModel,
+    kernel::AbstractMCMCKernel,
+    metric::AbstractMetric,
+    adaptor::AbstractAdaptor,
+    N::Integer;
+    progress = true,
+    verbose = false,
+    callback = nothing,
+    kwargs...,
+)
+    sampler = HMCSampler(kernel, metric, adaptor)
+    if callback === nothing
+        callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
+        progress = false # don't use AMCMC's progress-funtionality
+    end
+
+    return AbstractMCMC.mcmcsample(
+        rng,
+        model,
+        sampler,
+        N;
+        progress = progress,
+        verbose = verbose,
+        callback = callback,
+        kwargs...,
+    )
+end
+
+function AbstractMCMC.sample(
+    model::LogDensityModel,
+    kernel::AbstractMCMCKernel,
+    metric::AbstractMetric,
+    adaptor::AbstractAdaptor,
+    parallel::AbstractMCMC.AbstractMCMCEnsemble,
+    N::Integer,
+    nchains::Integer;
+    kwargs...,
+)
+    return AbstractMCMC.sample(
+        Random.GLOBAL_RNG,
+        model,
+        kernel,
+        metric,
+        adaptor,
+        N,
+        nchains;
+        kwargs...,
+    )
+end
+
+function AbstractMCMC.sample(
+    rng::Random.AbstractRNG,
+    model::LogDensityModel,
+    kernel::AbstractMCMCKernel,
+    metric::AbstractMetric,
+    adaptor::AbstractAdaptor,
+    parallel::AbstractMCMC.AbstractMCMCEnsemble,
+    N::Integer,
+    nchains::Integer;
+    progress = true,
+    verbose = false,
+    callback = nothing,
+    kwargs...,
+)
+    sampler = HMCSampler(kernel, metric, adaptor)
+    if callback === nothing
+        callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
+        progress = false # don't use AMCMC's progress-funtionality
+    end
+
+    return AbstractMCMC.mcmcsample(
+        rng,
+        model,
+        sampler,
+        parallel,
+        N,
+        nchains;
+        progress = progress,
+        verbose = verbose,
+        callback = callback,
+        kwargs...,
+    )
 end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::AbstractMCMC.AbstractModel,
+    model::AbstractMCMC.LogDensityModel,
     spl::AbstractMCMC.AbstractSampler;
     init_params = nothing,
     kwargs...,
 )   
     # Unpack model
-    ctxt = model.context
-    vi = DynamicPPL.VarInfo(model, ctxt)
-    vi_t = DynamicPPL.link!!(vi, model)
-    logdensityfunction = DynamicPPL.LogDensityFunction(vi_t, model, ctxt)
-    logdensityproblem = LogDensityProblemsAD.ADgradient(logdensityfunction)
-    logdensitymodel = AbstractMCMC.LogDensityModel(logdensityproblem)
+    logdensity = model.logdensity
+    vi = logdensity.varinfo
 
     # Define metric
     if spl.metric == nothing
-        d = LogDensityProblems.dimension(logdensityproblem)
+        d = LogDensityProblems.dimension(logdensity)
         metric = DiagEuclideanMetric(d)
     else
         metric = spl.metric    
     end
 
     # Construct the hamiltonian using the initial metric
-    hamiltonian = Hamiltonian(metric, logdensitymodel)
+    hamiltonian = Hamiltonian(metric, model)
 
     # Define integration algorithm
     if spl.integrator == nothing
         # Find good eps if not provided one
         if iszero(spl.alg.ϵ)
             # Extract parameters.
-            theta = vi_t[spl]
-            ϵ = find_good_stepsize(rng, hamiltonian, theta)
-            println(string("Found initial step size ", ϵ))
+            ϵ = find_good_stepsize(rng, hamiltonian, init_params)
+            @info string("Found initial step size ", ϵ)
         else
             ϵ = spl.alg.ϵ
         end
@@ -74,13 +174,13 @@ function AbstractMCMC.step(
     end
 
     # Make kernel
-    kernel = make_kernel(spl.alg, integrator)
+    κ = make_kernel(spl.alg, integrator)
 
     # Make adaptor
     if spl.adaptor == nothing
-        if typeof(spl.alg) <: AdvancedHMC.AdaptiveHamiltonian
+        if typeof(spl.alg) <: AdaptiveHamiltonian
             adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric),
-                                     StepSizeAdaptor(spl.alg.TAP, integrator))
+                StepSizeAdaptor(spl.alg.δ, integrator))
             n_adapts = spl.alg.n_adapts
         else
             adaptor = NoAdaptation()
@@ -91,49 +191,33 @@ function AbstractMCMC.step(
         n_adapts = kwargs[:n_adapts]
     end        
 
-    if init_params == nothing
-        init_params = vi_t[DynamicPPL.SampleFromPrior()]
-    else
-        init_params = init_params
-        # We have to think of a way of transforming the initial parameters 
-        # init_params = DynamicPPL.link!!()
-    end
-
     # Get an initial sample.
     h, t = AdvancedHMC.sample_init(rng, hamiltonian, init_params)
 
     # Compute next transition and state.
-    state = HMCState(vi, 0, t, h.metric, kernel, adaptor, hamiltonian)
+    state = HMCState(0, t, metric, κ, adaptor)
+    
     # Take actual first step.
-    return AbstractMCMC.step(
-        rng,
-        model,
-        spl,
-        state;
-        n_adapts=n_adapts,
-        kwargs...)
+    return AbstractMCMC.step(rng, model, spl, state; kwargs...)
 end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::AbstractMCMC.AbstractModel,
+    model::LogDensityModel,
     spl::AbstractMCMC.AbstractSampler,
     state::HMCState;
-    nadapts::Int=0,
+    nadapts::Int = 0,
     kwargs...,
-)   
-    # Get step size
-    @debug "current ϵ" getstepsize(spl, state)
-
+)
     # Compute transition.
     i = state.i + 1
     t_old = state.transition
     adaptor = state.adaptor
     κ = state.κ
     metric = state.metric
-    h = state.hamiltonian
-    vi = state.vi
-    vi_t = DynamicPPL.link!!(vi, model)
+
+    # Reconstruct hamiltonian.
+    h = Hamiltonian(metric, model)
 
     # Make new transition.
     t = transition(rng, h, κ, t_old.z)
@@ -143,18 +227,13 @@ function AbstractMCMC.step(
     h, κ, isadapted = adapt!(h, κ, adaptor, i, nadapts, t.z.θ, tstat.acceptance_rate)
     tstat = merge(tstat, (is_adapt = isadapted,))
 
-    # Convert variables back
-    vii_t = DynamicPPL.unflatten(vi_t, t.z.θ)  
-    vii = DynamicPPL.invlink!!(vii_t, model)
-    θ = vii[spl]
-    zz = phasepoint(rng, θ, h)
-
     # Compute next transition and state.
-    newstate = HMCState(vii, i, t, h.metric, κ, adaptor, h)
+    newstate = HMCState(i, t, h.metric, κ, adaptor)
 
     # Return `Transition` with additional stats added.
-    return Transition(zz, tstat), newstate
+    return Transition(t.z, tstat), newstate
 end
+
 
 ################
 ### Callback ###
