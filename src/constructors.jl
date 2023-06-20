@@ -19,21 +19,20 @@ and `adaptor` after sampling.
 
 To access the updated fields use the resulting [`HMCState`](@ref).
 """
-struct HMCSampler{I,K,M,A} <: AbstractMCMC.AbstractSampler
+Base.@kwdef struct HMCSampler{I,K,M,A} <: AbstractMCMC.AbstractSampler
     alg::SamplingAlgorithm
     "[`integrator`](@ref)."
-    integrator::I
+    integrator::I=nothing
     "[`AbstractMCMCKernel`](@ref)."
-    kernel::K
+    kernel::K=nothing
     "[`AbstractMetric`](@ref)."
-    metric::M
+    metric::M=nothing
     "[`AbstractAdaptor`](@ref)."
-    adaptor::A
+    adaptor::A=nothing
 end
 # Basic use
-HMCSampler(algorithm) = HMCSampler(algorithm, nothing, nothing, nothing, nothing)
-# Expert use
-HMCSampler(integrator, kernel, metric, adaptor) = HMCSampler(Custom_alg, integrator, kernel, metric, adaptor)
+HMCSampler(algorithm; kwargs...) = HMCSampler(algorithm; kwargs...)
+HMCSampler(; kwargs...) = HMCSampler(Custom_alg(); kwargs...)
 
 ##########
 # Custom #
