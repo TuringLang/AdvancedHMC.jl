@@ -65,7 +65,7 @@ Arguments:
 """
 struct NUTS_alg <: AdaptiveHamiltonian
     n_adapts::Int     # number of samples with adaption for ϵ
-    δ::Float64      # target accept rate
+    δ::Float64        # target accept rate
     max_depth::Int    # maximum tree depth
     Δ_max::Float64    # maximum error
     ϵ::Float64        # (initial) step size
@@ -151,17 +151,17 @@ For more information, please view the following paper ([arXiv link](https://arxi
   Research 15, no. 1 (2014): 1593-1623.
 """
 struct HMCDA_alg <: AdaptiveHamiltonian
-    n_adapts    ::  Int         # number of samples with adaption for ϵ
-    δ         ::  Float64     # target accept rate
-    λ           ::  Float64     # target leapfrog length
-    ϵ           ::  Float64     # (initial) step size
+    n_adapts::Int    # number of samples with adaption for ϵ
+    δ::Float64     # target accept rate
+    λ::Float64     # target leapfrog length
+    ϵ::Float64     # (initial) step size
 end
 
 function HMCDA(
     n_adapts::Int,
     δ::Float64,
     λ::Float64;
-    ϵ::Float64=0.0) 
+    ϵ::Float64=0.0)
     return HMCSampler(HMCDA_alg(n_adapts, δ, λ, ϵ))
 end
 
