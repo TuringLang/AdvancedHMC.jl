@@ -1,6 +1,6 @@
-abstract type SamplingAlgorithm end
-abstract type StaticHamiltonian <: SamplingAlgorithm end
-abstract type AdaptiveHamiltonian <: SamplingAlgorithm end
+abstract type HMCAlgorithm end
+abstract type StaticHamiltonian <: HMCAlgorithm end
+abstract type AdaptiveHamiltonian <: HMCAlgorithm end
 
 """
     HMCSampler
@@ -20,7 +20,7 @@ and `adaptor` after sampling.
 To access the updated fields use the resulting [`HMCState`](@ref).
 """
 Base.@kwdef struct HMCSampler{I,K,M,A} <: AbstractMCMC.AbstractSampler
-    alg::SamplingAlgorithm
+    alg::HMCAlgorithm=Custom_alg
     "[`integrator`](@ref)."
     integrator::I=nothing
     "[`AbstractMCMCKernel`](@ref)."
@@ -30,14 +30,11 @@ Base.@kwdef struct HMCSampler{I,K,M,A} <: AbstractMCMC.AbstractSampler
     "[`AbstractAdaptor`](@ref)."
     adaptor::A=nothing
 end
-# Basic use
-HMCSampler(algorithm; kwargs...) = HMCSampler(algorithm; kwargs...)
-HMCSampler(; kwargs...) = HMCSampler(Custom_alg(); kwargs...)
 
 ##########
 # Custom #
 ##########
-struct Custom_alg<:SamplingAlgorithm end
+struct Custom_alg<:HMCAlgorithm end
 
 ########
 # NUTS #
@@ -77,7 +74,7 @@ function NUTS(
     max_depth::Int=10,
     Δ_max::Float64=1000.0,
     ϵ::Float64=0.0)   
-    return HMCSampler(NUTS_alg(n_adapts, δ, max_depth, Δ_max, ϵ))
+    return HMCSampler(;alg=NUTS_alg(n_adapts, δ, max_depth, Δ_max, ϵ))
 end 
 
 #######
@@ -120,7 +117,7 @@ function HMC(
     ϵ::Float64,
     n_leapfrog::Int)
 
-    return HMCSampler(HMC_alg(ϵ, n_leapfrog))
+    return HMCSampler(;alg=HMC_alg(ϵ, n_leapfrog))
 end
 
 #########
@@ -162,7 +159,7 @@ function HMCDA(
     δ::Float64,
     λ::Float64;
     ϵ::Float64=0.0)
-    return HMCSampler(HMCDA_alg(n_adapts, δ, λ, ϵ))
+    return HMCSampler(;alg=HMCDA_alg(n_adapts, δ, λ, ϵ))
 end
 
 ############
