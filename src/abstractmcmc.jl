@@ -38,48 +38,24 @@ function AbstractMCMC.step(
     vi = logdensity.varinfo
 
     # Define metric
-    if spl.metric == nothing
-        d = LogDensityProblems.dimension(logdensity)
-        metric = DiagEuclideanMetric(d)
-    else
-        metric = spl.metric    
-    end
+    d = d=LogDensityProblems.dimension(logdensity)
+    metric = make_metric(spl; d=d)
 
     # Construct the hamiltonian using the initial metric
     hamiltonian = Hamiltonian(metric, model)
 
     # Define integration algorithm
-    if spl.integrator == nothing
-        # Find good eps if not provided one
-        if iszero(spl.alg.ϵ)
-            # Extract parameters.
-            ϵ = find_good_stepsize(rng, hamiltonian, init_params)
-            @info string("Found initial step size ", ϵ)
-        else
-            ϵ = spl.alg.ϵ
-        end
-        integrator = Leapfrog(ϵ)
-    else
-        integrator = spl.integrator
-    end
+    # Find good eps if not provided one
+    integrator = make_integrator(spl;
+        rng=rng,
+        hamiltonian=hamiltonian,
+        init_params=init_params)
 
     # Make kernel
-    κ = make_kernel(spl.alg, integrator)
+    κ = make_kernel(spl, integrator)
 
     # Make adaptor
-    if spl.adaptor == nothing
-        if typeof(spl.alg) <: AdaptiveHamiltonian
-            adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric),
-                StepSizeAdaptor(spl.alg.δ, integrator))
-            n_adapts = spl.alg.n_adapts
-        else
-            adaptor = NoAdaptation()
-            n_adapts = 0
-        end
-    else
-        adaptor = spl.adaptor
-        n_adapts = kwargs[:n_adapts]
-    end        
+    n_adapts, adaptor = make_adaptor(spl, metric, integrator)
 
     # Get an initial sample.
     h, t = AdvancedHMC.sample_init(rng, hamiltonian, init_params)

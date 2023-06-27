@@ -1,7 +1,8 @@
-abstract type HMCAlgorithm end
-abstract type StaticHamiltonian <: HMCAlgorithm end
-abstract type AdaptiveHamiltonian <: HMCAlgorithm end
+abstract type AbstractHMCSampler <:AbstractMCMC.AbstractSampler end
 
+##########
+# Custom #
+##########
 """
     HMCSampler
 
@@ -19,10 +20,9 @@ and `adaptor` after sampling.
 
 To access the updated fields use the resulting [`HMCState`](@ref).
 """
-Base.@kwdef struct HMCSampler{I,K,M,A} <: AbstractMCMC.AbstractSampler
-    alg::HMCAlgorithm=Custom_alg
+Base.@kwdef struct CustomHMC{I,K,M,A} <: AbstractMCMC.AbstractSampler
     "[`integrator`](@ref)."
-    integrator::I=nothing
+    integrator::I=Leapfrog
     "[`AbstractMCMCKernel`](@ref)."
     kernel::K=nothing
     "[`AbstractMetric`](@ref)."
@@ -30,11 +30,6 @@ Base.@kwdef struct HMCSampler{I,K,M,A} <: AbstractMCMC.AbstractSampler
     "[`AbstractAdaptor`](@ref)."
     adaptor::A=nothing
 end
-
-##########
-# Custom #
-##########
-struct Custom_alg<:HMCAlgorithm end
 
 ########
 # NUTS #
@@ -60,22 +55,15 @@ Arguments:
 - `init_ϵ::Float64` : Initial step size; 0 means automatically searching using a heuristic procedure.
 
 """
-struct NUTS_alg <: AdaptiveHamiltonian
-    n_adapts::Int     # number of samples with adaption for ϵ
-    δ::Float64        # target accept rate
-    max_depth::Int    # maximum tree depth
-    Δ_max::Float64    # maximum error
-    ϵ::Float64        # (initial) step size
+Base.@kwdef struct NUTS_alg <: AbstractMCMC.AbstractSampler
+    n_adapts::Int                    # number of samples with adaption for ϵ
+    δ::Float64                       # target accept rate
+    max_depth::Int=10                # maximum tree depth
+    Δ_max::Float64=1000.0            # maximum error
+    init_ϵ::Float64=0.0              # (initial) step size
+    integrator_method=Leapfrog       # integrator method
+    metric_type=DiagEuclideanMetric  # metric type
 end
-
-function NUTS(
-    n_adapts::Int,
-    δ::Float64;
-    max_depth::Int=10,
-    Δ_max::Float64=1000.0,
-    ϵ::Float64=0.0)   
-    return HMCSampler(;alg=NUTS_alg(n_adapts, δ, max_depth, Δ_max, ϵ))
-end 
 
 #######
 # HMC #
@@ -108,16 +96,11 @@ sample(gdemo([1.5, 2]), HMC(0.1, 10), 1000)
 sample(gdemo([1.5, 2]), HMC(0.01, 10), 1000)
 ```
 """
-struct HMC_alg <: StaticHamiltonian
-    ϵ::Float64 # leapfrog step size
-    n_leapfrog::Int # leapfrog step number
-end
-
-function HMC(
-    ϵ::Float64,
-    n_leapfrog::Int)
-
-    return HMCSampler(;alg=HMC_alg(ϵ, n_leapfrog))
+Base.@kwdef struct HMC_alg <: AbstractMCMC.AbstractSampler
+    init_ϵ::Float64                  # leapfrog step size
+    n_leapfrog::Int                  # leapfrog step number
+    integrator_method=Leapfrog       # integrator method
+    metric_type=DiagEuclideanMetric  # metric type
 end
 
 #########
@@ -147,42 +130,75 @@ For more information, please view the following paper ([arXiv link](https://arxi
   setting path lengths in Hamiltonian Monte Carlo." Journal of Machine Learning
   Research 15, no. 1 (2014): 1593-1623.
 """
-struct HMCDA_alg <: AdaptiveHamiltonian
-    n_adapts::Int    # number of samples with adaption for ϵ
-    δ::Float64     # target accept rate
-    λ::Float64     # target leapfrog length
-    ϵ::Float64     # (initial) step size
+Base.@kwdef struct HMCDA_alg <: AbstractMCMC.AbstractSampler
+    n_adapts::Int                    # number of samples with adaption for ϵ
+    δ::Float64                       # target accept rate
+    λ::Float64                       # target leapfrog length
+    init_ϵ::Float64=0.0              # (initial) step size
+    integrator_method=Leapfrog       # integrator method
+    metric_type=DiagEuclideanMetric  # metric type
 end
 
-function HMCDA(
-    n_adapts::Int,
-    δ::Float64,
-    λ::Float64;
-    ϵ::Float64=0.0)
-    return HMCSampler(;alg=HMCDA_alg(n_adapts, δ, λ, ϵ))
+export CustomHMC, HMC_alg, NUTS_alg, HMCDA_alg
+#########
+# Utils #
+#########
+
+function make_integrator(spl::Union{HMC_alg, NUTS_alg, HMCDA_alg};
+    rng, hamiltonian, init_params)
+    init_ϵ = spl.init_ϵ
+    if iszero(init_ϵ)
+        init_ϵ = find_good_stepsize(rng, hamiltonian, init_params)
+        @info string("Found initial step size ", init_ϵ)
+    end
+    return spl.integrator_method(init_ϵ)
 end
 
-############
-# Adaptors #
-############
+function make_integrator(spl::CustomHMC)
+    return spl.integrator
+end
 
-function makea_daptor(alg::AdaptiveHamiltonian, metric, integrator)
-    return StanHMCAdaptor(MassMatrixAdaptor(metric, integrator),
-                          StepSizeAdaptor(alg.δ, integrator))
+#########
+
+function make_metric(spl::Union{HMC_alg, NUTS_alg, HMCDA_alg}; d::Int=0)
+    return spl.metric_type(d)
+end
+
+function make_metric(spl::CustomHMC)
+    return spl.metric
+end
+
+#########
+
+function make_adaptor(spl::Union{NUTS_alg, HMCDA_alg}, metric, integrator)
+    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric),
+                             StepSizeAdaptor(spl.δ, integrator))
+    n_adapts = spl.n_adapts
+    return n_adapts, adaptor
  end 
 
-###########
-# Kernels #
-###########
+function make_adaptor(spl::HMC_alg, metric, integrator)
+    return 0, NoAdaptation()
+ end 
 
-function make_kernel(alg::NUTS_alg, integrator)
+ function make_adaptor(spl::CustomHMC, metric, integrator)
+    return spl.n_adapts, spl.adaptor
+ end
+
+#########
+
+function make_kernel(spl::NUTS_alg, integrator)
     return HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
 end    
 
-function make_kernel(alg::HMC_alg, integrator)
-    return HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(alg.n_leapfrog)))
+function make_kernel(spl::HMC_alg, integrator)
+    return HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(spl.n_leapfrog)))
 end 
 
-function make_kernel(alg::HMCDA_alg, integrator)
-    return HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(alg.λ)))
+function make_kernel(spl::HMCDA_alg, integrator)
+    return HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(spl.λ)))
+end
+
+function make_kernel(spl::CustomHMC, integrator)
+    return spl.kernel
 end 
