@@ -38,18 +38,14 @@ function AbstractMCMC.step(
     vi = logdensity.varinfo
 
     # Define metric
-    d = d=LogDensityProblems.dimension(logdensity)
-    metric = make_metric(spl; d=d)
+    metric = make_metric(spl, logdensity)
 
     # Construct the hamiltonian using the initial metric
     hamiltonian = Hamiltonian(metric, model)
 
     # Define integration algorithm
     # Find good eps if not provided one
-    integrator = make_integrator(spl;
-        rng=rng,
-        hamiltonian=hamiltonian,
-        init_params=init_params)
+    integrator = make_integrator(rng, spl, hamiltonian, init_params)
 
     # Make kernel
     κ = make_kernel(spl, integrator)

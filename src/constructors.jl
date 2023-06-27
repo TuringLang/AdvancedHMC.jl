@@ -144,8 +144,8 @@ export CustomHMC, HMC_alg, NUTS_alg, HMCDA_alg
 # Utils #
 #########
 
-function make_integrator(spl::Union{HMC_alg, NUTS_alg, HMCDA_alg};
-    rng, hamiltonian, init_params)
+function make_integrator(rng, spl::Union{HMC_alg, NUTS_alg, HMCDA_alg},
+    hamiltonian, init_params)
     init_ϵ = spl.init_ϵ
     if iszero(init_ϵ)
         init_ϵ = find_good_stepsize(rng, hamiltonian, init_params)
@@ -154,17 +154,18 @@ function make_integrator(spl::Union{HMC_alg, NUTS_alg, HMCDA_alg};
     return spl.integrator_method(init_ϵ)
 end
 
-function make_integrator(spl::CustomHMC)
+function make_integrator(rng, spl::CustomHMC, hamiltonian, init_params)
     return spl.integrator
 end
 
 #########
 
-function make_metric(spl::Union{HMC_alg, NUTS_alg, HMCDA_alg}; d::Int=0)
+function make_metric(spl::Union{HMC_alg, NUTS_alg, HMCDA_alg}, logdensity)
+    d = LogDensityProblems.dimension(logdensity)
     return spl.metric_type(d)
 end
 
-function make_metric(spl::CustomHMC)
+function make_metric(spl::CustomHMC, logdensity)
     return spl.metric
 end
 
