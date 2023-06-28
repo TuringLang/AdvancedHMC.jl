@@ -22,7 +22,7 @@ To access the updated fields use the resulting [`HMCState`](@ref).
 """
 Base.@kwdef struct CustomHMC{I,K,M,A} <: AbstractMCMC.AbstractSampler
     "[`integrator`](@ref)."
-    integrator::I=Leapfrog
+    integrator::I = Leapfrog
     "[`AbstractMCMCKernel`](@ref)."
     kernel::K=nothing
     "[`AbstractMetric`](@ref)."
