@@ -1,8 +1,39 @@
 abstract type AbstractHMCSampler <: AbstractMCMC.AbstractSampler end
 
-##########
-# Custom #
-##########
+##############
+### Legacy ###
+##############
+
+"""
+    HMCSampler
+
+A `AbstractMCMC.AbstractSampler` for kernels in AdvancedHMC.jl.
+
+# Fields
+
+$(FIELDS)
+
+# Notes
+
+Note that all the fields have the prefix `initial_` to indicate
+that these will not necessarily correspond to the `kernel`, `metric`,
+and `adaptor` after sampling.
+
+To access the updated fields use the resulting [`HMCState`](@ref).
+"""
+struct HMCSampler{K,M,A} <: AbstractMCMC.AbstractSampler
+    "[`AbstractMCMCKernel`](@ref)."
+    kernel::K
+    "[`AbstractMetric`](@ref)."
+    metric::M
+    "[`AbstractAdaptor`](@ref)."
+    adaptor::A
+end
+
+##############
+### Custom ###
+##############
+
 """
     HMCSampler
 
@@ -31,9 +62,9 @@ struct CustomHMC{I,K,M,A} <: AbstractMCMC.AbstractSampler
     adaptor::A
 end
 
-########
-# NUTS #
-########
+############
+### NUTS ###
+############
 """
     NUTS(n_adapts::Int, δ::Float64; max_depth::Int=10, Δ_max::Float64=1000.0, init_ϵ::Float64=0.0)
 
@@ -65,9 +96,9 @@ Base.@kwdef struct NUTS_alg <: AbstractMCMC.AbstractSampler
     metric_type = DiagEuclideanMetric  # metric type
 end
 
-#######
-# HMC #
-#######
+###########
+### HMC ###
+###########
 """
     HMC(ϵ::Float64, n_leapfrog::Int)
 
@@ -103,9 +134,9 @@ Base.@kwdef struct HMC_alg <: AbstractMCMC.AbstractSampler
     metric_type = DiagEuclideanMetric  # metric type
 end
 
-#########
-# HMCDA #
-#########
+#############
+### HMCDA ###
+#############
 """
     HMCDA(n_adapts::Int, δ::Float64, λ::Float64; ϵ::Float64=0.0)
 
@@ -140,9 +171,10 @@ Base.@kwdef struct HMCDA_alg <: AbstractMCMC.AbstractSampler
 end
 
 export CustomHMC, HMC_alg, NUTS_alg, HMCDA_alg
-#########
-# Utils #
-#########
+
+#############
+### Utils ###
+#############
 
 function make_integrator(
     rng,
