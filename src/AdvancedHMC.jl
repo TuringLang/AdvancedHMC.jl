@@ -168,8 +168,8 @@ include("diagnosis.jl")
 include("sampler.jl")
 export sample
 
-include("abstractmcmc.jl")
 include("constructors.jl")
+include("abstractmcmc.jl")
 
 ## Without explicit AD backend
 function Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel; kwargs...)

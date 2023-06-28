@@ -353,3 +353,70 @@ function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; nadapts = 0, kw
         @info "Finished $nadapts adapation steps" adaptor κ.τ.integrator metric
     end
 end
+
+#############
+### Utils ###
+#############
+
+function make_integrator(
+    rng,
+    spl::Union{HMC_alg,NUTS_alg,HMCDA_alg},
+    hamiltonian,
+    init_params,
+)
+    init_ϵ = spl.init_ϵ
+    if iszero(init_ϵ)
+        init_ϵ = find_good_stepsize(rng, hamiltonian, init_params)
+        @info string("Found initial step size ", init_ϵ)
+    end
+    return spl.integrator_method(init_ϵ)
+end
+
+function make_integrator(rng, spl::CustomHMC, hamiltonian, init_params)
+    return spl.integrator
+end
+
+#########
+
+function make_metric(spl::Union{HMC_alg,NUTS_alg,HMCDA_alg}, logdensity)
+    d = LogDensityProblems.dimension(logdensity)
+    return spl.metric_type(d)
+end
+
+function make_metric(spl::CustomHMC, logdensity)
+    return spl.metric
+end
+
+#########
+
+function make_adaptor(spl::Union{NUTS_alg,HMCDA_alg}, metric, integrator)
+    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(spl.δ, integrator))
+    n_adapts = spl.n_adapts
+    return n_adapts, adaptor
+end
+
+function make_adaptor(spl::HMC_alg, metric, integrator)
+    return 0, NoAdaptation()
+end
+
+function make_adaptor(spl::CustomHMC, metric, integrator)
+    return spl.n_adapts, spl.adaptor
+end
+
+#########
+
+function make_kernel(spl::NUTS_alg, integrator)
+    return HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+end
+
+function make_kernel(spl::HMC_alg, integrator)
+    return HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(spl.n_leapfrog)))
+end
+
+function make_kernel(spl::HMCDA_alg, integrator)
+    return HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(spl.λ)))
+end
+
+function make_kernel(spl::CustomHMC, integrator)
+    return spl.kernel
+end
