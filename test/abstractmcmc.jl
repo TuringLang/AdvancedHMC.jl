@@ -18,13 +18,13 @@ include("common.jl")
     metric = DiagEuclideanMetric(2)
     adaptor =
         StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, κ.τ.integrator))
+    
+    sampler = HMCSampler(κ, metric, adaptor)
 
     samples = AbstractMCMC.sample(
         rng,
         model,
-        κ,
-        metric,
-        adaptor,
+        sampler,
         n_adapts + n_samples;
         nadapts = n_adapts,
         init_params = θ_init,

@@ -33,18 +33,14 @@ A convenient wrapper around `AbstractMCMC.sample` avoiding explicit construction
 """
 function AbstractMCMC.sample(
     model::LogDensityModel,
-    kernel::AbstractMCMCKernel,
-    metric::AbstractMetric,
-    adaptor::AbstractAdaptor,
+    sampler::AbstractHMCSampler,
     N::Integer;
     kwargs...,
 )
     return AbstractMCMC.sample(
         Random.GLOBAL_RNG,
         model,
-        kernel,
-        metric,
-        adaptor,
+        sampler,
         N;
         kwargs...,
     )
@@ -53,16 +49,15 @@ end
 function AbstractMCMC.sample(
     rng::Random.AbstractRNG,
     model::LogDensityModel,
-    kernel::AbstractMCMCKernel,
-    metric::AbstractMetric,
-    adaptor::AbstractAdaptor,
+    sampler::AbstractHMCSampler,
     N::Integer;
+    n_adapts = 0,
     progress = true,
     verbose = false,
     callback = nothing,
     kwargs...,
 )
-    sampler = HMCSampler(kernel, metric, adaptor)
+    sampler = HMCSampler(kernel, metric, adaptor; n_adapts=n_adapts)
     if callback === nothing
         callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
         progress = false # don't use AMCMC's progress-funtionality
@@ -82,9 +77,7 @@ end
 
 function AbstractMCMC.sample(
     model::LogDensityModel,
-    kernel::AbstractMCMCKernel,
-    metric::AbstractMetric,
-    adaptor::AbstractAdaptor,
+    sampler::AbstractHMCSampler,
     parallel::AbstractMCMC.AbstractMCMCEnsemble,
     N::Integer,
     nchains::Integer;
@@ -105,18 +98,17 @@ end
 function AbstractMCMC.sample(
     rng::Random.AbstractRNG,
     model::LogDensityModel,
-    kernel::AbstractMCMCKernel,
-    metric::AbstractMetric,
-    adaptor::AbstractAdaptor,
+    sampler::AbstractHMCSampler,
     parallel::AbstractMCMC.AbstractMCMCEnsemble,
     N::Integer,
     nchains::Integer;
+    n_adapts = 0,
     progress = true,
     verbose = false,
     callback = nothing,
     kwargs...,
 )
-    sampler = HMCSampler(kernel, metric, adaptor)
+
     if callback === nothing
         callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
         progress = false # don't use AMCMC's progress-funtionality
@@ -289,7 +281,7 @@ end
 
 function make_integrator(
     rng,
-    spl::Union{HMC_alg,NUTS_alg,HMCDA_alg},
+    spl::Union{HMC,NUTS,HMCDA},
     hamiltonian,
     init_params,
 )
@@ -307,7 +299,7 @@ end
 
 #########
 
-function make_metric(spl::Union{HMC_alg,NUTS_alg,HMCDA_alg}, logdensity)
+function make_metric(spl::Union{HMC,NUTS,HMCDA}, logdensity)
     d = LogDensityProblems.dimension(logdensity)
     return spl.metric_type(d)
 end
@@ -318,13 +310,13 @@ end
 
 #########
 
-function make_adaptor(spl::Union{NUTS_alg,HMCDA_alg}, metric, integrator)
+function make_adaptor(spl::Union{NUTS,HMCDA}, metric, integrator)
     adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(spl.δ, integrator))
     n_adapts = spl.n_adapts
     return n_adapts, adaptor
 end
 
-function make_adaptor(spl::HMC_alg, metric, integrator)
+function make_adaptor(spl::HMC, metric, integrator)
     return 0, NoAdaptation()
 end
 
@@ -334,15 +326,15 @@ end
 
 #########
 
-function make_kernel(spl::NUTS_alg, integrator)
+function make_kernel(spl::NUTS, integrator)
     return HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
 end
 
-function make_kernel(spl::HMC_alg, integrator)
+function make_kernel(spl::HMC, integrator)
     return HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(spl.n_leapfrog)))
 end
 
-function make_kernel(spl::HMCDA_alg, integrator)
+function make_kernel(spl::HMCDA, integrator)
     return HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(spl.λ)))
 end
 

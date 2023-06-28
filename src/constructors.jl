@@ -21,7 +21,12 @@ and `adaptor` after sampling.
 
 To access the updated fields use the resulting [`HMCState`](@ref).
 """
-struct HMCSampler{I,K,M,A} <: AbstractHMCSampler
+struct HMCSampler{
+    I<:AbstractIntegrator,
+    K<:AbstractMCMCKernel,
+    M<:AbstractMetric,
+    A<:Adaptation.AbstractAdaptor
+} <: AbstractHMCSampler
     "[`integrator`](@ref)."
     integrator::I
     "[`AbstractMCMCKernel`](@ref)."
@@ -30,9 +35,10 @@ struct HMCSampler{I,K,M,A} <: AbstractHMCSampler
     metric::M
     "[`AbstractAdaptor`](@ref)."
     adaptor::A
+    n_adapts::Int
 end
 
-HMCSampler(kernel, metric, adaptor) = HMCSampler(nothing, kernel, metric, adaptor)
+HMCSampler(kernel, metric, adaptor; n_adapts=0) = HMCSampler(LeapFrog, kernel, metric, adaptor, n_adapts)
 
 ############
 ### NUTS ###
@@ -58,7 +64,7 @@ Arguments:
 - `init_ϵ::Float64` : Initial step size; 0 means automatically searching using a heuristic procedure.
 
 """
-Base.@kwdef struct NUTS_alg <: AbstractHMCSampler
+Base.@kwdef struct NUTS <: AbstractHMCSampler
     n_adapts::Int                      # number of samples with adaption for ϵ
     δ::Float64                         # target accept rate
     max_depth::Int = 10                # maximum tree depth
@@ -99,7 +105,7 @@ sample(gdemo([1.5, 2]), HMC(0.1, 10), 1000)
 sample(gdemo([1.5, 2]), HMC(0.01, 10), 1000)
 ```
 """
-Base.@kwdef struct HMC_alg <: AbstractHMCSampler
+Base.@kwdef struct HMC <: AbstractHMCSampler
     init_ϵ::Float64                    # leapfrog step size
     n_leapfrog::Int                    # leapfrog step number
     integrator_method = Leapfrog       # integrator method
@@ -133,7 +139,7 @@ For more information, please view the following paper ([arXiv link](https://arxi
   setting path lengths in Hamiltonian Monte Carlo." Journal of Machine Learning
   Research 15, no. 1 (2014): 1593-1623.
 """
-Base.@kwdef struct HMCDA_alg <: AbstractHMCSampler
+Base.@kwdef struct HMCDA <: AbstractHMCSampler
     n_adapts::Int                      # number of samples with adaption for ϵ
     δ::Float64                         # target accept rate
     λ::Float64                         # target leapfrog length
@@ -142,4 +148,4 @@ Base.@kwdef struct HMCDA_alg <: AbstractHMCSampler
     metric_type = DiagEuclideanMetric  # metric type
 end
 
-export CustomHMC, HMC_alg, NUTS_alg, HMCDA_alg
+export HMCSampler, HMC, NUTS, HMCDA
