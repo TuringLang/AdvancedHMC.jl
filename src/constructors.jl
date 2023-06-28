@@ -24,7 +24,7 @@ Base.@kwdef struct CustomHMC{I,K,M,A} <: AbstractMCMC.AbstractSampler
     "[`integrator`](@ref)."
     integrator::I = Leapfrog
     "[`AbstractMCMCKernel`](@ref)."
-    kernel::K=nothing
+    kernel::K = nothing
     "[`AbstractMetric`](@ref)."
     metric::M = nothing
     "[`AbstractAdaptor`](@ref)."
