@@ -1,4 +1,4 @@
-abstract type AbstractHMCSampler <:AbstractMCMC.AbstractSampler end
+abstract type AbstractHMCSampler <: AbstractMCMC.AbstractSampler end
 
 ##########
 # Custom #
