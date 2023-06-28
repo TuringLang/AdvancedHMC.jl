@@ -28,7 +28,7 @@ Base.@kwdef struct CustomHMC{I,K,M,A} <: AbstractMCMC.AbstractSampler
     "[`AbstractMetric`](@ref)."
     metric::M = nothing
     "[`AbstractAdaptor`](@ref)."
-    adaptor::A=nothing
+    adaptor::A = nothing
 end
 
 ########
