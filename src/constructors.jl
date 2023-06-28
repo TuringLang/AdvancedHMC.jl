@@ -194,7 +194,7 @@ end
 
 function make_kernel(spl::HMC_alg, integrator)
     return HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(spl.n_leapfrog)))
-end 
+end
 
 function make_kernel(spl::HMCDA_alg, integrator)
     return HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(spl.λ)))
