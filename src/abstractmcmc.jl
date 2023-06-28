@@ -61,13 +61,12 @@ function AbstractMCMC.sample(
     metric::AbstractMetric,
     adaptor::AbstractAdaptor,
     N::Integer;
-    integrator = Leapfrog,
     progress = true,
     verbose = false,
     callback = nothing,
     kwargs...,
 )
-    sampler = CustomHMC(integrator, kernel, metric, adaptor)
+    sampler = HMCSampler(kernel, metric, adaptor)
     if callback === nothing
         callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
         progress = false # don't use AMCMC's progress-funtionality
