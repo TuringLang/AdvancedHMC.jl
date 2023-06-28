@@ -142,7 +142,7 @@ function AbstractMCMC.step(
     spl::AbstractMCMC.AbstractSampler;
     init_params = nothing,
     kwargs...,
-)   
+)
     # Unpack model
     logdensity = model.logdensity
     vi = logdensity.varinfo
