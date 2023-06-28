@@ -205,7 +205,6 @@ function AbstractMCMC.step(
     return Transition(t.z, tstat), newstate
 end
 
-
 ################
 ### Callback ###
 ################
