@@ -99,8 +99,8 @@ sample(gdemo([1.5, 2]), HMC(0.01, 10), 1000)
 Base.@kwdef struct HMC_alg <: AbstractMCMC.AbstractSampler
     init_ϵ::Float64                  # leapfrog step size
     n_leapfrog::Int                  # leapfrog step number
-    integrator_method=Leapfrog       # integrator method
-    metric_type=DiagEuclideanMetric  # metric type
+    integrator_method = Leapfrog       # integrator method
+    metric_type = DiagEuclideanMetric  # metric type
 end
 
 #########
