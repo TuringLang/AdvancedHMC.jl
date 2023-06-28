@@ -184,7 +184,7 @@ function make_adaptor(spl::HMC_alg, metric, integrator)
 
  function make_adaptor(spl::CustomHMC, metric, integrator)
     return spl.n_adapts, spl.adaptor
- end
+end
 
 #########
 
