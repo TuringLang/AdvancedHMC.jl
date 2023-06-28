@@ -202,4 +202,4 @@ end
 
 function make_kernel(spl::CustomHMC, integrator)
     return spl.kernel
-end 
+end
