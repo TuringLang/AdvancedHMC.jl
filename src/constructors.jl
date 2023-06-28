@@ -58,11 +58,11 @@ Arguments:
 Base.@kwdef struct NUTS_alg <: AbstractMCMC.AbstractSampler
     n_adapts::Int                    # number of samples with adaption for ϵ
     δ::Float64                       # target accept rate
-    max_depth::Int=10                # maximum tree depth
-    Δ_max::Float64=1000.0            # maximum error
-    init_ϵ::Float64=0.0              # (initial) step size
-    integrator_method=Leapfrog       # integrator method
-    metric_type=DiagEuclideanMetric  # metric type
+    max_depth::Int = 10                # maximum tree depth
+    Δ_max::Float64 = 1000.0            # maximum error
+    init_ϵ::Float64 = 0.0              # (initial) step size
+    integrator_method = Leapfrog       # integrator method
+    metric_type = DiagEuclideanMetric  # metric type
 end
 
 #######
