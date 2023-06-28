@@ -144,8 +144,12 @@ export CustomHMC, HMC_alg, NUTS_alg, HMCDA_alg
 # Utils #
 #########
 
-function make_integrator(rng, spl::Union{HMC_alg, NUTS_alg, HMCDA_alg},
-    hamiltonian, init_params)
+function make_integrator(
+    rng,
+    spl::Union{HMC_alg,NUTS_alg,HMCDA_alg},
+    hamiltonian,
+    init_params,
+)
     init_ϵ = spl.init_ϵ
     if iszero(init_ϵ)
         init_ϵ = find_good_stepsize(rng, hamiltonian, init_params)
@@ -160,7 +164,7 @@ end
 
 #########
 
-function make_metric(spl::Union{HMC_alg, NUTS_alg, HMCDA_alg}, logdensity)
+function make_metric(spl::Union{HMC_alg,NUTS_alg,HMCDA_alg}, logdensity)
     d = LogDensityProblems.dimension(logdensity)
     return spl.metric_type(d)
 end
@@ -171,18 +175,17 @@ end
 
 #########
 
-function make_adaptor(spl::Union{NUTS_alg, HMCDA_alg}, metric, integrator)
-    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric),
-                             StepSizeAdaptor(spl.δ, integrator))
+function make_adaptor(spl::Union{NUTS_alg,HMCDA_alg}, metric, integrator)
+    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(spl.δ, integrator))
     n_adapts = spl.n_adapts
     return n_adapts, adaptor
- end 
+end
 
 function make_adaptor(spl::HMC_alg, metric, integrator)
     return 0, NoAdaptation()
- end 
+end
 
- function make_adaptor(spl::CustomHMC, metric, integrator)
+function make_adaptor(spl::CustomHMC, metric, integrator)
     return spl.n_adapts, spl.adaptor
 end
 
