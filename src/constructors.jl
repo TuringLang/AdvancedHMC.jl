@@ -1,36 +1,6 @@
 abstract type AbstractHMCSampler <: AbstractMCMC.AbstractSampler end
 
 ##############
-### Legacy ###
-##############
-
-"""
-    HMCSampler
-
-A `AbstractMCMC.AbstractSampler` for kernels in AdvancedHMC.jl.
-
-# Fields
-
-$(FIELDS)
-
-# Notes
-
-Note that all the fields have the prefix `initial_` to indicate
-that these will not necessarily correspond to the `kernel`, `metric`,
-and `adaptor` after sampling.
-
-To access the updated fields use the resulting [`HMCState`](@ref).
-"""
-struct HMCSampler{K,M,A} <: AbstractMCMC.AbstractSampler
-    "[`AbstractMCMCKernel`](@ref)."
-    kernel::K
-    "[`AbstractMetric`](@ref)."
-    metric::M
-    "[`AbstractAdaptor`](@ref)."
-    adaptor::A
-end
-
-##############
 ### Custom ###
 ##############
 
@@ -51,7 +21,7 @@ and `adaptor` after sampling.
 
 To access the updated fields use the resulting [`HMCState`](@ref).
 """
-struct CustomHMC{I,K,M,A} <: AbstractMCMC.AbstractSampler
+struct HMCSampler{I,K,M,A} <: AbstractHMCSampler
     "[`integrator`](@ref)."
     integrator::I
     "[`AbstractMCMCKernel`](@ref)."
@@ -61,6 +31,8 @@ struct CustomHMC{I,K,M,A} <: AbstractMCMC.AbstractSampler
     "[`AbstractAdaptor`](@ref)."
     adaptor::A
 end
+
+HMCSampler(kernel, metric, adaptor) = HMCSampler(nothing, kernel, metric, adaptor)
 
 ############
 ### NUTS ###
@@ -86,9 +58,9 @@ Arguments:
 - `init_ϵ::Float64` : Initial step size; 0 means automatically searching using a heuristic procedure.
 
 """
-Base.@kwdef struct NUTS_alg <: AbstractMCMC.AbstractSampler
-    n_adapts::Int                    # number of samples with adaption for ϵ
-    δ::Float64                       # target accept rate
+Base.@kwdef struct NUTS_alg <: AbstractHMCSampler
+    n_adapts::Int                      # number of samples with adaption for ϵ
+    δ::Float64                         # target accept rate
     max_depth::Int = 10                # maximum tree depth
     Δ_max::Float64 = 1000.0            # maximum error
     init_ϵ::Float64 = 0.0              # (initial) step size
@@ -127,9 +99,9 @@ sample(gdemo([1.5, 2]), HMC(0.1, 10), 1000)
 sample(gdemo([1.5, 2]), HMC(0.01, 10), 1000)
 ```
 """
-Base.@kwdef struct HMC_alg <: AbstractMCMC.AbstractSampler
-    init_ϵ::Float64                  # leapfrog step size
-    n_leapfrog::Int                  # leapfrog step number
+Base.@kwdef struct HMC_alg <: AbstractHMCSampler
+    init_ϵ::Float64                    # leapfrog step size
+    n_leapfrog::Int                    # leapfrog step number
     integrator_method = Leapfrog       # integrator method
     metric_type = DiagEuclideanMetric  # metric type
 end
@@ -161,10 +133,10 @@ For more information, please view the following paper ([arXiv link](https://arxi
   setting path lengths in Hamiltonian Monte Carlo." Journal of Machine Learning
   Research 15, no. 1 (2014): 1593-1623.
 """
-Base.@kwdef struct HMCDA_alg <: AbstractMCMC.AbstractSampler
-    n_adapts::Int                    # number of samples with adaption for ϵ
-    δ::Float64                       # target accept rate
-    λ::Float64                       # target leapfrog length
+Base.@kwdef struct HMCDA_alg <: AbstractHMCSampler
+    n_adapts::Int                      # number of samples with adaption for ϵ
+    δ::Float64                         # target accept rate
+    λ::Float64                         # target leapfrog length
     init_ϵ::Float64 = 0.0              # (initial) step size
     integrator_method = Leapfrog       # integrator method
     metric_type = DiagEuclideanMetric  # metric type

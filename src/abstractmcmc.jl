@@ -26,10 +26,6 @@ struct HMCState{
     adaptor::TAdapt
 end
 
-##############
-### Legacy ###
-##############
-
 """
     $(TYPEDSIGNATURES)
 
@@ -143,78 +139,12 @@ end
 function AbstractMCMC.step(
     rng::AbstractRNG,
     model::LogDensityModel,
-    spl::HMCSampler;
-    init_params = nothing,
-    kwargs...,
-)
-    metric = spl.initial_metric
-    κ = spl.initial_kernel
-    adaptor = spl.initial_adaptor
-
-    if init_params === nothing
-        init_params = randn(rng, size(metric, 1))
-    end
-
-    # Construct the hamiltonian using the initial metric
-    hamiltonian = Hamiltonian(metric, model)
-
-    # Get an initial sample.
-    h, t = AdvancedHMC.sample_init(rng, hamiltonian, init_params)
-
-    # Compute next transition and state.
-    state = HMCState(0, t, h.metric, κ, adaptor)
-
-    # Take actual first step.
-    return AbstractMCMC.step(rng, model, spl, state; kwargs...)
-end
-
-function AbstractMCMC.step(
-    rng::AbstractRNG,
-    model::LogDensityModel,
-    spl::HMCSampler,
-    state::HMCState;
-    nadapts::Int = 0,
-    kwargs...,
-)
-    # Compute transition.
-    i = state.i + 1
-    t_old = state.transition
-    adaptor = state.adaptor
-    κ = state.κ
-    metric = state.metric
-
-    # Reconstruct hamiltonian.
-    h = Hamiltonian(metric, model)
-
-    # Make new transition.
-    t = transition(rng, h, κ, t_old.z)
-
-    # Adapt h and spl.
-    tstat = stat(t)
-    h, κ, isadapted = adapt!(h, κ, adaptor, i, nadapts, t.z.θ, tstat.acceptance_rate)
-    tstat = merge(tstat, (is_adapt = isadapted,))
-
-    # Compute next transition and state.
-    newstate = HMCState(i, t, h.metric, κ, adaptor)
-
-    # Return `Transition` with additional stats added.
-    return Transition(t.z, tstat), newstate
-end
-
-##############
-### Turing ###
-##############
-
-function AbstractMCMC.step(
-    rng::AbstractRNG,
-    model::LogDensityModel,
-    spl::AbstractMCMC.AbstractSampler;
+    spl::AbstractHMCSampler;
     init_params = nothing,
     kwargs...,
 )
     # Unpack model
     logdensity = model.logdensity
-    vi = logdensity.varinfo
 
     # Define metric
     metric = make_metric(spl, logdensity)
@@ -244,7 +174,7 @@ end
 function AbstractMCMC.step(
     rng::AbstractRNG,
     model::LogDensityModel,
-    spl::AbstractMCMC.AbstractSampler,
+    spl::AbstractHMCSampler,
     state::HMCState;
     nadapts::Int = 0,
     kwargs...,
@@ -371,7 +301,7 @@ function make_integrator(
     return spl.integrator_method(init_ϵ)
 end
 
-function make_integrator(rng, spl::CustomHMC, hamiltonian, init_params)
+function make_integrator(rng, spl::HMCSampler, hamiltonian, init_params)
     return spl.integrator
 end
 
@@ -382,7 +312,7 @@ function make_metric(spl::Union{HMC_alg,NUTS_alg,HMCDA_alg}, logdensity)
     return spl.metric_type(d)
 end
 
-function make_metric(spl::CustomHMC, logdensity)
+function make_metric(spl::HMCSampler, logdensity)
     return spl.metric
 end
 
@@ -398,7 +328,7 @@ function make_adaptor(spl::HMC_alg, metric, integrator)
     return 0, NoAdaptation()
 end
 
-function make_adaptor(spl::CustomHMC, metric, integrator)
+function make_adaptor(spl::HMCSampler, metric, integrator)
     return spl.n_adapts, spl.adaptor
 end
 
@@ -416,6 +346,6 @@ function make_kernel(spl::HMCDA_alg, integrator)
     return HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(spl.λ)))
 end
 
-function make_kernel(spl::CustomHMC, integrator)
+function make_kernel(spl::HMCSampler, integrator)
     return spl.kernel
 end
