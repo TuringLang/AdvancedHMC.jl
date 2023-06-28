@@ -134,9 +134,9 @@ Base.@kwdef struct HMCDA_alg <: AbstractMCMC.AbstractSampler
     n_adapts::Int                    # number of samples with adaption for ϵ
     δ::Float64                       # target accept rate
     λ::Float64                       # target leapfrog length
-    init_ϵ::Float64=0.0              # (initial) step size
-    integrator_method=Leapfrog       # integrator method
-    metric_type=DiagEuclideanMetric  # metric type
+    init_ϵ::Float64 = 0.0              # (initial) step size
+    integrator_method = Leapfrog       # integrator method
+    metric_type = DiagEuclideanMetric  # metric type
 end
 
 export CustomHMC, HMC_alg, NUTS_alg, HMCDA_alg
