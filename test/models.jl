@@ -14,10 +14,10 @@ include("common.jl")
 
         metric = DiagEuclideanMetric(2)
         h = Hamiltonian(metric, ℓπ_gdemo, ForwardDiff)
-        init_eps = Leapfrog(0.1)
-        κ = NUTS(init_eps)
+        integrator = Leapfrog(0.1)
+        κ = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
         adaptor =
-            StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, κ.τ.integrator))
+            StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
 
         samples, _ = sample(
             rng,
