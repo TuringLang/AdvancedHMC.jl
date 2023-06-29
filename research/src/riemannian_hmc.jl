@@ -266,10 +266,14 @@ function neg_energy(
     r::T,
     θ::T
 ) where {T<:AbstractVecOrMat}
-    M⁻¹ = inv(h.metric.map(h.metric.G(θ)))
+    G = h.metric.map(h.metric.G(θ))
+    # Need to consider the normalizing term as it is no longer same for different θs
+    logZ_partial = 1 / 2 * logdet(G)
+    M⁻¹ = inv(G)
     cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
     r = cholM⁻¹ * r
-    return -relativistic_energy(h.kinetic, r)
+    # return -relativistic_energy(h.kinetic, r)
+    return -logZ_partial - relativistic_energy(h.kinetic, r)
 end
 
 # QUES L31 of hamiltonian.jl now reads a bit weird (semantically)
@@ -389,23 +393,24 @@ function ∂H∂θ(
 
     J = make_J(λ, h.metric.map.α)
 
+    #! Based on the two equations from the right column of Page 3 of Betancourt (2012)
+    term_1_cached = Q * (R .* J) * Q'
 
     d = length(∂ℓπ∂θ)
     D = diagm((Q' * r) ./ softabsλ)
+    term_2_cached = Q * D * J * D * Q'
 
     #! (18) of Overleaf note
     M⁻¹ = inv(h.metric.map(G))
     cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
     r = cholM⁻¹ * r
     mass = relativistic_mass(h.kinetic, r)
-    term_1_cached = 1 / mass
 
-    term_2_cached = Q * D * J * D * Q'
     g = -mapreduce(vcat, 1:d) do i
         ∂H∂θᵢ = ∂H∂θ[:,:,i]
         # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
         # NOTE Some further optimization can be done here: cache the 1st product all together
-        ∂ℓπ∂θ[i] - 1 / 2 * term_1_cached * -tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
+        ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * (1 / mass) * tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
     end
 
     return DualValue(ℓπ, g)
