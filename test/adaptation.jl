@@ -9,9 +9,9 @@ function runnuts(ℓπ, metric; n_samples = 3_000)
 
     nuts = NUTS(δ = 0.8, n_adapts = n_adapts)
     h = Hamiltonian(metric, ℓπ, ForwardDiff)
-    integrator = make_integrator(nuts, h, θ_init)
-    κ = make_kernel(nuts, integrator)
-    adaptor = make_adaptor(nuts, metric, integrator)
+    integrator = AdvancedHMC.make_integrator(nuts, h, θ_init)
+    κ = AdvancedHMC.make_kernel(nuts, integrator)
+    adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
     samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose = false)
     return (samples = samples, stats = stats, adaptor = adaptor)
 end
