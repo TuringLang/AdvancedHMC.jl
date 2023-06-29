@@ -14,16 +14,15 @@ include("common.jl")
         LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ_gdemo),
     )
     integrator = Leapfrog(1e-3)
-    κ = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+    kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
     metric = DiagEuclideanMetric(2)
     adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
+    sampler = HMCSampler(kernel=kernel, metric=metric, adaptor=adaptor)
 
     samples = AbstractMCMC.sample(
         rng,
         model,
-        κ,
-        metric,
-        adaptor,
+        sampler,
         n_adapts + n_samples;
         nadapts = n_adapts,
         init_params = θ_init,
