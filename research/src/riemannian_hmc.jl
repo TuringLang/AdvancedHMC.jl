@@ -401,7 +401,7 @@ function ∂H∂θ(
     term_2_cached = Q * D * J * D * Q'
 
     #! (18) of Overleaf note
-    M⁻¹ = inv(h.metric.map(G))
+    M⁻¹ = inv(G)
     cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
     r = cholM⁻¹ * r
     mass = relativistic_mass(h.kinetic, r)
@@ -440,7 +440,7 @@ function ∂H∂θ(
     D = diagm((Q' * r) ./ softabsλ)
 
     #! (18) of Overleaf note
-    M⁻¹ = inv(h.metric.map(G))
+    M⁻¹ = inv(G)
     cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U
     r = cholM⁻¹ * r
     mass = relativistic_mass(h.kinetic, r)
