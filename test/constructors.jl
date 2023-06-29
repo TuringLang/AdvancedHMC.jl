@@ -11,7 +11,7 @@ hmcda = HMCDA(n_adapts = 1000, δ = 0.8, λ = 1.0)
     @test typeof(hmc) == HMC
     @test typeof(hmcda) == HMCDA
     @test typeof(nuts) <: AdvancedHMC.AbstractHMCSampler
-    @test typeof(AdvancedHMC.AbstractHMCSampler) <: AbstractMCMC.AbstractSampler
+    @test typeof(nuts) <: AbstractMCMC.AbstractSampler
 end
 
 @testset "NUTS" begin

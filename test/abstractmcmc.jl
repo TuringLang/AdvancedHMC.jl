@@ -51,17 +51,17 @@ include("common.jl")
         sampler,
         10;
         nadapts = 0,
+        init_params = θ_init,
         progress = false,
         verbose = false,
     )
     samples2 = AbstractMCMC.sample(
         rng2,
         model,
-        κ,
-        metric,
-        adaptor,
+        sampler,
         10;
         nadapts = 0,
+        init_params = θ_init,
         progress = false,
         verbose = false,
     )
