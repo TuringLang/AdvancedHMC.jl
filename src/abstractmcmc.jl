@@ -310,7 +310,7 @@ end
 function make_adaptor(
     spl::Union{NUTS,HMCDA},
     metric::AbstractMetric,
-    integrator::Hamiltonian,
+    integrator::AbstractIntegrator,
 )
     return StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(spl.δ, integrator))
 end
