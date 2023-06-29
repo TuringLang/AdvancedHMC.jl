@@ -84,7 +84,7 @@ end
     integrator = Leapfrog(initial_ϵ)
 
     # Define an HMC sampler, with the following components
-    proposal = NUTS{MultinomialTS,GeneralisedNoUTurn}(integrator)
+    proposal = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
     adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
 
     # -- run sampler

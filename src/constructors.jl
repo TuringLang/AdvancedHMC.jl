@@ -35,6 +35,7 @@ struct HMCSampler{
     metric::M
     "[`AbstractAdaptor`](@ref)."
     adaptor::A
+    "Adaptation steps if any"
     n_adapts::Int
 end
 
