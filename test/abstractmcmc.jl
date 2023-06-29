@@ -4,21 +4,18 @@ include("common.jl")
 
 @testset "AbstractMCMC w/ gdemo" begin
     rng = MersenneTwister(0)
-
     n_samples = 5_000
     n_adapts = 5_000
-
     θ_init = randn(rng, 2)
+    nuts = NUTS(n_adapts=n_adapts, δ=0.8 )
 
     model = AdvancedHMC.LogDensityModel(
         LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ_gdemo),
     )
-    init_eps = Leapfrog(1e-3)
-    κ = NUTS(init_eps)
-    metric = DiagEuclideanMetric(2)
-    adaptor =
-        StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, κ.τ.integrator))
 
+    κ = AdvancedHMC.make_kernel(nuts, Leapfrog(1e-3))
+    metric = DiagEuclideanMetric(2)
+    adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
     sampler = HMCSampler(κ, metric, adaptor)
 
     samples = AbstractMCMC.sample(
