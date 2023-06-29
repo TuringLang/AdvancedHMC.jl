@@ -167,7 +167,7 @@ function AbstractMCMC.step(
     i = state.i + 1
     t_old = state.transition
     adaptor = state.adaptor
-    κ = state.κ
+    κ = state.kernel
     metric = state.metric
 
     # Reconstruct hamiltonian.
