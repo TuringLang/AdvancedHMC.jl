@@ -227,7 +227,7 @@ function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; nadapts = 0, kw
 
     metric = state.metric
     adaptor = state.adaptor
-    κ = state.κ
+    κ = state.kernel
     tstat = t.stat
     isadapted = tstat.is_adapt
     if isadapted
