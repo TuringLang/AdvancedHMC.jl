@@ -80,20 +80,43 @@ end
 using AdaptiveRejectionSampling: RejectionSampler, run_sampler!
 import AdvancedHMC: _rand
 
-# TODO Support AbstractVector{<:AbstractRNG}
+polar2carte(θ, d) = d * [cos(θ), sin(θ)]
+momentum_mode(m, c) = sqrt((1 / c^2 + sqrt(1 / c^2 + 4 * m^2)) / 2) # mode of the momentum distribution
+
 function _rand(
     rng::AbstractRNG,
     metric::UnitEuclideanMetric{T},
     kinetic::RelativisticKinetic{T},
 ) where {T}
     h_temp = Hamiltonian(metric, kinetic, identity, identity)
-    densityfunc = x -> exp(neg_energy(h_temp, [x], [x]))
-    sampler = RejectionSampler(densityfunc, (-Inf, Inf); max_segments = 5)
+    densityfunc = x -> exp(neg_energy(h_temp, [x], [x])) * x
+    mm = momentum_mode(kinetic.m, kinetic.c)
+    sampler = RejectionSampler(densityfunc, (0.0, Inf), (mm / 2, mm * 2); max_segments = 5)
     sz = size(metric)
-    r = run_sampler!(rng, sampler, prod(sz)) # FIXME!!! this sampler assumes dimensionwise!!!
+    # r = polar2carte(2 * π * rand(rng), only(run_sampler!(rng, sampler, 1)) * rand(rng, [-1, +1]))
+    r = polar2carte(2 * π * rand(rng), only(run_sampler!(rng, sampler, 1))) # already taking 2π, need for random +/- 1
+    # num_samples = prod(sz)
+    # r_angular = 2 * π * rand(rng, num_samples)
+    # r_radial = run_sampler!(rng, sampler, num_samples) # FIXME!!! this sampler assumes dimensionwise!!!
+    # r = reduce(hcat, polar2carte.(r_angular, r_radial))
     r = reshape(r, sz)
     return r
 end
+
+# TODO Support AbstractVector{<:AbstractRNG}
+# function _rand(
+#     rng::AbstractRNG,
+#     metric::UnitEuclideanMetric{T},
+#     kinetic::RelativisticKinetic{T},
+# ) where {T}
+#     h_temp = Hamiltonian(metric, kinetic, identity, identity)
+#     densityfunc = x -> exp(neg_energy(h_temp, [x], [x]))
+#     sampler = RejectionSampler(densityfunc, (-Inf, Inf); max_segments = 5)
+#     sz = size(metric)
+#     r = run_sampler!(rng, sampler, prod(sz)) # FIXME!!! this sampler assumes dimensionwise!!!
+#     r = reshape(r, sz)
+#     return r
+# end
 # TODO Support AbstractVector{<:AbstractRNG}
 function _rand(
     rng::AbstractRNG,
