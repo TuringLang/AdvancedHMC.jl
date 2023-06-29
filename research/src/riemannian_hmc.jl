@@ -459,7 +459,7 @@ end
 
 #! Eq (14) of Girolami & Calderhead (2011)
 function ∂H∂r(
-    h::Hamiltonian{<:DenseRiemannianMetric,<:GaussianKinetic},
+    h::Hamiltonian{<:DenseRiemannianMetric, <:GaussianKinetic},
     θ::AbstractVecOrMat,
     r::AbstractVecOrMat,
 )
