@@ -52,7 +52,6 @@ function AbstractMCMC.sample(
     callback = nothing,
     kwargs...,
 )
-    sampler = HMCSampler(kernel, metric, adaptor)
     if callback === nothing
         callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
         progress = false # don't use AMCMC's progress-funtionality

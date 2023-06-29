@@ -39,8 +39,8 @@ struct HMCSampler{
     n_adapts::Int
 end
 
-HMCSampler(kernel, metric, adaptor; n_adapts = 0) =
-    HMCSampler(Leapfrog, kernel, metric, adaptor, n_adapts)
+HMCSampler(kernel, metric, adaptor; n_adapts=0) =
+    HMCSampler(Leapfrog(0.0), kernel, metric, adaptor, n_adapts)
 
 ############
 ### NUTS ###
