@@ -291,7 +291,8 @@ function make_integrator(
     hamiltonian::Hamiltonian,
     init_params,
 )
-    return spl.integrator
+    # rerturns a dummy integrator
+    return Leapfrog(0.0)
 end
 
 #########
