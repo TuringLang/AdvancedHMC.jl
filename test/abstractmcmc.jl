@@ -7,7 +7,7 @@ include("common.jl")
     n_samples = 5_000
     n_adapts = 5_000
     θ_init = randn(rng, 2)
-    nuts = NUTS(n_adapts=n_adapts, δ=0.8 )
+    nuts = NUTS(n_adapts = n_adapts, δ = 0.8)
 
     model = AdvancedHMC.LogDensityModel(
         LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ_gdemo),
