@@ -14,6 +14,8 @@ struct HMCState{
     TKernel<:AbstractMCMCKernel,
     TAdapt<:Adaptation.AbstractAdaptor,
 }
+    "Random number of the state"
+    rng::Random.AbstractRNG
     "Index of current iteration."
     i::Int
     "Current [`Transition`](@ref)."
@@ -150,7 +152,7 @@ function AbstractMCMC.step(
     h, t = AdvancedHMC.sample_init(rng, hamiltonian, init_params)
 
     # Compute next transition and state.
-    state = HMCState(0, t, metric, κ, adaptor)
+    state = HMCState(rng, 0, t, metric, κ, adaptor)
     # Take actual first step.
     return AbstractMCMC.step(rng, model, spl, state; kwargs...)
 end
@@ -182,7 +184,7 @@ function AbstractMCMC.step(
     tstat = merge(tstat, (is_adapt = isadapted,))
 
     # Compute next transition and state.
-    newstate = HMCState(i, t, h.metric, κ, adaptor)
+    newstate = HMCState(rng, i, t, h.metric, κ, adaptor)
 
     # Return `Transition` with additional stats added.
     return Transition(t.z, tstat), newstate
