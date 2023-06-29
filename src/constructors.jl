@@ -21,14 +21,11 @@ and `adaptor` after sampling.
 
 To access the updated fields use the resulting [`HMCState`](@ref).
 """
-struct HMCSampler{
-    I<:AbstractIntegrator,
+Base.@kwdef struct HMCSampler{
     K<:AbstractMCMCKernel,
     M<:AbstractMetric,
     A<:Adaptation.AbstractAdaptor,
 } <: AbstractHMCSampler
-    "[`integrator`](@ref)."
-    integrator::I
     "[`AbstractMCMCKernel`](@ref)."
     kernel::K
     "[`AbstractMetric`](@ref)."
@@ -36,11 +33,8 @@ struct HMCSampler{
     "[`AbstractAdaptor`](@ref)."
     adaptor::A
     "Adaptation steps if any"
-    n_adapts::Int
+    n_adapts::Int = 0
 end
-
-HMCSampler(kernel, metric, adaptor; n_adapts=0) =
-    HMCSampler(Leapfrog(0.0), kernel, metric, adaptor, n_adapts)
 
 ############
 ### NUTS ###

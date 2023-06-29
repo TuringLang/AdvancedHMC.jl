@@ -23,7 +23,7 @@ struct HMCState{
     "Current [`AbstractMetric`](@ref), possibly adapted."
     metric::TMetric
     "Current [`AbstractMCMCKernel`](@ref)."
-    κ::TKernel
+    kernel::TKernel
     "Current [`AbstractAdaptor`](@ref)."
     adaptor::TAdapt
 end
@@ -272,16 +272,25 @@ end
 ### Utils ###
 #############
 
-function make_integrator(rng, spl::Union{HMC,NUTS,HMCDA}, hamiltonian, init_params)
-    init_ϵ = spl.init_ϵ
-    if iszero(init_ϵ)
-        init_ϵ = find_good_stepsize(rng, hamiltonian, init_params)
-        @info string("Found initial step size ", init_ϵ)
+function make_integrator(
+    rng::Random.AbstractRNG,
+    spl::Union{HMC,NUTS,HMCDA},
+    hamiltonian::Hamiltonian,
+    init_params,
+)
+    if iszero(spl.init_ϵ)
+        ϵ = find_good_stepsize(rng, hamiltonian, init_params)
+        @info string("Found initial step size ", ϵ)
     end
-    return spl.integrator_method(init_ϵ)
+    return spl.integrator_method(ϵ)
 end
 
-function make_integrator(rng, spl::HMCSampler, hamiltonian, init_params)
+function make_integrator(
+    rng::Random.AbstractRNG,
+    spl::HMCSampler,
+    hamiltonian::Hamiltonian,
+    init_params,
+)
     return spl.integrator
 end
 
@@ -298,15 +307,23 @@ end
 
 #########
 
-function make_adaptor(spl::Union{NUTS,HMCDA}, metric, integrator)
+function make_adaptor(
+    spl::Union{NUTS,HMCDA},
+    metric::AbstractMetric,
+    integrator::Hamiltonian,
+)
     return StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(spl.δ, integrator))
 end
 
-function make_adaptor(spl::HMC, metric, integrator)
+function make_adaptor(spl::HMC, metric::AbstractMetric, integrator::AbstractIntegrator)
     return NoAdaptation()
 end
 
-function make_adaptor(spl::HMCSampler, metric, integrator)
+function make_adaptor(
+    spl::HMCSampler,
+    metric::AbstractMetric,
+    integrator::AbstractIntegrator,
+)
     return spl.adaptor
 end
 
@@ -322,18 +339,18 @@ end
 
 #########
 
-function make_kernel(spl::NUTS, integrator)
+function make_kernel(spl::NUTS, integrator::AbstractIntegrator)
     return HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
 end
 
-function make_kernel(spl::HMC, integrator)
+function make_kernel(spl::HMC, integrator::AbstractIntegrator)
     return HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(spl.n_leapfrog)))
 end
 
-function make_kernel(spl::HMCDA, integrator)
+function make_kernel(spl::HMCDA, integrator::AbstractIntegrator)
     return HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(spl.λ)))
 end
 
-function make_kernel(spl::HMCSampler, integrator)
+function make_kernel(spl::HMCSampler, integrator::AbstractIntegrator)
     return spl.kernel
 end
