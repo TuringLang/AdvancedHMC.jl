@@ -13,7 +13,8 @@ include("common.jl")
         LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ_gdemo),
     )
 
-    κ = AdvancedHMC.make_kernel(nuts, Leapfrog(1e-3))
+    integrator = Leapfrog(1e-3)
+    κ = AdvancedHMC.make_kernel(nuts, integrator)
     metric = DiagEuclideanMetric(2)
     adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
     sampler = HMCSampler(κ, metric, adaptor)
