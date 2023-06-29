@@ -5,13 +5,13 @@ using AdvancedHMC.Adaptation:
 function runnuts(ℓπ, metric; n_samples = 3_000)
     D = size(metric, 1)
     n_adapts = 1_500
-
     θ_init = rand(D)
 
+    nuts = NUTS(δ = 0.8, n_adapts = n_adapts)
     h = Hamiltonian(metric, ℓπ, ForwardDiff)
-    κ = NUTS(Leapfrog(find_good_stepsize(h, θ_init)))
-    adaptor =
-        StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, κ.τ.integrator))
+    integrator = make_integrator(nuts, h, θ_init)
+    κ = make_kernel(nuts, integrator)
+    adaptor = make_adaptor(nuts, metric, integrator)
     samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose = false)
     return (samples = samples, stats = stats, adaptor = adaptor)
 end

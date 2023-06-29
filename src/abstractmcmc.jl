@@ -37,13 +37,7 @@ function AbstractMCMC.sample(
     N::Integer;
     kwargs...,
 )
-    return AbstractMCMC.sample(
-        Random.GLOBAL_RNG,
-        model,
-        sampler,
-        N;
-        kwargs...,
-    )
+    return AbstractMCMC.sample(Random.GLOBAL_RNG, model, sampler, N; kwargs...)
 end
 
 function AbstractMCMC.sample(
@@ -51,13 +45,12 @@ function AbstractMCMC.sample(
     model::LogDensityModel,
     sampler::AbstractHMCSampler,
     N::Integer;
-    n_adapts = 0,
     progress = true,
     verbose = false,
     callback = nothing,
     kwargs...,
 )
-    sampler = HMCSampler(kernel, metric, adaptor; n_adapts=n_adapts)
+    sampler = HMCSampler(kernel, metric, adaptor)
     if callback === nothing
         callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
         progress = false # don't use AMCMC's progress-funtionality
@@ -102,7 +95,6 @@ function AbstractMCMC.sample(
     parallel::AbstractMCMC.AbstractMCMCEnsemble,
     N::Integer,
     nchains::Integer;
-    n_adapts = 0,
     progress = true,
     verbose = false,
     callback = nothing,
@@ -152,7 +144,7 @@ function AbstractMCMC.step(
     κ = make_kernel(spl, integrator)
 
     # Make adaptor
-    n_adapts, adaptor = make_adaptor(spl, metric, integrator)
+    adaptor = make_adaptor(spl, metric, integrator)
 
     # Get an initial sample.
     h, t = AdvancedHMC.sample_init(rng, hamiltonian, init_params)
@@ -168,7 +160,6 @@ function AbstractMCMC.step(
     model::LogDensityModel,
     spl::AbstractHMCSampler,
     state::HMCState;
-    nadapts::Int = 0,
     kwargs...,
 )
     # Compute transition.
@@ -186,7 +177,8 @@ function AbstractMCMC.step(
 
     # Adapt h and spl.
     tstat = stat(t)
-    h, κ, isadapted = adapt!(h, κ, adaptor, i, nadapts, t.z.θ, tstat.acceptance_rate)
+    n_adapts = get_nadapts(spl)
+    h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
     tstat = merge(tstat, (is_adapt = isadapted,))
 
     # Compute next transition and state.
@@ -279,12 +271,7 @@ end
 ### Utils ###
 #############
 
-function make_integrator(
-    rng,
-    spl::Union{HMC,NUTS,HMCDA},
-    hamiltonian,
-    init_params,
-)
+function make_integrator(rng, spl::Union{HMC,NUTS,HMCDA}, hamiltonian, init_params)
     init_ϵ = spl.init_ϵ
     if iszero(init_ϵ)
         init_ϵ = find_good_stepsize(rng, hamiltonian, init_params)
@@ -311,17 +298,25 @@ end
 #########
 
 function make_adaptor(spl::Union{NUTS,HMCDA}, metric, integrator)
-    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(spl.δ, integrator))
-    n_adapts = spl.n_adapts
-    return n_adapts, adaptor
+    return StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(spl.δ, integrator))
 end
 
 function make_adaptor(spl::HMC, metric, integrator)
-    return 0, NoAdaptation()
+    return NoAdaptation()
 end
 
 function make_adaptor(spl::HMCSampler, metric, integrator)
-    return spl.n_adapts, spl.adaptor
+    return spl.adaptor
+end
+
+#########
+
+function get_nadapts(spl::Union{HMCSampler,NUTS,HMCDA})
+    return spl.n_adapts
+end
+
+function get_nadapts(spl::HMC)
+    return 0
 end
 
 #########

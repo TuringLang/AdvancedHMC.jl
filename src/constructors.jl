@@ -25,7 +25,7 @@ struct HMCSampler{
     I<:AbstractIntegrator,
     K<:AbstractMCMCKernel,
     M<:AbstractMetric,
-    A<:Adaptation.AbstractAdaptor
+    A<:Adaptation.AbstractAdaptor,
 } <: AbstractHMCSampler
     "[`integrator`](@ref)."
     integrator::I
@@ -38,7 +38,8 @@ struct HMCSampler{
     n_adapts::Int
 end
 
-HMCSampler(kernel, metric, adaptor; n_adapts=0) = HMCSampler(LeapFrog, kernel, metric, adaptor, n_adapts)
+HMCSampler(kernel, metric, adaptor; n_adapts = 0) =
+    HMCSampler(LeapFrog, kernel, metric, adaptor, n_adapts)
 
 ############
 ### NUTS ###
