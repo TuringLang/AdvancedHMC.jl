@@ -7,7 +7,11 @@ Documentation for AdvancedHMC.jl
 
 ## Structs
 ```@docs
+HMCSampler
 ClassicNoUTurn
+HMC
+NUTS
+HMCDA
 ```
 
 ## Functions
