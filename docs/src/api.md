@@ -7,8 +7,8 @@ Documentation for AdvancedHMC.jl
 
 ## Structs
 ```@docs
-HMCSampler
 ClassicNoUTurn
+HMCSampler
 HMC
 NUTS
 HMCDA
@@ -18,9 +18,4 @@ HMCDA
 
 ```@docs
 sample
-```
-
-## Index
-
-```@index
 ```
