@@ -17,7 +17,7 @@ If you are interested in using AdvancedHMC.jl through a probabilistic programmin
 - We presented a poster for AdvancedHMC.jl at [StanCon 2019](https://mc-stan.org/events/stancon2019Cambridge/) in Cambridge, UK. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
 **API CHANGES**
-- [v0.4.7] Convinience constructors for common samplers added
+- [v0.4.7] **Breaking!** Convinience constructors for common samplers changed to:
   - `HMC(init_ϵ::Float64=init_ϵ, n_leapfrog::Int=n_leapfrog)`
   - `NUTS(n_adapts::Int=n_adapts, δ::Float64=δ)` 
   - `HMCDA(n_adapts::Int=n_adapts, δ::Float64=δ, λ::Float64=λ)`
@@ -93,35 +93,6 @@ adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integra
 #   - `stats` will store diagnostic statistics for each sample
 samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; progress=true)
 ```
-## Using AdvancedHMC with Turing
-
-In many cases users might want to using a probabilistic programming language such as `Turing.jl` to define a log-likelihood and then use `AdvancedHMC` as a sampling backend.
-
-In order to show how this can be done let us consider a Neal's funnel model:
-
-```julia
-using AdvancedHMC, Turing
-
-d = 7
-@model function funnel()
-    θ ~ Truncated(Normal(0, 3), -3, 3)
-    z ~ MvNormal(zeros(d-1), exp(θ)*I)
-    x ~ MvNormal(z, I)
-end
-
-Random.seed!(1)
-(;x) = rand(funnel() | (θ=0,))
-cond_model = funnel() | (;x)
-```
-
-Now we can simply create a NUTS sampler with `AdvancedHMC` and sample it:
-
-```julia
-spl = AdvancedHMC.NUTS(n_adapts=1_000, δ=0.95)
-samples = sample(cond_funnel, externalsampler(spl), 50_000;
-  progress=true, save_state=true)
-```
-Note that at the moment the interface between `Turing` and external samplers requires to wrap samplers of the type `AbstractMCMC.AbstractSampler` in `Turing.externalsampler` for them to be interpreted correctly. 
 
 ### Parallel sampling 
 
