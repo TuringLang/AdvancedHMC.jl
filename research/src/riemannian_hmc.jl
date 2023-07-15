@@ -260,7 +260,6 @@ function neg_energy(
     return -logZ - dot(r, h.metric._temp) / 2
 end
 
-# TODO This is position dependent now so we should compute the normalizing constant.
 function neg_energy(
     h::Hamiltonian{<:DenseRiemannianMetric, <:AbstractRelativisticKinetic},
     r::T,
@@ -408,8 +407,6 @@ function ∂H∂θ(
 
     g = -mapreduce(vcat, 1:d) do i
         ∂H∂θᵢ = ∂H∂θ[:,:,i]
-        # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
-        # NOTE Some further optimization can be done here: cache the 1st product all together
         ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * (1 / mass) * tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
     end
 
