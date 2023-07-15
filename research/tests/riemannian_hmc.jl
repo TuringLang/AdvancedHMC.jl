@@ -12,11 +12,14 @@ const HAMILTONIAN_TOL = 2e-3
 # Taken from https://github.com/JuliaDiff/FiniteDiff.jl/blob/master/test/finitedifftests.jl
 δ(a, b) = maximum(abs.(a - b))
 
-@testset "Riemannian" begin
+@testset "RiemannianHMC" begin
 
-    hps = (; λ = 1e-2, α = 20.0, ϵ = 0.1, n = 6, L = 8)
+    hps = (; λ = 1e-2, α = 20.0, ϵ = 0.1, n = 6, L = 8, m = 1.5, c = 1.5)
 
-    @testset "$(nameof(typeof(target)))" for target in [HighDimGaussian(2), Funnel()]
+    @testset "$(nameof(typeof(target)))" for target in [
+        HighDimGaussian(2), 
+        Funnel(),
+    ]
         rng = MersenneTwister(1110)
 
         θ₀ = rand(rng, dim(target))
@@ -44,8 +47,8 @@ const HAMILTONIAN_TOL = 2e-3
             metric = DenseRiemannianMetric((D,), Gfunc, ∂G∂θfunc, hessmap)
             @testset "$(nameof(typeof(kinetic)))" for kinetic in [
                     GaussianKinetic(), 
-                    RelativisticKinetic(1.0, 1.0), 
-                    DimensionwiseRelativisticKinetic(1.0, 1.0),
+                    RelativisticKinetic(hps.m, hps.c), 
+                    DimensionwiseRelativisticKinetic(hps.m, hps.c),
                 ]
                 hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
 
@@ -71,8 +74,10 @@ const HAMILTONIAN_TOL = 2e-3
                 end
 
                 @testset "∂H∂r" begin
-                    @test δ(finite_difference_gradient(Hamifuncr, r), ∂H∂r(hamiltonian, x, r)) <
-                          HAMILTONIAN_TOL
+                    @test δ(
+                        finite_difference_gradient(Hamifuncr, r), 
+                        ∂H∂r(hamiltonian, x, r),
+                    ) < HAMILTONIAN_TOL
                 end
             end
         end
