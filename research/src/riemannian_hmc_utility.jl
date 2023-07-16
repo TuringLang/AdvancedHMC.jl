@@ -112,3 +112,17 @@ function sample_target(hps; rng = MersenneTwister(1110))
 
     return (; target, hamiltonian, samples, stats)
 end
+
+function simulate_trajectory(hps; rng = MersenneTwister(1110))
+    rng, target, hamiltonian, proposal, θ₀ = prepare_sample(hps; rng = rng)
+
+    z_lst = step(
+        proposal.τ.integrator,
+        hamiltonian,
+        phasepoint(rng, θ₀, hamiltonian),
+        hps.L;
+        full_trajectory = Val(true),
+    )
+
+    return (; target, hamiltonian, z_lst)
+end
