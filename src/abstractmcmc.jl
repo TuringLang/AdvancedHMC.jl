@@ -33,14 +33,6 @@ end
 
 A convenient wrapper around `AbstractMCMC.sample` avoiding explicit construction of [`HMCSampler`](@ref).
 """
-function AbstractMCMC.sample(
-    model::LogDensityModel,
-    sampler::AbstractHMCSampler,
-    N::Integer;
-    kwargs...,
-)
-    return AbstractMCMC.sample(Random.GLOBAL_RNG, model, sampler, N; kwargs...)
-end
 
 function AbstractMCMC.sample(
     rng::Random.AbstractRNG,
@@ -65,26 +57,6 @@ function AbstractMCMC.sample(
         progress = progress,
         verbose = verbose,
         callback = callback,
-        kwargs...,
-    )
-end
-
-function AbstractMCMC.sample(
-    model::LogDensityModel,
-    sampler::AbstractHMCSampler,
-    parallel::AbstractMCMC.AbstractMCMCEnsemble,
-    N::Integer,
-    nchains::Integer;
-    kwargs...,
-)
-    return AbstractMCMC.sample(
-        Random.GLOBAL_RNG,
-        model,
-        kernel,
-        metric,
-        adaptor,
-        N,
-        nchains;
         kwargs...,
     )
 end
