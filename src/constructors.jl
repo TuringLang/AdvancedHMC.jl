@@ -164,11 +164,9 @@ function HMCDA(
     n_adapts,
     δ,
     λ;
-    max_depth=10,
-    Δ_max=1000.0,
     init_ϵ=0.0,
     integrator_method=:Leapfrog,
     metric_type=:DiagEuclideanMetric,
     )
-    return HMCDA(n_adapts, δ, λ, max_depth, Δ_max, init_ϵ, integrator_method, metric_type)
+    return HMCDA(n_adapts, δ, λ, init_ϵ, integrator_method, metric_type)
 end
