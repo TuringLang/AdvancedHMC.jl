@@ -1,7 +1,7 @@
 using AdvancedHMC, AbstractMCMC
 
 # Initalize samplers
-nuts = NUTS(1000, 0.8,)
+nuts = NUTS(1000, 0.8)
 hmc = HMC(0.1, 25)
 hmcda = HMCDA(1000, 0.8, 1.0)
 

@@ -54,7 +54,7 @@ $(FIELDS)
 NUTS(n_adapts=1000, δ=0.65)  # Use 1000 adaption steps, and target accept ratio 0.65.
 ```
 """
-struct NUTS{T<:AbstractFloat, I, D} <: AbstractHMCSampler
+struct NUTS{T<:AbstractFloat,I,D} <: AbstractHMCSampler
     "`n_adapts::Int` : Number of adaptation steps."
     n_adapts::Int
     "`δ::Real` : Target acceptance rate for dual averaging."
@@ -91,7 +91,7 @@ $(FIELDS)
 HMC(init_ϵ=0.05, n_leapfrog=10)
 ```
 """
-struct HMC{T<:AbstractFloat, I, D} <: AbstractHMCSampler
+struct HMC{T<:AbstractFloat,I,D} <: AbstractHMCSampler
     "`init_ϵ::Real` : Initial step size; 0 means automatically searching using a heuristic procedure."
     init_ϵ::T
     "`n_leapfrog::Int` : Number of leapfrog steps."
@@ -128,7 +128,7 @@ For more information, please view the following paper ([arXiv link](https://arxi
   setting path lengths in Hamiltonian Monte Carlo." Journal of Machine Learning
   Research 15, no. 1 (2014): 1593-1623.
 """
-struct HMCDA{T<:AbstractFloat, I, D} <: AbstractHMCSampler
+struct HMCDA{T<:AbstractFloat,I,D} <: AbstractHMCSampler
     "`n_adapts::Int` : Number of adaptation steps."
     n_adapts::Int
     "`δ::Real` : Target acceptance rate for dual averaging."
