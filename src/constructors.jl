@@ -74,12 +74,12 @@ end
 function NUTS(
     n_adapts,
     δ;
-    max_depth=10,
-    Δ_max=1000.0,
-    init_ϵ=0.0,
-    integrator_method=:Leapfrog,
-    metric_type=:DiagEuclideanMetric,
-    )
+    max_depth = 10,
+    Δ_max = 1000.0,
+    init_ϵ = 0.0,
+    integrator_method = :Leapfrog,
+    metric_type = :DiagEuclideanMetric,
+)
     return NUTS(n_adapts, δ, max_depth, Δ_max, init_ϵ, integrator_method, metric_type)
 end
 
@@ -115,9 +115,9 @@ end
 function HMC(
     init_ϵ,
     n_leapfrog;
-    integrator_method=:Leapfrog,
-    metric_type=:DiagEuclideanMetric,
-    )
+    integrator_method = :Leapfrog,
+    metric_type = :DiagEuclideanMetric,
+)
     return HMC(init_ϵ, n_leapfrog, integrator_method, metric_type)
 end
 
@@ -164,9 +164,9 @@ function HMCDA(
     n_adapts,
     δ,
     λ;
-    init_ϵ=0.0,
-    integrator_method=:Leapfrog,
-    metric_type=:DiagEuclideanMetric,
+    init_ϵ = 0.0,
+    integrator_method = :Leapfrog,
+    metric_type = :DiagEuclideanMetric,
     )
     return HMCDA(n_adapts, δ, λ, init_ϵ, integrator_method, metric_type)
 end
