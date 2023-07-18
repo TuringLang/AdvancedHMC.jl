@@ -302,13 +302,8 @@ end
 
 #########
 
-function get_nadapts(spl::Union{HMCSampler,NUTS,HMCDA})
-    return spl.n_adapts
-end
-
-function get_nadapts(spl::HMC)
-    return 0
-end
+get_nadapts(spl::Union{HMCSampler,NUTS,HMCDA}) = spl.n_adapts
+get_nadapts(spl::HMC) = 0
 
 #########
 

@@ -40,7 +40,7 @@ end
 ### NUTS ###
 ############
 """
-    NUTS(n_adapts::Int, δ::Float64; max_depth::Int=10, Δ_max::Float64=1000.0, init_ϵ::Float64=0.0)
+    NUTS(n_adapts::Int, δ::Real; max_depth::Int=10, Δ_max::Real=1000, init_ϵ::Real=0)
 
 No-U-Turn Sampler (NUTS) sampler.
 
@@ -54,33 +54,33 @@ NUTS(1000, 0.65)  # Use 1000 adaption steps, and target accept ratio 0.65.
 Arguments:
 
 - `n_adapts::Int` : The number of samples to use with adaptation.
-- `δ::Float64` : Target acceptance rate for dual averaging.
+- `δ::Real` : Target acceptance rate for dual averaging.
 - `max_depth::Int` : Maximum doubling tree depth.
-- `Δ_max::Float64` : Maximum divergence during doubling tree.
-- `init_ϵ::Float64` : Initial step size; 0 means automatically searching using a heuristic procedure.
+- `Δ_max::Real` : Maximum divergence during doubling tree.
+- `init_ϵ::Real` : Initial step size; 0 means automatically searching using a heuristic procedure.
 
 """
-Base.@kwdef struct NUTS <: AbstractHMCSampler
-    n_adapts::Int                      # number of samples with adaption for ϵ
-    δ::Float64                         # target accept rate
-    max_depth::Int = 10                # maximum tree depth
-    Δ_max::Float64 = 1000.0            # maximum error
-    init_ϵ::Float64 = 0.0              # (initial) step size
-    integrator_method = Leapfrog       # integrator method
-    metric_type = DiagEuclideanMetric  # metric type
+Base.@kwdef struct NUTS{T<:AbstractFloat} <: AbstractHMCSampler
+    n_adapts::Int
+    δ::T
+    max_depth::Int = 10
+    Δ_max::T = T(1000)
+    init_ϵ::T = zero(T)
+    integrator_method = Leapfrog
+    metric_type = DiagEuclideanMetric
 end
 
 ###########
 ### HMC ###
 ###########
 """
-    HMC(ϵ::Float64, n_leapfrog::Int)
+    HMC(ϵ::Real, n_leapfrog::Int)
 
 Hamiltonian Monte Carlo sampler with static trajectory.
 
 Arguments:
 
-- `ϵ::Float64` : The leapfrog step size to use.
+- `ϵ::Real` : The leapfrog step size to use.
 - `n_leapfrog::Int` : The number of leapfrog steps to use.
 
 Usage:
@@ -101,18 +101,18 @@ sample(gdemo([1.5, 2]), HMC(0.1, 10), 1000)
 sample(gdemo([1.5, 2]), HMC(0.01, 10), 1000)
 ```
 """
-Base.@kwdef struct HMC <: AbstractHMCSampler
-    init_ϵ::Float64                    # leapfrog step size
-    n_leapfrog::Int                    # leapfrog step number
-    integrator_method = Leapfrog       # integrator method
-    metric_type = DiagEuclideanMetric  # metric type
+Base.@kwdef struct HMC{T<:AbstractFloat} <: AbstractHMCSampler
+    init_ϵ::T
+    n_leapfrog::Int
+    integrator_method = Leapfrog
+    metric_type = DiagEuclideanMetric
 end
 
 #############
 ### HMCDA ###
 #############
 """
-    HMCDA(n_adapts::Int, δ::Float64, λ::Float64; ϵ::Float64=0.0)
+    HMCDA(n_adapts::Int, δ::Real, λ::Real; ϵ::Real=0)
 
 Hamiltonian Monte Carlo sampler with Dual Averaging algorithm.
 
@@ -125,9 +125,9 @@ HMCDA(200, 0.65, 0.3)
 Arguments:
 
 - `n_adapts::Int` : Numbers of samples to use for adaptation.
-- `δ::Float64` : Target acceptance rate. 65% is often recommended.
-- `λ::Float64` : Target leapfrog length.
-- `ϵ::Float64=0.0` : Initial step size; 0 means automatically search by Turing.
+- `δ::Real` : Target acceptance rate. 65% is often recommended.
+- `λ::Real` : Target leapfrog length.
+- `ϵ::Real=0` : Initial step size. If 0, then it is automatically determined.
 
 For more information, please view the following paper ([arXiv link](https://arxiv.org/abs/1111.4246)):
 
@@ -135,13 +135,13 @@ For more information, please view the following paper ([arXiv link](https://arxi
   setting path lengths in Hamiltonian Monte Carlo." Journal of Machine Learning
   Research 15, no. 1 (2014): 1593-1623.
 """
-Base.@kwdef struct HMCDA <: AbstractHMCSampler
-    n_adapts::Int                      # number of samples with adaption for ϵ
-    δ::Float64                         # target accept rate
-    λ::Float64                         # target leapfrog length
-    init_ϵ::Float64 = 0.0              # (initial) step size
-    integrator_method = Leapfrog       # integrator method
-    metric_type = DiagEuclideanMetric  # metric type
+Base.@kwdef struct HMCDA{T<:AbstractFloat} <: AbstractHMCSampler
+    n_adapts::Int
+    δ::T
+    λ::T
+    init_ϵ::T = zero(T)
+    integrator_method = Leapfrog
+    metric_type = DiagEuclideanMetric
 end
 
 export HMCSampler, HMC, NUTS, HMCDA
