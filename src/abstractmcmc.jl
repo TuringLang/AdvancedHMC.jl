@@ -252,7 +252,8 @@ function make_integrator(
         ϵ = find_good_stepsize(rng, hamiltonian, init_params)
         @info string("Found initial step size ", ϵ)
     end
-    return spl.integrator_method(ϵ)
+    integrator = eval(spl.integrator_method)
+    return integrator(ϵ)
 end
 
 function make_integrator(
@@ -269,7 +270,8 @@ end
 
 function make_metric(spl::Union{HMC,NUTS,HMCDA}, logdensity)
     d = LogDensityProblems.dimension(logdensity)
-    return spl.metric_type(d)
+    metric = eval(spl.metric_type)
+    return metric(d)
 end
 
 function make_metric(spl::HMCSampler, logdensity)

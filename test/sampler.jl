@@ -159,7 +159,7 @@ end
         end
     end
     @testset "drop_warmup" begin
-        nuts = NUTS(n_adapts = n_adapts, δ = 0.8)
+        nuts = NUTS(n_adapts, 0.8)
         metric = DiagEuclideanMetric(D)
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         integrator = Leapfrog(ϵ)

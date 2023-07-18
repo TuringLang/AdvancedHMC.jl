@@ -54,22 +54,24 @@ $(FIELDS)
 NUTS(n_adapts=1000, δ=0.65)  # Use 1000 adaption steps, and target accept ratio 0.65.
 ```
 """
-Base.@kwdef struct NUTS{T<:AbstractFloat} <: AbstractHMCSampler
+struct NUTS{T<:AbstractFloat, I, D} <: AbstractHMCSampler
     "`n_adapts::Int` : Number of adaptation steps."
     n_adapts::Int
     "`δ::Real` : Target acceptance rate for dual averaging."
     δ::T
     "`max_depth::Int` : Maximum doubling tree depth."
-    max_depth::Int = 10
+    max_depth::Int
     "`Δ_max::Real` : Maximum divergence during doubling tree."
-    Δ_max::T = T(1000)
+    Δ_max::T
     "`init_ϵ::Real` : Initial step size; 0 means automatically searching using a heuristic procedure."
-    init_ϵ::T = zero(T)
+    init_ϵ::T
     "[`AbstractIntegrator`](@ref)."
-    integrator_method::AbstractIntegrator = Leapfrog
+    integrator_method::I
     "[`AbstractMetric`](@ref)."
-    metric_type::AbstractMetric = DiagEuclideanMetric
+    metric_type::D
 end
+
+NUTS(n_adapts, δ) = NUTS(n_adapts, δ, 10, 1000.0, 0.0, :Leapfrog, :DiagEuclideanMetric)
 
 ###########
 ### HMC ###
@@ -89,16 +91,18 @@ $(FIELDS)
 HMC(init_ϵ=0.05, n_leapfrog=10)
 ```
 """
-Base.@kwdef struct HMC{T<:AbstractFloat} <: AbstractHMCSampler
+struct HMC{T<:AbstractFloat, I, D} <: AbstractHMCSampler
     "`init_ϵ::Real` : Initial step size; 0 means automatically searching using a heuristic procedure."
     init_ϵ::T
     "`n_leapfrog::Int` : Number of leapfrog steps."
     n_leapfrog::Int
     "[`AbstractIntegrator`](@ref)."
-    integrator_method::AbstractIntegrator = Leapfrog
+    integrator_method::I
     "[`AbstractMetric`](@ref)."
-    metric_type::AbstractMetric = DiagEuclideanMetric
+    metric_type::D
 end
+
+HMC(init_ϵ, n_leapfrog) = HMC(init_ϵ, n_leapfrog, :Leapfrog, :DiagEuclideanMetric)
 
 #############
 ### HMCDA ###
@@ -124,7 +128,7 @@ For more information, please view the following paper ([arXiv link](https://arxi
   setting path lengths in Hamiltonian Monte Carlo." Journal of Machine Learning
   Research 15, no. 1 (2014): 1593-1623.
 """
-Base.@kwdef struct HMCDA{T<:AbstractFloat} <: AbstractHMCSampler
+struct HMCDA{T<:AbstractFloat, I, D} <: AbstractHMCSampler
     "`n_adapts::Int` : Number of adaptation steps."
     n_adapts::Int
     "`δ::Real` : Target acceptance rate for dual averaging."
@@ -132,9 +136,11 @@ Base.@kwdef struct HMCDA{T<:AbstractFloat} <: AbstractHMCSampler
     "`λ::Real` : Target leapfrog length."
     λ::T
     "`init_ϵ::Real` : Initial step size; 0 means automatically searching using a heuristic procedure."
-    init_ϵ::T = zero(T)
+    init_ϵ::T
     "[`AbstractIntegrator`](@ref)."
-    integrator_method::AbstractIntegrator = Leapfrog
+    integrator_method::I
     "[`AbstractMetric`](@ref)."
-    metric_type::AbstractMetric = DiagEuclideanMetric
+    metric_type::D
 end
+
+HMCDA(n_adapts, δ, λ) = HMCDA(n_adapts, δ, λ, 0.0, :Leapfrog, :DiagEuclideanMetric)

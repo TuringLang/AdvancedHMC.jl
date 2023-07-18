@@ -1,9 +1,9 @@
 using AdvancedHMC, AbstractMCMC
 
 # Initalize samplers
-nuts = NUTS(δ = 0.8, n_adapts = 1000)
-hmc = HMC(init_ϵ = 0.1, n_leapfrog = 25)
-hmcda = HMCDA(n_adapts = 1000, δ = 0.8, λ = 1.0)
+nuts = NUTS(1000, 0.8,)
+hmc = HMC(0.1, 25)
+hmcda = HMCDA(1000, 0.8, 1.0)
 
 # Check that everything is initalized correctly
 @testset "Constructors" begin

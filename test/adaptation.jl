@@ -8,7 +8,7 @@ function runnuts(ℓπ, metric; n_samples = 3_000)
     θ_init = rand(D)
     rng = MersenneTwister(0)
 
-    nuts = NUTS(δ = 0.8, n_adapts = n_adapts)
+    nuts = NUTS(n_adapts, 0.8)
     h = Hamiltonian(metric, ℓπ, ForwardDiff)
     integrator = AdvancedHMC.make_integrator(rng, nuts, h, θ_init)
     κ = AdvancedHMC.make_kernel(nuts, integrator)
