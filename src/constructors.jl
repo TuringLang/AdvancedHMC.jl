@@ -71,7 +71,17 @@ struct NUTS{T<:AbstractFloat,I,D} <: AbstractHMCSampler
     metric_type::D
 end
 
-NUTS(n_adapts, δ) = NUTS(n_adapts, δ, 10, 1000.0, 0.0, :Leapfrog, :DiagEuclideanMetric)
+function NUTS(
+    n_adapts,
+    δ;
+    max_depth=10,
+    Δ_max=1000.0,
+    init_ϵ=0.0,
+    integrator_method=:Leapfrog,
+    metric_type=:DiagEuclideanMetric,
+    )
+    return NUTS(n_adapts, δ, max_depth, Δ_max, init_ϵ, integrator_method, metric_type)
+end
 
 ###########
 ### HMC ###
@@ -102,7 +112,14 @@ struct HMC{T<:AbstractFloat,I,D} <: AbstractHMCSampler
     metric_type::D
 end
 
-HMC(init_ϵ, n_leapfrog) = HMC(init_ϵ, n_leapfrog, :Leapfrog, :DiagEuclideanMetric)
+function HMC(
+    init_ϵ,
+    n_leapfrog;
+    integrator_method=:Leapfrog,
+    metric_type=:DiagEuclideanMetric,
+    )
+    return HMC(init_ϵ, n_leapfrog, integrator_method, metric_type)
+end
 
 #############
 ### HMCDA ###
@@ -143,4 +160,15 @@ struct HMCDA{T<:AbstractFloat,I,D} <: AbstractHMCSampler
     metric_type::D
 end
 
-HMCDA(n_adapts, δ, λ) = HMCDA(n_adapts, δ, λ, 0.0, :Leapfrog, :DiagEuclideanMetric)
+function HMCDA(
+    n_adapts,
+    δ,
+    λ;
+    max_depth=10,
+    Δ_max=1000.0,
+    init_ϵ=0.0,
+    integrator_method=:Leapfrog,
+    metric_type=:DiagEuclideanMetric,
+    )
+    return HMCDA(n_adapts, δ, λ, max_depth, Δ_max, init_ϵ, integrator_method, metric_type)
+end
