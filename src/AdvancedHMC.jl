@@ -136,6 +136,8 @@ include("sampler.jl")
 export sample
 
 include("constructors.jl")
+export HMCSampler, HMC, NUTS, HMCDA
+
 include("abstractmcmc.jl")
 
 ## Without explicit AD backend

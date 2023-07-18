@@ -143,5 +143,3 @@ Base.@kwdef struct HMCDA{T<:AbstractFloat} <: AbstractHMCSampler
     integrator_method = Leapfrog
     metric_type = DiagEuclideanMetric
 end
-
-export HMCSampler, HMC, NUTS, HMCDA
