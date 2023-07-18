@@ -167,6 +167,6 @@ function HMCDA(
     init_ϵ = 0.0,
     integrator_method = :Leapfrog,
     metric_type = :DiagEuclideanMetric,
-    )
+)
     return HMCDA(n_adapts, δ, λ, init_ϵ, integrator_method, metric_type)
 end
