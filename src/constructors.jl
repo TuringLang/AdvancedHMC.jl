@@ -51,8 +51,7 @@ $(FIELDS)
 # Usage:
 
 ```julia
-NUTS()            # Use default NUTS configuration.
-NUTS(1000, 0.65)  # Use 1000 adaption steps, and target accept ratio 0.65.
+NUTS(n_adapts=1000, δ=0.65)  # Use 1000 adaption steps, and target accept ratio 0.65.
 ```
 """
 Base.@kwdef struct NUTS{T<:AbstractFloat} <: AbstractHMCSampler
@@ -87,7 +86,7 @@ $(FIELDS)
 # Usage:
 
 ```julia
-HMC(0.05, 10)
+HMC(init_ϵ=0.05, n_leapfrog=10)
 ```
 """
 Base.@kwdef struct HMC{T<:AbstractFloat} <: AbstractHMCSampler
@@ -116,7 +115,7 @@ $(FIELDS)
 # Usage:
 
 ```julia
-HMCDA(200, 0.65, 0.3)
+HMCDA(n_adapts=200, δ=0.65, λ=0.3)
 ```
 
 For more information, please view the following paper ([arXiv link](https://arxiv.org/abs/1111.4246)):
