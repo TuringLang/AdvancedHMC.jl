@@ -65,10 +65,10 @@ struct NUTS{T<:Real,I,D} <: AbstractHMCSampler
     Δ_max::T
     "Initial step size; 0 means automatically searching using a heuristic procedure."
     init_ϵ::T
-    "Choice of integrator method given as a symbol"
-    integrator_method::I
-    "Choice of metric type as given a symbol"
-    metric_type::D
+    "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
+    integrator::I
+    "Choice of metric, specified either using a `Symbol` or `AbstractMetric`"
+    metric::D
 end
 
 function NUTS(
@@ -77,8 +77,8 @@ function NUTS(
     max_depth = 10,
     Δ_max = 1000.0,
     init_ϵ = 0.0,
-    integrator_method = :Leapfrog,
-    metric_type = :DiagEuclideanMetric,
+    integrator = :leapfrog,
+    metric = :diagonal,
 )
     T = typeof(δ)
     return NUTS(n_adapts, δ, max_depth, T(Δ_max), T(init_ϵ), integrator_method, metric_type)
@@ -107,19 +107,19 @@ struct HMC{T<:Real,I,D} <: AbstractHMCSampler
     init_ϵ::T
     "Number of leapfrog steps."
     n_leapfrog::Int
-    "Choice of integrator method given as a symbol"
-    integrator_method::I
-    "Choice of metric type as given a symbol"
-    metric_type::D
+    "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
+    integrator::I
+    "Choice of metric, specified either using a `Symbol` or `AbstractMetric`"
+    metric::D
 end
 
 function HMC(
     init_ϵ,
     n_leapfrog;
-    integrator_method = :Leapfrog,
-    metric_type = :DiagEuclideanMetric,
+    integrator = :leapfrog,
+    metric = :diagonal,
 )
-    return HMC(init_ϵ, n_leapfrog, integrator_method, metric_type)
+    return HMC(init_ϵ, n_leapfrog, integrator, metric)
 end
 
 #############
@@ -155,10 +155,10 @@ struct HMCDA{T<:Real,I,D} <: AbstractHMCSampler
     λ::T
     "Initial step size; 0 means automatically searching using a heuristic procedure."
     init_ϵ::T
-    "Choice of integrator method given as a symbol"
-    integrator_method::I
-    "Choice of metric type as given a symbol"
-    metric_type::D
+    "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
+    integrator::I
+    "Choice of metric, specified either using a `Symbol` or `AbstractMetric`"
+    metric::D
 end
 
 function HMCDA(
@@ -166,12 +166,12 @@ function HMCDA(
     δ,
     λ;
     init_ϵ = 0.0,
-    integrator_method = :Leapfrog,
-    metric_type = :DiagEuclideanMetric,
+    integrator = :leapfrog,
+    metric = :diagonal,
 )
     if typeof(δ) != typeof(λ)
         @warn "typeof(δ) != typeof(λ) --> using typeof(δ)"
     end
     T = typeof(δ)
-    return HMCDA(n_adapts, δ, T(λ), T(init_ϵ), integrator_method, metric_type)
+    return HMCDA(n_adapts, δ, T(λ), T(init_ϵ), integrator, metric)
 end
