@@ -79,7 +79,7 @@ function NUTS(
     init_ϵ = 0.0,
     integrator_method = :Leapfrog,
     metric_type = :DiagEuclideanMetric,
-)   
+)
     T = typeof(δ)
     return NUTS(n_adapts, δ, max_depth, T(Δ_max), T(init_ϵ), integrator_method, metric_type)
 end
@@ -168,7 +168,7 @@ function HMCDA(
     init_ϵ = 0.0,
     integrator_method = :Leapfrog,
     metric_type = :DiagEuclideanMetric,
-)   
+)
     if typeof(δ) != typeof(λ)
         @warn "typeof(δ) != typeof(λ) --> using typeof(δ)"
     end
