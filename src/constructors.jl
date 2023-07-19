@@ -81,7 +81,7 @@ function NUTS(
     metric = :diagonal,
 )
     T = typeof(δ)
-    return NUTS(n_adapts, δ, max_depth, T(Δ_max), T(init_ϵ), integrator_method, metric_type)
+    return NUTS(n_adapts, δ, max_depth, T(Δ_max), T(init_ϵ), integrator, metric)
 end
 
 ###########
