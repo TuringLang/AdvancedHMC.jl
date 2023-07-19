@@ -63,7 +63,7 @@ struct NUTS{T<:Real,I,D} <: AbstractHMCSampler
     max_depth::Int
     "Maximum divergence during doubling tree."
     Δ_max::T
-    "Initial step size; 0 means automatically searching using a heuristic procedure."
+    "Initial step size; 0 means it is automatically chosen."
     init_ϵ::T
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
     integrator::I
