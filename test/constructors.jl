@@ -81,9 +81,11 @@ end
     @test custom_state.κ.τ.integrator == integrator
 
     # Kernel
+    @test nuts_state.κ == AdvancedHMC.make_kernel(nuts, nuts_state.κ.τ.integrator)
     @test custom_state.κ == kernel
 
     # Adaptor
     @test typeof(nuts_state.adaptor) <: StanHMCAdaptor 
-    @test typeof(custom_state.adaptor) == NoAdaptation
+    @test hmc_state.adaptor == NoAdaptation()
+    @test custom_state.adaptor == adaptor
 end
