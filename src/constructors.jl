@@ -54,20 +54,20 @@ $(FIELDS)
 NUTS(n_adapts=1000, δ=0.65)  # Use 1000 adaption steps, and target accept ratio 0.65.
 ```
 """
-struct NUTS{T<:AbstractFloat,I,D} <: AbstractHMCSampler
-    "`n_adapts::Int` : Number of adaptation steps."
+struct NUTS{T<:Real,I,D} <: AbstractHMCSampler
+    "Number of adaptation steps."
     n_adapts::Int
-    "`δ::Real` : Target acceptance rate for dual averaging."
+    "Target acceptance rate for dual averaging."
     δ::T
-    "`max_depth::Int` : Maximum doubling tree depth."
+    "Maximum doubling tree depth."
     max_depth::Int
-    "`Δ_max::Real` : Maximum divergence during doubling tree."
+    "Maximum divergence during doubling tree."
     Δ_max::T
-    "`init_ϵ::Real` : Initial step size; 0 means automatically searching using a heuristic procedure."
+    "Initial step size; 0 means automatically searching using a heuristic procedure."
     init_ϵ::T
-    "[`AbstractIntegrator`](@ref)."
+    "Choice of integrator method given as a symbol"
     integrator_method::I
-    "[`AbstractMetric`](@ref)."
+    "Choice of metric type as given a symbol"
     metric_type::D
 end
 
@@ -79,8 +79,9 @@ function NUTS(
     init_ϵ = 0.0,
     integrator_method = :Leapfrog,
     metric_type = :DiagEuclideanMetric,
-)
-    return NUTS(n_adapts, δ, max_depth, Δ_max, init_ϵ, integrator_method, metric_type)
+)   
+    T = typeof(δ)
+    return NUTS(n_adapts, δ, max_depth, T(Δ_max), T(init_ϵ), integrator_method, metric_type)
 end
 
 ###########
@@ -101,14 +102,14 @@ $(FIELDS)
 HMC(init_ϵ=0.05, n_leapfrog=10)
 ```
 """
-struct HMC{T<:AbstractFloat,I,D} <: AbstractHMCSampler
-    "`init_ϵ::Real` : Initial step size; 0 means automatically searching using a heuristic procedure."
+struct HMC{T<:Real,I,D} <: AbstractHMCSampler
+    "Initial step size; 0 means automatically searching using a heuristic procedure."
     init_ϵ::T
-    "`n_leapfrog::Int` : Number of leapfrog steps."
+    "Number of leapfrog steps."
     n_leapfrog::Int
-    "[`AbstractIntegrator`](@ref)."
+    "Choice of integrator method given as a symbol"
     integrator_method::I
-    "[`AbstractMetric`](@ref)."
+    "Choice of metric type as given a symbol"
     metric_type::D
 end
 
@@ -145,18 +146,18 @@ For more information, please view the following paper ([arXiv link](https://arxi
   setting path lengths in Hamiltonian Monte Carlo." Journal of Machine Learning
   Research 15, no. 1 (2014): 1593-1623.
 """
-struct HMCDA{T<:AbstractFloat,I,D} <: AbstractHMCSampler
-    "`n_adapts::Int` : Number of adaptation steps."
+struct HMCDA{T<:Real,I,D} <: AbstractHMCSampler
+    "`Number of adaptation steps."
     n_adapts::Int
-    "`δ::Real` : Target acceptance rate for dual averaging."
+    "Target acceptance rate for dual averaging."
     δ::T
-    "`λ::Real` : Target leapfrog length."
+    "Target leapfrog length."
     λ::T
-    "`init_ϵ::Real` : Initial step size; 0 means automatically searching using a heuristic procedure."
+    "Initial step size; 0 means automatically searching using a heuristic procedure."
     init_ϵ::T
-    "[`AbstractIntegrator`](@ref)."
+    "Choice of integrator method given as a symbol"
     integrator_method::I
-    "[`AbstractMetric`](@ref)."
+    "Choice of metric type as given a symbol"
     metric_type::D
 end
 
@@ -167,6 +168,10 @@ function HMCDA(
     init_ϵ = 0.0,
     integrator_method = :Leapfrog,
     metric_type = :DiagEuclideanMetric,
-)
-    return HMCDA(n_adapts, δ, λ, init_ϵ, integrator_method, metric_type)
+)   
+    if typeof(δ) != typeof(λ)
+        @warn "typeof(δ) != typeof(λ) --> using typeof(δ)"
+    end
+    T = typeof(δ)
+    return HMCDA(n_adapts, δ, T(λ), T(init_ϵ), integrator_method, metric_type)
 end
