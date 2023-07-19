@@ -242,6 +242,48 @@ end
 ### Utils ###
 #############
 
+const SYMBOL_TO_INTEGRATOR_TYPE = Dict(
+    :leapfrog => Leapfrog,
+    :jitterleapfro => JitteredLeapfrog,
+    :temperedleapfrog => TemperedLeapfrog,
+)
+
+function determine_integrator_constructor(integrator::Symbol)
+    if !haskey(SYMBOL_TO_INTEGRATOR_TYPE, integrator)
+        error("Integrator $integrator not supported.")
+    end
+
+    return SYMBOL_TO_INTEGRATOR_TYPE[integrator]
+end
+
+# If it's the "constructor" of an integrator or instantance of an integrator, do nothing.
+determine_integrator_constructor(x::AbstractIntegrator) = x
+determine_integrator_constructor(x::Type{<:AbstractIntegrator}) = x
+determine_integrator_constructor(x) = error("Integrator $x not supported.")
+
+#########
+
+const SYMBOL_TO_METRIC_TYPE = Dict(
+    :diagonal => DiagEuclideanMetric,
+    :unit => UnitEuclideanMetric,
+    :dense => DenseEuclideanMetric,
+)
+
+function determine_metric_constructor(metric::Symbol)
+    if !haskey(SYMBOL_TO_METRIC_TYPE, metric)
+        error("Metric $metric not supported.")
+    end
+
+    return SYMBOL_TO_METRIC_TYPE[metric]
+end
+
+# If it's the "constructor" of an metric or instantance of an metric, do nothing.
+determine_metric_constructor(x::AbstractMetric) = x
+determine_metric_constructor(x::Type{<:AbstractMetric}) = x
+determine_metric_constructor(x) = error("Metric $x not supported.")
+
+#########
+
 function make_integrator(
     rng::Random.AbstractRNG,
     spl::Union{HMC,NUTS,HMCDA},
@@ -252,7 +294,7 @@ function make_integrator(
         ϵ = find_good_stepsize(rng, hamiltonian, init_params)
         @info string("Found initial step size ", ϵ)
     end
-    integrator = eval(spl.integrator_method)
+    integrator = determine_integrator_constructor(spl.integrator)
     return integrator(ϵ)
 end
 
@@ -263,14 +305,14 @@ function make_integrator(
     init_params,
 )
     # rerturns a dummy integrator
-    return Leapfrog(0.0)
+    return AbstractIntegrator
 end
 
 #########
 
 function make_metric(spl::Union{HMC,NUTS,HMCDA}, logdensity)
     d = LogDensityProblems.dimension(logdensity)
-    metric = eval(spl.metric_type)
+    metric = determine_metric_constructor(spl.metric_type)
     return metric(d)
 end
 

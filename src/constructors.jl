@@ -113,12 +113,7 @@ struct HMC{T<:Real,I,D} <: AbstractHMCSampler
     metric::D
 end
 
-function HMC(
-    init_ϵ,
-    n_leapfrog;
-    integrator = :leapfrog,
-    metric = :diagonal,
-)
+function HMC(init_ϵ, n_leapfrog; integrator = :leapfrog, metric = :diagonal)
     return HMC(init_ϵ, n_leapfrog, integrator, metric)
 end
 
@@ -161,14 +156,7 @@ struct HMCDA{T<:Real,I,D} <: AbstractHMCSampler
     metric::D
 end
 
-function HMCDA(
-    n_adapts,
-    δ,
-    λ;
-    init_ϵ = 0.0,
-    integrator = :leapfrog,
-    metric = :diagonal,
-)
+function HMCDA(n_adapts, δ, λ; init_ϵ = 0.0, integrator = :leapfrog, metric = :diagonal)
     if typeof(δ) != typeof(λ)
         @warn "typeof(δ) != typeof(λ) --> using typeof(δ)"
     end
