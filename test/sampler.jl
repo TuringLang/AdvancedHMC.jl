@@ -164,7 +164,6 @@ end
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         integrator = Leapfrog(ϵ)
         κ = AdvancedHMC.make_kernel(nuts, integrator)
-        AdvancedHMC.make_adaptor(nuts, metric, integrator)
         adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
         samples, stats = sample(
             h,
