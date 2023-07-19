@@ -21,7 +21,7 @@ struct HMCState{
     "Current [`AbstractMetric`](@ref), possibly adapted."
     metric::TMetric
     "Current [`AbstractMCMCKernel`](@ref)."
-    kernel::TKernel
+    κ::TKernel
     "Current [`AbstractAdaptor`](@ref)."
     adaptor::TAdapt
 end
@@ -109,6 +109,8 @@ function AbstractMCMC.step(
 
     # Define integration algorithm
     # Find good eps if not provided one
+    T = get_type_of_spl(spl)
+    init_params = T.(init_params)
     integrator = make_integrator(rng, spl, hamiltonian, init_params)
 
     # Make kernel
@@ -122,8 +124,8 @@ function AbstractMCMC.step(
 
     # Compute next transition and state.
     state = HMCState(0, t, metric, κ, adaptor)
-
-    return t, state
+    # Take actual first step.
+    return AbstractMCMC.step(rng, model, spl, state; kwargs...)
 end
 
 function AbstractMCMC.step(
@@ -133,12 +135,11 @@ function AbstractMCMC.step(
     state::HMCState;
     kwargs...,
 )
-    # Take actual first step.
     # Compute transition.
     i = state.i + 1
     t_old = state.transition
     adaptor = state.adaptor
-    κ = state.kernel
+    κ = state.κ
     metric = state.metric
 
     # Reconstruct hamiltonian.
@@ -198,7 +199,7 @@ function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; nadapts = 0, kw
 
     metric = state.metric
     adaptor = state.adaptor
-    κ = state.kernel
+    κ = state.κ
     tstat = t.stat
     isadapted = tstat.is_adapt
     if isadapted
@@ -242,6 +243,11 @@ end
 #############
 ### Utils ###
 #############
+
+function get_type_of_spl(spl::AbstractHMCSampler)
+    T = collect(typeof(spl).parameters)[1]
+    return T
+end
 
 const SYMBOL_TO_INTEGRATOR_TYPE = Dict(
     :leapfrog => Leapfrog,
@@ -293,7 +299,11 @@ function make_integrator(
 )
     if iszero(spl.init_ϵ)
         ϵ = find_good_stepsize(rng, hamiltonian, init_params)
+        T = get_type_of_spl(spl)
+        ϵ = T(ϵ)
         @info string("Found initial step size ", ϵ)
+    else
+        ϵ = spl.init_ϵ
     end
     integrator = determine_integrator_constructor(spl.integrator)
     return integrator(ϵ)
@@ -305,16 +315,15 @@ function make_integrator(
     hamiltonian::Hamiltonian,
     init_params,
 )
-    # rerturns a dummy integrator
-    return AbstractIntegrator
+    return spl.κ.τ.integrator
 end
 
 #########
 
 function make_metric(spl::Union{HMC,NUTS,HMCDA}, logdensity)
     d = LogDensityProblems.dimension(logdensity)
-    metric = determine_metric_constructor(spl.metric_type)
-    return metric(d)
+    metric = determine_metric_constructor(spl.metric)
+    return metric(get_type_of_spl(spl), d)
 end
 
 function make_metric(spl::HMCSampler, logdensity)
@@ -363,5 +372,5 @@ function make_kernel(spl::HMCDA, integrator::AbstractIntegrator)
 end
 
 function make_kernel(spl::HMCSampler, integrator::AbstractIntegrator)
-    return spl.kernel
+    return spl.κ
 end

@@ -17,7 +17,7 @@ include("common.jl")
     κ = AdvancedHMC.make_kernel(nuts, integrator)
     metric = DiagEuclideanMetric(2)
     adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
-    sampler = HMCSampler(kernel = κ, metric = metric, adaptor = adaptor)
+    sampler = HMCSampler(κ = κ, metric = metric, adaptor = adaptor)
 
     samples = AbstractMCMC.sample(
         rng,

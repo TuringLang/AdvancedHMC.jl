@@ -21,19 +21,20 @@ and `adaptor` after sampling.
 
 To access the updated fields use the resulting [`HMCState`](@ref).
 """
-Base.@kwdef struct HMCSampler{
-    K<:AbstractMCMCKernel,
-    M<:AbstractMetric,
-    A<:Adaptation.AbstractAdaptor,
-} <: AbstractHMCSampler
+Base.@kwdef struct HMCSampler{T<:Real} <: AbstractHMCSampler
     "[`AbstractMCMCKernel`](@ref)."
-    kernel::K
+    κ::AbstractMCMCKernel
     "[`AbstractMetric`](@ref)."
-    metric::M
+    metric::AbstractMetric
     "[`AbstractAdaptor`](@ref)."
-    adaptor::A
+    adaptor::AbstractAdaptor
     "Adaptation steps if any"
     n_adapts::Int = 0
+end
+
+function HMCSampler(κ, metric, adaptor, n_adapts)
+    T = collect(typeof(metric).parameters)[1]
+    return HMCSampler{T}(κ, metric, adaptor, n_adapts)
 end
 
 ############
@@ -54,7 +55,7 @@ $(FIELDS)
 NUTS(n_adapts=1000, δ=0.65)  # Use 1000 adaption steps, and target accept ratio 0.65.
 ```
 """
-struct NUTS{T<:Real,I,D} <: AbstractHMCSampler
+struct NUTS{T<:Real} <: AbstractHMCSampler
     "Number of adaptation steps."
     n_adapts::Int
     "Target acceptance rate for dual averaging."
@@ -66,9 +67,9 @@ struct NUTS{T<:Real,I,D} <: AbstractHMCSampler
     "Initial step size; 0 means it is automatically chosen."
     init_ϵ::T
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
-    integrator::I
+    integrator
     "Choice of metric, specified either using a `Symbol` or `AbstractMetric`"
-    metric::D
+    metric
 end
 
 function NUTS(
@@ -102,15 +103,15 @@ $(FIELDS)
 HMC(init_ϵ=0.05, n_leapfrog=10)
 ```
 """
-struct HMC{T<:Real,I,D} <: AbstractHMCSampler
+struct HMC{T<:Real} <: AbstractHMCSampler
     "Initial step size; 0 means automatically searching using a heuristic procedure."
     init_ϵ::T
     "Number of leapfrog steps."
     n_leapfrog::Int
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
-    integrator::I
+    integrator
     "Choice of metric, specified either using a `Symbol` or `AbstractMetric`"
-    metric::D
+    metric
 end
 
 function HMC(init_ϵ, n_leapfrog; integrator = :leapfrog, metric = :diagonal)
@@ -141,7 +142,7 @@ For more information, please view the following paper ([arXiv link](https://arxi
   setting path lengths in Hamiltonian Monte Carlo." Journal of Machine Learning
   Research 15, no. 1 (2014): 1593-1623.
 """
-struct HMCDA{T<:Real,I,D} <: AbstractHMCSampler
+struct HMCDA{T<:Real} <: AbstractHMCSampler
     "`Number of adaptation steps."
     n_adapts::Int
     "Target acceptance rate for dual averaging."
@@ -151,9 +152,9 @@ struct HMCDA{T<:Real,I,D} <: AbstractHMCSampler
     "Initial step size; 0 means automatically searching using a heuristic procedure."
     init_ϵ::T
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
-    integrator::I
+    integrator
     "Choice of metric, specified either using a `Symbol` or `AbstractMetric`"
-    metric::D
+    metric
 end
 
 function HMCDA(n_adapts, δ, λ; init_ϵ = 0.0, integrator = :leapfrog, metric = :diagonal)

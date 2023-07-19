@@ -88,7 +88,7 @@ export StaticTrajectory, find_good_eps
 include("adaptation/Adaptation.jl")
 using .Adaptation
 import .Adaptation:
-    StepSizeAdaptor, MassMatrixAdaptor, StanHMCAdaptor, NesterovDualAveraging
+    StepSizeAdaptor, MassMatrixAdaptor, StanHMCAdaptor, NesterovDualAveraging, NoAdaptation
 
 # Helpers for initializing adaptors via AHMC structs
 
@@ -128,7 +128,8 @@ export StepSizeAdaptor,
     WelfordVar,
     WelfordCov,
     NaiveHMCAdaptor,
-    StanHMCAdaptor
+    StanHMCAdaptor, 
+    NoAdaptation
 
 include("diagnosis.jl")
 
