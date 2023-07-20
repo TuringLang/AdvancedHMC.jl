@@ -109,9 +109,9 @@ function AbstractMCMC.step(
 
     # Define integration algorithm
     # Find good eps if not provided one
-    T = get_type_of_spl(spl)
-    init_params = T.(init_params)
-    integrator = make_integrator(rng, spl, hamiltonian, init_params)
+    init_params = make_init_params(spl, logdensity, init_params)
+    ϵ = make_step_size(rng, spl, hamiltonian, init_params)
+    integrator = make_integrator(spl, ϵ)
 
     # Make kernel
     κ = make_kernel(spl, integrator)
@@ -244,10 +244,11 @@ end
 ### Utils ###
 #############
 
-function get_type_of_spl(spl::AbstractHMCSampler)
-    T = collect(typeof(spl).parameters)[1]
+function get_type_of_spl(::AbstractHMCSampler{T}) where T<:Real
     return T
-end
+end   
+
+#########
 
 const SYMBOL_TO_INTEGRATOR_TYPE = Dict(
     :leapfrog => Leapfrog,
@@ -291,30 +292,50 @@ determine_metric_constructor(x) = error("Metric $x not supported.")
 
 #########
 
-function make_integrator(
+function make_init_params(spl::AbstractHMCSampler, logdensity, init_params)
+    T = get_type_of_spl(spl)
+    if init_params == nothing
+        d = LogDensityProblems.dimension(logdensity)
+        init_params = randn(rng, d)
+    end
+    return T.(init_params)
+end
+
+#########
+
+function make_step_size(
     rng::Random.AbstractRNG,
-    spl::Union{HMC,NUTS,HMCDA},
+    spl::AbstractHMCSampler,
     hamiltonian::Hamiltonian,
     init_params,
 )
-    if iszero(spl.init_ϵ)
+    ϵ = spl.init_ϵ
+    if iszero(ϵ)
         ϵ = find_good_stepsize(rng, hamiltonian, init_params)
         T = get_type_of_spl(spl)
         ϵ = T(ϵ)
         @info string("Found initial step size ", ϵ)
-    else
-        ϵ = spl.init_ϵ
     end
-    integrator = determine_integrator_constructor(spl.integrator)
-    return integrator(ϵ)
+    return ϵ
 end
 
-function make_integrator(
+function make_step_size(
     rng::Random.AbstractRNG,
     spl::HMCSampler,
     hamiltonian::Hamiltonian,
     init_params,
 )
+    return spl.κ.τ.integrator.ϵ
+end
+
+#########
+
+function make_integrator(spl::AbstractHMCSampler, ϵ::Real)
+    integrator = determine_integrator_constructor(spl.integrator)
+    return integrator(ϵ)
+end
+
+function make_integrator(spl::HMCSampler, ϵ::Real)
     return spl.κ.τ.integrator
 end
 

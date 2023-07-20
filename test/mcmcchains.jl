@@ -17,7 +17,7 @@ include("common.jl")
     kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
     metric = DiagEuclideanMetric(2)
     adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
-    sampler = HMCSampler(κ = kernel, metric = metric, adaptor = adaptor)
+    sampler = HMCSampler(kernel, metric, adaptor)
 
     samples = AbstractMCMC.sample(
         rng,

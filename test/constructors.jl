@@ -12,7 +12,7 @@ integrator = Leapfrog(1e-3)
 kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
 metric = DiagEuclideanMetric(2)
 adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
-custom = HMCSampler(κ = kernel, metric = metric, adaptor = adaptor)
+custom = HMCSampler(kernel, metric, adaptor)
 
 # Check that everything is initalized correctly
 @testset "Constructors" begin

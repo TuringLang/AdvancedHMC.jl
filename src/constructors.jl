@@ -1,4 +1,4 @@
-abstract type AbstractHMCSampler <: AbstractMCMC.AbstractSampler end
+abstract type AbstractHMCSampler{T<:Real} <: AbstractMCMC.AbstractSampler end
 
 ##############
 ### Custom ###
@@ -21,7 +21,7 @@ and `adaptor` after sampling.
 
 To access the updated fields use the resulting [`HMCState`](@ref).
 """
-struct HMCSampler{T<:Real} <: AbstractHMCSampler
+struct HMCSampler{T<:Real} <: AbstractHMCSampler{T}
     "[`AbstractMCMCKernel`](@ref)."
     κ::AbstractMCMCKernel
     "[`AbstractMetric`](@ref)."
@@ -29,10 +29,10 @@ struct HMCSampler{T<:Real} <: AbstractHMCSampler
     "[`AbstractAdaptor`](@ref)."
     adaptor::AbstractAdaptor
     "Adaptation steps if any"
-    n_adapts::Int = 0
+    n_adapts::Int
 end
 
-function HMCSampler(κ, metric, adaptor, n_adapts)
+function HMCSampler(κ, metric, adaptor; n_adapts=0)
     T = collect(typeof(metric).parameters)[1]
     return HMCSampler{T}(κ, metric, adaptor, n_adapts)
 end
@@ -55,7 +55,7 @@ $(FIELDS)
 NUTS(n_adapts=1000, δ=0.65)  # Use 1000 adaption steps, and target accept ratio 0.65.
 ```
 """
-struct NUTS{T<:Real} <: AbstractHMCSampler
+struct NUTS{T<:Real} <: AbstractHMCSampler{T}
     "Number of adaptation steps."
     n_adapts::Int
     "Target acceptance rate for dual averaging."
@@ -103,7 +103,7 @@ $(FIELDS)
 HMC(init_ϵ=0.05, n_leapfrog=10)
 ```
 """
-struct HMC{T<:Real} <: AbstractHMCSampler
+struct HMC{T<:Real} <: AbstractHMCSampler{T}
     "Initial step size; 0 means automatically searching using a heuristic procedure."
     init_ϵ::T
     "Number of leapfrog steps."
@@ -142,7 +142,7 @@ For more information, please view the following paper ([arXiv link](https://arxi
   setting path lengths in Hamiltonian Monte Carlo." Journal of Machine Learning
   Research 15, no. 1 (2014): 1593-1623.
 """
-struct HMCDA{T<:Real} <: AbstractHMCSampler
+struct HMCDA{T<:Real} <: AbstractHMCSampler{T}
     "`Number of adaptation steps."
     n_adapts::Int
     "Target acceptance rate for dual averaging."

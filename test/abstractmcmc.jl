@@ -16,7 +16,7 @@ include("common.jl")
     κ = AdvancedHMC.make_kernel(nuts, integrator)
     metric = DiagEuclideanMetric(2)
     adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
-    custom = HMCSampler(κ = κ, metric = metric, adaptor = adaptor)
+    custom = HMCSampler(κ, metric, adaptor)
 
     model = AdvancedHMC.LogDensityModel(
         LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ_gdemo),
