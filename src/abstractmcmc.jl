@@ -244,9 +244,9 @@ end
 ### Utils ###
 #############
 
-function get_type_of_spl(::AbstractHMCSampler{T}) where T<:Real
+function get_type_of_spl(::AbstractHMCSampler{T}) where {T<:Real}
     return T
-end   
+end
 
 #########
 

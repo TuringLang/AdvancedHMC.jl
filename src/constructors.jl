@@ -32,7 +32,7 @@ struct HMCSampler{T<:Real} <: AbstractHMCSampler{T}
     n_adapts::Int
 end
 
-function HMCSampler(κ, metric, adaptor; n_adapts=0)
+function HMCSampler(κ, metric, adaptor; n_adapts = 0)
     T = collect(typeof(metric).parameters)[1]
     return HMCSampler{T}(κ, metric, adaptor, n_adapts)
 end
@@ -67,9 +67,9 @@ struct NUTS{T<:Real} <: AbstractHMCSampler{T}
     "Initial step size; 0 means it is automatically chosen."
     init_ϵ::T
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
-    integrator
+    integrator::Union{Symbol,AbstractIntegrator}
     "Choice of metric, specified either using a `Symbol` or `AbstractMetric`"
-    metric
+    metric::Union{Symbol,AbstractMetric}
 end
 
 function NUTS(
@@ -109,9 +109,9 @@ struct HMC{T<:Real} <: AbstractHMCSampler{T}
     "Number of leapfrog steps."
     n_leapfrog::Int
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
-    integrator::Any
+    integrator::Union{Symbol,AbstractIntegrator}
     "Choice of metric, specified either using a `Symbol` or `AbstractMetric`"
-    metric::Any
+    metric::Union{Symbol,AbstractMetric}
 end
 
 function HMC(init_ϵ, n_leapfrog; integrator = :leapfrog, metric = :diagonal)
@@ -152,9 +152,9 @@ struct HMCDA{T<:Real} <: AbstractHMCSampler{T}
     "Initial step size; 0 means automatically searching using a heuristic procedure."
     init_ϵ::T
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
-    integrator::Any
+    integrator::Union{Symbol,AbstractIntegrator}
     "Choice of metric, specified either using a `Symbol` or `AbstractMetric`"
-    metric::Any
+    metric::Union{Symbol,AbstractMetric}
 end
 
 function HMCDA(n_adapts, δ, λ; init_ϵ = 0.0, integrator = :leapfrog, metric = :diagonal)

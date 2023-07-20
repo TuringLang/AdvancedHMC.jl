@@ -55,7 +55,7 @@ include("common.jl")
         progress = false,
         verbose = false,
     )
-    
+
     # Transform back to original space.
     # NOTE: We're not correcting for the `logabsdetjac` here since, but
     # we're only interested in the mean it doesn't matter.
