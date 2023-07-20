@@ -21,7 +21,7 @@ and `adaptor` after sampling.
 
 To access the updated fields use the resulting [`HMCState`](@ref).
 """
-Base.@kwdef struct HMCSampler{T<:Real} <: AbstractHMCSampler
+struct HMCSampler{T<:Real} <: AbstractHMCSampler
     "[`AbstractMCMCKernel`](@ref)."
     κ::AbstractMCMCKernel
     "[`AbstractMetric`](@ref)."
