@@ -286,8 +286,6 @@ function make_step_size(
     return spl.κ.τ.integrator.ϵ
 end
 
-#########
-
 make_integrator(spl::HMCSampler, ϵ::Real) = spl.κ.τ.integrator
 make_integrator(spl::AbstractHMCSampler, ϵ::Real) = make_integrator(spl.integrator, ϵ)
 make_integrator(i::AbstractIntegrator, ϵ::Real) = i
@@ -312,10 +310,6 @@ function make_metric(spl::AbstractHMCSampler, logdensity)
     d = LogDensityProblems.dimension(logdensity)
     T = get_type_of_spl(spl)
     return make_metric(spl.metric, T, d)
-end
-
-function make_metric(spl::HMCSampler, logdensity)
-    return spl.metric
 end
 
 #########
