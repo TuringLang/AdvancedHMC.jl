@@ -17,10 +17,10 @@ If you are interested in using AdvancedHMC.jl through a probabilistic programmin
 - We presented a poster for AdvancedHMC.jl at [StanCon 2019](https://mc-stan.org/events/stancon2019Cambridge/) in Cambridge, UK. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
 **API CHANGES**
-- [v0.5.0] **Breaking!** Convinience constructors for common samplers changed to:
-  - `HMC(init_ϵ::Float64=init_ϵ, n_leapfrog::Int=n_leapfrog)`
-  - `NUTS(n_adapts::Int=n_adapts, δ::Float64=δ)` 
-  - `HMCDA(n_adapts::Int=n_adapts, δ::Float64=δ, λ::Float64=λ)`
+- [v0.5.0] **Breaking!** Convenience constructors for common samplers changed to:
+  - `HMC(init_ϵ, n_leapfrog)`
+  - `NUTS(n_adapts, target_acceptance)` 
+  - `HMCDA(n_adapts, target_acceptance, integration_time)`
 - [v0.2.22] Three functions are renamed.
   - `Preconditioner(metric::AbstractMetric)` -> `MassMatrixAdaptor(metric)` and 
   - `NesterovDualAveraging(δ, integrator::AbstractIntegrator)` -> `StepSizeAdaptor(δ, integrator)`
@@ -77,15 +77,15 @@ n_samples, n_adapts = 2_000, 1_000
 metric = DiagEuclideanMetric(D)
 hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
 
-# Define a leapfrog solver, with initial step size chosen heuristically
+# Define a leapfrog solver, with the initial step size chosen heuristically
 initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
 integrator = Leapfrog(initial_ϵ)
 
-# Define an HMC sampler, with the following components
+# Define an HMC sampler with the following components
 #   - multinomial sampling scheme,
 #   - generalised No-U-Turn criteria, and
 #   - windowed adaption for step-size and diagonal mass matrix
-proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+proposal = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
 adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
 
 # Run the sampler to draw samples from the specified Gaussian, where
