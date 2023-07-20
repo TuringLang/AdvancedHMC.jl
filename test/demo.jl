@@ -33,7 +33,7 @@ using LinearAlgebra
     #   - multinomial sampling scheme,
     #   - generalised No-U-Turn criteria, and
     #   - windowed adaption for step-size and diagonal mass matrix
-    proposal = NUTS{MultinomialTS,GeneralisedNoUTurn}(integrator)
+    proposal = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
     adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
 
     # Run the sampler to draw samples from the specified Gaussian, where
@@ -84,7 +84,7 @@ end
     integrator = Leapfrog(initial_ϵ)
 
     # Define an HMC sampler, with the following components
-    proposal = NUTS{MultinomialTS,GeneralisedNoUTurn}(integrator)
+    proposal = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
     adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
 
     # -- run sampler

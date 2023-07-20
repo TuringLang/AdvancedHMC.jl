@@ -24,6 +24,8 @@ using CUDA
     samples, stats = sample(hamiltonian, proposal, θ₀, n_samples)
 end
 
+#=
+Broken! See https://github.com/JuliaTesting/ReTest.jl/issues/50
 @testset "PhasePoint GPU" begin
     for T in [Float32, Float64]
         init_z1() = PhasePoint(
@@ -55,3 +57,4 @@ end
         @test z1.ℓκ.value == z2.ℓκ.value
     end
 end
+=#

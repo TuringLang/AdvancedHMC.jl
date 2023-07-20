@@ -5,13 +5,15 @@ using AdvancedHMC.Adaptation:
 function runnuts(ℓπ, metric; n_samples = 3_000)
     D = size(metric, 1)
     n_adapts = 1_500
-
     θ_init = rand(D)
+    rng = MersenneTwister(0)
 
+    nuts = NUTS(n_adapts, 0.8)
     h = Hamiltonian(metric, ℓπ, ForwardDiff)
-    κ = NUTS(Leapfrog(find_good_stepsize(h, θ_init)))
-    adaptor =
-        StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, κ.τ.integrator))
+    step_size = AdvancedHMC.make_step_size(rng, nuts, h, θ_init)
+    integrator = AdvancedHMC.make_integrator(nuts, step_size)
+    κ = AdvancedHMC.make_kernel(nuts, integrator)
+    adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
     samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose = false)
     return (samples = samples, stats = stats, adaptor = adaptor)
 end

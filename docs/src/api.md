@@ -8,15 +8,14 @@ Documentation for AdvancedHMC.jl
 ## Structs
 ```@docs
 ClassicNoUTurn
+HMCSampler
+HMC
+NUTS
+HMCDA
 ```
 
 ## Functions
 
 ```@docs
 sample
-```
-
-## Index
-
-```@index
 ```

@@ -159,11 +159,12 @@ end
         end
     end
     @testset "drop_warmup" begin
+        nuts = NUTS(n_adapts, 0.8)
         metric = DiagEuclideanMetric(D)
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-        κ = NUTS(Leapfrog(ϵ))
-        adaptor =
-            StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, κ.τ.integrator))
+        integrator = Leapfrog(ϵ)
+        κ = AdvancedHMC.make_kernel(nuts, integrator)
+        adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
         samples, stats = sample(
             h,
             κ,

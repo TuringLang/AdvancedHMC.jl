@@ -25,6 +25,7 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
     include("models.jl")
     include("abstractmcmc.jl")
     include("mcmcchains.jl")
+    include("constructors.jl")
 
     if CUDA.functional()
         include("cuda.jl")
