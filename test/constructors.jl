@@ -65,14 +65,15 @@ end
     rng = MersenneTwister(0)
     θ_init = randn(rng, 2)
     logdensitymodel = AbstractMCMC.LogDensityModel(ℓπ_gdemo)
-    _, nuts_state = AbstractMCMC.step(rng, logdensitymodel, nuts; init_params=θ_init)
-    _, hmc_state = AbstractMCMC.step(rng, logdensitymodel, hmc; init_params=θ_init)
-    _, nuts_32_state = AbstractMCMC.step(rng, logdensitymodel, nuts_32; init_params=θ_init)
-    _, custom_state = AbstractMCMC.step(rng, logdensitymodel, custom; init_params=θ_init)
+    _, nuts_state = AbstractMCMC.step(rng, logdensitymodel, nuts; init_params = θ_init)
+    _, hmc_state = AbstractMCMC.step(rng, logdensitymodel, hmc; init_params = θ_init)
+    _, nuts_32_state =
+        AbstractMCMC.step(rng, logdensitymodel, nuts_32; init_params = θ_init)
+    _, custom_state = AbstractMCMC.step(rng, logdensitymodel, custom; init_params = θ_init)
 
     # Metric
-    @test typeof(nuts_state.metric) == DiagEuclideanMetric{Float64, Vector{Float64}}
-    @test typeof(nuts_32_state.metric) == DiagEuclideanMetric{Float32, Vector{Float32}}
+    @test typeof(nuts_state.metric) == DiagEuclideanMetric{Float64,Vector{Float64}}
+    @test typeof(nuts_32_state.metric) == DiagEuclideanMetric{Float32,Vector{Float32}}
     @test custom_state.metric == metric
 
     # Integrator
@@ -85,7 +86,7 @@ end
     @test custom_state.κ == kernel
 
     # Adaptor
-    @test typeof(nuts_state.adaptor) <: StanHMCAdaptor 
+    @test typeof(nuts_state.adaptor) <: StanHMCAdaptor
     @test hmc_state.adaptor == NoAdaptation()
     @test custom_state.adaptor == adaptor
 end

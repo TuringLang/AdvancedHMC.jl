@@ -128,7 +128,7 @@ export StepSizeAdaptor,
     WelfordVar,
     WelfordCov,
     NaiveHMCAdaptor,
-    StanHMCAdaptor, 
+    StanHMCAdaptor,
     NoAdaptation
 
 include("diagnosis.jl")
