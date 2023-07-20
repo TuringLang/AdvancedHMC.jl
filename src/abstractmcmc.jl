@@ -271,27 +271,6 @@ determine_integrator_constructor(x) = error("Integrator $x not supported.")
 
 #########
 
-const SYMBOL_TO_METRIC_TYPE = Dict(
-    :diagonal => DiagEuclideanMetric,
-    :unit => UnitEuclideanMetric,
-    :dense => DenseEuclideanMetric,
-)
-
-function determine_metric_constructor(metric::Symbol)
-    if !haskey(SYMBOL_TO_METRIC_TYPE, metric)
-        error("Metric $metric not supported.")
-    end
-
-    return SYMBOL_TO_METRIC_TYPE[metric]
-end
-
-# If it's the "constructor" of an metric or instantance of an metric, do nothing.
-determine_metric_constructor(x::AbstractMetric) = x
-determine_metric_constructor(x::Type{<:AbstractMetric}) = x
-determine_metric_constructor(x) = error("Metric $x not supported.")
-
-#########
-
 function make_init_params(spl::AbstractHMCSampler, logdensity, init_params)
     T = get_type_of_spl(spl)
     if init_params == nothing
@@ -341,10 +320,16 @@ end
 
 #########
 
-function make_metric(spl::Union{HMC,NUTS,HMCDA}, logdensity)
+make_metric(i...) = error("Metric $(typeof(i)) not supported.")
+make_metric(i::Symbol, T::Type, d::Int) = make_metric(Val(i), T, d)
+make_metric(i::Val{:diagonal}, T::Type, d::Int) = DiagEuclideanMetric(T, d)
+make_metric(i::Val{:unit}, T::Type, d::Int) = UnitEuclideanMetric(T, d)
+make_metric(i::Val{:dense}, T::Type, d::Int) = DenseEuclideanMetric(T, d)
+
+function make_metric(spl::AbstractHMCSampler, logdensity)
     d = LogDensityProblems.dimension(logdensity)
-    metric = determine_metric_constructor(spl.metric)
-    return metric(get_type_of_spl(spl), d)
+    T = get_type_of_spl(spl)
+    return make_metric(spl.metric, T, d)
 end
 
 function make_metric(spl::HMCSampler, logdensity)
