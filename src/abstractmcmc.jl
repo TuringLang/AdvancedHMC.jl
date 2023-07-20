@@ -250,27 +250,6 @@ end
 
 #########
 
-const SYMBOL_TO_INTEGRATOR_TYPE = Dict(
-    :leapfrog => Leapfrog,
-    :jitterleapfro => JitteredLeapfrog,
-    :temperedleapfrog => TemperedLeapfrog,
-)
-
-function determine_integrator_constructor(integrator::Symbol)
-    if !haskey(SYMBOL_TO_INTEGRATOR_TYPE, integrator)
-        error("Integrator $integrator not supported.")
-    end
-
-    return SYMBOL_TO_INTEGRATOR_TYPE[integrator]
-end
-
-# If it's the "constructor" of an integrator or instantance of an integrator, do nothing.
-determine_integrator_constructor(x::AbstractIntegrator) = x
-determine_integrator_constructor(x::Type{<:AbstractIntegrator}) = x
-determine_integrator_constructor(x) = error("Integrator $x not supported.")
-
-#########
-
 function make_init_params(spl::AbstractHMCSampler, logdensity, init_params)
     T = get_type_of_spl(spl)
     if init_params == nothing
@@ -309,19 +288,22 @@ end
 
 #########
 
-function make_integrator(spl::AbstractHMCSampler, ϵ::Real)
-    integrator = determine_integrator_constructor(spl.integrator)
-    return integrator(ϵ)
-end
-
-function make_integrator(spl::HMCSampler, ϵ::Real)
-    return spl.κ.τ.integrator
-end
+make_integrator(spl::HMCSampler, ϵ::Real) = spl.κ.τ.integrator
+make_integrator(spl::AbstractHMCSampler, ϵ::Real) = make_integrator(spl.integrator, ϵ)
+make_integrator(i::AbstractIntegrator, ϵ::Real) = i
+make_integrator(i::Type{<:AbstractIntegrator}, ϵ::Real) = i
+make_integrator(i::Symbol, ϵ::Real) = make_integrator(Val(i), ϵ)
+make_integrator(i...) = error("Integrator $(typeof(i)) not supported.")
+make_integrator(i::Val{:leapfrog}, ϵ::Real) = Leapfrog(ϵ)
+make_integrator(i::Val{:jitteredleapfrog}, ϵ::Real) = JitteredLeapfrog(ϵ)
+make_integrator(i::Val{:temperedleapfrog}, ϵ::Real) = TemperedLeapfrog(ϵ)
 
 #########
 
 make_metric(i...) = error("Metric $(typeof(i)) not supported.")
 make_metric(i::Symbol, T::Type, d::Int) = make_metric(Val(i), T, d)
+make_metric(i::AbstractMetric, T::Type, d::Int) = i
+make_metric(i::Type{AbstractMetric}, T::Type, d::Int) = i
 make_metric(i::Val{:diagonal}, T::Type, d::Int) = DiagEuclideanMetric(T, d)
 make_metric(i::Val{:unit}, T::Type, d::Int) = UnitEuclideanMetric(T, d)
 make_metric(i::Val{:dense}, T::Type, d::Int) = DenseEuclideanMetric(T, d)
