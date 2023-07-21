@@ -47,10 +47,10 @@ In this section we demonstrate a minimal example of sampling from a multivariate
  Suppose ${\bf x}$ and ${\bf v}$ are the position and velocity of an individual particle respectively; $i$ and $i+1$ are the indices for time values $t_i$ and $t_{i+1}$ respectively; $dt = t_{i+1} - t_i$ is the time step size (constant and regularly spaced intervals); and ${\bf a}$ is the acceleration induced on a particle by the forces of all other particles. Furthermore, suppose positions are defined at times $t_i, t_{i+1}, t_{i+2}, \dots $, spaced at constant intervals $dt$, the velocities are defined at halfway times in between, denoted by $t_{i-1/2}, t_{i+1/2}, t_{i+3/2}, \dots $, where $t_{i+1} - t_{i + 1/2} = t_{i + 1/2} - t_i = dt / 2$, and the accelerations ${\bf a}$ are defined only on integer times, just like the positions. Then the leapfrog integration scheme is given as: $x_{i} = x_{i-1} + v_{i-1/2} dt; \quad v_{i+1/2} = v_{i-1/2} + a_i dt$. For available integrators refer <a href="#integrator-integrator">Integrator</a>.
 </details>
 
-- **Proposal for trajectories (static or dynamic)**: Different types of proposals can be used, which maybe static or dynamic. At each iteration of any variant of the HMC algorithm there are two main steps - the first step changes the momentum and the second step may change both the position and the momentum of a particle. 
+- **kernel for trajectories (static or dynamic)**: Different types of kernels can be used, which maybe static or dynamic. At each iteration of any variant of the HMC algorithm there are two main steps - the first step changes the momentum and the second step may change both the position and the momentum of a particle. 
 <details>
- <summary>More about the proposals</summary>
- In the classical HMC approach, during the first step, new values for the momentum variables are randomly drawn from their Gaussian distribution, independently of the current values of the position variables. Whereas, during the second step, a Metropolis update is performed, using Hamiltonian dynamics to provide a new state. For available proposals refer <a href="#proposal-proposal">Proposal</a>.
+ <summary>More about the kernels</summary>
+ In the classical HMC approach, during the first step, new values for the momentum variables are randomly drawn from their Gaussian distribution, independently of the current values of the position variables. Whereas, during the second step, a Metropolis update is performed, using Hamiltonian dynamics to provide a new state. For available kernels refer <a href="#kernel-kernel">kernel</a>.
 </details>
   
 ```julia
@@ -85,13 +85,13 @@ integrator = Leapfrog(initial_ϵ)
 #   - multinomial sampling scheme,
 #   - generalised No-U-Turn criteria, and
 #   - windowed adaption for step-size and diagonal mass matrix
-proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+kernel = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
 adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
 
 # Run the sampler to draw samples from the specified Gaussian, where
 #   - `samples` will store the samples
 #   - `stats` will store diagnostic statistics for each sample
-samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; progress=true)
+samples, stats = sample(hamiltonian, kernel, initial_θ, n_samples, adaptor, n_adapts; progress=true)
 ```
 
 ### Parallel sampling 
@@ -114,10 +114,122 @@ chains = Vector{Any}(undef, nchains)
 # The `samples` from each parallel chain is stored in the `chains` vector 
 # Adjust the `verbose` flag as per need
 Threads.@threads for i in 1:nchains
-  samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; verbose=false)
+  samples, stats = sample(hamiltonian, kernel, initial_θ, n_samples, adaptor, n_adapts; verbose=false)
   chains[i] = samples
 end
 ```
+
+### Using the `AbstractMCMC` interface 
+
+Users can also make use of the `AbstractMCMC` interface to sample which employs the same API as other popular Bayesian inference libraries in Julia such as `Turing`. 
+In order to show how this is done let us start from our previous example where we defined a `LogTargetDensity`, ℓπ.
+
+```julia
+# Wrap the previous LogTargetDensity as LogDensityModel 
+# where ℓπ::LogTargetDensity
+model = AdvancedHMC.LogDensityModel(LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ))
+
+# Wrap the previous sampler as a HMCSampler <: AbstractMCMC.AbstractSampler
+D = 10; initial_θ = rand(D)
+n_samples, n_adapts, δ = 1_000, 2_000, 0.8
+sampler = HMCSampler(kernel, metric, adaptor) 
+
+# Now just sample
+samples = AbstractMCMC.sample(
+      model,
+      sampler,
+      n_adapts + n_samples;
+      nadapts = n_adapts,
+      init_params = initial_θ,
+  )
+```
+
+### Covenience Constructors
+
+In the previous examples we built the sampler by manually specifying the integrator, metric, kernel and adaptor to build our own sampler. However, in many cases users might want to simply initialize a standard NUTS sampler. In such cases having to manually define each of these aspects is tedious and error prone. For these reasons `AdvancedHMC` also provides users with a series of convenience constructors for standard samplers. We will now show how to use them.
+
+- HMC:
+  ```julia
+  # HMC Sampler
+  # step size, number of leapfrog steps 
+  ϵ, n_leapfrogs = 0.1, 0.25
+  hmc = HMC(ϵ, n_leapfrogs)
+  ```
+
+  Equivalent to:
+
+  ```julia
+  metric = DiagEuclideanMetric(D)
+  hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
+  initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+  integrator = Leapfrog(initial_ϵ)
+  kernel = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+  adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(δ, integrator))
+  nuts = HMCSampler(kernel, metric, adaptor)
+  ```
+
+- NUTS:
+  ```julia
+  # NUTS Sampler
+  # adaptation steps, target acceptance probability,
+  n_adapt, δ = 1000, 0.8
+  nuts = NUTS(n_adapt, δ)
+  ```
+
+  Equivalent to:
+
+  ```julia
+  metric = DiagEuclideanMetric(D)
+  hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
+  initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+  integrator = Leapfrog(initial_ϵ)
+  kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(n_leapfrog)))
+  adaptor = NoAdaptation()
+  hmc = HMCSampler(kernel, metric, adaptor)
+  ```
+
+
+- HMCDA:
+  ```julia
+  #HMCDA (dual averaging)
+  # adaptation steps, target acceptance probability, target trajectory length 
+  n_adapt, δ, λ = 1000, 0.8
+  hmcda = HMCDA(1000, 0.8, 1.0)
+  ```
+
+  Equivalent to:
+
+  ```julia
+  metric = DiagEuclideanMetric(D)
+  hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
+  initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+  integrator = Leapfrog(initial_ϵ)
+  kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(λ)))
+  adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(δ, integrator))
+  hmcda = HMCSampler(kernel, metric, adaptor)
+  ```
+
+Moreover, there's some flexibility in how these samplers can be initialized. 
+For example, a user can initialize a NUTS (as well as HMC and HMCDA) sampler with their own metric and integrator. 
+This can be done as follows:
+  ```julia
+  nuts = NUTS(n_adapt, δ, metric = :diagonal) #metric = DiagEuclideanMetric(D) (Default!)
+  nuts = NUTS(n_adapt, δ, metric = :unit)     #metric = UnitEuclideanMetric(D)
+  nuts = NUTS(n_adapt, δ, metric = :dense)    #metric = DenseEuclideanMetric(D)
+  # Provide your own :AbstractMetric
+  metric = DiagEuclideanMetric(10)
+  nuts = NUTS(n_adapt, δ, metric = metric) 
+
+  nuts = NUTS(n_adapt, δ, integrator = :leapfrog)         #integrator = Leapfrog(ϵ) (Default!)
+  nuts = NUTS(n_adapt, δ, integrator = :jitteredleapfrog) #integrator = JitteredLeapfrog(ϵ, 0.1ϵ)
+  nuts = NUTS(n_adapt, δ, integrator = :temperedleapfrog) #integrator = TemperedLeapfrog(ϵ, 1.0)
+
+  # Provide your own :AbstractIntegrator
+  integrator = JitteredLeapfrog(ϵ, 0.2ϵ)
+  nuts = NUTS(n_adapt, δ, integrator = integrator) 
+  ```
+
+Finally, bare in mind that the convinience constructors return `AbstractMCMC.AbstractSampler` and therefore they must be used using the `AbstractMCMC` interface as in the case of `HMCSampler`. 
 
 ### GPU Sampling with CUDA
 
@@ -147,7 +259,7 @@ where `dim` is the dimensionality of the sampling space.
 
 where `ϵ` is the step size of leapfrog integration.
 
-### Proposal (`proposal`)
+### Kernel (`kernel`)
 
 - Static HMC with a fixed number of steps (`n_steps`) (Neal, R. M. (2011)): `StaticTrajectory(integrator, n_steps)`
 - HMC with a fixed total trajectory length (`trajectory_length`) (Neal, R. M. (2011)): `HMCDA(integrator, trajectory_length)` 
@@ -187,7 +299,7 @@ function sample(
 )
 ```
 
-Draw `n_samples` samples using the proposal `κ` under the Hamiltonian system `h`
+Draw `n_samples` samples using the kernel `κ` under the Hamiltonian system `h`
 
 - The randomness is controlled by `rng`.
   - If `rng` is not provided, `GLOBAL_RNG` will be used.
