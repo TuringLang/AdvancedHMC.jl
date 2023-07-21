@@ -14,6 +14,14 @@ metric = DiagEuclideanMetric(2)
 adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
 custom = HMCSampler(kernel, metric, adaptor)
 
+nuts_metric1 = NUTS(1000, 0.8; metric=:unit)
+nuts_metric2 = NUTS(1000, 0.8; metric=:dense)
+hmc_metric1 = HMC(0.1, 25; metric=metric)
+
+nuts_integrator1 = NUTS(1000, 0.8, integrator=:jitteredleapfrog)
+nuts_integrator2 = NUTS(1000, 0.8, integrator=:temperedleapfrog)
+hmc_integrator1 = HMC(0.1, 25, integrator=integrator)
+
 # Check that everything is initalized correctly
 @testset "Constructors" begin
     # Types
@@ -59,6 +67,7 @@ custom = HMCSampler(kernel, metric, adaptor)
     @test hmcda_32.δ == 0.8f0
     @test hmcda_32.λ == 1.0f0
     @test hmcda_32.init_ϵ == 0.0f0
+
 end
 
 @testset "First step" begin
@@ -71,14 +80,28 @@ end
         AbstractMCMC.step(rng, logdensitymodel, nuts_32; init_params = θ_init)
     _, custom_state = AbstractMCMC.step(rng, logdensitymodel, custom; init_params = θ_init)
 
+    _, nuts_metric1_state = AbstractMCMC.step(rng, logdensitymodel, nuts_metric1; init_params = θ_init)
+    _, nuts_metric2_state = AbstractMCMC.step(rng, logdensitymodel, nuts_metric2; init_params = θ_init)
+    _, hmc_metric1_state = AbstractMCMC.step(rng, logdensitymodel, hmc_metric1; init_params = θ_init)
+    
+    _, nuts_integrator1_state = AbstractMCMC.step(rng, logdensitymodel, nuts_integrator1; init_params = θ_init)
+    _, nuts_integrator2_state = AbstractMCMC.step(rng, logdensitymodel, nuts_integrator2; init_params = θ_init)
+    _, hmc_integrator1_state = AbstractMCMC.step(rng, logdensitymodel, hmc_integrator1; init_params = θ_init)
+
     # Metric
     @test typeof(nuts_state.metric) == DiagEuclideanMetric{Float64,Vector{Float64}}
     @test typeof(nuts_32_state.metric) == DiagEuclideanMetric{Float32,Vector{Float32}}
+    @test typeof(nuts_metric1_state.metric) <: UnitEuclideanMetric
+    @test typeof(nuts_metric2_state.metric) <: DenseEuclideanMetric
+    @test hmc_metric1_state.metric == metric
     @test custom_state.metric == metric
 
     # Integrator
     @test typeof(nuts_state.κ.τ.integrator) == Leapfrog{Float64}
     @test typeof(nuts_32_state.κ.τ.integrator) == Leapfrog{Float32}
+    @test typeof(nuts_integrator1_state.κ.τ.integrator) <: JitteredLeapfrog
+    @test typeof(nuts_integrator2_state.κ.τ.integrator) <: TemperedLeapfrog
+    @test hmc_integrator1_state.κ.τ.integrator == integrator
     @test custom_state.κ.τ.integrator == integrator
 
     # Kernel
