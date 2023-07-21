@@ -85,7 +85,7 @@ integrator = Leapfrog(initial_ϵ)
 #   - multinomial sampling scheme,
 #   - generalised No-U-Turn criteria, and
 #   - windowed adaption for step-size and diagonal mass matrix
-kernel = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
 adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
 
 # Run the sampler to draw samples from the specified Gaussian, where
@@ -261,12 +261,12 @@ where `ϵ` is the step size of leapfrog integration.
 
 ### Kernel (`kernel`)
 
-- Static HMC with a fixed number of steps (`n_steps`) (Neal, R. M. (2011)): `StaticTrajectory(integrator, n_steps)`
-- HMC with a fixed total trajectory length (`trajectory_length`) (Neal, R. M. (2011)): `HMCDA(integrator, trajectory_length)` 
-- Original NUTS with slice sampling (Hoffman, M. D., & Gelman, A. (2014)): `NUTS{SliceTS,ClassicNoUTurn}(integrator)`
-- Generalised NUTS with slice sampling (Betancourt, M. (2017)): `NUTS{SliceTS,GeneralisedNoUTurn}(integrator)`
-- Original NUTS with multinomial sampling (Betancourt, M. (2017)): `NUTS{MultinomialTS,ClassicNoUTurn}(integrator)`
-- Generalised NUTS with multinomial sampling (Betancourt, M. (2017)): `NUTS{MultinomialTS,GeneralisedNoUTurn}(integrator)`
+- Static HMC with a fixed number of steps (`n_steps`) (Neal, R. M. (2011)): `HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(integrator)))`
+- HMC with a fixed total trajectory length (`trajectory_length`) (Neal, R. M. (2011)): `HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(trajectory_length)))` 
+- Original NUTS with slice sampling (Hoffman, M. D., & Gelman, A. (2014)): `HMCKernel(Trajectory{SliceTS}(integrator, ClassicNoUTurn()))`
+- Generalised NUTS with slice sampling (Betancourt, M. (2017)): `HMCKernel(Trajectory{SliceTS}(integrator, GeneralisedNoUTurn()))`
+- Original NUTS with multinomial sampling (Betancourt, M. (2017)): `HMCKernel(Trajectory{MultinomialTS}(integrator, ClassicNoUTurn()))`
+- Generalised NUTS with multinomial sampling (Betancourt, M. (2017)): `HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))`
 
 ### Adaptor (`adaptor`)
 
