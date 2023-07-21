@@ -291,14 +291,14 @@ make_integrator(spl::AbstractHMCSampler, ϵ::Real) = make_integrator(spl.integra
 make_integrator(i::AbstractIntegrator, ϵ::Real) = i
 make_integrator(i::Type{<:AbstractIntegrator}, ϵ::Real) = i
 make_integrator(i::Symbol, ϵ::Real) = make_integrator(Val(i), ϵ)
-make_integrator(i...) = error("Integrator $(typeof(i)) not supported.")
+make_integrator(@nospecialize(i), ::Real) = error("Integrator $i not supported.")
 make_integrator(i::Val{:leapfrog}, ϵ::Real) = Leapfrog(ϵ)
 make_integrator(i::Val{:jitteredleapfrog}, ϵ::Real) = JitteredLeapfrog(ϵ, 0.1ϵ)
 make_integrator(i::Val{:temperedleapfrog}, ϵ::Real) = TemperedLeapfrog(ϵ, 1.0)
 
 #########
 
-make_metric(i...) = error("Metric $(typeof(i)) not supported.")
+make_metric(@nospecialize(i), T::Type, d::Int) = error("Metric $(typeof(i)) not supported.")
 make_metric(i::Symbol, T::Type, d::Int) = make_metric(Val(i), T, d)
 make_metric(i::AbstractMetric, T::Type, d::Int) = i
 make_metric(i::Type{AbstractMetric}, T::Type, d::Int) = i
