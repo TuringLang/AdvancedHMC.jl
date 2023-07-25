@@ -61,11 +61,14 @@ end
     rng = MersenneTwister(0)
     θ_init = randn(rng, 2)
     logdensitymodel = AbstractMCMC.LogDensityModel(ℓπ_gdemo)
-    _, nuts_state = AbstractMCMC.step(rng, logdensitymodel, nuts; n_adapts = 0, init_params = θ_init)
-    _, hmc_state = AbstractMCMC.step(rng, logdensitymodel, hmc; n_adapts = 0, init_params = θ_init)
+    _, nuts_state =
+        AbstractMCMC.step(rng, logdensitymodel, nuts; n_adapts = 0, init_params = θ_init)
+    _, hmc_state =
+        AbstractMCMC.step(rng, logdensitymodel, hmc; n_adapts = 0, init_params = θ_init)
     _, nuts_32_state =
         AbstractMCMC.step(rng, logdensitymodel, nuts_32; n_adapts = 0, init_params = θ_init)
-    _, custom_state = AbstractMCMC.step(rng, logdensitymodel, custom; n_adapts = 0, init_params = θ_init)
+    _, custom_state =
+        AbstractMCMC.step(rng, logdensitymodel, custom; n_adapts = 0, init_params = θ_init)
 
     # Metric
     @test typeof(nuts_state.metric) == DiagEuclideanMetric{Float64,Vector{Float64}}
