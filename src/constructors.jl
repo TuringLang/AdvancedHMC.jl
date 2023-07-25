@@ -56,8 +56,6 @@ NUTS(n_adapts=1000, δ=0.65)  # Use 1000 adaption steps, and target accept ratio
 ```
 """
 struct NUTS{T<:Real} <: AbstractHMCSampler{T}
-    "Number of adaptation steps."
-    n_adapts::Int
     "Target acceptance rate for dual averaging."
     δ::T
     "Maximum doubling tree depth."
@@ -73,7 +71,6 @@ struct NUTS{T<:Real} <: AbstractHMCSampler{T}
 end
 
 function NUTS(
-    n_adapts,
     δ;
     max_depth = 10,
     Δ_max = 1000.0,
@@ -82,7 +79,7 @@ function NUTS(
     metric = :diagonal,
 )
     T = typeof(δ)
-    return NUTS(n_adapts, δ, max_depth, T(Δ_max), T(init_ϵ), integrator, metric)
+    return NUTS(δ, max_depth, T(Δ_max), T(init_ϵ), integrator, metric)
 end
 
 ###########
@@ -143,8 +140,6 @@ For more information, please view the following paper ([arXiv link](https://arxi
   Research 15, no. 1 (2014): 1593-1623.
 """
 struct HMCDA{T<:Real} <: AbstractHMCSampler{T}
-    "`Number of adaptation steps."
-    n_adapts::Int
     "Target acceptance rate for dual averaging."
     δ::T
     "Target leapfrog length."
@@ -157,10 +152,10 @@ struct HMCDA{T<:Real} <: AbstractHMCSampler{T}
     metric::Union{Symbol,AbstractMetric}
 end
 
-function HMCDA(n_adapts, δ, λ; init_ϵ = 0.0, integrator = :leapfrog, metric = :diagonal)
+function HMCDA(δ, λ; init_ϵ = 0.0, integrator = :leapfrog, metric = :diagonal)
     if typeof(δ) != typeof(λ)
         @warn "typeof(δ) != typeof(λ) --> using typeof(δ)"
     end
     T = typeof(δ)
-    return HMCDA(n_adapts, δ, T(λ), T(init_ϵ), integrator, metric)
+    return HMCDA(δ, T(λ), T(init_ϵ), integrator, metric)
 end

@@ -37,6 +37,7 @@ function AbstractMCMC.sample(
     model::LogDensityModel,
     sampler::AbstractHMCSampler,
     N::Integer;
+    n_adapts::Int = min(div(N, 10), 1_000),
     progress = true,
     verbose = false,
     callback = nothing,
@@ -66,6 +67,7 @@ function AbstractMCMC.sample(
     parallel::AbstractMCMC.AbstractMCMCEnsemble,
     N::Integer,
     nchains::Integer;
+    n_adapts::Int = min(div(N, 10), 1_000),
     progress = true,
     verbose = false,
     callback = nothing,
@@ -150,7 +152,7 @@ function AbstractMCMC.step(
 
     # Adapt h and spl.
     tstat = stat(t)
-    n_adapts = get_nadapts(spl)
+    n_adapts = kwargs[:n_adapts]
     h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
     tstat = merge(tstat, (is_adapt = isadapted,))
 
@@ -333,11 +335,6 @@ function make_adaptor(
 )
     return spl.adaptor
 end
-
-#########
-
-get_nadapts(spl::Union{HMCSampler,NUTS,HMCDA}) = spl.n_adapts
-get_nadapts(spl::HMC) = 0
 
 #########
 
