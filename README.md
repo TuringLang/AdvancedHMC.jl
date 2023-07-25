@@ -163,9 +163,9 @@ In the previous examples we built the sampler by manually specifying the integra
   hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
   initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
   integrator = Leapfrog(initial_ϵ)
-  kernel = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
-  adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(δ, integrator))
-  nuts = HMCSampler(kernel, metric, adaptor)
+  kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(n_leapfrog)))
+  adaptor = NoAdaptation()
+  hmc = HMCSampler(kernel, metric, adaptor)
   ```
 
 - NUTS:
@@ -183,9 +183,9 @@ In the previous examples we built the sampler by manually specifying the integra
   hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
   initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
   integrator = Leapfrog(initial_ϵ)
-  kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(n_leapfrog)))
-  adaptor = NoAdaptation()
-  hmc = HMCSampler(kernel, metric, adaptor)
+  kernel =  HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+  adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(δ, integrator))
+  nuts = HMCSampler(kernel, metric, adaptor)
   ```
 
 
@@ -193,7 +193,7 @@ In the previous examples we built the sampler by manually specifying the integra
   ```julia
   #HMCDA (dual averaging)
   # adaptation steps, target acceptance probability, target trajectory length 
-  n_adapt, δ, λ = 1000, 0.8
+  n_adapt, δ, λ = 1000, 0.8, 1.0
   hmcda = HMCDA(n_adapt, δ, λ)
   ```
 
