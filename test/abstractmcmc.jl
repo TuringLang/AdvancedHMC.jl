@@ -73,7 +73,7 @@ include("common.jl")
         model,
         custom,
         n_adapts + n_samples;
-        n_adapts = n_adapts,
+        n_adapts = 0,
         init_params = θ_init,
         progress = false,
         verbose = false,
