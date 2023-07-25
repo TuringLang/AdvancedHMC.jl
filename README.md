@@ -194,7 +194,7 @@ In the previous examples we built the sampler by manually specifying the integra
   #HMCDA (dual averaging)
   # adaptation steps, target acceptance probability, target trajectory length 
   n_adapt, δ, λ = 1000, 0.8
-  hmcda = HMCDA(1000, 0.8, 1.0)
+  hmcda = HMCDA(n_adapt, δ, λ)
   ```
 
   Equivalent to:

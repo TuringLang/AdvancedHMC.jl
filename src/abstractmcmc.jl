@@ -289,7 +289,6 @@ end
 make_integrator(spl::HMCSampler, ϵ::Real) = spl.κ.τ.integrator
 make_integrator(spl::AbstractHMCSampler, ϵ::Real) = make_integrator(spl.integrator, ϵ)
 make_integrator(i::AbstractIntegrator, ϵ::Real) = i
-make_integrator(i::Type{<:AbstractIntegrator}, ϵ::Real) = i
 make_integrator(i::Symbol, ϵ::Real) = make_integrator(Val(i), ϵ)
 make_integrator(@nospecialize(i), ::Real) = error("Integrator $i not supported.")
 make_integrator(i::Val{:leapfrog}, ϵ::Real) = Leapfrog(ϵ)
