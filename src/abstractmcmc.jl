@@ -53,6 +53,7 @@ function AbstractMCMC.sample(
         model,
         sampler,
         N;
+        n_adapts = n_adapts,
         progress = progress,
         verbose = verbose,
         callback = callback,
@@ -86,6 +87,7 @@ function AbstractMCMC.sample(
         parallel,
         N,
         nchains;
+        n_adapts = n_adapts,
         progress = progress,
         verbose = verbose,
         callback = callback,
