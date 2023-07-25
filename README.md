@@ -47,7 +47,7 @@ In this section we demonstrate a minimal example of sampling from a multivariate
  Suppose ${\bf x}$ and ${\bf v}$ are the position and velocity of an individual particle respectively; $i$ and $i+1$ are the indices for time values $t_i$ and $t_{i+1}$ respectively; $dt = t_{i+1} - t_i$ is the time step size (constant and regularly spaced intervals); and ${\bf a}$ is the acceleration induced on a particle by the forces of all other particles. Furthermore, suppose positions are defined at times $t_i, t_{i+1}, t_{i+2}, \dots $, spaced at constant intervals $dt$, the velocities are defined at halfway times in between, denoted by $t_{i-1/2}, t_{i+1/2}, t_{i+3/2}, \dots $, where $t_{i+1} - t_{i + 1/2} = t_{i + 1/2} - t_i = dt / 2$, and the accelerations ${\bf a}$ are defined only on integer times, just like the positions. Then the leapfrog integration scheme is given as: $x_{i} = x_{i-1} + v_{i-1/2} dt; \quad v_{i+1/2} = v_{i-1/2} + a_i dt$. For available integrators refer <a href="#integrator-integrator">Integrator</a>.
 </details>
 
-- **kernel for trajectories (static or dynamic)**: Different types of kernels can be used, which maybe static or dynamic. At each iteration of any variant of the HMC algorithm there are two main steps - the first step changes the momentum and the second step may change both the position and the momentum of a particle. 
+- **Kernel for trajectories (static or dynamic)**: Different types of kernels can be used, which maybe static or dynamic. At each iteration of any variant of the HMC algorithm there are two main steps - the first step changes the momentum and the second step may change both the position and the momentum of a particle. 
 <details>
  <summary>More about the kernels</summary>
  In the classical HMC approach, during the first step, new values for the momentum variables are randomly drawn from their Gaussian distribution, independently of the current values of the position variables. Whereas, during the second step, a Metropolis update is performed, using Hamiltonian dynamics to provide a new state. For available kernels refer <a href="#kernel-kernel">kernel</a>.
@@ -121,8 +121,8 @@ end
 
 ### Using the `AbstractMCMC` interface 
 
-Users can also make use of the `AbstractMCMC` interface to sample which employs the same API as other popular Bayesian inference libraries in Julia such as `Turing`. 
-In order to show how this is done let us start from our previous example where we defined a `LogTargetDensity`, ℓπ.
+Users can also make use of the `AbstractMCMC` interface to sample, which is also what is used in Turing.jl.
+In order to show how this is done let us start from our previous example where we defined a `LogTargetDensity`, `ℓπ`.
 
 ```julia
 # Wrap the previous LogTargetDensity as LogDensityModel 
@@ -216,7 +216,7 @@ This can be done as follows:
   nuts = NUTS(n_adapt, δ, metric = :diagonal) #metric = DiagEuclideanMetric(D) (Default!)
   nuts = NUTS(n_adapt, δ, metric = :unit)     #metric = UnitEuclideanMetric(D)
   nuts = NUTS(n_adapt, δ, metric = :dense)    #metric = DenseEuclideanMetric(D)
-  # Provide your own :AbstractMetric
+  # Provide your own AbstractMetric
   metric = DiagEuclideanMetric(10)
   nuts = NUTS(n_adapt, δ, metric = metric) 
 
@@ -224,12 +224,10 @@ This can be done as follows:
   nuts = NUTS(n_adapt, δ, integrator = :jitteredleapfrog) #integrator = JitteredLeapfrog(ϵ, 0.1ϵ)
   nuts = NUTS(n_adapt, δ, integrator = :temperedleapfrog) #integrator = TemperedLeapfrog(ϵ, 1.0)
 
-  # Provide your own :AbstractIntegrator
+  # Provide your own AbstractIntegrator
   integrator = JitteredLeapfrog(ϵ, 0.2ϵ)
   nuts = NUTS(n_adapt, δ, integrator = integrator) 
   ```
-
-Finally, bare in mind that the convinience constructors return `AbstractMCMC.AbstractSampler` and therefore they must be used using the `AbstractMCMC` interface as in the case of `HMCSampler`. 
 
 ### GPU Sampling with CUDA
 
