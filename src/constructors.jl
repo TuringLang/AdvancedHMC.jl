@@ -66,7 +66,7 @@ struct NUTS{T<:Real} <: AbstractHMCSampler{T}
     init_ϵ::T
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
     integrator::Union{Symbol,AbstractIntegrator}
-    "Choice of initial metric, specified using a `Symbol` or `AbstractMetric`. The metric type will be preserved during adaption."
+    "Choice of initial metric;  `Symbol` means it is automatically initialised. The metric type will be preserved during automatic initialisation and adaption."
     metric::Union{Symbol,AbstractMetric}
 end
 
@@ -107,7 +107,7 @@ struct HMC{T<:Real} <: AbstractHMCSampler{T}
     n_leapfrog::Int
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
     integrator::Union{Symbol,AbstractIntegrator}
-    "Choice of initial metric, specified using a `Symbol` or `AbstractMetric`. The metric type will be preserved during adaption."
+    "Choice of initial metric;  `Symbol` means it is automatically initialised. The metric type will be preserved during automatic initialisation and adaption."
     metric::Union{Symbol,AbstractMetric}
 end
 
@@ -148,7 +148,7 @@ struct HMCDA{T<:Real} <: AbstractHMCSampler{T}
     init_ϵ::T
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
     integrator::Union{Symbol,AbstractIntegrator}
-    "Choice of initial metric, specified using a `Symbol` or `AbstractMetric`. The metric type will be preserved during adaption."
+    "Choice of initial metric;  `Symbol` means it is automatically initialised. The metric type will be preserved during automatic initialisation and adaption."
     metric::Union{Symbol,AbstractMetric}
 end
 
