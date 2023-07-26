@@ -26,6 +26,12 @@ struct HMCState{
     adaptor::TAdapt
 end
 
+getadaptor(state::HMCState) = state.adaptor
+getmetric(state::HMCState) = state.metric
+
+getintegrator(state::HMCState) = state.κ.τ.integrator
+getintegrator(state::HMCState) = state.κ.τ.integrator
+
 """
     $(TYPEDSIGNATURES)
 
