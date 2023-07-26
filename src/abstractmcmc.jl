@@ -291,7 +291,7 @@ function make_step_size(
     hamiltonian::Hamiltonian,
     init_params,
 )
-    return spl.κ.τ.integrator.ϵ
+    return integrator.ϵ
 end
 
 function make_step_size(
