@@ -338,11 +338,7 @@ end
 
 #########
 
-function make_adaptor(
-    spl::NUTS,
-    metric::AbstractMetric,
-    integrator::AbstractIntegrator,
-)
+function make_adaptor(spl::NUTS, metric::AbstractMetric, integrator::AbstractIntegrator)
     return StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(spl.δ, integrator))
 end
 
