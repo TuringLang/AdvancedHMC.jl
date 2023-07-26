@@ -8,7 +8,7 @@ include("common.jl")
     @testset "$T" for T in [Float32, Float64]
         @testset "$(nameof(typeof(sampler)))" for (sampler, expected) in [
             (
-                HMC(25, integrator = Leapfrog(0.1)),
+                HMC(25, integrator = Leapfrog(T(0.1))),
                 (
                     adaptor_type = NoAdaptation,
                     metric_type = DiagEuclideanMetric{T},
@@ -17,7 +17,7 @@ include("common.jl")
             ),
             # This should perform the correct promotion for the 2nd argument.
             (
-                HMCDA(T(0.8), 1, integrator = Leapfrog(0.1)),
+                HMCDA(T(0.8), 1, integrator = Leapfrog(T(0.1))),
                 (
                     adaptor_type = StanHMCAdaptor,
                     metric_type = DiagEuclideanMetric{T},
