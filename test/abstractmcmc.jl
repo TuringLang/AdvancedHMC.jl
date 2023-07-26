@@ -9,7 +9,7 @@ include("common.jl")
     θ_init = randn(rng, 2)
 
     nuts = NUTS(0.8)
-    hmc = HMC(0.05, 100)
+    hmc = HMC(100, Leapfrog(0.05))
     hmcda = HMCDA(0.8, 0.1)
 
     integrator = Leapfrog(1e-3)

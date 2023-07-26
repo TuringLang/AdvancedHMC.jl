@@ -16,11 +16,11 @@ custom = HMCSampler(kernel, metric, adaptor)
 
 nuts_metric1 = NUTS(0.8; metric = :unit)
 nuts_metric2 = NUTS(0.8; metric = :dense)
-hmc_metric1 = HMC(0.1, 25; metric = metric)
+hmc_metric1 = HMC(25; integrator = Leapfrog(0.1), metric = metric)
 
 nuts_integrator1 = NUTS(0.8, integrator = :jitteredleapfrog)
 nuts_integrator2 = NUTS(0.8, integrator = :temperedleapfrog)
-hmc_integrator1 = HMC(0.1, 25, integrator = integrator)
+hmc_integrator1 = HMC(25, integrator = integrator)
 
 # Check that everything is initalized correctly
 @testset "Constructors" begin

@@ -99,7 +99,12 @@ struct HMC{T<:Real} <: AbstractHMCSampler{T}
 end
 
 function HMC(n_leapfrog; integrator = :leapfrog, metric = :diagonal)
-    return HMC{Float64}(n_leapfrog, integrator, metric)
+    if integrator isa Symbol
+        T = typeof(0.0) # current default float type
+    else
+        T = integrator_eltype(integrator)
+    end
+    return HMC{T}(n_leapfrog, integrator, metric)
 end
 
 #############
