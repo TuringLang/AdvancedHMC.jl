@@ -161,8 +161,7 @@ In the previous examples, we built the sampler by manually specifying the integr
   ```julia
   metric = DiagEuclideanMetric(D)
   hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
-  initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
-  integrator = Leapfrog(initial_ϵ)
+  integrator = Leapfrog(0.1)
   kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(n_leapfrog)))
   adaptor = NoAdaptation()
   hmc = HMCSampler(kernel, metric, adaptor)
