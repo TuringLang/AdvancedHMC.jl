@@ -8,9 +8,9 @@ include("common.jl")
     n_adapts = 5_000
     θ_init = randn(rng, 2)
 
-    nuts = NUTS(n_adapts, 0.8)
+    nuts = NUTS(0.8)
     hmc = HMC(0.05, 100)
-    hmcda = HMCDA(n_adapts, 0.8, 0.1)
+    hmcda = HMCDA(0.8, 0.1)
 
     integrator = Leapfrog(1e-3)
     κ = AdvancedHMC.make_kernel(nuts, integrator)
@@ -27,7 +27,7 @@ include("common.jl")
         model,
         nuts,
         n_adapts + n_samples;
-        nadapts = n_adapts,
+        n_adapts = n_adapts,
         init_params = θ_init,
         progress = false,
         verbose = false,
@@ -50,7 +50,7 @@ include("common.jl")
         model,
         hmc,
         n_adapts + n_samples;
-        nadapts = n_adapts,
+        n_adapts = n_adapts,
         init_params = θ_init,
         progress = false,
         verbose = false,
@@ -73,7 +73,7 @@ include("common.jl")
         model,
         custom,
         n_adapts + n_samples;
-        nadapts = n_adapts,
+        n_adapts = 0,
         init_params = θ_init,
         progress = false,
         verbose = false,
@@ -99,7 +99,7 @@ include("common.jl")
         model,
         custom,
         10;
-        nadapts = 0,
+        n_adapts = 0,
         init_params = θ_init,
         progress = false,
         verbose = false,
@@ -109,7 +109,7 @@ include("common.jl")
         model,
         custom,
         10;
-        nadapts = 0,
+        n_adapts = 0,
         init_params = θ_init,
         progress = false,
         verbose = false,
