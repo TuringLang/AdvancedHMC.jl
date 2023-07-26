@@ -28,8 +28,6 @@ end
 
 getadaptor(state::HMCState) = state.adaptor
 getmetric(state::HMCState) = state.metric
-
-getintegrator(state::HMCState) = state.κ.τ.integrator
 getintegrator(state::HMCState) = state.κ.τ.integrator
 
 """
@@ -319,8 +317,8 @@ make_integrator(i::AbstractIntegrator, ϵ::Real) = i
 make_integrator(i::Symbol, ϵ::Real) = make_integrator(Val(i), ϵ)
 make_integrator(@nospecialize(i), ::Real) = error("Integrator $i not supported.")
 make_integrator(i::Val{:leapfrog}, ϵ::Real) = Leapfrog(ϵ)
-make_integrator(i::Val{:jitteredleapfrog}, ϵ::Real) = JitteredLeapfrog(ϵ, 0.1ϵ)
-make_integrator(i::Val{:temperedleapfrog}, ϵ::Real) = TemperedLeapfrog(ϵ, 1.0)
+make_integrator(i::Val{:jitteredleapfrog}, ϵ::T) where T<:Real = JitteredLeapfrog(ϵ, T(0.1ϵ))
+make_integrator(i::Val{:temperedleapfrog}, ϵ::T) where T<:Real = TemperedLeapfrog(ϵ, T(1))
 
 #########
 

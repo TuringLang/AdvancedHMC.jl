@@ -132,7 +132,7 @@ function _jitter(
     lf::JitteredLeapfrog{FT,T},
 ) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}}
     ϵ = lf.ϵ0 .* (1 .+ lf.jitter .* (2 .* rand(rng) .- 1))
-    return @set lf.ϵ = ϵ
+    return @set lf.ϵ = FT.(ϵ)
 end
 
 jitter(rng::AbstractRNG, lf::JitteredLeapfrog) = _jitter(rng, lf)
