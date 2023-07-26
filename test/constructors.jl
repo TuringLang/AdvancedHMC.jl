@@ -14,12 +14,12 @@ metric = DiagEuclideanMetric(2)
 adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
 custom = HMCSampler(kernel, metric, adaptor)
 
-nuts_metric1 = NUTS(1000, 0.8; metric = :unit)
-nuts_metric2 = NUTS(1000, 0.8; metric = :dense)
+nuts_metric1 = NUTS(0.8; metric = :unit)
+nuts_metric2 = NUTS(0.8; metric = :dense)
 hmc_metric1 = HMC(0.1, 25; metric = metric)
 
-nuts_integrator1 = NUTS(1000, 0.8, integrator = :jitteredleapfrog)
-nuts_integrator2 = NUTS(1000, 0.8, integrator = :temperedleapfrog)
+nuts_integrator1 = NUTS(0.8, integrator = :jitteredleapfrog)
+nuts_integrator2 = NUTS(0.8, integrator = :temperedleapfrog)
 hmc_integrator1 = HMC(0.1, 25, integrator = integrator)
 
 # Check that everything is initalized correctly
