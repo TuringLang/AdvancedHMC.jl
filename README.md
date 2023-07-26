@@ -18,7 +18,7 @@ If you are interested in using AdvancedHMC.jl through a probabilistic programmin
 
 **API CHANGES**
 - [v0.5.0] **Breaking!** Convenience constructors for common samplers changed to:
-  - `HMC(init_ϵ, n_leapfrog)`
+  - `HMC(n_leapfrog)`
   - `NUTS(target_acceptance)` 
   - `HMCDA(target_acceptance, integration_time)`
 - [v0.2.22] Three functions are renamed.
@@ -152,8 +152,8 @@ In the previous examples, we built the sampler by manually specifying the integr
   ```julia
   # HMC Sampler
   # step size, number of leapfrog steps 
-  ϵ, n_leapfrogs = 0.1, 0.25
-  hmc = HMC(ϵ, n_leapfrogs)
+  n_leapfrogs = 0.25
+  hmc = HMC(n_leapfrogs)
   ```
 
   Equivalent to:
