@@ -100,7 +100,7 @@ end
 
 function HMC(n_leapfrog; integrator = :leapfrog, metric = :diagonal)
     if integrator isa Symbol
-        T = typeof(0.) # current default float type
+        T = typeof(0.0) # current default float type
     else
         T = integrator_eltype(integrator)
     end
