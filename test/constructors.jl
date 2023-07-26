@@ -10,43 +10,43 @@ include("common.jl")
             (
                 HMC(T(0.1), 25),
                 (
-                    adaptor_type=NoAdaptation,
-                    metric_type=DiagEuclideanMetric{T},
-                    integrator_type=Leapfrog{T},
-                )
+                    adaptor_type = NoAdaptation,
+                    metric_type = DiagEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
+                ),
             ),
             # This should peform the correct promotion for the 2nd argument.
             (
                 HMCDA(T(0.1), 1),
                 (
-                    adaptor_type=StanHMCAdaptor,
-                    metric_type=DiagEuclideanMetric{T},
-                    integrator_type=Leapfrog{T},
-                )
+                    adaptor_type = StanHMCAdaptor,
+                    metric_type = DiagEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
+                ),
             ),
             (
                 NUTS(T(0.8)),
                 (
-                    adaptor_type=StanHMCAdaptor,
-                    metric_type=DiagEuclideanMetric{T},
-                    integrator_type=Leapfrog{T},
-                )
+                    adaptor_type = StanHMCAdaptor,
+                    metric_type = DiagEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
+                ),
             ),
             (
                 NUTS(T(0.8); metric = :unit),
                 (
-                    adaptor_type=StanHMCAdaptor,
-                    metric_type=UnitEuclideanMetric{T},
-                    integrator_type=Leapfrog{T},
-                )
+                    adaptor_type = StanHMCAdaptor,
+                    metric_type = UnitEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
+                ),
             ),
             (
                 NUTS(T(0.8); metric = :dense),
                 (
-                    adaptor_type=StanHMCAdaptor,
-                    metric_type=DenseEuclideanMetric{T},
-                    integrator_type=Leapfrog{T},
-                )
+                    adaptor_type = StanHMCAdaptor,
+                    metric_type = DenseEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
+                ),
             ),
         ]
             # Make sure the sampler element type is preserved.
@@ -54,9 +54,8 @@ include("common.jl")
 
             # Step.
             rng = Random.default_rng()
-            transition, state = AbstractMCMC.step(
-                rng, model, sampler; n_adapts = 0, init_params = θ_init
-            )
+            transition, state =
+                AbstractMCMC.step(rng, model, sampler; n_adapts = 0, init_params = θ_init)
 
             # Verify that the types are preserved in the transition.
             @test eltype(transition.z.θ) == T
