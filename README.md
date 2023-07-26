@@ -6,21 +6,21 @@
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://turinglang.github.io/AdvancedHMC.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://turinglang.github.io/AdvancedHMC.jl/dev/)
 
-AdvancedHMC.jl provides a robust, modular and efficient implementation of advanced HMC algorithms. An illustrative example for AdvancedHMC's usage is given below. AdvancedHMC.jl is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia. 
+AdvancedHMC.jl provides a robust, modular, and efficient implementation of advanced HMC algorithms. An illustrative example of AdvancedHMC's usage is given below. AdvancedHMC.jl is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia. 
 If you are interested in using AdvancedHMC.jl through a probabilistic programming language, please check it out!
 
 **Interfaces**
 - [`IMP.hmc`](https://github.com/salilab/hmc): an experimental Python module for the Integrative Modeling Platform, which uses AdvancedHMC in its backend to sample protein structures.
 
 **NEWS**
-- We presented a paper for AdvancedHMC.jl at [AABI](http://approximateinference.org/) 2019 in Vancouver, Canada. ([abs](http://proceedings.mlr.press/v118/xu20a.html), [pdf](http://proceedings.mlr.press/v118/xu20a/xu20a.pdf), [OpenReview](https://openreview.net/forum?id=rJgzckn4tH))
+- We presented a paper for AdvancedHMC.jl at [AABI](http://approximateinference.org/) in 2019 in Vancouver, Canada. ([abs](http://proceedings.mlr.press/v118/xu20a.html), [pdf](http://proceedings.mlr.press/v118/xu20a/xu20a.pdf), [OpenReview](https://openreview.net/forum?id=rJgzckn4tH))
 - We presented a poster for AdvancedHMC.jl at [StanCon 2019](https://mc-stan.org/events/stancon2019Cambridge/) in Cambridge, UK. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
 **API CHANGES**
-- [v0.5.0] **Breaking!** Convinience constructors for common samplers changed to:
-  - `HMC(init_ϵ::Float64=init_ϵ, n_leapfrog::Int=n_leapfrog)`
-  - `NUTS(n_adapts::Int=n_adapts, δ::Float64=δ)` 
-  - `HMCDA(n_adapts::Int=n_adapts, δ::Float64=δ, λ::Float64=λ)`
+- [v0.5.0] **Breaking!** Convenience constructors for common samplers changed to:
+  - `HMC(init_ϵ, n_leapfrog)`
+  - `NUTS(target_acceptance)` 
+  - `HMCDA(target_acceptance, integration_time)`
 - [v0.2.22] Three functions are renamed.
   - `Preconditioner(metric::AbstractMetric)` -> `MassMatrixAdaptor(metric)` and 
   - `NesterovDualAveraging(δ, integrator::AbstractIntegrator)` -> `StepSizeAdaptor(δ, integrator)`
@@ -33,24 +33,24 @@ If you are interested in using AdvancedHMC.jl through a probabilistic programmin
 
 ## A minimal example - sampling from a multivariate Gaussian using NUTS
 
-In this section we demonstrate a minimal example of sampling from a multivariate Gaussian (10 dimensional) using the no U-turn sampler (NUTS). Below we describe the major components of the Hamiltonian system which are essential to sample using this approach:
+This section demonstrates a minimal example of sampling from a multivariate Gaussian (10-dimensional) using the no U-turn sampler (NUTS). Below we describe the major components of the Hamiltonian system which are essential to sample using this approach:
 
-- **Metric**: In many sampling problems the sample space is usually associated with a metric, that allows us to measure the distance between any two points, and other similar quantities. In the example in this section, we use a special metric called the **Euclidean Metric**, represented with a `D × D` matrix from which we can compute distances. 
+- **Metric**: In many sampling problems the sample space is usually associated with a metric that allows us to measure the distance between any two points, and other similar quantities. In the example in this section, we use a special metric called the **Euclidean Metric**, represented with a `D × D` matrix from which we can compute distances. 
 <details>
  <summary>Further details about the Metric component</summary>
  The Euclidean metric is also known as the mass matrix in the physical perspective. For available metrics refer <a href="#hamiltonian-mass-matrix-metric">Hamiltonian mass matrix</a>.
 </details>
 
-- **Leapfrog integration**: Leapfrog integration is a second-order numerical method for integrating differential equations (In this case they are, equations of motion for the relative position of one particle with respect to the other). The order of this integration signifies its rate of convergence. Any alogrithm with a finite time step size will have numerical errors and the order is related to this error. For a second-order algorithm, this error scales as the second power of the time step, hence, the name second-order. High-order intergrators are usually complex to code and have a limited region of convergence, hence they do not allow arbitrarily large time steps. A second-order integrator is suitable for our purpose, hence we opt for the leapfrog integrator. It is called `leapfrog` due to the ways this algorithm is written, where the positions and velocities of particles `leap over` each other. 
+- **Leapfrog integration**: Leapfrog integration is a second-order numerical method for integrating differential equations (In this case they are equations of motion for the relative position of one particle with respect to the other). The order of this integration signifies its rate of convergence. Any algorithm with a finite time step size will have numerical errors, and the order is related to this error. For a second-order algorithm, this error scales as the second power of the time step, hence, the name second-order. High-order integrators are usually complex to code and have a limited region of convergence; hence they do not allow arbitrarily large time steps. A second-order integrator is suitable for our purpose. Hence we opt for the leapfrog integrator. It is called `leapfrog` due to the ways this algorithm is written, where the positions and velocities of particles `leap over` each other. 
 <details>
  <summary>About the leapfrog integration scheme</summary>
- Suppose ${\bf x}$ and ${\bf v}$ are the position and velocity of an individual particle respectively; $i$ and $i+1$ are the indices for time values $t_i$ and $t_{i+1}$ respectively; $dt = t_{i+1} - t_i$ is the time step size (constant and regularly spaced intervals); and ${\bf a}$ is the acceleration induced on a particle by the forces of all other particles. Furthermore, suppose positions are defined at times $t_i, t_{i+1}, t_{i+2}, \dots $, spaced at constant intervals $dt$, the velocities are defined at halfway times in between, denoted by $t_{i-1/2}, t_{i+1/2}, t_{i+3/2}, \dots $, where $t_{i+1} - t_{i + 1/2} = t_{i + 1/2} - t_i = dt / 2$, and the accelerations ${\bf a}$ are defined only on integer times, just like the positions. Then the leapfrog integration scheme is given as: $x_{i} = x_{i-1} + v_{i-1/2} dt; \quad v_{i+1/2} = v_{i-1/2} + a_i dt$. For available integrators refer <a href="#integrator-integrator">Integrator</a>.
+ Suppose ${\bf x}$ and ${\bf v}$ are the position and velocity of an individual particle respectively; $i$ and $i+1$ are the indices for time values $t_i$ and $t_{i+1}$ respectively; $dt = t_{i+1} - t_i$ is the time step size (constant and regularly spaced intervals), and ${\bf a}$ is the acceleration induced on a particle by the forces of all other particles. Furthermore, suppose positions are defined at times $t_i, t_{i+1}, t_{i+2}, \dots $, spaced at constant intervals $dt$, the velocities are defined at halfway times in between, denoted by $t_{i-1/2}, t_{i+1/2}, t_{i+3/2}, \dots $, where $t_{i+1} - t_{i + 1/2} = t_{i + 1/2} - t_i = dt / 2$, and the accelerations ${\bf a}$ are defined only on integer times, just like the positions. Then the leapfrog integration scheme is given as: $x_{i} = x_{i-1} + v_{i-1/2} dt; \quad v_{i+1/2} = v_{i-1/2} + a_i dt$. For available integrators refer <a href="#integrator-integrator">Integrator</a>.
 </details>
 
-- **Proposal for trajectories (static or dynamic)**: Different types of proposals can be used, which maybe static or dynamic. At each iteration of any variant of the HMC algorithm there are two main steps - the first step changes the momentum and the second step may change both the position and the momentum of a particle. 
+- **Kernel for trajectories (static or dynamic)**: Different kernels, which may be static or dynamic, can be used. At each iteration of any variant of the HMC algorithm, there are two main steps - the first step changes the momentum and the second step may change both the position and the momentum of a particle. 
 <details>
- <summary>More about the proposals</summary>
- In the classical HMC approach, during the first step, new values for the momentum variables are randomly drawn from their Gaussian distribution, independently of the current values of the position variables. Whereas, during the second step, a Metropolis update is performed, using Hamiltonian dynamics to provide a new state. For available proposals refer <a href="#proposal-proposal">Proposal</a>.
+ <summary>More about the kernels</summary>
+ In the classical HMC approach, during the first step, new values for the momentum variables are randomly drawn from their Gaussian distribution, independently of the current values of the position variables. A Metropolis update is performed during the second step, using Hamiltonian dynamics to provide a new state. For available kernels refer <a href="#kernel-kernel">kernel</a>.
 </details>
   
 ```julia
@@ -77,21 +77,21 @@ n_samples, n_adapts = 2_000, 1_000
 metric = DiagEuclideanMetric(D)
 hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
 
-# Define a leapfrog solver, with initial step size chosen heuristically
+# Define a leapfrog solver, with the initial step size chosen heuristically
 initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
 integrator = Leapfrog(initial_ϵ)
 
-# Define an HMC sampler, with the following components
+# Define an HMC sampler with the following components
 #   - multinomial sampling scheme,
 #   - generalised No-U-Turn criteria, and
 #   - windowed adaption for step-size and diagonal mass matrix
-proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
 adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
 
 # Run the sampler to draw samples from the specified Gaussian, where
 #   - `samples` will store the samples
 #   - `stats` will store diagnostic statistics for each sample
-samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; progress=true)
+samples, stats = sample(hamiltonian, kernel, initial_θ, n_samples, adaptor, n_adapts; progress=true)
 ```
 
 ### Parallel sampling 
@@ -102,7 +102,7 @@ It also supports vectorized sampling for static HMC and has been discussed in mo
 The below example utilizes the `@threads` macro to sample 4 chains across 4 threads.
 
 ```julia
-# Ensure that julia was launched with appropriate number of threads
+# Ensure that Julia was launched with an appropriate number of threads
 println(Threads.nthreads())
 
 # Number of chains to sample
@@ -114,21 +114,131 @@ chains = Vector{Any}(undef, nchains)
 # The `samples` from each parallel chain is stored in the `chains` vector 
 # Adjust the `verbose` flag as per need
 Threads.@threads for i in 1:nchains
-  samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_adapts; verbose=false)
+  samples, stats = sample(hamiltonian, kernel, initial_θ, n_samples, adaptor, n_adapts; verbose=false)
   chains[i] = samples
 end
 ```
 
+### Using the `AbstractMCMC` interface 
+
+Users can also use the `AbstractMCMC` interface to sample, which is also used in Turing.jl.
+In order to show how this is done let us start from our previous example where we defined a `LogTargetDensity`, `ℓπ`.
+
+```julia
+# Wrap the previous LogTargetDensity as LogDensityModel 
+# where ℓπ::LogTargetDensity
+model = AdvancedHMC.LogDensityModel(LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ))
+
+# Wrap the previous sampler as a HMCSampler <: AbstractMCMC.AbstractSampler
+D = 10; initial_θ = rand(D)
+n_samples, n_adapts, δ = 1_000, 2_000, 0.8
+sampler = HMCSampler(kernel, metric, adaptor) 
+
+# Now just sample
+samples = AbstractMCMC.sample(
+      model,
+      sampler,
+      n_adapts + n_samples;
+      nadapts = n_adapts,
+      init_params = initial_θ,
+  )
+```
+
+### Convenience Constructors
+
+In the previous examples, we built the sampler by manually specifying the integrator, metric, kernel, and adaptor to build our own sampler. However, in many cases, users might want to initialize a standard NUTS sampler. In such cases having to define each of these aspects manually is tedious and error-prone. For these reasons `AdvancedHMC` also provides users with a series of convenience constructors for standard samplers. We will now show how to use them.
+
+- HMC:
+  ```julia
+  # HMC Sampler
+  # step size, number of leapfrog steps 
+  ϵ, n_leapfrogs = 0.1, 0.25
+  hmc = HMC(ϵ, n_leapfrogs)
+  ```
+
+  Equivalent to:
+
+  ```julia
+  metric = DiagEuclideanMetric(D)
+  hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
+  initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+  integrator = Leapfrog(initial_ϵ)
+  kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(n_leapfrog)))
+  adaptor = NoAdaptation()
+  hmc = HMCSampler(kernel, metric, adaptor)
+  ```
+
+- NUTS:
+  ```julia
+  # NUTS Sampler
+  # adaptation steps, target acceptance probability,
+  δ = 0.8
+  nuts = NUTS(δ)
+  ```
+
+  Equivalent to:
+
+  ```julia
+  metric = DiagEuclideanMetric(D)
+  hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
+  initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+  integrator = Leapfrog(initial_ϵ)
+  kernel =  HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+  adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(δ, integrator))
+  nuts = HMCSampler(kernel, metric, adaptor)
+  ```
+
+
+- HMCDA:
+  ```julia
+  #HMCDA (dual averaging)
+  # adaptation steps, target acceptance probability, target trajectory length 
+  δ, λ = 0.8, 1.0
+  hmcda = HMCDA(δ, λ)
+  ```
+
+  Equivalent to:
+
+  ```julia
+  metric = DiagEuclideanMetric(D)
+  hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
+  initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+  integrator = Leapfrog(initial_ϵ)
+  kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(λ)))
+  adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(δ, integrator))
+  hmcda = HMCSampler(kernel, metric, adaptor)
+  ```
+
+Moreover, there's some flexibility in how these samplers can be initialized. 
+For example, a user can initialize a NUTS (HMC and HMCDA) sampler with their own metrics and integrators. 
+This can be done as follows:
+  ```julia
+  nuts = NUTS(δ, metric = :diagonal) #metric = DiagEuclideanMetric(D) (Default!)
+  nuts = NUTS(δ, metric = :unit)     #metric = UnitEuclideanMetric(D)
+  nuts = NUTS(δ, metric = :dense)    #metric = DenseEuclideanMetric(D)
+  # Provide your own AbstractMetric
+  metric = DiagEuclideanMetric(10)
+  nuts = NUTS(n_adapt, δ, metric = metric) 
+
+  nuts = NUTS(δ, integrator = :leapfrog)         #integrator = Leapfrog(ϵ) (Default!)
+  nuts = NUTS(δ, integrator = :jitteredleapfrog) #integrator = JitteredLeapfrog(ϵ, 0.1ϵ)
+  nuts = NUTS(δ, integrator = :temperedleapfrog) #integrator = TemperedLeapfrog(ϵ, 1.0)
+
+  # Provide your own AbstractIntegrator
+  integrator = JitteredLeapfrog(ϵ, 0.2ϵ)
+  nuts = NUTS(δ, integrator = integrator) 
+  ```
+
 ### GPU Sampling with CUDA
 
 There is experimental support for running static HMC on the GPU using CUDA. 
-To do so the user needs to have [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) installed, ensure the logdensity of the `Hamiltonian` can be executed on the GPU and that the initial points are a `CuArray`. 
+To do so, the user needs to have [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) installed, ensure the logdensity of the `Hamiltonian` can be executed on the GPU and that the initial points are a `CuArray`. 
 A small working example can be found at `test/cuda.jl`.
 
 ## API and supported HMC algorithms
 
 An important design goal of AdvancedHMC.jl is modularity; we would like to support algorithmic research on HMC.
-This modularity means that different HMC variants can be easily constructed by composing various components, such as preconditioning metric (i.e. mass matrix), leapfrog integrators,  trajectories (static or dynamic), and adaption schemes etc. 
+This modularity means that different HMC variants can be easily constructed by composing various components, such as preconditioning metric (i.e., mass matrix), leapfrog integrators,  trajectories (static or dynamic), and adaption schemes, etc. 
 The minimal example above can be modified to suit particular inference problems by picking components from the list below.
 
 ### Hamiltonian mass matrix (`metric`)
@@ -147,14 +257,14 @@ where `dim` is the dimensionality of the sampling space.
 
 where `ϵ` is the step size of leapfrog integration.
 
-### Proposal (`proposal`)
+### Kernel (`kernel`)
 
-- Static HMC with a fixed number of steps (`n_steps`) (Neal, R. M. (2011)): `StaticTrajectory(integrator, n_steps)`
-- HMC with a fixed total trajectory length (`trajectory_length`) (Neal, R. M. (2011)): `HMCDA(integrator, trajectory_length)` 
-- Original NUTS with slice sampling (Hoffman, M. D., & Gelman, A. (2014)): `NUTS{SliceTS,ClassicNoUTurn}(integrator)`
-- Generalised NUTS with slice sampling (Betancourt, M. (2017)): `NUTS{SliceTS,GeneralisedNoUTurn}(integrator)`
-- Original NUTS with multinomial sampling (Betancourt, M. (2017)): `NUTS{MultinomialTS,ClassicNoUTurn}(integrator)`
-- Generalised NUTS with multinomial sampling (Betancourt, M. (2017)): `NUTS{MultinomialTS,GeneralisedNoUTurn}(integrator)`
+- Static HMC with a fixed number of steps (`n_steps`) (Neal, R. M. (2011)): `HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(integrator)))`
+- HMC with a fixed total trajectory length (`trajectory_length`) (Neal, R. M. (2011)): `HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(trajectory_length)))` 
+- Original NUTS with slice sampling (Hoffman, M. D., & Gelman, A. (2014)): `HMCKernel(Trajectory{SliceTS}(integrator, ClassicNoUTurn()))`
+- Generalised NUTS with slice sampling (Betancourt, M. (2017)): `HMCKernel(Trajectory{SliceTS}(integrator, GeneralisedNoUTurn()))`
+- Original NUTS with multinomial sampling (Betancourt, M. (2017)): `HMCKernel(Trajectory{MultinomialTS}(integrator, ClassicNoUTurn()))`
+- Generalised NUTS with multinomial sampling (Betancourt, M. (2017)): `HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))`
 
 ### Adaptor (`adaptor`)
 
@@ -166,9 +276,9 @@ where `ϵ` is the step size of leapfrog integration.
 - Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(mma, ssa)`
 
 ### Gradients 
-`AdvancedHMC` supports both AD-based (`Zygote`, `Tracker` and `ForwardDiff`) and user-specified gradients. In order to use user-specified gradients, please replace `ForwardDiff` with `ℓπ_grad` in the `Hamiltonian`  constructor, where the gradient function `ℓπ_grad` should return a tuple containing both the log-posterior and its gradient. 
+`AdvancedHMC` supports AD-based using [`LogDensityProblemsAD`](https://github.com/tpapp/LogDensityProblemsAD.jl) and user-specified gradients. In order to use user-specified gradients, please replace `ForwardDiff` with `ℓπ_grad` in the `Hamiltonian`  constructor, where the gradient function `ℓπ_grad` should return a tuple containing both the log-posterior and its gradient. 
 
-All the combinations are tested in [this file](https://github.com/TuringLang/AdvancedHMC.jl/blob/master/test/sampler.jl) except from using tempered leapfrog integrator together with adaptation, which we found unstable empirically.
+All the combinations are tested in [this file](https://github.com/TuringLang/AdvancedHMC.jl/blob/master/test/sampler.jl) except for using tempered leapfrog integrator together with adaptation, which we found unstable empirically.
 
 ## The `sample` function signature in detail
 
@@ -187,7 +297,7 @@ function sample(
 )
 ```
 
-Draw `n_samples` samples using the proposal `κ` under the Hamiltonian system `h`
+Draw `n_samples` samples using the kernel `κ` under the Hamiltonian system `h`
 
 - The randomness is controlled by `rng`.
   - If `rng` is not provided, `GLOBAL_RNG` will be used.
