@@ -7,7 +7,7 @@ abstract type AbstractHMCSampler{T<:Real} <: AbstractMCMC.AbstractSampler end
 """
     HMCSampler
 
-A `AbstractMCMC.AbstractSampler` for kernels in AdvancedHMC.jl.
+An `AbstractMCMC.AbstractSampler` for kernels in AdvancedHMC.jl.
 
 # Fields
 
@@ -24,7 +24,7 @@ To access the updated fields use the resulting [`HMCState`](@ref).
 struct HMCSampler{T<:Real} <: AbstractHMCSampler{T}
     "[`AbstractMCMCKernel`](@ref)."
     κ::AbstractMCMCKernel
-    "[`AbstractMetric`](@ref)."
+    "Choice of initial metric [`AbstractMetric`](@ref). The metric type will be preserved during adaption."
     metric::AbstractMetric
     "[`AbstractAdaptor`](@ref)."
     adaptor::AbstractAdaptor
@@ -66,7 +66,7 @@ struct NUTS{T<:Real} <: AbstractHMCSampler{T}
     init_ϵ::T
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
     integrator::Union{Symbol,AbstractIntegrator}
-    "Choice of metric, specified either using a `Symbol` or `AbstractMetric`"
+    "Choice of initial metric, specified using a `Symbol` or `AbstractMetric`. The metric type will be preserved during adaption."
     metric::Union{Symbol,AbstractMetric}
 end
 
@@ -107,7 +107,7 @@ struct HMC{T<:Real} <: AbstractHMCSampler{T}
     n_leapfrog::Int
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
     integrator::Union{Symbol,AbstractIntegrator}
-    "Choice of metric, specified either using a `Symbol` or `AbstractMetric`"
+    "Choice of initial metric, specified using a `Symbol` or `AbstractMetric`. The metric type will be preserved during adaption."
     metric::Union{Symbol,AbstractMetric}
 end
 
@@ -148,7 +148,7 @@ struct HMCDA{T<:Real} <: AbstractHMCSampler{T}
     init_ϵ::T
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
     integrator::Union{Symbol,AbstractIntegrator}
-    "Choice of metric, specified either using a `Symbol` or `AbstractMetric`"
+    "Choice of initial metric, specified using a `Symbol` or `AbstractMetric`. The metric type will be preserved during adaption."
     metric::Union{Symbol,AbstractMetric}
 end
 
