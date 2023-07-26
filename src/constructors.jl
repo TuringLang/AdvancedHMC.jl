@@ -39,7 +39,7 @@ end
 ### NUTS ###
 ############
 """
-    NUTS(δ::Real; max_depth::Int=10, Δ_max::Real=1000, init_ϵ::Real=0, init_ϵ = 0.0, integrator = :leapfrog, metric = :diagonal)
+    NUTS(δ::Real; max_depth::Int=10, Δ_max::Real=1000, init_ϵ::Real=0, integrator = :leapfrog, metric = :diagonal)
 
 No-U-Turn Sampler (NUTS) sampler.
 
