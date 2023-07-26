@@ -280,12 +280,14 @@ function make_step_size(
     hamiltonian::Hamiltonian,
     init_params,
 )
-    return make_step_size(rng, spl.integrator, hamiltonian, init_params)
+    T = get_type_of_spl(spl)
+    return make_step_size(rng, spl.integrator, T, hamiltonian, init_params)
 end
 
 function make_step_size(
     rng::Random.AbstractRNG,
     integrator::AbstractIntegrator,
+    T::Type,
     hamiltonian::Hamiltonian,
     init_params,
 )
@@ -295,11 +297,11 @@ end
 function make_step_size(
     rng::Random.AbstractRNG,
     integrator::Symbol,
+    T::Type,
     hamiltonian::Hamiltonian,
     init_params,
 )
     ϵ = find_good_stepsize(rng, hamiltonian, init_params)
-    T = eltype(init_params)
     @info string("Found initial step size ", ϵ)
     return T(ϵ)
 end

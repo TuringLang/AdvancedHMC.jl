@@ -70,6 +70,7 @@ struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     ϵ::T
 end
 Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)))")
+integrator_eltype(i::AbstractLeapfrog{T}) where {T<:AbstractFloat} = T
 
 ### Jittering
 
