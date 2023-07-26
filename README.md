@@ -276,7 +276,7 @@ where `ϵ` is the step size of leapfrog integration.
 - Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(mma, ssa)`
 
 ### Gradients 
-`AdvancedHMC` supports AD-based (`Zygote`, `Tracker`, and `ForwardDiff`) and user-specified gradients. In order to use user-specified gradients, please replace `ForwardDiff` with `ℓπ_grad` in the `Hamiltonian`  constructor, where the gradient function `ℓπ_grad` should return a tuple containing both the log-posterior and its gradient. 
+`AdvancedHMC` supports AD-based using [`LogDensityProblemsAD`](https://github.com/tpapp/LogDensityProblemsAD.jl) and user-specified gradients. In order to use user-specified gradients, please replace `ForwardDiff` with `ℓπ_grad` in the `Hamiltonian`  constructor, where the gradient function `ℓπ_grad` should return a tuple containing both the log-posterior and its gradient. 
 
 All the combinations are tested in [this file](https://github.com/TuringLang/AdvancedHMC.jl/blob/master/test/sampler.jl) except for using tempered leapfrog integrator together with adaptation, which we found unstable empirically.
 
