@@ -267,27 +267,42 @@ end
 
 function make_step_size(
     rng::Random.AbstractRNG,
-    spl::AbstractHMCSampler,
-    hamiltonian::Hamiltonian,
-    init_params,
-)
-    ϵ = spl.init_ϵ
-    if iszero(ϵ)
-        ϵ = find_good_stepsize(rng, hamiltonian, init_params)
-        T = get_type_of_spl(spl)
-        ϵ = T(ϵ)
-        @info string("Found initial step size ", ϵ)
-    end
-    return ϵ
-end
-
-function make_step_size(
-    rng::Random.AbstractRNG,
     spl::HMCSampler,
     hamiltonian::Hamiltonian,
     init_params,
 )
     return spl.κ.τ.integrator.ϵ
+end
+
+function make_step_size(
+    rng::Random.AbstractRNG,
+    spl::AbstractHMCSampler,
+    hamiltonian::Hamiltonian,
+    init_params,
+)
+    return make_step_size(rng, spl.integrator, hamiltonian, init_params)
+end
+
+function make_step_size(
+    rng::Random.AbstractRNG,
+    integrator::AbstractIntegrator,
+    hamiltonian::Hamiltonian,
+    init_params,
+)
+    return spl.κ.τ.integrator.ϵ
+end
+
+function make_step_size(
+    rng::Random.AbstractRNG,
+    integrator::Symbol,
+    hamiltonian::Hamiltonian,
+    init_params,
+)
+    ϵ = find_good_stepsize(rng, hamiltonian, init_params)
+    T = get_type_of_spl(spl)
+    ϵ = T(ϵ)
+    @info string("Found initial step size ", ϵ)
+    return ϵ
 end
 
 make_integrator(spl::HMCSampler, ϵ::Real) = spl.κ.τ.integrator

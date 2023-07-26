@@ -4,7 +4,7 @@ include("common.jl")
 # Initalize samplers
 nuts = NUTS(0.8)
 nuts_32 = NUTS(0.8f0)
-hmc = HMC(0.1, 25)
+hmc = HMC(25)
 hmcda = HMCDA(0.8, 1.0)
 hmcda_32 = HMCDA(0.8f0, 1.0)
 
@@ -28,7 +28,6 @@ custom = HMCSampler(kernel, metric, adaptor)
     @test nuts.δ == 0.8
     @test nuts.max_depth == 10
     @test nuts.Δ_max == 1000.0
-    @test nuts.init_ϵ == 0.0
     @test nuts.integrator == :leapfrog
     @test nuts.metric == :diagonal
 
@@ -40,21 +39,18 @@ custom = HMCSampler(kernel, metric, adaptor)
 
     # HMC
     @test hmc.n_leapfrog == 25
-    @test hmc.init_ϵ == 0.1
     @test hmc.integrator == :leapfrog
     @test hmc.metric == :diagonal
 
     # HMCDA
     @test hmcda.δ == 0.8
     @test hmcda.λ == 1.0
-    @test hmcda.init_ϵ == 0.0
     @test hmcda.integrator == :leapfrog
     @test hmcda.metric == :diagonal
 
     # HMCDA Float32
     @test hmcda_32.δ == 0.8f0
     @test hmcda_32.λ == 1.0f0
-    @test hmcda_32.init_ϵ == 0.0f0
 end
 
 @testset "First step" begin
