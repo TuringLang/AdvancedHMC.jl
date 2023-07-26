@@ -68,13 +68,7 @@ struct NUTS{T<:Real} <: AbstractHMCSampler{T}
     metric::Union{Symbol,AbstractMetric}
 end
 
-function NUTS(
-    δ;
-    max_depth = 10,
-    Δ_max = 1000.0,
-    integrator = :leapfrog,
-    metric = :diagonal,
-)
+function NUTS(δ; max_depth = 10, Δ_max = 1000.0, integrator = :leapfrog, metric = :diagonal)
     T = typeof(δ)
     return NUTS(δ, max_depth, T(Δ_max), integrator, metric)
 end
@@ -107,7 +101,7 @@ struct HMC{T<:Real} <: AbstractHMCSampler{T}
 end
 
 function HMC(n_leapfrog; integrator = :leapfrog, metric = :diagonal)
-    return HMC(n_leapfrog, integrator, metric)
+    return HMC{Float64}(n_leapfrog, integrator, metric)
 end
 
 #############
