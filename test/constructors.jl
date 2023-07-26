@@ -79,19 +79,49 @@ end
     _, custom_state =
         AbstractMCMC.step(rng, logdensitymodel, custom; n_adapts = 0, init_params = θ_init)
 
-    _, nuts_metric1_state =
-        AbstractMCMC.step(rng, logdensitymodel, nuts_metric1; n_adapts = 0, init_params = θ_init)
-    _, nuts_metric2_state =
-        AbstractMCMC.step(rng, logdensitymodel, nuts_metric2; n_adapts = 0, init_params = θ_init)
-    _, hmc_metric1_state =
-        AbstractMCMC.step(rng, logdensitymodel, hmc_metric1; n_adapts = 0, init_params = θ_init)
+    _, nuts_metric1_state = AbstractMCMC.step(
+        rng,
+        logdensitymodel,
+        nuts_metric1;
+        n_adapts = 0,
+        init_params = θ_init,
+    )
+    _, nuts_metric2_state = AbstractMCMC.step(
+        rng,
+        logdensitymodel,
+        nuts_metric2;
+        n_adapts = 0,
+        init_params = θ_init,
+    )
+    _, hmc_metric1_state = AbstractMCMC.step(
+        rng,
+        logdensitymodel,
+        hmc_metric1;
+        n_adapts = 0,
+        init_params = θ_init,
+    )
 
-    _, nuts_integrator1_state =
-        AbstractMCMC.step(rng, logdensitymodel, nuts_integrator1; n_adapts = 0, init_params = θ_init)
-    _, nuts_integrator2_state =
-        AbstractMCMC.step(rng, logdensitymodel, nuts_integrator2; n_adapts = 0, init_params = θ_init)
-    _, hmc_integrator1_state =
-        AbstractMCMC.step(rng, logdensitymodel, hmc_integrator1; n_adapts = 0, init_params = θ_init)
+    _, nuts_integrator1_state = AbstractMCMC.step(
+        rng,
+        logdensitymodel,
+        nuts_integrator1;
+        n_adapts = 0,
+        init_params = θ_init,
+    )
+    _, nuts_integrator2_state = AbstractMCMC.step(
+        rng,
+        logdensitymodel,
+        nuts_integrator2;
+        n_adapts = 0,
+        init_params = θ_init,
+    )
+    _, hmc_integrator1_state = AbstractMCMC.step(
+        rng,
+        logdensitymodel,
+        hmc_integrator1;
+        n_adapts = 0,
+        init_params = θ_init,
+    )
 
     # Metric
     @test typeof(nuts_state.metric) == DiagEuclideanMetric{Float64,Vector{Float64}}
