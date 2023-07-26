@@ -254,14 +254,14 @@ end
 ### Utils ###
 #############
 
-function get_type_of_spl(::AbstractHMCSampler{T}) where {T<:Real}
+function sampler_eltype(::AbstractHMCSampler{T}) where {T<:Real}
     return T
 end
 
 #########
 
 function make_init_params(spl::AbstractHMCSampler, logdensity, init_params)
-    T = get_type_of_spl(spl)
+    T = sampler_eltype(spl)
     if init_params == nothing
         d = LogDensityProblems.dimension(logdensity)
         init_params = randn(rng, d)
@@ -280,7 +280,7 @@ function make_step_size(
     ϵ = spl.init_ϵ
     if iszero(ϵ)
         ϵ = find_good_stepsize(rng, hamiltonian, init_params)
-        T = get_type_of_spl(spl)
+        T = sampler_eltype(spl)
         ϵ = T(ϵ)
         @info string("Found initial step size ", ϵ)
     end
@@ -318,7 +318,7 @@ make_metric(i::Val{:dense}, T::Type, d::Int) = DenseEuclideanMetric(T, d)
 
 function make_metric(spl::AbstractHMCSampler, logdensity)
     d = LogDensityProblems.dimension(logdensity)
-    T = get_type_of_spl(spl)
+    T = sampler_eltype(spl)
     return make_metric(spl.metric, T, d)
 end
 
