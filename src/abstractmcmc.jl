@@ -304,7 +304,6 @@ make_integrator(i::Val{:temperedleapfrog}, ϵ::Real) = TemperedLeapfrog(ϵ, 1.0)
 make_metric(@nospecialize(i), T::Type, d::Int) = error("Metric $(typeof(i)) not supported.")
 make_metric(i::Symbol, T::Type, d::Int) = make_metric(Val(i), T, d)
 make_metric(i::AbstractMetric, T::Type, d::Int) = i
-make_metric(i::Type{AbstractMetric}, T::Type, d::Int) = i
 make_metric(i::Val{:diagonal}, T::Type, d::Int) = DiagEuclideanMetric(T, d)
 make_metric(i::Val{:unit}, T::Type, d::Int) = UnitEuclideanMetric(T, d)
 make_metric(i::Val{:dense}, T::Type, d::Int) = DenseEuclideanMetric(T, d)
