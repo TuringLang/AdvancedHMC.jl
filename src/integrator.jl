@@ -70,6 +70,7 @@ struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     ϵ::T
 end
 Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)))")
+integrator_eltype(i::AbstractLeapfrog{T}) where {T<:AbstractFloat} = T
 
 ### Jittering
 
@@ -131,7 +132,7 @@ function _jitter(
     lf::JitteredLeapfrog{FT,T},
 ) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}}
     ϵ = lf.ϵ0 .* (1 .+ lf.jitter .* (2 .* rand(rng) .- 1))
-    return @set lf.ϵ = ϵ
+    return @set lf.ϵ = FT.(ϵ)
 end
 
 jitter(rng::AbstractRNG, lf::JitteredLeapfrog) = _jitter(rng, lf)

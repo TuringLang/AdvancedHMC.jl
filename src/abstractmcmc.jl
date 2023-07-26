@@ -28,8 +28,6 @@ end
 
 getadaptor(state::HMCState) = state.adaptor
 getmetric(state::HMCState) = state.metric
-
-getintegrator(state::HMCState) = state.κ.τ.integrator
 getintegrator(state::HMCState) = state.κ.τ.integrator
 
 """
@@ -273,22 +271,6 @@ end
 
 function make_step_size(
     rng::Random.AbstractRNG,
-    spl::AbstractHMCSampler,
-    hamiltonian::Hamiltonian,
-    init_params,
-)
-    ϵ = spl.init_ϵ
-    if iszero(ϵ)
-        ϵ = find_good_stepsize(rng, hamiltonian, init_params)
-        T = sampler_eltype(spl)
-        ϵ = T(ϵ)
-        @info string("Found initial step size ", ϵ)
-    end
-    return ϵ
-end
-
-function make_step_size(
-    rng::Random.AbstractRNG,
     spl::HMCSampler,
     hamiltonian::Hamiltonian,
     init_params,
@@ -296,22 +278,54 @@ function make_step_size(
     return spl.κ.τ.integrator.ϵ
 end
 
+function make_step_size(
+    rng::Random.AbstractRNG,
+    spl::AbstractHMCSampler,
+    hamiltonian::Hamiltonian,
+    init_params,
+)
+    T = sampler_eltype(spl)
+    return make_step_size(rng, spl.integrator, T, hamiltonian, init_params)
+
+end
+
+function make_step_size(
+    rng::Random.AbstractRNG,
+    integrator::AbstractIntegrator,
+    T::Type,
+    hamiltonian::Hamiltonian,
+    init_params,
+)
+    return integrator.ϵ
+end
+
+function make_step_size(
+    rng::Random.AbstractRNG,
+    integrator::Symbol,
+    T::Type,
+    hamiltonian::Hamiltonian,
+    init_params,
+)
+    ϵ = find_good_stepsize(rng, hamiltonian, init_params)
+    @info string("Found initial step size ", ϵ)
+    return T(ϵ)
+end
+
 make_integrator(spl::HMCSampler, ϵ::Real) = spl.κ.τ.integrator
 make_integrator(spl::AbstractHMCSampler, ϵ::Real) = make_integrator(spl.integrator, ϵ)
 make_integrator(i::AbstractIntegrator, ϵ::Real) = i
-make_integrator(i::Type{<:AbstractIntegrator}, ϵ::Real) = i
 make_integrator(i::Symbol, ϵ::Real) = make_integrator(Val(i), ϵ)
-make_integrator(i...) = error("Integrator $(typeof(i)) not supported.")
+make_integrator(@nospecialize(i), ::Real) = error("Integrator $i not supported.")
 make_integrator(i::Val{:leapfrog}, ϵ::Real) = Leapfrog(ϵ)
-make_integrator(i::Val{:jitteredleapfrog}, ϵ::Real) = JitteredLeapfrog(ϵ)
-make_integrator(i::Val{:temperedleapfrog}, ϵ::Real) = TemperedLeapfrog(ϵ)
+make_integrator(i::Val{:jitteredleapfrog}, ϵ::T) where {T<:Real} =
+    JitteredLeapfrog(ϵ, T(0.1ϵ))
+make_integrator(i::Val{:temperedleapfrog}, ϵ::T) where {T<:Real} = TemperedLeapfrog(ϵ, T(1))
 
 #########
 
-make_metric(i...) = error("Metric $(typeof(i)) not supported.")
+make_metric(@nospecialize(i), T::Type, d::Int) = error("Metric $(typeof(i)) not supported.")
 make_metric(i::Symbol, T::Type, d::Int) = make_metric(Val(i), T, d)
 make_metric(i::AbstractMetric, T::Type, d::Int) = i
-make_metric(i::Type{AbstractMetric}, T::Type, d::Int) = i
 make_metric(i::Val{:diagonal}, T::Type, d::Int) = DiagEuclideanMetric(T, d)
 make_metric(i::Val{:unit}, T::Type, d::Int) = UnitEuclideanMetric(T, d)
 make_metric(i::Val{:dense}, T::Type, d::Int) = DenseEuclideanMetric(T, d)
