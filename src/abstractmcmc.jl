@@ -26,6 +26,12 @@ struct HMCState{
     adaptor::TAdapt
 end
 
+getadaptor(state::HMCState) = state.adaptor
+getmetric(state::HMCState) = state.metric
+
+getintegrator(state::HMCState) = state.κ.τ.integrator
+getintegrator(state::HMCState) = state.κ.τ.integrator
+
 """
     $(TYPEDSIGNATURES)
 
@@ -248,14 +254,14 @@ end
 ### Utils ###
 #############
 
-function get_type_of_spl(::AbstractHMCSampler{T}) where {T<:Real}
+function sampler_eltype(::AbstractHMCSampler{T}) where {T<:Real}
     return T
 end
 
 #########
 
 function make_init_params(spl::AbstractHMCSampler, logdensity, init_params)
-    T = get_type_of_spl(spl)
+    T = sampler_eltype(spl)
     if init_params == nothing
         d = LogDensityProblems.dimension(logdensity)
         init_params = randn(rng, d)
@@ -280,8 +286,9 @@ function make_step_size(
     hamiltonian::Hamiltonian,
     init_params,
 )
-    T = get_type_of_spl(spl)
+    T = sampler_eltype(spl)
     return make_step_size(rng, spl.integrator, T, hamiltonian, init_params)
+
 end
 
 function make_step_size(
@@ -326,7 +333,7 @@ make_metric(i::Val{:dense}, T::Type, d::Int) = DenseEuclideanMetric(T, d)
 
 function make_metric(spl::AbstractHMCSampler, logdensity)
     d = LogDensityProblems.dimension(logdensity)
-    T = get_type_of_spl(spl)
+    T = sampler_eltype(spl)
     return make_metric(spl.metric, T, d)
 end
 

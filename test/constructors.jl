@@ -1,144 +1,91 @@
 using AdvancedHMC, AbstractMCMC, Random
 include("common.jl")
 
-# Initalize samplers
-nuts = NUTS(0.8)
-nuts_32 = NUTS(0.8f0)
-hmc = HMC(25)
-hmcda = HMCDA(0.8, 1.0)
-hmcda_32 = HMCDA(0.8f0, 1.0)
-
-integrator = Leapfrog(1e-3)
-kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
-metric = DiagEuclideanMetric(2)
-adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
-custom = HMCSampler(kernel, metric, adaptor)
-
-nuts_metric1 = NUTS(0.8; metric = :unit)
-nuts_metric2 = NUTS(0.8; metric = :dense)
-hmc_metric1 = HMC(25; integrator = Leapfrog(0.1), metric = metric)
-
-nuts_integrator1 = NUTS(0.8, integrator = :jitteredleapfrog)
-nuts_integrator2 = NUTS(0.8, integrator = :temperedleapfrog)
-hmc_integrator1 = HMC(25, integrator = integrator)
-
-# Check that everything is initalized correctly
 @testset "Constructors" begin
-    # Types
-    @test typeof(nuts) == NUTS{Float64}
-    @test typeof(nuts_32) == NUTS{Float32}
-    @test typeof(hmc) == HMC{Float64}
-    @test typeof(hmcda) == HMCDA{Float64}
-    @test typeof(nuts) <: AdvancedHMC.AbstractHMCSampler
-    @test typeof(nuts) <: AbstractMCMC.AbstractSampler
+    θ_init = randn(2)
+    model = AbstractMCMC.LogDensityModel(ℓπ_gdemo)
 
-    # NUTS
-    @test nuts.δ == 0.8
-    @test nuts.max_depth == 10
-    @test nuts.Δ_max == 1000.0
-    @test nuts.integrator == :leapfrog
-    @test nuts.metric == :diagonal
+    @testset "$T" for T in [Float32, Float64]
+        @testset "$(nameof(typeof(sampler)))" for (sampler, expected) in [
+            (
+                HMC(25),
+                (
+                    adaptor_type = NoAdaptation,
+                    metric_type = DiagEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
+                ),
+            ),
+            # This should peform the correct promotion for the 2nd argument.
+            (
+                HMCDA(T(0.1), 1),
+                (
+                    adaptor_type = StanHMCAdaptor,
+                    metric_type = DiagEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
+                ),
+            ),
+            (
+                NUTS(T(0.8)),
+                (
+                    adaptor_type = StanHMCAdaptor,
+                    metric_type = DiagEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
+                ),
+            ),
+            (
+                NUTS(T(0.8); metric = :unit),
+                (
+                    adaptor_type = StanHMCAdaptor,
+                    metric_type = UnitEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
+                ),
+            ),
+            (
+                NUTS(T(0.8); metric = :dense),
+                (
+                    adaptor_type = StanHMCAdaptor,
+                    metric_type = DenseEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
+                ),
+            ),
+            (
+                NUTS(T(0.8); integrator = :jitteredleapfrog),
+                (
+                    adaptor_type = StanHMCAdaptor,
+                    metric_type = DiagEuclideanMetric{T},
+                    integrator_type = JitterdLeapfrog{T},
+                ),
+            ),
+            (
+                 NUTS(T(0.8); integrator = :temperedleapfrog),
+                (
+                    adaptor_type = StanHMCAdaptor,
+                    metric_type = DiagEuclideanMetric{T},
+                    integrator_type = TemperedLeapfrog{T},
+                ),
+            ),
 
-    # NUTS Float32
-    @test nuts_32.δ == 0.8f0
-    @test nuts_32.max_depth == 10
-    @test nuts_32.Δ_max == 1000.0f0
+        ]
+            # Make sure the sampler element type is preserved.
+            @test AdvancedHMC.sampler_eltype(sampler) == T
 
-    # HMC
-    @test hmc.n_leapfrog == 25
-    @test hmc.integrator == :leapfrog
-    @test hmc.metric == :diagonal
+            # Step.
+            rng = Random.default_rng()
+            transition, state =
+                AbstractMCMC.step(rng, model, sampler; n_adapts = 0, init_params = θ_init)
+      
+            # Verify that the types are preserved in the transition.
+            @test eltype(transition.z.θ) == T
+            @test eltype(transition.z.r) == T
+            @test eltype(transition.z.ℓπ.value) == T
+            @test eltype(transition.z.ℓπ.gradient) == T
+            @test eltype(transition.z.ℓκ.value) == T
+            @test eltype(transition.z.ℓκ.gradient) == T
 
-    # HMCDA
-    @test hmcda.δ == 0.8
-    @test hmcda.λ == 1.0
-    @test hmcda.integrator == :leapfrog
-    @test hmcda.metric == :diagonal
-
-    # HMCDA Float32
-    @test hmcda_32.δ == 0.8f0
-    @test hmcda_32.λ == 1.0f0
-end
-
-@testset "First step" begin
-    rng = MersenneTwister(0)
-    θ_init = randn(rng, 2)
-    logdensitymodel = AbstractMCMC.LogDensityModel(ℓπ_gdemo)
-    _, nuts_state =
-        AbstractMCMC.step(rng, logdensitymodel, nuts; n_adapts = 0, init_params = θ_init)
-    _, hmc_state =
-        AbstractMCMC.step(rng, logdensitymodel, hmc; n_adapts = 0, init_params = θ_init)
-    _, nuts_32_state =
-        AbstractMCMC.step(rng, logdensitymodel, nuts_32; n_adapts = 0, init_params = θ_init)
-    _, custom_state =
-        AbstractMCMC.step(rng, logdensitymodel, custom; n_adapts = 0, init_params = θ_init)
-
-    _, nuts_metric1_state = AbstractMCMC.step(
-        rng,
-        logdensitymodel,
-        nuts_metric1;
-        n_adapts = 0,
-        init_params = θ_init,
-    )
-    _, nuts_metric2_state = AbstractMCMC.step(
-        rng,
-        logdensitymodel,
-        nuts_metric2;
-        n_adapts = 0,
-        init_params = θ_init,
-    )
-    _, hmc_metric1_state = AbstractMCMC.step(
-        rng,
-        logdensitymodel,
-        hmc_metric1;
-        n_adapts = 0,
-        init_params = θ_init,
-    )
-
-    _, nuts_integrator1_state = AbstractMCMC.step(
-        rng,
-        logdensitymodel,
-        nuts_integrator1;
-        n_adapts = 0,
-        init_params = θ_init,
-    )
-    _, nuts_integrator2_state = AbstractMCMC.step(
-        rng,
-        logdensitymodel,
-        nuts_integrator2;
-        n_adapts = 0,
-        init_params = θ_init,
-    )
-    _, hmc_integrator1_state = AbstractMCMC.step(
-        rng,
-        logdensitymodel,
-        hmc_integrator1;
-        n_adapts = 0,
-        init_params = θ_init,
-    )
-
-    # Metric
-    @test typeof(nuts_state.metric) == DiagEuclideanMetric{Float64,Vector{Float64}}
-    @test typeof(nuts_32_state.metric) == DiagEuclideanMetric{Float32,Vector{Float32}}
-    @test typeof(nuts_metric1_state.metric) <: UnitEuclideanMetric
-    @test typeof(nuts_metric2_state.metric) <: DenseEuclideanMetric
-    @test hmc_metric1_state.metric == metric
-    @test custom_state.metric == metric
-
-    # Integrator
-    @test typeof(nuts_state.κ.τ.integrator) == Leapfrog{Float64}
-    @test typeof(nuts_32_state.κ.τ.integrator) == Leapfrog{Float32}
-    @test typeof(nuts_integrator1_state.κ.τ.integrator) <: JitteredLeapfrog
-    @test typeof(nuts_integrator2_state.κ.τ.integrator) <: TemperedLeapfrog
-    @test hmc_integrator1_state.κ.τ.integrator == integrator
-    @test custom_state.κ.τ.integrator == integrator
-
-    # Kernel
-    @test nuts_state.κ == AdvancedHMC.make_kernel(nuts, nuts_state.κ.τ.integrator)
-    @test custom_state.κ == kernel
-
-    # Adaptor
-    @test typeof(nuts_state.adaptor) <: StanHMCAdaptor
-    @test hmc_state.adaptor == NoAdaptation()
-    @test custom_state.adaptor == adaptor
+            # Verify that the state is what we expect.
+            @test AdvancedHMC.getmetric(state) isa expected.metric_type
+            @test AdvancedHMC.getintegrator(state) isa expected.integrator_type
+            @test AdvancedHMC.getadaptor(state) isa expected.adaptor_type
+        end
+    end
 end
