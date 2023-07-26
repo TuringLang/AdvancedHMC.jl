@@ -152,8 +152,8 @@ In the previous examples, we built the sampler by manually specifying the integr
   ```julia
   # HMC Sampler
   # step size, number of leapfrog steps 
-  n_leapfrogs = 0.25
-  hmc = HMC(n_leapfrogs)
+  n_leapfrogs, lf_integrator = 0.25, Leapfrog(0.1)
+  hmc = HMC(n_leapfrogs, integrator = lf_integrator)
   ```
 
   Equivalent to:
