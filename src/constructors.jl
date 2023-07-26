@@ -86,7 +86,7 @@ $(FIELDS)
 # Usage:
 
 ```julia
-HMC(init_ϵ=0.05, n_leapfrog=10, integrator = :leapfrog, metric = :diagonal)
+HMC(n_leapfrog=10, integrator = Leapfrog(0.05), metric = :diagonal)
 ```
 """
 struct HMC{T<:Real} <: AbstractHMCSampler{T}
