@@ -299,10 +299,9 @@ function make_step_size(
     init_params,
 )
     ϵ = find_good_stepsize(rng, hamiltonian, init_params)
-    T = get_type_of_spl(spl)
-    ϵ = T(ϵ)
+    T = eltype(init_params)
     @info string("Found initial step size ", ϵ)
-    return ϵ
+    return T(ϵ)
 end
 
 make_integrator(spl::HMCSampler, ϵ::Real) = spl.κ.τ.integrator

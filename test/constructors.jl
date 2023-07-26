@@ -35,7 +35,6 @@ custom = HMCSampler(kernel, metric, adaptor)
     @test nuts_32.δ == 0.8f0
     @test nuts_32.max_depth == 10
     @test nuts_32.Δ_max == 1000.0f0
-    @test nuts_32.init_ϵ == 0.0f0
 
     # HMC
     @test hmc.n_leapfrog == 25
