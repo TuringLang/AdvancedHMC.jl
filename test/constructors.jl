@@ -57,14 +57,13 @@ include("common.jl")
                 ),
             ),
             (
-                 NUTS(T(0.8); integrator = :temperedleapfrog),
+                NUTS(T(0.8); integrator = :temperedleapfrog),
                 (
                     adaptor_type = StanHMCAdaptor,
                     metric_type = DiagEuclideanMetric{T},
                     integrator_type = TemperedLeapfrog{T},
                 ),
             ),
-
         ]
             # Make sure the sampler element type is preserved.
             @test AdvancedHMC.sampler_eltype(sampler) == T
@@ -73,7 +72,7 @@ include("common.jl")
             rng = Random.default_rng()
             transition, state =
                 AbstractMCMC.step(rng, model, sampler; n_adapts = 0, init_params = θ_init)
-      
+
             # Verify that the types are preserved in the transition.
             @test eltype(transition.z.θ) == T
             @test eltype(transition.z.r) == T
