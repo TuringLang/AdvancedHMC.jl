@@ -53,7 +53,7 @@ include("common.jl")
                 (
                     adaptor_type = StanHMCAdaptor,
                     metric_type = DiagEuclideanMetric{T},
-                    integrator_type = JitteredLeapfrog{T, T},
+                    integrator_type = JitteredLeapfrog{T,T},
                 ),
             ),
             (
@@ -61,7 +61,7 @@ include("common.jl")
                 (
                     adaptor_type = StanHMCAdaptor,
                     metric_type = DiagEuclideanMetric{T},
-                    integrator_type = TemperedLeapfrog{T, T},
+                    integrator_type = TemperedLeapfrog{T,T},
                 ),
             ),
         ]

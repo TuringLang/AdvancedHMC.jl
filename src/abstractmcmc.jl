@@ -317,8 +317,9 @@ make_integrator(i::AbstractIntegrator, ϵ::Real) = i
 make_integrator(i::Symbol, ϵ::Real) = make_integrator(Val(i), ϵ)
 make_integrator(@nospecialize(i), ::Real) = error("Integrator $i not supported.")
 make_integrator(i::Val{:leapfrog}, ϵ::Real) = Leapfrog(ϵ)
-make_integrator(i::Val{:jitteredleapfrog}, ϵ::T) where T<:Real = JitteredLeapfrog(ϵ, T(0.1ϵ))
-make_integrator(i::Val{:temperedleapfrog}, ϵ::T) where T<:Real = TemperedLeapfrog(ϵ, T(1))
+make_integrator(i::Val{:jitteredleapfrog}, ϵ::T) where {T<:Real} =
+    JitteredLeapfrog(ϵ, T(0.1ϵ))
+make_integrator(i::Val{:temperedleapfrog}, ϵ::T) where {T<:Real} = TemperedLeapfrog(ϵ, T(1))
 
 #########
 
