@@ -204,7 +204,7 @@ In the previous examples, we built the sampler by manually specifying the integr
   initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
   integrator = Leapfrog(initial_ϵ)
   kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(λ)))
-  adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(δ, integrator))
+  adaptor = NesterovDualAveraging(δ, initial_ϵ)
   hmcda = HMCSampler(kernel, metric, adaptor)
   ```
 
