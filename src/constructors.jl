@@ -152,10 +152,8 @@ struct HMCDA{T<:Real} <: AbstractHMCSampler{T}
     metric::Union{Symbol,AbstractMetric}
 end
 
-function HMCDA(δ, λ; init_ϵ = 0.0, integrator = :leapfrog, metric = :diagonal)
-    if typeof(δ) != typeof(λ)
-        @warn "typeof(δ) != typeof(λ) --> using typeof(δ)"
-    end
+function HMCDA(δ, λ; init_ϵ = 0, integrator = :leapfrog, metric = :diagonal)
+    δ, λ = promote(δ, λ)
     T = typeof(δ)
     return HMCDA(δ, T(λ), T(init_ϵ), integrator, metric)
 end
