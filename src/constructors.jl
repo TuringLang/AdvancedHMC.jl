@@ -168,7 +168,7 @@ struct HMCDA{T<:Real} <: AbstractHMCSampler
     metric::Union{Symbol,AbstractMetric}
 end
 
-function HMCDA(δ, λ; init_ϵ = 0, integrator = :leapfrog, metric = :diagonal)
+function HMCDA(δ, λ; integrator = :leapfrog, metric = :diagonal)
     T = determine_sampler_eltype(δ, λ, integrator, metric)
     return HMCDA(T(δ), T(λ), integrator, metric)
 end
