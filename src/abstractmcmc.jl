@@ -251,13 +251,6 @@ end
 #############
 ### Utils ###
 #############
-
-function sampler_eltype(::AbstractHMCSampler{T}) where {T<:Real}
-    return T
-end
-
-#########
-
 function make_init_params(spl::AbstractHMCSampler, logdensity, init_params)
     T = sampler_eltype(spl)
     if init_params == nothing
