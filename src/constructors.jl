@@ -129,7 +129,7 @@ struct HMC{T<:Real} <: AbstractHMCSampler
 end
 
 function HMC(n_leapfrog; integrator = :leapfrog, metric = :diagonal)
-    T = float(determine_sampler_eltype(metric, integrator))
+    T = determine_sampler_eltype(metric, integrator)
     return HMC{T}(n_leapfrog, integrator, metric)
 end
 
@@ -171,7 +171,7 @@ struct HMCDA{T<:Real} <: AbstractHMCSampler
 end
 
 function HMCDA(δ, λ; init_ϵ = 0, integrator = :leapfrog, metric = :diagonal)
-    T = float(determine_sampler_eltype(δ, λ, integrator, metric))
+    T = determine_sampler_eltype(δ, λ, integrator, metric)
     return HMCDA(T(δ), T(λ), integrator, metric)
 end
 
