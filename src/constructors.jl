@@ -120,7 +120,8 @@ $(FIELDS)
 HMC(10, integrator = Leapfrog(0.05), metric = :diagonal)
 ```
 """
-struct HMC{I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <: AbstractHMCSampler
+struct HMC{I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <:
+       AbstractHMCSampler
     "Number of leapfrog steps."
     n_leapfrog::Int
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
@@ -129,7 +130,8 @@ struct HMC{I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} 
     metric::M
 end
 
-HMC(n_leapfrog; integrator = :leapfrog, metric = :diagonal) = HMC(n_leapfrog, integrator, metric)
+HMC(n_leapfrog; integrator = :leapfrog, metric = :diagonal) =
+    HMC(n_leapfrog, integrator, metric)
 
 sampler_eltype(sampler::HMC) = determine_sampler_eltype(sampler.metric, sampler.integrator)
 
