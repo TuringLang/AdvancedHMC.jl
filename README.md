@@ -18,9 +18,9 @@ If you are interested in using AdvancedHMC.jl through a probabilistic programmin
 
 **API CHANGES**
 - [v0.5.0] **Breaking!** Convenience constructors for common samplers changed to:
-  - `HMC(n_leapfrog)`
-  - `NUTS(target_acceptance)` 
-  - `HMCDA(target_acceptance, integration_time)`
+  - `HMC(leapfrog_stepsize::Real, n_leapfrog::Int)`
+  - `NUTS(target_acceptance::Real)` 
+  - `HMCDA(target_acceptance::Real, integration_time::Real)`
 - [v0.2.22] Three functions are renamed.
   - `Preconditioner(metric::AbstractMetric)` -> `MassMatrixAdaptor(metric)` and 
   - `NesterovDualAveraging(δ, integrator::AbstractIntegrator)` -> `StepSizeAdaptor(δ, integrator)`
@@ -153,8 +153,8 @@ In the previous examples, we built the sampler by manually specifying the integr
   ```julia
   # HMC Sampler
   # step size, number of leapfrog steps 
-  n_leapfrog, lf_integrator = 25, Leapfrog(0.1)
-  hmc = HMC(n_leapfrog, integrator = lf_integrator)
+  n_leapfrog, ϵ = 25, 0.1
+  hmc = HMC(ϵ, n_leapfrog)
   ```
 
   Equivalent to:
