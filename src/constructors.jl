@@ -97,7 +97,7 @@ end
 
 function NUTS(δ; max_depth = 10, Δ_max = 1000.0, integrator = :leapfrog, metric = :diagonal)
     T = determine_sampler_eltype(δ, integrator, metric)
-    return NUTS(δ, max_depth, T(Δ_max), integrator, metric)
+    return NUTS(T(δ), max_depth, T(Δ_max), integrator, metric)
 end
 
 sampler_eltype(::NUTS{T}) where {T} = T
