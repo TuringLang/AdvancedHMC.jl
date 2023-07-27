@@ -130,6 +130,7 @@ struct HMC{I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} 
     metric::M
 end
 
+HMC(ϵ::Real, n_leapfrog::Int) = HMC(n_leapfrog, Leapfrog(ϵ), :diagonal)
 HMC(n_leapfrog; integrator = :leapfrog, metric = :diagonal) =
     HMC(n_leapfrog, integrator, metric)
 
