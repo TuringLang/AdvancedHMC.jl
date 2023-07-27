@@ -9,6 +9,14 @@ include("common.jl")
     @testset "$T" for T in [Float32, Float64]
         @testset "$(nameof(typeof(sampler)))" for (sampler, expected) in [
             (
+                HMC(T(0.1), 25),
+                (
+                    adaptor_type = NoAdaptation,
+                    metric_type = DiagEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
+                ),
+            ),
+            (
                 HMC(25, integrator = Leapfrog(T(0.1))),
                 (
                     adaptor_type = NoAdaptation,
