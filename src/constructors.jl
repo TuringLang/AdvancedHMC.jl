@@ -6,15 +6,19 @@ Determine the element type to use for the given arguments.
 Symbols are either resolved to the default float type or simply dropped
 in favour of determined types from the other arguments.
 """
-determine_sampler_eltype(x) = float(eltype(x))
-determine_sampler_eltype(x::AbstractIntegrator) = integrator_eltype(x)
-determine_sampler_eltype(::Symbol) = DEFAULT_FLOAT_TYPE
-
-# Multiple arguments.
-function determine_sampler_eltype(xs...)
+determine_sampler_eltype(xs...) = float(_determine_sampler_eltype(xs...))
+# NOTE: We want to defer conversion to `float` until the very "end" of the
+# process, so as to allow `promote_type` to do it's job properly.
+# For example, in the scenario `determine_sampler_eltype(::Int64, ::Float32)`
+# we want to return `Float32`, not `Float64`. The latter would occur
+# if we did `float(eltype(x))` instead of just `eltype(x)`.
+_determine_sampler_eltype(x) = eltype(x)
+_determine_sampler_eltype(x::AbstractIntegrator) = integrator_eltype(x)
+_determine_sampler_eltype(::Symbol) = DEFAULT_FLOAT_TYPE
+function _determine_sampler_eltype(xs...)
     xs_not_symbol = filter(!Base.Fix2(isa, Symbol), xs)
     isempty(xs_not_symbol) && return DEFAULT_FLOAT_TYPE
-    return promote_type(map(determine_sampler_eltype, xs_not_symbol)...)
+    return promote_type(map(_determine_sampler_eltype, xs_not_symbol)...)
 end
 
 abstract type AbstractHMCSampler <: AbstractMCMC.AbstractSampler end
@@ -125,7 +129,7 @@ struct HMC{T<:Real} <: AbstractHMCSampler
 end
 
 function HMC(n_leapfrog; integrator = :leapfrog, metric = :diagonal)
-    T = determine_sampler_eltype(metric, integrator)
+    T = float(determine_sampler_eltype(metric, integrator))
     return HMC{T}(n_leapfrog, integrator, metric)
 end
 
@@ -167,7 +171,7 @@ struct HMCDA{T<:Real} <: AbstractHMCSampler
 end
 
 function HMCDA(δ, λ; init_ϵ = 0, integrator = :leapfrog, metric = :diagonal)
-    T = determine_sampler_eltype(δ, λ, integrator, metric)
+    T = float(determine_sampler_eltype(δ, λ, integrator, metric))
     return HMCDA(T(δ), T(λ), integrator, metric)
 end
 
