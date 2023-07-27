@@ -28,7 +28,8 @@ and `adaptor` after sampling.
 
 To access the updated fields use the resulting [`HMCState`](@ref).
 """
-struct HMCSampler{K<:AbstractMCMCKernel,M<:AbstractMetric,A<:AbstractAdaptor} <: AbstractHMCSampler
+struct HMCSampler{K<:AbstractMCMCKernel,M<:AbstractMetric,A<:AbstractAdaptor} <:
+       AbstractHMCSampler
     "[`AbstractMCMCKernel`](@ref)."
     κ::K
     "Choice of initial metric [`AbstractMetric`](@ref). The metric type will be preserved during adaption."
