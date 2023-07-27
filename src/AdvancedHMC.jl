@@ -26,6 +26,8 @@ using AbstractMCMC: LogDensityModel
 
 import StatsBase: sample
 
+const DEFAULT_FLOAT_TYPE = typeof(float(0))
+
 include("utilities.jl")
 
 # Notations

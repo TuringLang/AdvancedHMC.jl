@@ -1,3 +1,22 @@
+"""
+    determine_sampler_eltype(xs...)
+
+Determine the element type to use for the given arguments.
+
+Symbols are either resolved to the default float type or simply dropped
+in favour of determined types from the other arguments.
+"""
+determine_sampler_eltype(x) = float(eltype(x))
+determine_sampler_eltype(x::AbstractIntegrator) = integrator_eltype(x)
+determine_sampler_eltype(::Symbol) = DEFAULT_FLOAT_TYPE
+
+# Multiple arguments.
+function determine_sampler_eltype(xs...)
+    xs_not_symbol = filter(!Base.Fix2(isa, Symbol), xs)
+    isempty(xs_not_symbol) && return DEFAULT_FLOAT_TYPE
+    return promote_type(map(determine_sampler_eltype, xs_not_symbol)...)
+end
+
 abstract type AbstractHMCSampler <: AbstractMCMC.AbstractSampler end
 
 """
@@ -72,7 +91,7 @@ struct NUTS{T<:Real} <: AbstractHMCSampler
 end
 
 function NUTS(δ; max_depth = 10, Δ_max = 1000.0, integrator = :leapfrog, metric = :diagonal)
-    T = typeof(δ)
+    T = determine_sampler_eltype(δ, integrator, metric)
     return NUTS(δ, max_depth, T(Δ_max), integrator, metric)
 end
 
@@ -106,11 +125,7 @@ struct HMC{T<:Real} <: AbstractHMCSampler
 end
 
 function HMC(n_leapfrog; integrator = :leapfrog, metric = :diagonal)
-    if integrator isa Symbol
-        T = typeof(0.0) # current default float type
-    else
-        T = integrator_eltype(integrator)
-    end
+    T = determine_sampler_eltype(metric, integrator)
     return HMC{T}(n_leapfrog, integrator, metric)
 end
 
@@ -152,9 +167,8 @@ struct HMCDA{T<:Real} <: AbstractHMCSampler
 end
 
 function HMCDA(δ, λ; init_ϵ = 0, integrator = :leapfrog, metric = :diagonal)
-    δ, λ = promote(δ, λ)
-    T = typeof(δ)
-    return HMCDA(δ, T(λ), integrator, metric)
+    T = determine_sampler_eltype(δ, λ, integrator, metric)
+    return HMCDA(T(δ), T(λ), integrator, metric)
 end
 
 sampler_eltype(::HMCDA{T}) where {T} = T

@@ -2,7 +2,8 @@ using AdvancedHMC, AbstractMCMC, Random
 include("common.jl")
 
 @testset "Constructors" begin
-    θ_init = randn(2)
+    d = 2
+    θ_init = randn(d)
     model = AbstractMCMC.LogDensityModel(ℓπ_gdemo)
 
     @testset "$T" for T in [Float32, Float64]
@@ -15,9 +16,33 @@ include("common.jl")
                     integrator_type = Leapfrog{T},
                 ),
             ),
+            (
+                HMC(25, metric=DiagEuclideanMetric(ones(T, 2))),
+                (
+                    adaptor_type=NoAdaptation,
+                    metric_type=DiagEuclideanMetric{T},
+                    integrator_type=Leapfrog{T},
+                ),
+            ),
+            (
+                HMC(25, integrator = Leapfrog(T(0.1)), metric=:unit),
+                (
+                    adaptor_type=NoAdaptation,
+                    metric_type=UnitEuclideanMetric{T},
+                    integrator_type=Leapfrog{T},
+                ),
+            ),
+            (
+                HMC(25, integrator=Leapfrog(T(0.1)), metric=:dense),
+                (
+                    adaptor_type=NoAdaptation,
+                    metric_type=DenseEuclideanMetric{T},
+                    integrator_type=Leapfrog{T},
+                ),
+            ),
             # This should perform the correct promotion for the 2nd argument.
             (
-                HMCDA(T(0.8), 1, integrator = Leapfrog(T(0.1))),
+                HMCDA(T(0.8), one(T), integrator = Leapfrog(T(0.1))),
                 (
                     adaptor_type = NesterovDualAveraging,
                     metric_type = DiagEuclideanMetric{T},
