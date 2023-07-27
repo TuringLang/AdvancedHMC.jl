@@ -66,24 +66,9 @@ export Trajectory,
 
 # Useful defaults
 
-# Deprecations for trajectory.jl
-
-abstract type AbstractTrajectory end
-
-struct StaticTrajectory{TS} end
-@deprecate StaticTrajectory{TS}(int::AbstractIntegrator, L) where {TS} HMCKernel(
-    Trajectory{TS}(int, FixedNSteps(L)),
-)
-@deprecate StaticTrajectory(int::AbstractIntegrator, L) HMCKernel(
-    Trajectory{EndPointTS}(int, FixedNSteps(L)),
-)
-@deprecate StaticTrajectory(ϵ::AbstractScalarOrVec{<:Real}, L) HMCKernel(
-    Trajectory{EndPointTS}(Leapfrog(ϵ), FixedNSteps(L)),
-)
-
 @deprecate find_good_eps find_good_stepsize
 
-export StaticTrajectory, find_good_eps
+export find_good_eps
 
 include("adaptation/Adaptation.jl")
 using .Adaptation

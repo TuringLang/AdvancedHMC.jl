@@ -83,7 +83,7 @@ include("common.jl")
 
     # Simple time benchmark
     let metricT = UnitEuclideanMetric
-        κ = StaticTrajectory(lf, n_steps)
+        κ = HMCKernel(Trajectory{EndPointTS}(lf, FixedNSteps(n_steps)))
 
         time_mat = Vector{Float64}(undef, n_chains_max)
         for (i, n_chains) in enumerate(n_chains_list)
