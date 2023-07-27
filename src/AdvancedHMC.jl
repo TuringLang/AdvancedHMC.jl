@@ -66,10 +66,6 @@ export Trajectory,
 
 # Useful defaults
 
-# Deprecations for trajectory.jl
-
-abstract type AbstractTrajectory end
-
 @deprecate find_good_eps find_good_stepsize
 
 export find_good_eps
