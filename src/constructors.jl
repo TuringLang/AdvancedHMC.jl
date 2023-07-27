@@ -81,7 +81,7 @@ $(FIELDS)
 NUTS(δ=0.65)  # Use target accept ratio 0.65.
 ```
 """
-struct NUTS{T<:Real} <: AbstractHMCSampler
+struct NUTS{T<:Real,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <: AbstractHMCSampler
     "Target acceptance rate for dual averaging."
     δ::T
     "Maximum doubling tree depth."
@@ -89,9 +89,9 @@ struct NUTS{T<:Real} <: AbstractHMCSampler
     "Maximum divergence during doubling tree."
     Δ_max::T
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
-    integrator::Union{Symbol,AbstractIntegrator}
+    integrator::I
     "Choice of initial metric;  `Symbol` means it is automatically initialised. The metric type will be preserved during automatic initialisation and adaption."
-    metric::Union{Symbol,AbstractMetric}
+    metric::M
 end
 
 function NUTS(δ; max_depth = 10, Δ_max = 1000.0, integrator = :leapfrog, metric = :diagonal)
@@ -119,13 +119,13 @@ $(FIELDS)
 HMC(10, integrator = Leapfrog(0.05), metric = :diagonal)
 ```
 """
-struct HMC{T<:Real} <: AbstractHMCSampler
+struct HMC{T<:Real,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <: AbstractHMCSampler
     "Number of leapfrog steps."
     n_leapfrog::Int
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
-    integrator::Union{Symbol,AbstractIntegrator}
+    integrator::I
     "Choice of initial metric;  `Symbol` means it is automatically initialised. The metric type will be preserved during automatic initialisation and adaption."
-    metric::Union{Symbol,AbstractMetric}
+    metric::M
 end
 
 function HMC(n_leapfrog; integrator = :leapfrog, metric = :diagonal)
