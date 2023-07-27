@@ -1,4 +1,11 @@
-abstract type AbstractHMCSampler{T<:Real} <: AbstractMCMC.AbstractSampler end
+abstract type AbstractHMCSampler <: AbstractMCMC.AbstractSampler end
+
+"""
+    sampler_eltype(sampler)
+
+Return the element type of the sampler.
+"""
+function sampler_eltype end
 
 ##############
 ### Custom ###
@@ -21,19 +28,16 @@ and `adaptor` after sampling.
 
 To access the updated fields use the resulting [`HMCState`](@ref).
 """
-struct HMCSampler{T<:Real} <: AbstractHMCSampler{T}
+struct HMCSampler{K<:AbstractMCMCKernel,M<:AbstractMetric,A<:AbstractAdaptor} <: AbstractHMCSampler
     "[`AbstractMCMCKernel`](@ref)."
-    κ::AbstractMCMCKernel
+    κ::K
     "Choice of initial metric [`AbstractMetric`](@ref). The metric type will be preserved during adaption."
-    metric::AbstractMetric
+    metric::M
     "[`AbstractAdaptor`](@ref)."
-    adaptor::AbstractAdaptor
+    adaptor::A
 end
 
-function HMCSampler(κ, metric, adaptor)
-    T = collect(typeof(metric).parameters)[1]
-    return HMCSampler{T}(κ, metric, adaptor)
-end
+sampler_eltype(sampler::HMCSampler) = eltype(sampler.metric)
 
 ############
 ### NUTS ###
@@ -53,7 +57,7 @@ $(FIELDS)
 NUTS(δ=0.65)  # Use target accept ratio 0.65.
 ```
 """
-struct NUTS{T<:Real} <: AbstractHMCSampler{T}
+struct NUTS{T<:Real} <: AbstractHMCSampler
     "Target acceptance rate for dual averaging."
     δ::T
     "Maximum doubling tree depth."
@@ -70,6 +74,8 @@ function NUTS(δ; max_depth = 10, Δ_max = 1000.0, integrator = :leapfrog, metri
     T = typeof(δ)
     return NUTS(δ, max_depth, T(Δ_max), integrator, metric)
 end
+
+sampler_eltype(::NUTS{T}) where {T} = T
 
 ###########
 ### HMC ###
@@ -89,7 +95,7 @@ $(FIELDS)
 HMC(10, integrator = Leapfrog(0.05), metric = :diagonal)
 ```
 """
-struct HMC{T<:Real} <: AbstractHMCSampler{T}
+struct HMC{T<:Real} <: AbstractHMCSampler
     "Number of leapfrog steps."
     n_leapfrog::Int
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
@@ -106,6 +112,8 @@ function HMC(n_leapfrog; integrator = :leapfrog, metric = :diagonal)
     end
     return HMC{T}(n_leapfrog, integrator, metric)
 end
+
+sampler_eltype(::HMC{T}) where {T} = T
 
 #############
 ### HMCDA ###
@@ -131,7 +139,7 @@ For more information, please view the following paper ([arXiv link](https://arxi
   setting path lengths in Hamiltonian Monte Carlo." Journal of Machine Learning
   Research 15, no. 1 (2014): 1593-1623.
 """
-struct HMCDA{T<:Real} <: AbstractHMCSampler{T}
+struct HMCDA{T<:Real} <: AbstractHMCSampler
     "Target acceptance rate for dual averaging."
     δ::T
     "Target leapfrog length."
@@ -147,3 +155,5 @@ function HMCDA(δ, λ; init_ϵ = 0, integrator = :leapfrog, metric = :diagonal)
     T = typeof(δ)
     return HMCDA(δ, T(λ), integrator, metric)
 end
+
+sampler_eltype(::HMCDA{T}) where {T} = T
