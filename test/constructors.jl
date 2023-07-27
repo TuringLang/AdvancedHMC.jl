@@ -40,9 +40,17 @@ include("common.jl")
                     integrator_type=Leapfrog{T},
                 ),
             ),
-            # This should perform the correct promotion for the 2nd argument.
             (
                 HMCDA(T(0.8), one(T), integrator = Leapfrog(T(0.1))),
+                (
+                    adaptor_type = NesterovDualAveraging,
+                    metric_type = DiagEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
+                ),
+            ),
+            # This should perform the correct promotion for the 2nd argument.
+            (
+                HMCDA(T(0.8), 1, integrator = Leapfrog(T(0.1))),
                 (
                     adaptor_type = NesterovDualAveraging,
                     metric_type = DiagEuclideanMetric{T},
