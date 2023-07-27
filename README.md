@@ -125,6 +125,7 @@ Users can also use the `AbstractMCMC` interface to sample, which is also used in
 In order to show how this is done let us start from our previous example where we defined a `LogTargetDensity`, `ℓπ`.
 
 ```julia
+using AbstractMCMC, LogDensityProblemsAD
 # Wrap the previous LogTargetDensity as LogDensityModel 
 # where ℓπ::LogTargetDensity
 model = AdvancedHMC.LogDensityModel(LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ))
@@ -134,7 +135,7 @@ D = 10; initial_θ = rand(D)
 n_samples, n_adapts, δ = 1_000, 2_000, 0.8
 sampler = HMCSampler(kernel, metric, adaptor) 
 
-# Now just sample
+# Now sample
 samples = AbstractMCMC.sample(
       model,
       sampler,
@@ -152,8 +153,8 @@ In the previous examples, we built the sampler by manually specifying the integr
   ```julia
   # HMC Sampler
   # step size, number of leapfrog steps 
-  n_leapfrogs, lf_integrator = 0.25, Leapfrog(0.1)
-  hmc = HMC(n_leapfrogs, integrator = lf_integrator)
+  n_leapfrog, lf_integrator = 25, Leapfrog(0.1)
+  hmc = HMC(n_leapfrog, integrator = lf_integrator)
   ```
 
   Equivalent to:
@@ -204,7 +205,7 @@ In the previous examples, we built the sampler by manually specifying the integr
   initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
   integrator = Leapfrog(initial_ϵ)
   kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(λ)))
-  adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(δ, integrator))
+  adaptor = StepSizeAdaptor(δ, initial_ϵ)
   hmcda = HMCSampler(kernel, metric, adaptor)
   ```
 
@@ -217,14 +218,14 @@ This can be done as follows:
   nuts = NUTS(δ, metric = :dense)    #metric = DenseEuclideanMetric(D)
   # Provide your own AbstractMetric
   metric = DiagEuclideanMetric(10)
-  nuts = NUTS(n_adapt, δ, metric = metric) 
+  nuts = NUTS(δ, metric = metric) 
 
   nuts = NUTS(δ, integrator = :leapfrog)         #integrator = Leapfrog(ϵ) (Default!)
   nuts = NUTS(δ, integrator = :jitteredleapfrog) #integrator = JitteredLeapfrog(ϵ, 0.1ϵ)
   nuts = NUTS(δ, integrator = :temperedleapfrog) #integrator = TemperedLeapfrog(ϵ, 1.0)
 
   # Provide your own AbstractIntegrator
-  integrator = JitteredLeapfrog(ϵ, 0.2ϵ)
+  integrator = JitteredLeapfrog(0.1, 0.2)
   nuts = NUTS(δ, integrator = integrator) 
   ```
 
@@ -237,7 +238,7 @@ A small working example can be found at `test/cuda.jl`.
 ## API and supported HMC algorithms
 
 An important design goal of AdvancedHMC.jl is modularity; we would like to support algorithmic research on HMC.
-This modularity means that different HMC variants can be easily constructed by composing various components, such as preconditioning metric (i.e., mass matrix), leapfrog integrators,  trajectories (static or dynamic), and adaption schemes, etc. 
+This modularity means that different HMC variants can be easily constructed by composing various components, such as preconditioning metric (i.e., mass matrix), leapfrog integrators,  trajectories (static or dynamic), adaption schemes, etc. 
 The minimal example above can be modified to suit particular inference problems by picking components from the list below.
 
 ### Hamiltonian mass matrix (`metric`)

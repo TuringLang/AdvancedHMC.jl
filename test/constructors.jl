@@ -19,7 +19,7 @@ include("common.jl")
             (
                 HMCDA(T(0.8), 1, integrator = Leapfrog(T(0.1))),
                 (
-                    adaptor_type = StanHMCAdaptor,
+                    adaptor_type = NesterovDualAveraging,
                     metric_type = DiagEuclideanMetric{T},
                     integrator_type = Leapfrog{T},
                 ),

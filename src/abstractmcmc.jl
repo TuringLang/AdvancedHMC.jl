@@ -338,12 +338,12 @@ end
 
 #########
 
-function make_adaptor(
-    spl::Union{NUTS,HMCDA},
-    metric::AbstractMetric,
-    integrator::AbstractIntegrator,
-)
+function make_adaptor(spl::NUTS, metric::AbstractMetric, integrator::AbstractIntegrator)
     return StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(spl.δ, integrator))
+end
+
+function make_adaptor(spl::HMCDA, metric::AbstractMetric, integrator::AbstractIntegrator)
+    return StepSizeAdaptor(spl.δ, integrator)
 end
 
 function make_adaptor(spl::HMC, metric::AbstractMetric, integrator::AbstractIntegrator)
