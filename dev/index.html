@@ -50,7 +50,8 @@ chains = Vector{Any}(undef, nchains)
 Threads.@threads for i in 1:nchains
   samples, stats = sample(hamiltonian, kernel, initial_θ, n_samples, adaptor, n_adapts; verbose=false)
   chains[i] = samples
-end</code></pre><h3 id="Using-the-AbstractMCMC-interface"><a class="docs-heading-anchor" href="#Using-the-AbstractMCMC-interface">Using the <code>AbstractMCMC</code> interface</a><a id="Using-the-AbstractMCMC-interface-1"></a><a class="docs-heading-anchor-permalink" href="#Using-the-AbstractMCMC-interface" title="Permalink"></a></h3><p>Users can also use the <code>AbstractMCMC</code> interface to sample, which is also used in Turing.jl. In order to show how this is done let us start from our previous example where we defined a <code>LogTargetDensity</code>, <code>ℓπ</code>.</p><pre><code class="language-julia hljs"># Wrap the previous LogTargetDensity as LogDensityModel 
+end</code></pre><h3 id="Using-the-AbstractMCMC-interface"><a class="docs-heading-anchor" href="#Using-the-AbstractMCMC-interface">Using the <code>AbstractMCMC</code> interface</a><a id="Using-the-AbstractMCMC-interface-1"></a><a class="docs-heading-anchor-permalink" href="#Using-the-AbstractMCMC-interface" title="Permalink"></a></h3><p>Users can also use the <code>AbstractMCMC</code> interface to sample, which is also used in Turing.jl. In order to show how this is done let us start from our previous example where we defined a <code>LogTargetDensity</code>, <code>ℓπ</code>.</p><pre><code class="language-julia hljs">using AbstractMCMC, LogDensityProblemsAD
+# Wrap the previous LogTargetDensity as LogDensityModel 
 # where ℓπ::LogTargetDensity
 model = AdvancedHMC.LogDensityModel(LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ))
 
@@ -59,7 +60,7 @@ D = 10; initial_θ = rand(D)
 n_samples, n_adapts, δ = 1_000, 2_000, 0.8
 sampler = HMCSampler(kernel, metric, adaptor) 
 
-# Now just sample
+# Now sample
 samples = AbstractMCMC.sample(
       model,
       sampler,
@@ -68,8 +69,8 @@ samples = AbstractMCMC.sample(
       init_params = initial_θ,
   )</code></pre><h3 id="Convenience-Constructors"><a class="docs-heading-anchor" href="#Convenience-Constructors">Convenience Constructors</a><a id="Convenience-Constructors-1"></a><a class="docs-heading-anchor-permalink" href="#Convenience-Constructors" title="Permalink"></a></h3><p>In the previous examples, we built the sampler by manually specifying the integrator, metric, kernel, and adaptor to build our own sampler. However, in many cases, users might want to initialize a standard NUTS sampler. In such cases having to define each of these aspects manually is tedious and error-prone. For these reasons <code>AdvancedHMC</code> also provides users with a series of convenience constructors for standard samplers. We will now show how to use them.</p><ul><li><p>HMC:</p><pre><code class="language-julia hljs"># HMC Sampler
 # step size, number of leapfrog steps 
-n_leapfrogs, lf_integrator = 0.25, Leapfrog(0.1)
-hmc = HMC(n_leapfrogs, integrator = lf_integrator)</code></pre><p>Equivalent to:</p><pre><code class="language-julia hljs">metric = DiagEuclideanMetric(D)
+n_leapfrog, lf_integrator = 25, Leapfrog(0.1)
+hmc = HMC(n_leapfrog, integrator = lf_integrator)</code></pre><p>Equivalent to:</p><pre><code class="language-julia hljs">metric = DiagEuclideanMetric(D)
 hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
 integrator = Leapfrog(0.1)
 kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(n_leapfrog)))
@@ -91,20 +92,20 @@ hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
 initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
 integrator = Leapfrog(initial_ϵ)
 kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(λ)))
-adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(δ, integrator))
+adaptor = StepSizeAdaptor(δ, initial_ϵ)
 hmcda = HMCSampler(kernel, metric, adaptor)</code></pre></li></ul><p>Moreover, there&#39;s some flexibility in how these samplers can be initialized.  For example, a user can initialize a NUTS (HMC and HMCDA) sampler with their own metrics and integrators.  This can be done as follows:</p><pre><code class="language-julia hljs">  nuts = NUTS(δ, metric = :diagonal) #metric = DiagEuclideanMetric(D) (Default!)
   nuts = NUTS(δ, metric = :unit)     #metric = UnitEuclideanMetric(D)
   nuts = NUTS(δ, metric = :dense)    #metric = DenseEuclideanMetric(D)
   # Provide your own AbstractMetric
   metric = DiagEuclideanMetric(10)
-  nuts = NUTS(n_adapt, δ, metric = metric) 
+  nuts = NUTS(δ, metric = metric) 
 
   nuts = NUTS(δ, integrator = :leapfrog)         #integrator = Leapfrog(ϵ) (Default!)
   nuts = NUTS(δ, integrator = :jitteredleapfrog) #integrator = JitteredLeapfrog(ϵ, 0.1ϵ)
   nuts = NUTS(δ, integrator = :temperedleapfrog) #integrator = TemperedLeapfrog(ϵ, 1.0)
 
   # Provide your own AbstractIntegrator
-  integrator = JitteredLeapfrog(ϵ, 0.2ϵ)
+  integrator = JitteredLeapfrog(0.1, 0.2)
   nuts = NUTS(δ, integrator = integrator) 
   ```
 
@@ -117,7 +118,7 @@ A small working example can be found at `test/cuda.jl`.
 ## API and supported HMC algorithms
 
 An important design goal of AdvancedHMC.jl is modularity; we would like to support algorithmic research on HMC.
-This modularity means that different HMC variants can be easily constructed by composing various components, such as preconditioning metric (i.e., mass matrix), leapfrog integrators,  trajectories (static or dynamic), and adaption schemes, etc. 
+This modularity means that different HMC variants can be easily constructed by composing various components, such as preconditioning metric (i.e., mass matrix), leapfrog integrators,  trajectories (static or dynamic), adaption schemes, etc. 
 The minimal example above can be modified to suit particular inference problems by picking components from the list below.
 
 ### Hamiltonian mass matrix (`metric`)
@@ -186,4 +187,4 @@ If you using AdvancedHMC.jl directly through Turing.jl, please consider citing t
 Hong Ge, Kai Xu, and Zoubin Ghahramani: &quot;Turing: a language for flexible probabilistic inference.&quot;, *International Conference on Artificial Intelligence and Statistics*, 2018. ([abs](http://proceedings.mlr.press/v84/ge18b.html), [pdf](http://proceedings.mlr.press/v84/ge18b/ge18b.pdf))
 
 with the following BibTeX entry:
-</code></pre><p>@inproceedings{ge2018turing,   title={Turing: A language for flexible probabilistic inference},   author={Ge, Hong and Xu, Kai and Ghahramani, Zoubin},   booktitle={International Conference on Artificial Intelligence and Statistics},   pages={1682–1690},   year={2018},   organization={PMLR} } ```</p><h2 id="References"><a class="docs-heading-anchor" href="#References">References</a><a id="References-1"></a><a class="docs-heading-anchor-permalink" href="#References" title="Permalink"></a></h2><ol><li><p>Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. (<a href="https://arxiv.org/pdf/1206.1901">arXiv</a>)</p></li><li><p>Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. <a href="https://arxiv.org/abs/1701.02434">arXiv preprint arXiv:1701.02434</a>.</p></li><li><p>Girolami, M., &amp; Calderhead, B. (2011). Riemann manifold Langevin and Hamiltonian Monte Carlo methods. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 73(2), 123-214. (<a href="https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2010.00765.x">arXiv</a>)</p></li><li><p>Betancourt, M. J., Byrne, S., &amp; Girolami, M. (2014). Optimizing the integrator step size for Hamiltonian Monte Carlo. <a href="https://arxiv.org/pdf/1411.6669">arXiv preprint arXiv:1411.6669</a>.</p></li><li><p>Betancourt, M. (2016). Identifying the optimal integration time in Hamiltonian Monte Carlo. <a href="https://arxiv.org/abs/1601.00225">arXiv preprint arXiv:1601.00225</a>.</p></li><li><p>Hoffman, M. D., &amp; Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623. (<a href="http://arxiv.org/abs/1111.4246">arXiv</a>)</p></li></ol></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="api/">AdvancedHMC.jl »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Wednesday 26 July 2023 20:20">Wednesday 26 July 2023</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</code></pre><p>@inproceedings{ge2018turing,   title={Turing: A language for flexible probabilistic inference},   author={Ge, Hong and Xu, Kai and Ghahramani, Zoubin},   booktitle={International Conference on Artificial Intelligence and Statistics},   pages={1682–1690},   year={2018},   organization={PMLR} } ```</p><h2 id="References"><a class="docs-heading-anchor" href="#References">References</a><a id="References-1"></a><a class="docs-heading-anchor-permalink" href="#References" title="Permalink"></a></h2><ol><li><p>Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. (<a href="https://arxiv.org/pdf/1206.1901">arXiv</a>)</p></li><li><p>Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. <a href="https://arxiv.org/abs/1701.02434">arXiv preprint arXiv:1701.02434</a>.</p></li><li><p>Girolami, M., &amp; Calderhead, B. (2011). Riemann manifold Langevin and Hamiltonian Monte Carlo methods. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 73(2), 123-214. (<a href="https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2010.00765.x">arXiv</a>)</p></li><li><p>Betancourt, M. J., Byrne, S., &amp; Girolami, M. (2014). Optimizing the integrator step size for Hamiltonian Monte Carlo. <a href="https://arxiv.org/pdf/1411.6669">arXiv preprint arXiv:1411.6669</a>.</p></li><li><p>Betancourt, M. (2016). Identifying the optimal integration time in Hamiltonian Monte Carlo. <a href="https://arxiv.org/abs/1601.00225">arXiv preprint arXiv:1601.00225</a>.</p></li><li><p>Hoffman, M. D., &amp; Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623. (<a href="http://arxiv.org/abs/1111.4246">arXiv</a>)</p></li></ol></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="api/">AdvancedHMC.jl »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Thursday 27 July 2023 08:27">Thursday 27 July 2023</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
