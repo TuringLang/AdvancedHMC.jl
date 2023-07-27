@@ -17,27 +17,27 @@ include("common.jl")
                 ),
             ),
             (
-                HMC(25, metric=DiagEuclideanMetric(ones(T, 2))),
+                HMC(25, metric = DiagEuclideanMetric(ones(T, 2))),
                 (
-                    adaptor_type=NoAdaptation,
-                    metric_type=DiagEuclideanMetric{T},
-                    integrator_type=Leapfrog{T},
+                    adaptor_type = NoAdaptation,
+                    metric_type = DiagEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
                 ),
             ),
             (
-                HMC(25, integrator = Leapfrog(T(0.1)), metric=:unit),
+                HMC(25, integrator = Leapfrog(T(0.1)), metric = :unit),
                 (
-                    adaptor_type=NoAdaptation,
-                    metric_type=UnitEuclideanMetric{T},
-                    integrator_type=Leapfrog{T},
+                    adaptor_type = NoAdaptation,
+                    metric_type = UnitEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
                 ),
             ),
             (
-                HMC(25, integrator=Leapfrog(T(0.1)), metric=:dense),
+                HMC(25, integrator = Leapfrog(T(0.1)), metric = :dense),
                 (
-                    adaptor_type=NoAdaptation,
-                    metric_type=DenseEuclideanMetric{T},
-                    integrator_type=Leapfrog{T},
+                    adaptor_type = NoAdaptation,
+                    metric_type = DenseEuclideanMetric{T},
+                    integrator_type = Leapfrog{T},
                 ),
             ),
             (

@@ -81,7 +81,8 @@ $(FIELDS)
 NUTS(δ=0.65)  # Use target accept ratio 0.65.
 ```
 """
-struct NUTS{T<:Real,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <: AbstractHMCSampler
+struct NUTS{T<:Real,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <:
+       AbstractHMCSampler
     "Target acceptance rate for dual averaging."
     δ::T
     "Maximum doubling tree depth."
@@ -119,7 +120,8 @@ $(FIELDS)
 HMC(10, integrator = Leapfrog(0.05), metric = :diagonal)
 ```
 """
-struct HMC{T<:Real,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <: AbstractHMCSampler
+struct HMC{T<:Real,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <:
+       AbstractHMCSampler
     "Number of leapfrog steps."
     n_leapfrog::Int
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
