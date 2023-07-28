@@ -354,7 +354,9 @@ end
 #########
 
 function make_kernel(spl::NUTS, integrator::AbstractIntegrator)
-    return HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn(spl.max_depth, spl.Δ_max)))
+    return HMCKernel(
+        Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn(spl.max_depth, spl.Δ_max)),
+    )
 end
 
 function make_kernel(spl::HMC, integrator::AbstractIntegrator)
