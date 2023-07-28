@@ -132,26 +132,14 @@ get_kernel_hyperparams(spl::NUTS, state) = [state.κ.τ.max_depth, state.κ.τ.�
             @test AdvancedHMC.getadaptor(state) isa expected.adaptor_type
         end
     end
-    
-    @testset "Kernel hyperparameters of $(nameof(typeof(sampler)))" for (sampler, expected) in [
-        (
-            HMC(25),
-            (
-                kernel_hp = [25],
-            ),
-        ),
-        (
-            HMCDA(0.8, 2.0),
-            (
-                kernel_hp = [2.0],
-            ),
-        ),
-        (
-            NUTS(0.8; max_depth = 20, Δ_max = 2000.0,),
-            (
-                kernel_hp = [20, 2000.0],
-            ),
-        ),
+
+    @testset "Kernel hyperparameters of $(nameof(typeof(sampler)))" for (
+        sampler,
+        expected,
+    ) in [
+        (HMC(25), (kernel_hp = [25],)),
+        (HMCDA(0.8, 2.0), (kernel_hp = [2.0],)),
+        (NUTS(0.8; max_depth = 20, Δ_max = 2000.0), (kernel_hp = [20, 2000.0],)),
     ]
 
         # Step.
@@ -160,7 +148,7 @@ get_kernel_hyperparams(spl::NUTS, state) = [state.κ.τ.max_depth, state.κ.τ.�
             AbstractMCMC.step(rng, model, sampler; n_adapts = 0, init_params = θ_init)
 
         # Verify that the state is what we expect.
-        
+
         @test get_kernel_hyperparams(sampler, state) == expected.kernel_hp
     end
 end
