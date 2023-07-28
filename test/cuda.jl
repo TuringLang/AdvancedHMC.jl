@@ -4,8 +4,6 @@ using AdvancedHMC: DualValue, PhasePoint
 using CUDA
 
 @testset "AdvancedHMC GPU" begin
-    include("common.jl")
-
     n_chains = 1000
     n_samples = 1000
     dim = 5

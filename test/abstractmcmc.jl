@@ -1,6 +1,5 @@
 using ReTest, Random, AdvancedHMC, ForwardDiff, AbstractMCMC
 using Statistics: mean
-include("common.jl")
 
 @testset "AbstractMCMC w/ gdemo" begin
     rng = MersenneTwister(0)

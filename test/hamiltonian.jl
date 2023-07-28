@@ -2,9 +2,6 @@ using ReTest, AdvancedHMC
 using AdvancedHMC: GaussianKinetic, DualValue, PhasePoint
 using LinearAlgebra: dot, diagm
 
-
-include("common.jl")
-
 @testset "Hamiltonian" begin
     f = x -> dot(x, x)
     g = x -> 2x

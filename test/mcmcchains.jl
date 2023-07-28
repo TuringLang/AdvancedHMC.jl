@@ -1,6 +1,5 @@
 using ReTest, Random, AdvancedHMC, ForwardDiff, AbstractMCMC, MCMCChains
 using Statistics: mean
-include("common.jl")
 
 @testset "MCMCChains w/ gdemo" begin
     rng = MersenneTwister(0)

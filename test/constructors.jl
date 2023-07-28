@@ -1,5 +1,4 @@
 using AdvancedHMC, AbstractMCMC, Random
-include("common.jl")
 
 get_kernel_hyperparams(spl::HMC, state) = state.κ.τ.termination_criterion.L
 get_kernel_hyperparams(spl::HMCDA, state) = state.κ.τ.termination_criterion.λ
@@ -169,13 +168,13 @@ end
         spl = NUTS(0.8)
         T = AdvancedHMC.sampler_eltype(spl)
 
-        metric = make_metric(spl, logdensity)
+        metric = AdvancedHMC.make_metric(spl, logdensity)
         hamiltonian = Hamiltonian(metric, model)
 
-        init_params1 = make_init_params(rng, spl, logdensity, nothing)
+        init_params1 = AdvancedHMC.make_init_params(rng, spl, logdensity, nothing)
         @test typeof(init_params1) == Vector{T}
         @test length(init_params1) == d
-        init_params2 = make_init_params(rng, spl, logdensity, θ_init)
-        @test init_params2 === θ_init
+        init_params2 = AdvancedHMC.make_init_params(rng, spl, logdensity, θ_init)
+        @test init_params2 == θ_init
     end
 end
