@@ -1,9 +1,10 @@
 using AdvancedHMC, AbstractMCMC, Random
 include("common.jl")
 
-get_kernel_hyperparams(spl::HMC, state) = [state.κ.τ.L]
-get_kernel_hyperparams(spl::HMCDA, state) = [state.κ.τ.λ]
-get_kernel_hyperparams(spl::NUTS, state) = [state.κ.τ.max_depth, state.κ.τ.Δ_max]
+get_kernel_hyperparams(spl::HMC, state) = [state.κ.τ.termination_criterion.L]
+get_kernel_hyperparams(spl::HMCDA, state) = [state.κ.τ.termination_criterion.λ]
+get_kernel_hyperparams(spl::NUTS, state) =
+    [state.κ.τ.termination_criterion.max_depth, state.κ.τ.termination_criterion.Δ_max]
 
 @testset "Constructors" begin
     d = 2
