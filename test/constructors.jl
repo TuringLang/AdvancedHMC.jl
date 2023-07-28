@@ -150,7 +150,11 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
 
             # Verify that the kernel is receiving the hyperparameters
             @test get_kernel_hyperparams(sampler, state) == expected.kernel_hp
-            @test get_kernel_hyperparamsT(sampler, state) == T
+            if typeof(sampler) <: HMC
+                @test get_kernel_hyperparamsT(sampler, state) == Int64
+            else
+                @test get_kernel_hyperparamsT(sampler, state) == T
+            end
         end
     end
 end
