@@ -42,7 +42,7 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
                     adaptor_type = NoAdaptation,
                     metric_type = DiagEuclideanMetric{T},
                     integrator_type = Leapfrog{T},
-                    kernel_hp = 25
+                    kernel_hp = 25,
                 ),
             ),
             (
@@ -51,7 +51,7 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
                     adaptor_type = NoAdaptation,
                     metric_type = UnitEuclideanMetric{T},
                     integrator_type = Leapfrog{T},
-                    kernel_hp = 25
+                    kernel_hp = 25,
                 ),
             ),
             (
@@ -60,7 +60,7 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
                     adaptor_type = NoAdaptation,
                     metric_type = DenseEuclideanMetric{T},
                     integrator_type = Leapfrog{T},
-                    kernel_hp = 25
+                    kernel_hp = 25,
                 ),
             ),
             (
@@ -88,7 +88,7 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
                     adaptor_type = StanHMCAdaptor,
                     metric_type = DiagEuclideanMetric{T},
                     integrator_type = Leapfrog{T},
-                    kernel_hp = (20, T(2000.0))
+                    kernel_hp = (20, T(2000.0)),
                 ),
             ),
             (
@@ -97,7 +97,7 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
                     adaptor_type = StanHMCAdaptor,
                     metric_type = UnitEuclideanMetric{T},
                     integrator_type = Leapfrog{T},
-                    kernel_hp = (10, T(1000.0))
+                    kernel_hp = (10, T(1000.0)),
                 ),
             ),
             (
@@ -106,7 +106,7 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
                     adaptor_type = StanHMCAdaptor,
                     metric_type = DenseEuclideanMetric{T},
                     integrator_type = Leapfrog{T},
-                    kernel_hp = (10, T(1000.0))
+                    kernel_hp = (10, T(1000.0)),
                 ),
             ),
             (
@@ -115,7 +115,7 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
                     adaptor_type = StanHMCAdaptor,
                     metric_type = DiagEuclideanMetric{T},
                     integrator_type = JitteredLeapfrog{T,T},
-                    kernel_hp = (10, T(1000.0))
+                    kernel_hp = (10, T(1000.0)),
                 ),
             ),
             (
@@ -124,7 +124,7 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
                     adaptor_type = StanHMCAdaptor,
                     metric_type = DiagEuclideanMetric{T},
                     integrator_type = TemperedLeapfrog{T,T},
-                    kernel_hp = (10, T(1000.0))
+                    kernel_hp = (10, T(1000.0)),
                 ),
             ),
         ]
@@ -153,7 +153,7 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
             @test get_kernel_hyperparamsT(sampler, state) == T
         end
     end
-end    
+end
 
 @testset "Utils" begin
     @testset "init_params" begin
