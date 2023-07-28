@@ -1,7 +1,5 @@
 using ReTest, AdvancedHMC, ForwardDiff, Zygote
 
-include("common.jl")
-
 @testset "contrib" begin
     @testset "ad" begin
         metric = UnitEuclideanMetric(D)

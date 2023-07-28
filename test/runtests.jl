@@ -3,6 +3,7 @@ using FillArrays
 using AdvancedHMC: AdvancedHMC
 using LogDensityProblems: LogDensityProblems
 using LogDensityProblemsAD: LogDensityProblemsAD
+using ReTest
 
 println("Environment variables for testing")
 println(ENV)
@@ -10,6 +11,8 @@ println(ENV)
 const DIRECTORY_AdvancedHMC = dirname(dirname(pathof(AdvancedHMC)))
 const DIRECTORY_Turing_tests = joinpath(DIRECTORY_AdvancedHMC, "test", "turing")
 const GROUP = get(ENV, "AHMC_TEST_GROUP", "AdvancedHMC")
+
+include("common.jl")
 
 if GROUP == "All" || GROUP == "AdvancedHMC"
     using ReTest, CUDA

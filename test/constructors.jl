@@ -1,5 +1,4 @@
 using AdvancedHMC, AbstractMCMC, Random
-include("common.jl")
 
 get_kernel_hyperparams(spl::HMC, state) = state.κ.τ.termination_criterion.L
 get_kernel_hyperparams(spl::HMCDA, state) = state.κ.τ.termination_criterion.λ

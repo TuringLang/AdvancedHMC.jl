@@ -1,6 +1,5 @@
 using ReTest, AdvancedHMC, LinearAlgebra, UnicodePlots, Random
 using Statistics: mean, var, cov
-include("common.jl")
 
 @testset "sample (vectorized)" begin
     n_chains_max = 20

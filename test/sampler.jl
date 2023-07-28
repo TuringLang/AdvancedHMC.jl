@@ -6,7 +6,6 @@ using AdvancedHMC: StaticTerminationCriterion, DynamicTerminationCriterion
 using Setfield
 using Statistics: mean, var, cov
 unicodeplots()
-include("common.jl")
 
 function test_stats(
     ::Trajectory{TS,I,TC},

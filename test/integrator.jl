@@ -1,5 +1,4 @@
 using ReTest, Random, AdvancedHMC, ForwardDiff
-include("common.jl")
 
 using OrdinaryDiffEq
 using LinearAlgebra: dot

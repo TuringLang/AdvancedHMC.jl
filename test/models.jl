@@ -1,7 +1,5 @@
 using ReTest, Random, AdvancedHMC, ForwardDiff
 using Statistics: mean
-include("common.jl")
-
 
 @testset "Models" begin
     @testset "gdemo" begin

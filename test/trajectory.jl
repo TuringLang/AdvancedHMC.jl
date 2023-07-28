@@ -1,7 +1,6 @@
 using ReTest, AdvancedHMC, Random
 using Statistics: mean
 using LinearAlgebra: dot
-include("common.jl")
 
 function makeplot(plt, traj_θ, ts_list...)
     function plotturn!(traj_θ, ts)
