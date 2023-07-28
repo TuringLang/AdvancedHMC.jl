@@ -167,7 +167,7 @@ end
         model = AbstractMCMC.LogDensityModel(ℓπ_gdemo)
         logdensity = model.logdensity
         spl = NUTS(0.8)
-        T = sampler_eltype(spl)
+        T = AdvancedHMC.sampler_eltype(spl)
 
         metric = make_metric(spl, logdensity)
         hamiltonian = Hamiltonian(metric, model)
