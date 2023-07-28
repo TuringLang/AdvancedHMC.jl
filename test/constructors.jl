@@ -13,6 +13,7 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
 @testset "Constructors" begin
     d = 2
     θ_init = randn(d)
+    rng = Random.default_rng()
     model = AbstractMCMC.LogDensityModel(ℓπ_gdemo)
 
     @testset "$T" for T in [Float32, Float64]
@@ -131,7 +132,6 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
             @test AdvancedHMC.sampler_eltype(sampler) == T
 
             # Step.
-            rng = Random.default_rng()
             transition, state =
                 AbstractMCMC.step(rng, model, sampler; n_adapts = 0, init_params = θ_init)
 
@@ -153,4 +153,25 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
             @test get_kernel_hyperparamsT(sampler, state) == T
         end
     end
+end    
 
+@testset "Utils" begin
+    @testset "init_params" begin
+        d = 2
+        θ_init = randn(d)
+        rng = Random.default_rng()
+        model = AbstractMCMC.LogDensityModel(ℓπ_gdemo)
+        logdensity = model.logdensity
+        spl = NUTS(0.8)
+        T = sampler_eltype(spl)
+
+        metric = make_metric(spl, logdensity)
+        hamiltonian = Hamiltonian(metric, model)
+
+        init_params1 = make_init_params(rng, spl, logdensity, nothing)
+        @test typeof(init_params1) == Vector{T}
+        @test length(init_params1) == d
+        init_params2 = make_init_params(rng, spl, logdensity, θ_init)
+        @test init_params2 === θ_init
+    end
+end
