@@ -251,7 +251,12 @@ end
 #############
 ### Utils ###
 #############
-function make_init_params(rng::AbstractRNG, spl::AbstractHMCSampler, logdensity, init_params)
+function make_init_params(
+    rng::AbstractRNG,
+    spl::AbstractHMCSampler,
+    logdensity,
+    init_params,
+)
     T = sampler_eltype(spl)
     if init_params == nothing
         d = LogDensityProblems.dimension(logdensity)
