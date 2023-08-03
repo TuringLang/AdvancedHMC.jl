@@ -42,8 +42,11 @@ end
 ∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat) = copy(r)
 ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat) =
     h.metric.M⁻¹ .* r
-∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat) =
-    h.metric.M⁻¹ * r
+function ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat)
+    out = similar(r) # Make sure the output of this function is of the same type as r
+    mul!(out, h.metric.M⁻¹, r)
+    out
+end
 
 struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat},V<:DualValue}
     θ::T  # Position variables / model parameters.
