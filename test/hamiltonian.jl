@@ -73,8 +73,8 @@ end
     n_tests = 10
     for T in [Float32, Float64]
         for _ = 1:n_tests
-            θ_init = ComponentArray(a = randn(T, D), b= randn(T, D))
-            r_init = ComponentArray(a = randn(T, D), b= randn(T, D))
+            θ_init = ComponentArray(a = randn(T, D), b = randn(T, D))
+            r_init = ComponentArray(a = randn(T, D), b = randn(T, D))
 
             h = Hamiltonian(UnitEuclideanMetric(T, 2*D), ℓπ, ∂ℓπ∂θ)
             @test -AdvancedHMC.neg_energy(h, r_init, θ_init) == sum(abs2, r_init) / 2
