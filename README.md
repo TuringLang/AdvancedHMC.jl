@@ -212,22 +212,23 @@ In the previous examples, we built the sampler by manually specifying the integr
 Moreover, there's some flexibility in how these samplers can be initialized. 
 For example, a user can initialize a NUTS (HMC and HMCDA) sampler with their own metrics and integrators. 
 This can be done as follows:
-  ```julia
-  nuts = NUTS(δ, metric = :diagonal) #metric = DiagEuclideanMetric(D) (Default!)
-  nuts = NUTS(δ, metric = :unit)     #metric = UnitEuclideanMetric(D)
-  nuts = NUTS(δ, metric = :dense)    #metric = DenseEuclideanMetric(D)
-  # Provide your own AbstractMetric
-  metric = DiagEuclideanMetric(10)
-  nuts = NUTS(δ, metric = metric) 
 
-  nuts = NUTS(δ, integrator = :leapfrog)         #integrator = Leapfrog(ϵ) (Default!)
-  nuts = NUTS(δ, integrator = :jitteredleapfrog) #integrator = JitteredLeapfrog(ϵ, 0.1ϵ)
-  nuts = NUTS(δ, integrator = :temperedleapfrog) #integrator = TemperedLeapfrog(ϵ, 1.0)
+```julia
+nuts = NUTS(δ, metric = :diagonal) #metric = DiagEuclideanMetric(D) (Default!)
+nuts = NUTS(δ, metric = :unit)     #metric = UnitEuclideanMetric(D)
+nuts = NUTS(δ, metric = :dense)    #metric = DenseEuclideanMetric(D)
+# Provide your own AbstractMetric
+metric = DiagEuclideanMetric(10)
+nuts = NUTS(δ, metric = metric) 
 
-  # Provide your own AbstractIntegrator
-  integrator = JitteredLeapfrog(0.1, 0.2)
-  nuts = NUTS(δ, integrator = integrator) 
-  ```
+nuts = NUTS(δ, integrator = :leapfrog)         #integrator = Leapfrog(ϵ) (Default!)
+nuts = NUTS(δ, integrator = :jitteredleapfrog) #integrator = JitteredLeapfrog(ϵ, 0.1ϵ)
+nuts = NUTS(δ, integrator = :temperedleapfrog) #integrator = TemperedLeapfrog(ϵ, 1.0)
+
+# Provide your own AbstractIntegrator
+integrator = JitteredLeapfrog(0.1, 0.2)
+nuts = NUTS(δ, integrator = integrator) 
+```
 
 ### GPU Sampling with CUDA
 
