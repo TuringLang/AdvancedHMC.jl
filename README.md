@@ -219,7 +219,7 @@ nuts = NUTS(δ, metric = :unit)     #metric = UnitEuclideanMetric(D)
 nuts = NUTS(δ, metric = :dense)    #metric = DenseEuclideanMetric(D)
 # Provide your own AbstractMetric
 metric = DiagEuclideanMetric(10)
-nuts = NUTS(δ, metric = metric) 
+nuts = NUTS(δ, metric = metric)
 
 nuts = NUTS(δ, integrator = :leapfrog)         #integrator = Leapfrog(ϵ) (Default!)
 nuts = NUTS(δ, integrator = :jitteredleapfrog) #integrator = JitteredLeapfrog(ϵ, 0.1ϵ)
