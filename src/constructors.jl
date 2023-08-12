@@ -67,19 +67,13 @@ sampler_eltype(sampler::HMCSampler) = eltype(sampler.metric)
 ### NUTS ###
 ############
 """
-    NUTS(δ::Real; max_depth::Int=10, Δ_max::Real=1000, init_ϵ::Real=0, integrator = :leapfrog, metric = :diagonal)
+    NUTS(δ::Real; max_depth::Int=10, Δ_max::Real=1000, integrator = :leapfrog, metric = :diagonal)
 
 No-U-Turn Sampler (NUTS) sampler.
 
 # Fields
 
 $(FIELDS)
-
-# Usage:
-
-```julia
-NUTS(δ=0.65)  # Use target accept ratio 0.65.
-```
 """
 struct NUTS{T<:Real,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <:
        AbstractHMCSampler
@@ -113,12 +107,6 @@ Hamiltonian Monte Carlo sampler with static trajectory.
 # Fields
 
 $(FIELDS)
-
-# Usage:
-
-```julia
-HMC(10, integrator = Leapfrog(0.05), metric = :diagonal)
-```
 """
 struct HMC{I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <:
        AbstractHMCSampler
@@ -140,7 +128,7 @@ sampler_eltype(sampler::HMC) = determine_sampler_eltype(sampler.metric, sampler.
 ### HMCDA ###
 #############
 """
-    HMCDA(δ::Real, λ::Real; ϵ::Real=0, integrator = :leapfrog, metric = :diagonal)
+    HMCDA(δ::Real, λ::Real, integrator = :leapfrog, metric = :diagonal)
 
 Hamiltonian Monte Carlo sampler with Dual Averaging algorithm.
 
@@ -148,11 +136,7 @@ Hamiltonian Monte Carlo sampler with Dual Averaging algorithm.
 
 $(FIELDS)
 
-# Usage:
-
-```julia
-HMCDA(δ=0.65, λ=0.3)
-```
+# Notes
 
 For more information, please view the following paper ([arXiv link](https://arxiv.org/abs/1111.4246)):
 
