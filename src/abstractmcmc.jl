@@ -273,6 +273,7 @@ function make_step_size(
     hamiltonian::Hamiltonian,
     init_params,
 )
+    T = typeof(spl.κ.τ.integrator.ϵ)
     if spl.κ.τ.integrator.ϵ > 0.0
         ϵ = spl.κ.τ.integrator.ϵ
     else
