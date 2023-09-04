@@ -274,13 +274,8 @@ function make_step_size(
     init_params,
 )
     T = typeof(spl.κ.τ.integrator.ϵ)
-    if spl.κ.τ.integrator.ϵ > 0
-        ϵ = spl.κ.τ.integrator.ϵ
-    else
-        ϵ = find_good_stepsize(rng, hamiltonian, init_params)
-        @info string("Found initial step size ", ϵ)
-    end
-    return T(ϵ)
+    ϵ = make_step_size(rng, spl.κ.τ.integrator, T, hamiltonian, init_params)
+    return ϵ
 end
 
 function make_step_size(
