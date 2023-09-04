@@ -273,7 +273,9 @@ function make_step_size(
     hamiltonian::Hamiltonian,
     init_params,
 )
-    return spl.κ.τ.integrator.ϵ
+    T = typeof(spl.κ.τ.integrator.ϵ)
+    ϵ = make_step_size(rng, spl.κ.τ.integrator, T, hamiltonian, init_params)
+    return ϵ
 end
 
 function make_step_size(
@@ -294,7 +296,13 @@ function make_step_size(
     hamiltonian::Hamiltonian,
     init_params,
 )
-    return integrator.ϵ
+    if integrator.ϵ > 0
+        ϵ = integrator.ϵ
+    else
+        ϵ = find_good_stepsize(rng, hamiltonian, init_params)
+        @info string("Found initial step size ", ϵ)
+    end
+    return T(ϵ)
 end
 
 function make_step_size(
