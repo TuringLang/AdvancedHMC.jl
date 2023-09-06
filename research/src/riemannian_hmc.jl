@@ -242,7 +242,7 @@ phasepoint(
     θ::T,
     r::T;
     ℓπ = ∂H∂θ(h, θ),
-    ℓκ = DualValue(neg_energy(h, r, θ), ∂H∂r(h, r, θ)),
+    ℓκ = DualValue(neg_energy(h, r, θ), ∂H∂r(h, θ, r)),
 ) where {T<:AbstractVecOrMat} = PhasePoint(θ, r, ℓπ, ℓκ)
 
 # Negative kinetic energy
