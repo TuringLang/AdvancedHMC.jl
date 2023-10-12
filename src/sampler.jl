@@ -228,7 +228,7 @@ function sample(
             j = i - drop_warmup * n_adapts
             if keep_gradients
                 sample = [t.z.θ; t.z.ℓπ]
-            else 
+            else
                 sample = t.z.θ
             end
             θs[j], stats[j] = sample, tstat
