@@ -103,9 +103,18 @@ function AbstractMCMC.step(
     rng::AbstractRNG,
     model::LogDensityModel,
     spl::AbstractHMCSampler;
-    init_params = nothing,
+    initial_params = nothing,
+    init_params = initial_params,
     kwargs...,
 )
+    if init_params !== initial_params
+        Base.depwarn(
+            "`init_params` is deprecated, use `initial_params` instead",
+            :step,
+        )
+        initial_params = init_params
+    end
+
     # Unpack model
     logdensity = model.logdensity
 
@@ -117,8 +126,8 @@ function AbstractMCMC.step(
 
     # Define integration algorithm
     # Find good eps if not provided one
-    init_params = make_init_params(rng, spl, logdensity, init_params)
-    ϵ = make_step_size(rng, spl, hamiltonian, init_params)
+    initial_params = make_init_params(rng, spl, logdensity, initial_params)
+    ϵ = make_step_size(rng, spl, hamiltonian, initial_params)
     integrator = make_integrator(spl, ϵ)
 
     # Make kernel
@@ -128,7 +137,7 @@ function AbstractMCMC.step(
     adaptor = make_adaptor(spl, metric, integrator)
 
     # Get an initial sample.
-    h, t = AdvancedHMC.sample_init(rng, hamiltonian, init_params)
+    h, t = AdvancedHMC.sample_init(rng, hamiltonian, initial_params)
 
     # Compute next transition and state.
     state = HMCState(0, t, metric, κ, adaptor)
