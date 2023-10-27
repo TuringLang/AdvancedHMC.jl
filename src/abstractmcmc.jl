@@ -108,10 +108,7 @@ function AbstractMCMC.step(
     kwargs...,
 )
     if init_params !== initial_params
-        Base.depwarn(
-            "`init_params` is deprecated, use `initial_params` instead",
-            :step,
-        )
+        Base.depwarn("`init_params` is deprecated, use `initial_params` instead", :step)
         initial_params = init_params
     end
 
