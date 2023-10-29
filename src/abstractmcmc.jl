@@ -104,14 +104,8 @@ function AbstractMCMC.step(
     model::LogDensityModel,
     spl::AbstractHMCSampler;
     initial_params = nothing,
-    init_params = initial_params,
     kwargs...,
 )
-    if init_params !== initial_params
-        Base.depwarn("`init_params` is deprecated, use `initial_params` instead", :step)
-        initial_params = init_params
-    end
-
     # Unpack model
     logdensity = model.logdensity
 
@@ -257,18 +251,18 @@ end
 #############
 ### Utils ###
 #############
-function make_init_params(
+function make_initial_params(
     rng::AbstractRNG,
     spl::AbstractHMCSampler,
     logdensity,
-    init_params,
+    initial_params,
 )
     T = sampler_eltype(spl)
-    if init_params == nothing
+    if initial_params == nothing
         d = LogDensityProblems.dimension(logdensity)
-        init_params = randn(rng, d)
+        initial_params = randn(rng, d)
     end
-    return T.(init_params)
+    return T.(initial_params)
 end
 
 #########
@@ -277,10 +271,10 @@ function make_step_size(
     rng::Random.AbstractRNG,
     spl::HMCSampler,
     hamiltonian::Hamiltonian,
-    init_params,
+    initial_params,
 )
     T = typeof(spl.κ.τ.integrator.ϵ)
-    ϵ = make_step_size(rng, spl.κ.τ.integrator, T, hamiltonian, init_params)
+    ϵ = make_step_size(rng, spl.κ.τ.integrator, T, hamiltonian, initial_params)
     return ϵ
 end
 
@@ -288,10 +282,10 @@ function make_step_size(
     rng::Random.AbstractRNG,
     spl::AbstractHMCSampler,
     hamiltonian::Hamiltonian,
-    init_params,
+    initial_params,
 )
     T = sampler_eltype(spl)
-    return make_step_size(rng, spl.integrator, T, hamiltonian, init_params)
+    return make_step_size(rng, spl.integrator, T, hamiltonian, initial_params)
 
 end
 
@@ -300,12 +294,12 @@ function make_step_size(
     integrator::AbstractIntegrator,
     T::Type,
     hamiltonian::Hamiltonian,
-    init_params,
+    initial_params,
 )
     if integrator.ϵ > 0
         ϵ = integrator.ϵ
     else
-        ϵ = find_good_stepsize(rng, hamiltonian, init_params)
+        ϵ = find_good_stepsize(rng, hamiltonian, initial_params)
         @info string("Found initial step size ", ϵ)
     end
     return T(ϵ)
@@ -316,9 +310,9 @@ function make_step_size(
     integrator::Symbol,
     T::Type,
     hamiltonian::Hamiltonian,
-    init_params,
+    initial_params,
 )
-    ϵ = find_good_stepsize(rng, hamiltonian, init_params)
+    ϵ = find_good_stepsize(rng, hamiltonian, initial_params)
     @info string("Found initial step size ", ϵ)
     return T(ϵ)
 end
