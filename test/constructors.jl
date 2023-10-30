@@ -132,12 +132,12 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
 
             # Step.
             transition, state = AbstractMCMC.step(
-	                rng,
-	                model,
-	                sampler;
-	                n_adapts = 0,
-	                initial_params = θ_init,
-	            )
+                rng,
+                model,
+                sampler;
+                n_adapts = 0,
+                initial_params = θ_init,
+            )
             # Verify that the types are preserved in the transition.
             @test eltype(transition.z.θ) == T
             @test eltype(transition.z.r) == T
