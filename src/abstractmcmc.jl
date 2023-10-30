@@ -117,7 +117,7 @@ function AbstractMCMC.step(
 
     # Define integration algorithm
     # Find good eps if not provided one
-    initial_params = make_init_params(rng, spl, logdensity, initial_params)
+    initial_params = make_initial_params(rng, spl, logdensity, initial_params)
     ϵ = make_step_size(rng, spl, hamiltonian, initial_params)
     integrator = make_integrator(spl, ϵ)
 
