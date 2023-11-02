@@ -8,7 +8,7 @@ using AdvancedHMC
 makedocs(
     sitename = "AdvancedHMC",
     format = Documenter.HTML(),
-    warnonly = [:cross-references],
+    warnonly = [:cross_references],
 )
 
 deploydocs(
