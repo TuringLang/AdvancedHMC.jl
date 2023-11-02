@@ -57,7 +57,7 @@ struct HMCSampler{K<:AbstractMCMCKernel,M<:AbstractMetric,A<:AbstractAdaptor} <:
     κ::K
     "Choice of initial metric [`AbstractMetric`](@ref). The metric type will be preserved during adaption."
     metric::M
-    "[`AbstractAdaptor`](@ref)."
+    "[`AdvancedHMC.Adaptation.AbstractAdaptor`](@ref)."
     adaptor::A
 end
 
