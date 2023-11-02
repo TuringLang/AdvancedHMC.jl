@@ -23,6 +23,6 @@ sample
 ## More types
 
 ```@autodocs; canonical=false
-Modules = [AdvancedHMC]
+Modules = [AdvancedHMC, AdvancedHMC.Adaptation]
 Order   = [:type]
 ```
