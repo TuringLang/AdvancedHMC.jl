@@ -8,7 +8,7 @@ in favour of determined types from the other arguments.
 """
 determine_sampler_eltype(xs...) = float(_determine_sampler_eltype(xs...))
 # NOTE: We want to defer conversion to `float` until the very "end" of the
-# process, so as to allow `promote_type` to do it's job properly.
+# process to allow `promote_type` to do its job properly.
 # For example, in the scenario `determine_sampler_eltype(::Int64, ::Float32)`
 # we want to return `Float32`, not `Float64`. The latter would occur
 # if we did `float(eltype(x))` instead of just `eltype(x)`.
@@ -49,7 +49,7 @@ Note that all the fields have the prefix `initial_` to indicate
 that these will not necessarily correspond to the `kernel`, `metric`,
 and `adaptor` after sampling.
 
-To access the updated fields use the resulting [`AdvancedHMC.HMCState`](@ref).
+To access the updated fields, use the resulting [`HMCState`](@ref).
 """
 struct HMCSampler{K<:AbstractMCMCKernel,M<:AbstractMetric,A<:AbstractAdaptor} <:
        AbstractHMCSampler
