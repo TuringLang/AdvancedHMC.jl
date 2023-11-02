@@ -5,7 +5,8 @@ using LinearAlgebra: LinearAlgebra
 using Statistics: Statistics
 using SimpleUnPack: @unpack, @pack!
 
-using ..AdvancedHMC: DEBUG, AbstractScalarOrVec, DocStringExtensions
+using ..AdvancedHMC: DEBUG, AbstractScalarOrVec
+using DocStringExtensions
 
 """
 $(TYPEDEF)
