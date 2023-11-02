@@ -25,12 +25,28 @@ end
 "Returns the statistics for transition `t`."
 stat(t::Transition) = t.stat
 
+"""
+$(TYPEDEF)
+Abstract type for HMC kernels. 
+"""
 abstract type AbstractMCMCKernel end
 
+"""
+$(TYPEDEF)
+Abstract type for termination criteria for Hamiltonian trajectories, e.g. no-U-turn and fixed number of leapfrog integration steps. 
+"""
 abstract type AbstractTerminationCriterion end
 
+"""
+$(TYPEDEF)
+Abstract type for a fixed number of leapfrog integration steps.
+"""
 abstract type StaticTerminationCriterion <: AbstractTerminationCriterion end
 
+"""
+$(TYPEDEF)
+Abstract type for dynamic Hamiltonian trajectory termination criteria. 
+"""
 abstract type DynamicTerminationCriterion <: AbstractTerminationCriterion end
 
 """
