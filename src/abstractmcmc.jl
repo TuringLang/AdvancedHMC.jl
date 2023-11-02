@@ -38,7 +38,7 @@ A convenient wrapper around `AbstractMCMC.sample` avoiding explicit construction
 
 function AbstractMCMC.sample(
     rng::Random.AbstractRNG,
-    model::LogDensityModel,
+    model::AbstractMCMC.LogDensityModel,
     sampler::AbstractHMCSampler,
     N::Integer;
     n_adapts::Int = min(div(N, 10), 1_000),
@@ -67,7 +67,7 @@ end
 
 function AbstractMCMC.sample(
     rng::Random.AbstractRNG,
-    model::LogDensityModel,
+    model::AbstractMCMC.LogDensityModel,
     sampler::AbstractHMCSampler,
     parallel::AbstractMCMC.AbstractMCMCEnsemble,
     N::Integer,
@@ -101,7 +101,7 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::LogDensityModel,
+    model::AbstractMCMC.LogDensityModel,
     spl::AbstractHMCSampler;
     initial_params = nothing,
     kwargs...,
@@ -138,7 +138,7 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::LogDensityModel,
+    model::AbstractMCMC.LogDensityModel,
     spl::AbstractHMCSampler,
     state::HMCState;
     kwargs...,
