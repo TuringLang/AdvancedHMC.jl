@@ -1,3 +1,8 @@
+"""
+$(TYPEDEF)
+
+Abstract type for preconditioning metrics. 
+"""
 abstract type AbstractMetric end
 
 _string_M⁻¹(mat::AbstractMatrix, n_chars::Int = 32) = _string_M⁻¹(diag(mat), n_chars)
