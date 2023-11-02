@@ -49,7 +49,7 @@ Note that all the fields have the prefix `initial_` to indicate
 that these will not necessarily correspond to the `kernel`, `metric`,
 and `adaptor` after sampling.
 
-To access the updated fields use the resulting [`HMCState`](@ref).
+To access the updated fields use the resulting [`AdvancedHMC.HMCState`](@ref).
 """
 struct HMCSampler{K<:AbstractMCMCKernel,M<:AbstractMetric,A<:AbstractAdaptor} <:
        AbstractHMCSampler
