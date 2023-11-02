@@ -22,7 +22,7 @@ sample
 
 ## More types
 
-```@autodocs
+```@autodocs; canonical=false
 Modules = [AdvancedHMC]
 Order   = [:type]
 ```
