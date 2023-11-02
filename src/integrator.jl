@@ -5,7 +5,7 @@
 # TODO: The type `<:Tuple{Integer,Bool}` is introduced to address
 # https://github.com/TuringLang/Turing.jl/pull/941#issuecomment-549191813
 # We might want to simplify it to `Tuple{Int,Bool}` when we figured out
-# why the it behaves unexpected on Windos 32.
+# why the it behaves unexpected on Windows 32.
 
 """
 $(TYPEDEF)
