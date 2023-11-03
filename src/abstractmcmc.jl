@@ -141,7 +141,7 @@ function AbstractMCMC.step(
     model::AbstractMCMC.LogDensityModel,
     spl::AbstractHMCSampler,
     state::HMCState;
-    n_adapts::Int=0,
+    n_adapts::Int = 0,
     kwargs...,
 )
     # Compute transition.
