@@ -24,7 +24,7 @@ using Statistics: mean
         sampler,
         n_adapts + n_samples;
         nadapts = n_adapts,
-        init_params = θ_init,
+        initial_params = θ_init,
         chain_type = Chains,
         progress = false,
         bijector = invlink_gdemo,

@@ -141,7 +141,7 @@ samples = AbstractMCMC.sample(
       sampler,
       n_adapts + n_samples;
       nadapts = n_adapts,
-      init_params = initial_θ,
+      initial_params = initial_θ,
   )
 ```
 

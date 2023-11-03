@@ -27,7 +27,7 @@ using Statistics: mean
         nuts,
         n_adapts + n_samples;
         n_adapts = n_adapts,
-        init_params = θ_init,
+        initial_params = θ_init,
         progress = false,
         verbose = false,
     )
@@ -50,7 +50,7 @@ using Statistics: mean
         hmc,
         n_adapts + n_samples;
         n_adapts = n_adapts,
-        init_params = θ_init,
+        initial_params = θ_init,
         progress = false,
         verbose = false,
     )
@@ -73,7 +73,7 @@ using Statistics: mean
         custom,
         n_adapts + n_samples;
         n_adapts = 0,
-        init_params = θ_init,
+        initial_params = θ_init,
         progress = false,
         verbose = false,
     )
@@ -99,7 +99,7 @@ using Statistics: mean
         custom,
         10;
         n_adapts = 0,
-        init_params = θ_init,
+        initial_params = θ_init,
         progress = false,
         verbose = false,
     )
@@ -109,7 +109,7 @@ using Statistics: mean
         custom,
         10;
         n_adapts = 0,
-        init_params = θ_init,
+        initial_params = θ_init,
         progress = false,
         verbose = false,
     )
