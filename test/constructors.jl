@@ -131,9 +131,13 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
             @test AdvancedHMC.sampler_eltype(sampler) == T
 
             # Step.
-            transition, state =
-                AbstractMCMC.step(rng, model, sampler; n_adapts = 0, init_params = θ_init)
-
+            transition, state = AbstractMCMC.step(
+                rng,
+                model,
+                sampler;
+                n_adapts = 0,
+                initial_params = θ_init,
+            )
             # Verify that the types are preserved in the transition.
             @test eltype(transition.z.θ) == T
             @test eltype(transition.z.r) == T
@@ -159,7 +163,7 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
 end
 
 @testset "Utils" begin
-    @testset "init_params" begin
+    @testset "initial_params" begin
         d = 2
         θ_init = randn(d)
         rng = Random.default_rng()
@@ -171,10 +175,10 @@ end
         metric = AdvancedHMC.make_metric(spl, logdensity)
         hamiltonian = Hamiltonian(metric, model)
 
-        init_params1 = AdvancedHMC.make_init_params(rng, spl, logdensity, nothing)
-        @test typeof(init_params1) == Vector{T}
-        @test length(init_params1) == d
-        init_params2 = AdvancedHMC.make_init_params(rng, spl, logdensity, θ_init)
-        @test init_params2 == θ_init
+        initial_params1 = AdvancedHMC.make_initial_params(rng, spl, logdensity, nothing)
+        @test typeof(initial_params1) == Vector{T}
+        @test length(initial_params1) == d
+        initial_params2 = AdvancedHMC.make_initial_params(rng, spl, logdensity, θ_init)
+        @test initial_params2 == θ_init
     end
 end
