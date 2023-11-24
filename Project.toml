@@ -32,7 +32,7 @@ AdvancedHMCOrdinaryDiffEqExt = "OrdinaryDiffEq"
 [compat]
 AbstractMCMC = "4.2, 5"
 ArgCheck = "1, 2"
-CUDA = "3, 4"
+CUDA = "3, 4, 5"
 DocStringExtensions = "0.8, 0.9"
 InplaceOps = "0.3"
 LogDensityProblems = "2"
