@@ -141,6 +141,7 @@ function AbstractMCMC.step(
     model::AbstractMCMC.LogDensityModel,
     spl::AbstractHMCSampler,
     state::HMCState;
+    n_adapts::Int = 0,
     kwargs...,
 )
     # Compute transition.
@@ -158,7 +159,6 @@ function AbstractMCMC.step(
 
     # Adapt h and spl.
     tstat = stat(t)
-    n_adapts = kwargs[:n_adapts]
     h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
     tstat = merge(tstat, (is_adapt = isadapted,))
 
