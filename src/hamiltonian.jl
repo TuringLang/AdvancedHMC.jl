@@ -42,8 +42,11 @@ end
 ∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat) = copy(r)
 ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat) =
     h.metric.M⁻¹ .* r
-∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat) =
-    h.metric.M⁻¹ * r
+function ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat)
+    out = similar(r) # Make sure the output of this function is of the same type as r
+    mul!(out, h.metric.M⁻¹, r)
+    out
+end
 
 struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat},V<:DualValue}
     θ::T  # Position variables / model parameters.
@@ -51,7 +54,7 @@ struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat},V<:DualValue}
     ℓπ::V # Cached neg potential energy for the current θ.
     ℓκ::V # Cached neg kinect energy for the current r.
     function PhasePoint(θ::T, r::T, ℓπ::V, ℓκ::V) where {T,V}
-        @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
+        @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓκ.gradient)
         if any(isfinite.((θ, r, ℓπ, ℓκ)) .== false)
             # @warn "The current proposal will be rejected due to numerical error(s)." isfinite.((θ, r, ℓπ, ℓκ))
             # NOTE eltype has to be inlined to avoid type stability issue; see #267
