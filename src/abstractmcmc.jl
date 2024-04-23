@@ -132,8 +132,8 @@ function AbstractMCMC.step(
 
     # Compute next transition and state.
     state = HMCState(0, t, metric, κ, adaptor)
-    # Take actual first step.
-    return AbstractMCMC.step(rng, model, spl, state; kwargs...)
+    # Return the initial transition and state.
+    return Transition(t.z, merge(stat(t), (is_adapt=false,))), state
 end
 
 function AbstractMCMC.step(
