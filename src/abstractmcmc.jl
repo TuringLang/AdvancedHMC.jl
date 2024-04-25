@@ -210,7 +210,8 @@ function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; nadapts = 0, kw
     κ = state.κ
     tstat = t.stat
     isadapted = tstat.is_adapt
-    if isadapted
+    # The initial transition will not much information beyond the `is_adapt` field.
+    if isadapted && haskey(tstat, :numerical_error)
         cb.num_divergent_transitions_during_adaption[] += tstat.numerical_error
     else
         cb.num_divergent_transitions[] += tstat.numerical_error
