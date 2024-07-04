@@ -1,5 +1,460 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>AdvancedHMC.jl · AdvancedHMC</title><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href>AdvancedHMC</a></span></div><form class="docs-search" action="search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>AdvancedHMC.jl</a><ul class="internal"><li><a class="tocitem" href="#A-minimal-example-sampling-from-a-multivariate-Gaussian-using-NUTS"><span>A minimal example - sampling from a multivariate Gaussian using NUTS</span></a></li><li><a class="tocitem" href="#References"><span>References</span></a></li></ul></li><li><a class="tocitem" href="api/">AdvancedHMC.jl</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>AdvancedHMC.jl</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>AdvancedHMC.jl</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/master/README.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="AdvancedHMC.jl"><a class="docs-heading-anchor" href="#AdvancedHMC.jl">AdvancedHMC.jl</a><a id="AdvancedHMC.jl-1"></a><a class="docs-heading-anchor-permalink" href="#AdvancedHMC.jl" title="Permalink"></a></h1><p><a href="https://github.com/TuringLang/AdvancedHMC.jl/actions/workflows/CI.yml"><img src="https://github.com/TuringLang/AdvancedHMC.jl/actions/workflows/CI.yml/badge.svg" alt="CI"/></a> <a href="https://zenodo.org/badge/latestdoi/72657907"><img src="https://zenodo.org/badge/72657907.svg" alt="DOI"/></a> <a href="https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix"><img src="https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix" alt="Coverage Status"/></a> <a href="https://turinglang.github.io/AdvancedHMC.jl/stable/"><img src="https://img.shields.io/badge/docs-stable-blue.svg" alt="Stable"/></a> <a href="https://turinglang.github.io/AdvancedHMC.jl/dev/"><img src="https://img.shields.io/badge/docs-dev-blue.svg" alt="Dev"/></a></p><p>AdvancedHMC.jl provides a robust, modular, and efficient implementation of advanced HMC algorithms. An illustrative example of AdvancedHMC&#39;s usage is given below. AdvancedHMC.jl is part of <a href="https://github.com/TuringLang/Turing.jl">Turing.jl</a>, a probabilistic programming library in Julia.  If you are interested in using AdvancedHMC.jl through a probabilistic programming language, please check it out!</p><p><strong>Interfaces</strong></p><ul><li><a href="https://github.com/salilab/hmc"><code>IMP.hmc</code></a>: an experimental Python module for the Integrative Modeling Platform, which uses AdvancedHMC in its backend to sample protein structures.</li></ul><p><strong>NEWS</strong></p><ul><li>We presented a paper for AdvancedHMC.jl at <a href="http://approximateinference.org/">AABI</a> in 2019 in Vancouver, Canada. (<a href="http://proceedings.mlr.press/v118/xu20a.html">abs</a>, <a href="http://proceedings.mlr.press/v118/xu20a/xu20a.pdf">pdf</a>, <a href="https://openreview.net/forum?id=rJgzckn4tH">OpenReview</a>)</li><li>We presented a poster for AdvancedHMC.jl at <a href="https://mc-stan.org/events/stancon2019Cambridge/">StanCon 2019</a> in Cambridge, UK. (<a href="https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf">pdf</a>)</li></ul><p><strong>API CHANGES</strong></p><ul><li>[v0.5.0] <strong>Breaking!</strong> Convenience constructors for common samplers changed to:<ul><li><code>HMC(n_leapfrog)</code></li><li><code>NUTS(target_acceptance)</code> </li><li><code>HMCDA(target_acceptance, integration_time)</code></li></ul></li><li>[v0.2.22] Three functions are renamed.<ul><li><code>Preconditioner(metric::AbstractMetric)</code> -&gt; <code>MassMatrixAdaptor(metric)</code> and </li><li><code>NesterovDualAveraging(δ, integrator::AbstractIntegrator)</code> -&gt; <code>StepSizeAdaptor(δ, integrator)</code></li><li><code>find_good_eps</code> -&gt; <code>find_good_stepsize</code></li></ul></li><li>[v0.2.15] <code>n_adapts</code> is no longer needed to construct <code>StanHMCAdaptor</code>; the old constructor is deprecated.</li><li>[v0.2.8] Two Hamiltonian trajectory sampling methods are renamed to avoid a name clash with Distributions.<ul><li><code>Multinomial</code> -&gt; <code>MultinomialTS</code></li><li><code>Slice</code> -&gt; <code>SliceTS</code></li></ul></li><li>[v0.2.0] The gradient function passed to <code>Hamiltonian</code> is supposed to return a value-gradient tuple now.</li></ul><h2 id="A-minimal-example-sampling-from-a-multivariate-Gaussian-using-NUTS"><a class="docs-heading-anchor" href="#A-minimal-example-sampling-from-a-multivariate-Gaussian-using-NUTS">A minimal example - sampling from a multivariate Gaussian using NUTS</a><a id="A-minimal-example-sampling-from-a-multivariate-Gaussian-using-NUTS-1"></a><a class="docs-heading-anchor-permalink" href="#A-minimal-example-sampling-from-a-multivariate-Gaussian-using-NUTS" title="Permalink"></a></h2><p>This section demonstrates a minimal example of sampling from a multivariate Gaussian (10-dimensional) using the no U-turn sampler (NUTS). Below we describe the major components of the Hamiltonian system which are essential to sample using this approach:</p><ul><li><strong>Metric</strong>: In many sampling problems the sample space is usually associated with a metric that allows us to measure the distance between any two points, and other similar quantities. In the example in this section, we use a special metric called the <strong>Euclidean Metric</strong>, represented with a <code>D × D</code> matrix from which we can compute distances. </li></ul><p>&lt;details&gt;  &lt;summary&gt;Further details about the Metric component&lt;/summary&gt;  The Euclidean metric is also known as the mass matrix in the physical perspective. For available metrics refer &lt;a href=&quot;#hamiltonian-mass-matrix-metric&quot;&gt;Hamiltonian mass matrix&lt;/a&gt;. &lt;/details&gt;</p><ul><li><strong>Leapfrog integration</strong>: Leapfrog integration is a second-order numerical method for integrating differential equations (In this case they are equations of motion for the relative position of one particle with respect to the other). The order of this integration signifies its rate of convergence. Any algorithm with a finite time step size will have numerical errors, and the order is related to this error. For a second-order algorithm, this error scales as the second power of the time step, hence, the name second-order. High-order integrators are usually complex to code and have a limited region of convergence; hence they do not allow arbitrarily large time steps. A second-order integrator is suitable for our purpose. Hence we opt for the leapfrog integrator. It is called <code>leapfrog</code> due to the ways this algorithm is written, where the positions and velocities of particles <code>leap over</code> each other. </li></ul><p>&lt;details&gt;  &lt;summary&gt;About the leapfrog integration scheme&lt;/summary&gt;  Suppose <span>${\bf x}$</span> and <span>${\bf v}$</span> are the position and velocity of an individual particle respectively; <span>$i$</span> and <span>$i+1$</span> are the indices for time values <span>$t_i$</span> and <span>$t_{i+1}$</span> respectively; <span>$dt = t_{i+1} - t_i$</span> is the time step size (constant and regularly spaced intervals), and <span>${\bf a}$</span> is the acceleration induced on a particle by the forces of all other particles. Furthermore, suppose positions are defined at times <span>$t_i, t_{i+1}, t_{i+2}, \dots $, spaced at constant intervals $dt$</span>, the velocities are defined at halfway times in between, denoted by <span>$t_{i-1/2}, t_{i+1/2}, t_{i+3/2}, \dots $, where $t_{i+1} - t_{i + 1/2} = t_{i + 1/2} - t_i = dt / 2$</span>, and the accelerations <span>${\bf a}$</span> are defined only on integer times, just like the positions. Then the leapfrog integration scheme is given as: <span>$x_{i} = x_{i-1} + v_{i-1/2} dt; \quad v_{i+1/2} = v_{i-1/2} + a_i dt$</span>. For available integrators refer &lt;a href=&quot;#integrator-integrator&quot;&gt;Integrator&lt;/a&gt;. &lt;/details&gt;</p><ul><li><strong>Kernel for trajectories (static or dynamic)</strong>: Different kernels, which may be static or dynamic, can be used. At each iteration of any variant of the HMC algorithm, there are two main steps - the first step changes the momentum and the second step may change both the position and the momentum of a particle. </li></ul><p>&lt;details&gt;  &lt;summary&gt;More about the kernels&lt;/summary&gt;  In the classical HMC approach, during the first step, new values for the momentum variables are randomly drawn from their Gaussian distribution, independently of the current values of the position variables. A Metropolis update is performed during the second step, using Hamiltonian dynamics to provide a new state. For available kernels refer &lt;a href=&quot;#kernel-kernel&quot;&gt;kernel&lt;/a&gt;. &lt;/details&gt;</p><pre><code class="language-julia hljs">using AdvancedHMC, ForwardDiff
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>AdvancedHMC.jl · AdvancedHMC</title><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body>
+<!-- NAVBAR START -->
+<style>
+    html {
+        scroll-padding-top: calc(55px + 1rem);
+    }
+
+    /* Documenter css tweaks */
+    .docs-sidebar {
+        margin-top: 3.75rem;
+    }
+
+    #documenter {
+        margin-top: 3.75rem;
+    }
+
+    .docs-version-selector {
+        margin-bottom: 60px !important;
+    }
+
+    @media screen and (max-width: 1056px) {
+        .docs-version-selector {
+            margin-bottom: 60px !important;
+        }
+
+        .docs-sidebar {
+            margin-top: 0 !important;
+        }
+    }
+    /* Documenter css tweaks ends here */
+
+    :root {
+        --heading-color: white;
+        --item-color: rgb(165, 165, 165);
+        --primary-bg: #073c44;
+        --hover-color: #8faad2;
+    }
+
+    .ext-navigation {
+        position: fixed;
+        height: 3.75rem;
+        top: 0;
+        width: 100%;
+        background-color: var(--primary-bg);
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        padding: 0 1.0625rem;
+        transition: transform 0.3s;
+    }
+
+    .ext-navbar-logo {
+        margin-left: 0.625rem;
+    }
+
+    .ext-nav-links {
+        display: flex;
+        align-items: center;
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        flex-grow: 1;
+    }
+
+    .ext-nav-links li {
+        margin-left: 1rem !important;
+    }
+
+    .ext-nav-link {
+        color: white !important;
+        text-decoration: none;
+        font-size: 1.0625rem !important;
+        transition: color 0.2s ease;
+        cursor: pointer;
+    }
+
+    .ext-nav-link:hover,
+    .ext-navbar-item-single a:hover {
+        color: var(--hover-color) !important;
+    }
+
+    .ext-navbar-item-single a {
+        color: #fff !important;
+    }
+
+    .ext-menu-toggle {
+        display: none;
+        font-size: 1.5rem;
+        color: white;
+        cursor: pointer;
+    }
+
+    .ext-dropdown {
+        display: none;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-template-rows: auto auto auto;
+        padding: 1.875rem;
+        position: absolute;
+        width: 100%;
+        left: 0;
+        background-color: #083c44;
+        line-height: 1.875rem;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        transform: translateY(-0.625rem);
+    }
+
+    #library-handler::after {
+        content: "▼";
+        font-size: 0.6875rem;
+        margin-left: 0.3125rem;
+        transition: transform 0.3s ease-in-out;
+    }
+
+    #library-handler.open::after {
+        content: "▲";
+    }
+
+    .ext-dropdown.show {
+        display: grid;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .ext-dropdown ul {
+        height: auto;
+        width: 12.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .ext-dropdown ul li {
+        text-align: left;
+    }
+
+    .navbar-sub-item {
+        list-style: none;
+    }
+
+    .ext-dropdown ul a li {
+        color: var(--item-color);
+        width: 15.625rem;
+        border-radius: 3px;
+        padding: 0.125rem 0.625rem;
+        transition: background-color 0.2s ease;
+    }
+
+    .ext-dropdown ul a li:hover {
+        background-color: rgba(107, 107, 107, 0.5);
+    }
+
+    .ext-dropdown-item-heading {
+        color: var(--heading-color);
+        text-align: center;
+    }
+
+    /* Responsive styling */
+    @media (max-width: 966px) {
+        .ext-dropdown {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .ext-nav-links {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            background-color: var(--primary-bg);
+            position: absolute;
+            top: 3.75rem;
+            left: 0;
+            padding: 0.625rem 0;
+            height: auto;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgb(141, 141, 141) grey;
+        }
+
+        .ext-nav-links.show {
+            display: flex;
+        }
+
+        .ext-nav-links li {
+            margin: 0.625rem 0;
+            text-align: center;
+        }
+
+        .ext-menu-toggle {
+            display: block;
+            margin-left: auto;
+        }
+
+        .ext-navigation.hide {
+            transform: translateY(-3.75rem);
+        }
+
+        .ext-dropdown {
+            place-content: center;
+            text-align: center;
+            grid-template-columns: 1fr;
+            line-height: 1.25rem;
+            padding: 0.625rem;
+        }
+
+        .ext-dropdown ul {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 0.3125rem;
+        }
+
+        .ext-dropdown ul li {
+            text-align: center;
+        }
+
+        .ext-dropdown ul a li {
+            width: 100%;
+        }
+
+        .ext-dropdown ul a li:hover {
+            background-color: var(--primary-bg);
+            color: #fff;
+        }
+
+        /* Modified scroll bar */
+        .ext-nav-links::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-track {
+            box-shadow: inset 0 0 5px grey;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-thumb {
+            background: rgb(141, 141, 141);
+            border-radius: 3px;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-thumb:hover {
+            background: #9b9b9b;
+        }
+    }
+</style>
+<nav class="ext-navigation">
+    <a href="https://turinglang.org/">
+        <img src="https://turinglang.org/assets/images/turing-logo.svg" alt="Turing Logo" class="ext-navbar-logo" height="24px" width="40px">
+    </a>
+    <a style="color: white !important; font-size: 21.25px !important; margin-left: 10px;" href="https://turinglang.org/">Turing.jl</a>
+    <ul class="ext-nav-links">
+        <li>
+            <a class="ext-nav-link" href="https://turinglang.org/docs/tutorials/docs-00-getting-started/">Get Started</a>
+        </li>
+        <li>
+            <a class="ext-nav-link" href="https://turinglang.org/docs/tutorials/00-introduction/">Tutorials</a>
+        </li>
+        <li>
+            <p class="ext-nav-link" id="library-handler">Library API</p>
+            <div class="ext-dropdown" id="ext-dropdown-items">
+                <ul>
+                    <li class="ext-dropdown-item-heading">Modellinglanguages</li>
+                    <a href="https://turinglang.org/DynamicPPL.jl/">
+                        <li>DynamicPPL</li>
+                    </a>
+                    <a href="https://turinglang.org/JuliaBUGS.jl/">
+                        <li>JuliaBUGS</li>
+                    </a>
+                    <a href="https://turinglang.org/TuringGLM.jl/">
+                        <li>TurineGLM</li>
+                    </a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading">MCMC</li>
+                    <a href="https://turinglang.org/AdvancedHMC.jl/">
+                        <li>AdvancedHMC</li>
+                    </a>
+                    <a href="https://turinglang.org/AbstractMCMC.jl/">
+                        <li>AbstractMCMC</li>
+                    </a>
+                    <a href="https://github.com/theogf/ThermodynamicIntegration.jl">
+                        <li>ThermodynamicIntegration</li>
+                    </a>
+                    <a href="https://turinglang.org/AdvancedPS.jl/">
+                        <li>AdvancedPS</li>
+                    </a>
+                    <a href="https://turinglang.org/EllipticalSliceSampling.jl/">
+                        <li>EllipticalSliceSampling</li>
+                    </a>
+                    <a href="https://turinglang.org/NestedSamplers.jl/">
+                        <li>NestedSamplers</li>
+                    </a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading">Diagnostics</li>
+                    <a href="https://turinglang.org/MCMCChains.jl/">
+                        <li>MCMCChains</li>
+                    </a>
+                    <a href="https://turinglang.org/MCMCDiagnosticTools.jl/">
+                        <li>MCMCDiagnosticTools</li>
+                    </a>
+                    <a href="https://turinglang.org/ParetoSmooth.jl/">
+                        <li>ParetoSmooth</li>
+                    </a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading">Gaussion Processes</li>
+                    <a href="https://juliagaussianprocesses.github.io/AbstractGPs.jl/">
+                        <li>AbstractGPs</li>
+                    </a>
+                    <a href="https://juliagaussianprocesses.github.io/KernelFunctions.jl/">
+                        <li>KernelFunctions</li>
+                    </a>
+                    <a href="https://juliagaussianprocesses.github.io/ApproximateGPs.jl/">
+                        <li>ApproximateGPs</li>
+                    </a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading ext-navbar-item-single">
+                        <a href="https://turinglang.org/Bijectors.jl/">Bijectors</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading ext-navbar-item-single">
+                        <a href="https://turinglang.org/TuringCallbacks.jl/">TuringCallbacks</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading ext-navbar-item-single">
+                        <a href="https://turinglang.org/TuringBenchmarking.jl/">TuringBenchmarking</a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        <li>
+            <a class="ext-nav-link" href="https://turinglang.org/news/">News</a>
+        </li>
+        <li>
+            <a class="ext-nav-link" href="https://turinglang.org/team/">Team</a>
+        </li>
+    </ul>
+    <a href="https://x.com/TuringLang" style="margin-left: 15px; padding-top: 2px">
+        <svg fill="#ffffff" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32px" height="32px" viewBox="-209.92 -209.92 931.84 931.84" xml:space="preserve" stroke="#ffffff">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <g id="7935ec95c421cee6d86eb22ecd12f847">
+                    <path style="display: inline"
+                        d="M459.186,151.787c0.203,4.501,0.305,9.023,0.305,13.565 c0,138.542-105.461,298.285-298.274,298.285c-59.209,0-114.322-17.357-160.716-47.104c8.212,0.973,16.546,1.47,25.012,1.47 c49.121,0,94.318-16.759,130.209-44.884c-45.887-0.841-84.596-31.154-97.938-72.804c6.408,1.227,12.968,1.886,19.73,1.886 c9.55,0,18.816-1.287,27.617-3.68c-47.955-9.633-84.1-52.001-84.1-102.795c0-0.446,0-0.882,0.011-1.318 c14.133,7.847,30.294,12.562,47.488,13.109c-28.134-18.796-46.637-50.885-46.637-87.262c0-19.212,5.16-37.218,14.193-52.7 c51.707,63.426,128.941,105.156,216.072,109.536c-1.784-7.675-2.718-15.674-2.718-23.896c0-57.891,46.941-104.832,104.832-104.832 c30.173,0,57.404,12.734,76.525,33.102c23.887-4.694,46.313-13.423,66.569-25.438c-7.827,24.485-24.434,45.025-46.089,58.002 c21.209-2.535,41.426-8.171,60.222-16.505C497.448,118.542,479.666,137.004,459.186,151.787z">
+                    </path>
+                </g>
+            </g>
+        </svg>
+    </a>
+    <a href="https://github.com/TuringLang/Turing.jl">
+        <svg width="32px" height="32px" viewBox="-8.2 -8.2 36.40 36.40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#000000">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <title>github [#142]</title>
+                <desc>Created with Sketch.</desc>
+                <defs></defs>
+                <g id="Page-1" stroke-width="0.0002" fill="none" fill-rule="evenodd">
+                    <g id="Dribbble-Light-Preview" transform="translate(-140.000000, -7559.000000)" fill="#ffffff">
+                        <g id="icons" transform="translate(56.000000, 160.000000)">
+                            <path
+                                d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399"
+                                id="github-[#142]">
+                            </path>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </svg>
+    </a>
+    <span class="ext-menu-toggle">&#9776;</span>
+</nav>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const menuToggle = document.querySelector(".ext-menu-toggle");
+        const navLinks = document.querySelector(".ext-nav-links");
+        const nav = document.querySelector(".ext-navigation");
+        const navigationHandler = document.getElementById("library-handler");
+        const navigationItemsContainer =
+            document.getElementById("ext-dropdown-items");
+        let lastScrollY = window.scrollY;
+
+        function setAppropriateHeight() {
+            if (window.innerWidth <= 768) {
+                const viewportHeight = window.innerHeight;
+                const navHeight = nav.offsetHeight;
+                navLinks.style.maxHeight = `${viewportHeight - navHeight}px`;
+                navLinks.style.overflowY = "auto";
+            } else {
+                navLinks.style.maxHeight = "";
+                navLinks.style.overflowY = "";
+            }
+        }
+
+        // Toggle main menu for mobile
+        menuToggle.addEventListener("click", () => {
+            navLinks.classList.toggle("show");
+            if (navLinks.classList.contains("show")) {
+                setAppropriateHeight();
+                // Ensure the dropdown is hidden when menu is first opened
+                navigationItemsContainer.style.display = "none";
+                navigationItemsContainer.classList.remove("show");
+            }
+        });
+
+        // Close menus if clicked outside
+        document.addEventListener("click", (event) => {
+            if (
+                !navLinks.contains(event.target) &&
+                !menuToggle.contains(event.target)
+            ) {
+                navLinks.classList.remove("show");
+                navigationItemsContainer.classList.remove("show");
+                navigationHandler.classList.remove("open");
+            }
+        });
+
+        // Hide navigation bar on scroll down in mobile view
+        window.addEventListener("scroll", () => {
+            if (window.innerWidth <= 768) {
+                nav.classList.toggle("hide", window.scrollY > lastScrollY);
+                lastScrollY = window.scrollY;
+            }
+        });
+
+        // Library API script
+        navigationHandler.addEventListener("click", (event) => {
+            event.preventDefault(); // Prevent default action of the link
+            if (navigationItemsContainer.classList.contains("show")) {
+                navigationItemsContainer.classList.remove("show");
+                navigationHandler.classList.remove("open");
+                setTimeout(() => {
+                    navigationItemsContainer.style.display = "none";
+                }, 500); // Match the timeout to the CSS transition duration
+            } else {
+                navigationItemsContainer.style.display = "grid";
+                navigationHandler.classList.add("open");
+                setTimeout(() => {
+                    navigationItemsContainer.classList.add("show");
+                }, 10); // Delay to ensure the display change takes effect before adding class
+            }
+            setAppropriateHeight(); // Recalculate height when dropdown changes
+        });
+
+        // Handle window resize
+        window.addEventListener("resize", setAppropriateHeight);
+
+        // Initial setup
+        setAppropriateHeight();
+    });
+</script>
+<!-- NAVBAR END -->
+<div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href>AdvancedHMC</a></span></div><form class="docs-search" action="search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>AdvancedHMC.jl</a><ul class="internal"><li><a class="tocitem" href="#A-minimal-example-sampling-from-a-multivariate-Gaussian-using-NUTS"><span>A minimal example - sampling from a multivariate Gaussian using NUTS</span></a></li><li><a class="tocitem" href="#References"><span>References</span></a></li></ul></li><li><a class="tocitem" href="api/">AdvancedHMC.jl</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>AdvancedHMC.jl</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>AdvancedHMC.jl</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/master/README.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="AdvancedHMC.jl"><a class="docs-heading-anchor" href="#AdvancedHMC.jl">AdvancedHMC.jl</a><a id="AdvancedHMC.jl-1"></a><a class="docs-heading-anchor-permalink" href="#AdvancedHMC.jl" title="Permalink"></a></h1><p><a href="https://github.com/TuringLang/AdvancedHMC.jl/actions/workflows/CI.yml"><img src="https://github.com/TuringLang/AdvancedHMC.jl/actions/workflows/CI.yml/badge.svg" alt="CI"/></a> <a href="https://zenodo.org/badge/latestdoi/72657907"><img src="https://zenodo.org/badge/72657907.svg" alt="DOI"/></a> <a href="https://coveralls.io/github/TuringLang/AdvancedHMC.jl?branch=kx%2Fbug-fix"><img src="https://coveralls.io/repos/github/TuringLang/AdvancedHMC.jl/badge.svg?branch=kx%2Fbug-fix" alt="Coverage Status"/></a> <a href="https://turinglang.github.io/AdvancedHMC.jl/stable/"><img src="https://img.shields.io/badge/docs-stable-blue.svg" alt="Stable"/></a> <a href="https://turinglang.github.io/AdvancedHMC.jl/dev/"><img src="https://img.shields.io/badge/docs-dev-blue.svg" alt="Dev"/></a></p><p>AdvancedHMC.jl provides a robust, modular, and efficient implementation of advanced HMC algorithms. An illustrative example of AdvancedHMC&#39;s usage is given below. AdvancedHMC.jl is part of <a href="https://github.com/TuringLang/Turing.jl">Turing.jl</a>, a probabilistic programming library in Julia.  If you are interested in using AdvancedHMC.jl through a probabilistic programming language, please check it out!</p><p><strong>Interfaces</strong></p><ul><li><a href="https://github.com/salilab/hmc"><code>IMP.hmc</code></a>: an experimental Python module for the Integrative Modeling Platform, which uses AdvancedHMC in its backend to sample protein structures.</li></ul><p><strong>NEWS</strong></p><ul><li>We presented a paper for AdvancedHMC.jl at <a href="http://approximateinference.org/">AABI</a> in 2019 in Vancouver, Canada. (<a href="http://proceedings.mlr.press/v118/xu20a.html">abs</a>, <a href="http://proceedings.mlr.press/v118/xu20a/xu20a.pdf">pdf</a>, <a href="https://openreview.net/forum?id=rJgzckn4tH">OpenReview</a>)</li><li>We presented a poster for AdvancedHMC.jl at <a href="https://mc-stan.org/events/stancon2019Cambridge/">StanCon 2019</a> in Cambridge, UK. (<a href="https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf">pdf</a>)</li></ul><p><strong>API CHANGES</strong></p><ul><li>[v0.5.0] <strong>Breaking!</strong> Convenience constructors for common samplers changed to:<ul><li><code>HMC(n_leapfrog)</code></li><li><code>NUTS(target_acceptance)</code> </li><li><code>HMCDA(target_acceptance, integration_time)</code></li></ul></li><li>[v0.2.22] Three functions are renamed.<ul><li><code>Preconditioner(metric::AbstractMetric)</code> -&gt; <code>MassMatrixAdaptor(metric)</code> and </li><li><code>NesterovDualAveraging(δ, integrator::AbstractIntegrator)</code> -&gt; <code>StepSizeAdaptor(δ, integrator)</code></li><li><code>find_good_eps</code> -&gt; <code>find_good_stepsize</code></li></ul></li><li>[v0.2.15] <code>n_adapts</code> is no longer needed to construct <code>StanHMCAdaptor</code>; the old constructor is deprecated.</li><li>[v0.2.8] Two Hamiltonian trajectory sampling methods are renamed to avoid a name clash with Distributions.<ul><li><code>Multinomial</code> -&gt; <code>MultinomialTS</code></li><li><code>Slice</code> -&gt; <code>SliceTS</code></li></ul></li><li>[v0.2.0] The gradient function passed to <code>Hamiltonian</code> is supposed to return a value-gradient tuple now.</li></ul><h2 id="A-minimal-example-sampling-from-a-multivariate-Gaussian-using-NUTS"><a class="docs-heading-anchor" href="#A-minimal-example-sampling-from-a-multivariate-Gaussian-using-NUTS">A minimal example - sampling from a multivariate Gaussian using NUTS</a><a id="A-minimal-example-sampling-from-a-multivariate-Gaussian-using-NUTS-1"></a><a class="docs-heading-anchor-permalink" href="#A-minimal-example-sampling-from-a-multivariate-Gaussian-using-NUTS" title="Permalink"></a></h2><p>This section demonstrates a minimal example of sampling from a multivariate Gaussian (10-dimensional) using the no U-turn sampler (NUTS). Below we describe the major components of the Hamiltonian system which are essential to sample using this approach:</p><ul><li><strong>Metric</strong>: In many sampling problems the sample space is usually associated with a metric that allows us to measure the distance between any two points, and other similar quantities. In the example in this section, we use a special metric called the <strong>Euclidean Metric</strong>, represented with a <code>D × D</code> matrix from which we can compute distances. </li></ul><p>&lt;details&gt;  &lt;summary&gt;Further details about the Metric component&lt;/summary&gt;  The Euclidean metric is also known as the mass matrix in the physical perspective. For available metrics refer &lt;a href=&quot;#hamiltonian-mass-matrix-metric&quot;&gt;Hamiltonian mass matrix&lt;/a&gt;. &lt;/details&gt;</p><ul><li><strong>Leapfrog integration</strong>: Leapfrog integration is a second-order numerical method for integrating differential equations (In this case they are equations of motion for the relative position of one particle with respect to the other). The order of this integration signifies its rate of convergence. Any algorithm with a finite time step size will have numerical errors, and the order is related to this error. For a second-order algorithm, this error scales as the second power of the time step, hence, the name second-order. High-order integrators are usually complex to code and have a limited region of convergence; hence they do not allow arbitrarily large time steps. A second-order integrator is suitable for our purpose. Hence we opt for the leapfrog integrator. It is called <code>leapfrog</code> due to the ways this algorithm is written, where the positions and velocities of particles <code>leap over</code> each other. </li></ul><p>&lt;details&gt;  &lt;summary&gt;About the leapfrog integration scheme&lt;/summary&gt;  Suppose <span>${\bf x}$</span> and <span>${\bf v}$</span> are the position and velocity of an individual particle respectively; <span>$i$</span> and <span>$i+1$</span> are the indices for time values <span>$t_i$</span> and <span>$t_{i+1}$</span> respectively; <span>$dt = t_{i+1} - t_i$</span> is the time step size (constant and regularly spaced intervals), and <span>${\bf a}$</span> is the acceleration induced on a particle by the forces of all other particles. Furthermore, suppose positions are defined at times <span>$t_i, t_{i+1}, t_{i+2}, \dots $, spaced at constant intervals $dt$</span>, the velocities are defined at halfway times in between, denoted by <span>$t_{i-1/2}, t_{i+1/2}, t_{i+3/2}, \dots $, where $t_{i+1} - t_{i + 1/2} = t_{i + 1/2} - t_i = dt / 2$</span>, and the accelerations <span>${\bf a}$</span> are defined only on integer times, just like the positions. Then the leapfrog integration scheme is given as: <span>$x_{i} = x_{i-1} + v_{i-1/2} dt; \quad v_{i+1/2} = v_{i-1/2} + a_i dt$</span>. For available integrators refer &lt;a href=&quot;#integrator-integrator&quot;&gt;Integrator&lt;/a&gt;. &lt;/details&gt;</p><ul><li><strong>Kernel for trajectories (static or dynamic)</strong>: Different kernels, which may be static or dynamic, can be used. At each iteration of any variant of the HMC algorithm, there are two main steps - the first step changes the momentum and the second step may change both the position and the momentum of a particle. </li></ul><p>&lt;details&gt;  &lt;summary&gt;More about the kernels&lt;/summary&gt;  In the classical HMC approach, during the first step, new values for the momentum variables are randomly drawn from their Gaussian distribution, independently of the current values of the position variables. A Metropolis update is performed during the second step, using Hamiltonian dynamics to provide a new state. For available kernels refer &lt;a href=&quot;#kernel-kernel&quot;&gt;kernel&lt;/a&gt;. &lt;/details&gt;</p><pre><code class="language-julia hljs">using AdvancedHMC, ForwardDiff
 using LogDensityProblems
 using LinearAlgebra
 
@@ -188,3 +643,4 @@ Hong Ge, Kai Xu, and Zoubin Ghahramani: &quot;Turing: a language for flexible pr
 
 with the following BibTeX entry:
 </code></pre><p>@inproceedings{ge2018turing,   title={Turing: A language for flexible probabilistic inference},   author={Ge, Hong and Xu, Kai and Ghahramani, Zoubin},   booktitle={International Conference on Artificial Intelligence and Statistics},   pages={1682–1690},   year={2018},   organization={PMLR} } ```</p><h2 id="References"><a class="docs-heading-anchor" href="#References">References</a><a id="References-1"></a><a class="docs-heading-anchor-permalink" href="#References" title="Permalink"></a></h2><ol><li><p>Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. (<a href="https://arxiv.org/pdf/1206.1901">arXiv</a>)</p></li><li><p>Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. <a href="https://arxiv.org/abs/1701.02434">arXiv preprint arXiv:1701.02434</a>.</p></li><li><p>Girolami, M., &amp; Calderhead, B. (2011). Riemann manifold Langevin and Hamiltonian Monte Carlo methods. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 73(2), 123-214. (<a href="https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2010.00765.x">arXiv</a>)</p></li><li><p>Betancourt, M. J., Byrne, S., &amp; Girolami, M. (2014). Optimizing the integrator step size for Hamiltonian Monte Carlo. <a href="https://arxiv.org/pdf/1411.6669">arXiv preprint arXiv:1411.6669</a>.</p></li><li><p>Betancourt, M. (2016). Identifying the optimal integration time in Hamiltonian Monte Carlo. <a href="https://arxiv.org/abs/1601.00225">arXiv preprint arXiv:1601.00225</a>.</p></li><li><p>Hoffman, M. D., &amp; Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623. (<a href="http://arxiv.org/abs/1111.4246">arXiv</a>)</p></li></ol></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="api/">AdvancedHMC.jl »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Wednesday 26 July 2023 19:42">Wednesday 26 July 2023</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+
