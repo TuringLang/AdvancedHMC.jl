@@ -201,4 +201,8 @@ refresh(
     ref::PartialMomentumRefreshment,
     h::Hamiltonian,
     z::PhasePoint,
-) = phasepoint(h, z.θ, ref.α * z.r + sqrt(1 - ref.α^2) * rand(rng, h.metric, h.kinetic, z.θ))
+) = phasepoint(
+    h,
+    z.θ,
+    ref.α * z.r + sqrt(1 - ref.α^2) * rand(rng, h.metric, h.kinetic, z.θ),
+)
