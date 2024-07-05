@@ -139,5 +139,5 @@ Base.rand(
     kinetic::AbstractKinetic,
     θ,
 ) = _rand(rng, metric, kinetic)
-Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic, _θ) =
+Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic, θ) =
     rand(GLOBAL_RNG, metric, kinetic)
