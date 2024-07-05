@@ -137,7 +137,7 @@ Base.rand(
     rng::AbstractVector{<:AbstractRNG},
     metric::AbstractMetric,
     kinetic::AbstractKinetic,
-    _θ,
+    θ,
 ) = _rand(rng, metric, kinetic)
 Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic, _θ) =
     rand(GLOBAL_RNG, metric, kinetic)
