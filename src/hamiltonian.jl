@@ -45,8 +45,8 @@ end
 ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat) =
     h.metric.M⁻¹ * r
 
-# TODO make the order of θ and r consistent with neg_energy
-# TODO add stricter types to block hamiltonian.jl#L37 from working on unknown metric/kinetic
+# TODO (kai) make the order of θ and r consistent with neg_energy
+# TODO (kai) add stricter types to block hamiltonian.jl#L37 from working on unknown metric/kinetic
 ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat, r::AbstractVecOrMat) = ∂H∂θ(h, θ)
 ∂H∂r(h::Hamiltonian, θ::AbstractVecOrMat, r::AbstractVecOrMat) = ∂H∂r(h, r)
 
