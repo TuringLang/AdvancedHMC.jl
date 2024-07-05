@@ -47,6 +47,7 @@ end
 
 # TODO (kai) make the order of θ and r consistent with neg_energy
 # TODO (kai) add stricter types to block hamiltonian.jl#L37 from working on unknown metric/kinetic
+# The gradient of a position-dependent Hamiltonian system depends on both θ and r. 
 ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat, r::AbstractVecOrMat) = ∂H∂θ(h, θ)
 ∂H∂r(h::Hamiltonian, θ::AbstractVecOrMat, r::AbstractVecOrMat) = ∂H∂r(h, r)
 
