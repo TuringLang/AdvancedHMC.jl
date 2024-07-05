@@ -131,7 +131,7 @@ end
 
 # TODO The rand interface should be updated as "rand from momentum distribution + optional affine transformation by metric"
 # ignore θ by default unless defined by the specific kinetic (i.e. not position-dependent)
-Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic::AbstractKinetic, _θ) =
+Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic::AbstractKinetic, θ) =
     _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
 Base.rand(
     rng::AbstractVector{<:AbstractRNG},
