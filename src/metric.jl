@@ -130,14 +130,24 @@ function _rand(
 end
 
 # TODO The rand interface should be updated as "rand from momentum distribution + optional affine transformation by metric"
-# ignore θ by default unless defined by the specific kinetic (i.e. not position-dependent)
-Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic::AbstractKinetic, θ) =
+Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic::AbstractKinetic) =
     _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
 Base.rand(
     rng::AbstractVector{<:AbstractRNG},
     metric::AbstractMetric,
     kinetic::AbstractKinetic,
-    θ,
 ) = _rand(rng, metric, kinetic)
-Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic, θ) =
+Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic) =
     rand(GLOBAL_RNG, metric, kinetic)
+
+# ignore θ by default unless defined by the specific kinetic (i.e. not position-dependent)
+Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic::AbstractKinetic, θ) =
+    rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
+Base.rand(
+    rng::AbstractVector{<:AbstractRNG},
+    metric::AbstractMetric,
+    kinetic::AbstractKinetic,
+    θ,
+) = rand(rng, metric, kinetic)
+Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic, θ) =
+    rand(metric, kinetic)
