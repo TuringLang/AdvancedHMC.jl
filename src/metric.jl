@@ -141,7 +141,7 @@ Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic) =
     rand(GLOBAL_RNG, metric, kinetic)
 
 # ignore θ by default unless defined by the specific kinetic (i.e. not position-dependent)
-Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic::AbstractKinetic, θ) =
+Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic::AbstractKinetic, θ::AbstractVecOrMat) =
     rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
 Base.rand(
     rng::AbstractVector{<:AbstractRNG},
@@ -149,5 +149,4 @@ Base.rand(
     kinetic::AbstractKinetic,
     θ,
 ) = rand(rng, metric, kinetic)
-Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic, θ) =
-    rand(metric, kinetic)
+Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic, θ::AbstractVecOrMat) = rand(metric, kinetic)
