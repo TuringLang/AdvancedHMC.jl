@@ -129,7 +129,7 @@ function _rand(
     return r
 end
 
-# TODO The rand interface should be updated as "rand from momentum distribution + optional affine transformation by metric"
+# TODO (kai) The rand interface should be updated as "rand from momentum distribution + optional affine transformation by metric"
 Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic::AbstractKinetic) =
     _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
 Base.rand(
