@@ -45,6 +45,12 @@ end
 ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat) =
     h.metric.M⁻¹ * r
 
+# TODO (kai) make the order of θ and r consistent with neg_energy
+# TODO (kai) add stricter types to block hamiltonian.jl#L37 from working on unknown metric/kinetic
+# The gradient of a position-dependent Hamiltonian system depends on both θ and r. 
+∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat, r::AbstractVecOrMat) = ∂H∂θ(h, θ)
+∂H∂r(h::Hamiltonian, θ::AbstractVecOrMat, r::AbstractVecOrMat) = ∂H∂r(h, r)
+
 struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat},V<:DualValue}
     θ::T  # Position variables / model parameters.
     r::T  # Momentum variables
@@ -156,7 +162,7 @@ phasepoint(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     θ::AbstractVecOrMat{T},
     h::Hamiltonian,
-) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric, h.kinetic))
+) where {T<:Real} = phasepoint(h, θ, rand(rng, h.metric, h.kinetic, θ))
 
 abstract type AbstractMomentumRefreshment end
 
@@ -168,7 +174,7 @@ refresh(
     ::FullMomentumRefreshment,
     h::Hamiltonian,
     z::PhasePoint,
-) = phasepoint(h, z.θ, rand(rng, h.metric, h.kinetic))
+) = phasepoint(h, z.θ, rand(rng, h.metric, h.kinetic, z.θ))
 
 """
 $(TYPEDEF)
@@ -196,4 +202,8 @@ refresh(
     ref::PartialMomentumRefreshment,
     h::Hamiltonian,
     z::PhasePoint,
-) = phasepoint(h, z.θ, ref.α * z.r + sqrt(1 - ref.α^2) * rand(rng, h.metric, h.kinetic))
+) = phasepoint(
+    h,
+    z.θ,
+    ref.α * z.r + sqrt(1 - ref.α^2) * rand(rng, h.metric, h.kinetic, z.θ),
+)
