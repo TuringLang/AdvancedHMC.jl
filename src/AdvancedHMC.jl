@@ -52,6 +52,8 @@ export Hamiltonian
 
 include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
+include("riemannian/integrator.jl")
+export GeneralizedLeapfrog
 
 include("trajectory.jl")
 export Trajectory,
