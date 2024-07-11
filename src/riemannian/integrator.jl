@@ -48,7 +48,7 @@ function step(
         # Tempering
         #r = temper(lf, r, (i=i, is_half=true), n_steps)
         # eq (16) of Girolami & Calderhead (2011)
-        r_half = copy(r_init)
+        r_half = r_init
         local cache
         for j = 1:lf.n
             # Reuse cache for the first iteration
@@ -63,7 +63,7 @@ function step(
             r_half = r_init - ϵ / 2 * gradient
         end
         # eq (17) of Girolami & Calderhead (2011)
-        θ_full = copy(θ_init)
+        θ_full = θ_init
         term_1 = ∂H∂r(h, θ_init, r_half) # unchanged across the loop
         for j = 1:lf.n
             θ_full = θ_init + ϵ / 2 * (term_1 + ∂H∂r(h, θ_full, r_half))
