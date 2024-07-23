@@ -6,6 +6,11 @@ Generalized leapfrog integrator with fixed step size `ϵ`.
 # Fields
 
 $(TYPEDFIELDS)
+
+
+## References 
+
+1. Girolami, Mark, and Ben Calderhead. "Riemann manifold Langevin and Hamiltonian Monte Carlo methods." Journal of the Royal Statistical Society Series B: Statistical Methodology 73, no. 2 (2011): 123-214.
 """
 struct GeneralizedLeapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     "Step size."
