@@ -36,11 +36,15 @@ function step(
     n_steps::Int = 1;
     fwd::Bool = n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
     full_trajectory::Val{FullTraj} = Val(false),
-) where {T<:AbstractScalarOrVec{<:AbstractFloat},P<:PhasePoint,FullTraj}
+) where {T<:AbstractScalarOrVec{<:AbstractFloat},P<:PhasePoint{TP},FullTraj,TP}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
 
     ϵ = fwd ? step_size(lf) : -step_size(lf)
     ϵ = ϵ'
+
+    if !(T <: AbstractFloat) || !(TP <: AbstractVector)
+        @warn "Vectorization is not tested for GeneralizedLeapfrog."
+    end
 
     res = if FullTraj
         Vector{P}(undef, n_steps)
