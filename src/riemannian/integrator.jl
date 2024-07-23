@@ -36,7 +36,7 @@ function step(
     n_steps::Int = 1;
     fwd::Bool = n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
     full_trajectory::Val{FullTraj} = Val(false),
-) where {T<:AbstractScalarOrVec{<:AbstractFloat},P<:PhasePoint{TP},FullTraj,TP}
+) where {T<:AbstractScalarOrVec{<:AbstractFloat},TP,P<:PhasePoint{TP},FullTraj}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
 
     ϵ = fwd ? step_size(lf) : -step_size(lf)
