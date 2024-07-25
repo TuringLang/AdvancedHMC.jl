@@ -142,9 +142,17 @@ module Experimental
     using ..AdvancedHMC: @unpack, TYPEDEF, TYPEDFIELDS, AbstractScalarOrVec, AbstractLeapfrog, step, step_size
     import ..AdvancedHMC: ∂H∂θ, ∂H∂r, DualValue, PhasePoint, phasepoint, step
     include("riemannian/integrator.jl")
-    include("riemannian/hamiltonian.jl")
-    include("riemannian/metric.jl")
     export GeneralizedLeapfrog
+    
+    import AdvancedHMC: _rand
+    using AdvancedHMC: AbstractMetric, PhasePoint
+    using LinearAlgebra: eigen, cholesky, Symmetric, Diagonal
+    include("riemannian/metric.jl")
+    export DenseRiemannianMetric
+
+    import AdvancedHMC: DualValue, phasepoint, neg_energy, ∂H∂θ, ∂H∂r
+    using LinearAlgebra: logabsdet, tr
+    include("riemannian/hamiltonian.jl")
 end
 
 include("abstractmcmc.jl")
