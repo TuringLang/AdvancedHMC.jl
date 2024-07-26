@@ -126,7 +126,8 @@ export sample
 include("constructors.jl")
 export HMCSampler, HMC, NUTS, HMCDA
 
-module Experimental
+module Experimental # experimental module 
+
 using Random, Statistics, LinearAlgebra
 using ..AdvancedHMC
 
@@ -154,7 +155,8 @@ export DenseRiemannianMetric
 import AdvancedHMC: DualValue, phasepoint, neg_energy, ∂H∂θ, ∂H∂r
 using LinearAlgebra: logabsdet, tr
 include("riemannian/hamiltonian.jl")
-end
+
+end # end of experimental module
 
 include("abstractmcmc.jl")
 
