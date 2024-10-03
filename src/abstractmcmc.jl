@@ -48,7 +48,11 @@ function AbstractMCMC.sample(
     kwargs...,
 )
     if haskey(kwargs, :nadapts)
-        throw(ArgumentError("keyword argument `nadapts` is unsupported. Please use `n_adapts` to specify the number of adaptation steps."))
+        throw(
+            ArgumentError(
+                "keyword argument `nadapts` is unsupported. Please use `n_adapts` to specify the number of adaptation steps.",
+            ),
+        )
     end
 
     if callback === nothing
@@ -83,7 +87,11 @@ function AbstractMCMC.sample(
     kwargs...,
 )
     if haskey(kwargs, :nadapts)
-        throw(ArgumentError("keyword argument `nadapts` is unsupported. Please use `n_adapts` to specify the number of adaptation steps."))
+        throw(
+            ArgumentError(
+                "keyword argument `nadapts` is unsupported. Please use `n_adapts` to specify the number of adaptation steps.",
+            ),
+        )
     end
 
     if callback === nothing
@@ -152,7 +160,11 @@ function AbstractMCMC.step(
     kwargs...,
 )
     if haskey(kwargs, :nadapts)
-        throw(ArgumentError("keyword argument `nadapts` is unsupported. Please use `n_adapts` to specify the number of adaptation steps."))
+        throw(
+            ArgumentError(
+                "keyword argument `nadapts` is unsupported. Please use `n_adapts` to specify the number of adaptation steps.",
+            ),
+        )
     end
 
     # Compute transition.
@@ -211,7 +223,16 @@ function HMCProgressCallback(n_samples; progress = true, verbose = false)
     HMCProgressCallback(pm, progress, verbose, Ref(0), Ref(0))
 end
 
-function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; n_adapts::Int = 0, kwargs...)
+function (cb::HMCProgressCallback)(
+    rng,
+    model,
+    spl,
+    t,
+    state,
+    i;
+    n_adapts::Int = 0,
+    kwargs...,
+)
     progress = cb.progress
     verbose = cb.verbose
     pm = cb.pm
