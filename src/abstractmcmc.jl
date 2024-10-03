@@ -212,8 +212,8 @@ struct HMCProgressCallback{P}
     "If `progress` is not specified and this is `true` some information will be logged upon completion of adaptation."
     verbose::Bool
     "Number of divergent transitions fo far."
-    num_divergent_transitions::Ref{Int}
-    num_divergent_transitions_during_adaption::Ref{Int}
+    num_divergent_transitions::Base.RefValue{Int}
+    num_divergent_transitions_during_adaption::Base.RefValue{Int}
 end
 
 function HMCProgressCallback(n_samples; progress = true, verbose = false)
