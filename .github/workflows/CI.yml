@@ -6,42 +6,41 @@ on:
       - master
   pull_request:
 
+concurrency:
+  # Skip intermediate builds: always.
+  # Cancel intermediate builds: only if it is a pull request build.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
 jobs:
   test:
+    # needed to allow julia-actions/cache to delete old caches that it has created
+    permissions:
+      actions: write
+      contents: read
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.version == 'nightly' }}
+    continue-on-error: ${{ matrix.version == 'pre' }}
     strategy:
       matrix:
         version:
-          - '1.6'
+          - 'min'
           - '1'
-          - 'nightly'
+          - 'pre'
         os:
           - ubuntu-latest
           - macOS-latest
           - windows-latest
         arch:
-          - x86
           - x64
-        exclude:
-          - os: ubuntu-latest
-            arch: x86
-          - os: macOS-latest
-            arch: x86
-          - os: windows-latest
-            arch: x86
-          # GitHub Action seems to have issue of running julia-nightly with windows-latest
-          # TODO Revisit in the future
-          - version: 'nightly'
-            os: windows-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: julia-actions/julia-buildpkg@latest
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
       - name: Run tests
-        uses: julia-actions/julia-runtest@latest
+        uses: julia-actions/julia-runtest@v1
         env:
           AHMC_TEST_GROUP: AdvancedHMC
