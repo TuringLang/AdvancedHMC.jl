@@ -32,6 +32,30 @@ using Statistics: mean
         verbose = false,
     )
 
+    # Error if keyword argument `nadapts` is used
+    @test_throws ArgumentError AbstractMCMC.sample(
+        rng,
+        model,
+        nuts,
+        n_adapts + n_samples;
+        nadapts = n_adapts,
+        initial_params = θ_init,
+        progress = false,
+        verbose = false,
+    )
+    @test_throws ArgumentError AbstractMCMC.sample(
+        rng,
+        model,
+        nuts,
+        MCMCThreads(),
+        n_adapts + n_samples,
+        2;
+        nadapts = n_adapts,
+        initial_params = θ_init,
+        progress = false,
+        verbose = false,
+    )
+
     # Transform back to original space.
     # NOTE: We're not correcting for the `logabsdetjac` here since, but
     # we're only interested in the mean it doesn't matter.
