@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - master
-      - main
 
 concurrency:
   # Skip intermediate builds: always.
@@ -17,8 +16,8 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@latest
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
         with:
           version: 1
       - name: Format code
