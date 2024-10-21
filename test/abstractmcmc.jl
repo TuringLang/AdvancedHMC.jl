@@ -8,7 +8,7 @@ using Statistics: mean
     θ_init = randn(rng, 2)
 
     nuts = NUTS(0.8)
-    hmc = HMC(100; integrator = Leapfrog(0.05))
+    hmc = HMC(100; integrator=Leapfrog(0.05))
     hmcda = HMCDA(0.8, 0.1)
 
     integrator = Leapfrog(1e-3)
@@ -21,15 +21,27 @@ using Statistics: mean
         LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ_gdemo),
     )
 
+    @testset "getparams and setparams!!" begin
+        t, s = AbstractMCMC.step(
+            rng,
+            model,
+            nuts;
+        )
+
+        θ = AbstractMCMC.getparams(s)
+        @test θ == t.z.θ
+        @test AbstractMCMC.setparams!!(s, θ) == s
+    end
+
     samples_nuts = AbstractMCMC.sample(
         rng,
         model,
         nuts,
         n_adapts + n_samples;
-        n_adapts = n_adapts,
-        initial_params = θ_init,
-        progress = false,
-        verbose = false,
+        n_adapts=n_adapts,
+        initial_params=θ_init,
+        progress=false,
+        verbose=false,
     )
 
     # Error if keyword argument `nadapts` is used
@@ -38,10 +50,10 @@ using Statistics: mean
         model,
         nuts,
         n_adapts + n_samples;
-        nadapts = n_adapts,
-        initial_params = θ_init,
-        progress = false,
-        verbose = false,
+        nadapts=n_adapts,
+        initial_params=θ_init,
+        progress=false,
+        verbose=false,
     )
     @test_throws ArgumentError AbstractMCMC.sample(
         rng,
@@ -50,10 +62,10 @@ using Statistics: mean
         MCMCThreads(),
         n_adapts + n_samples,
         2;
-        nadapts = n_adapts,
-        initial_params = θ_init,
-        progress = false,
-        verbose = false,
+        nadapts=n_adapts,
+        initial_params=θ_init,
+        progress=false,
+        verbose=false,
     )
 
     # Transform back to original space.
@@ -73,10 +85,10 @@ using Statistics: mean
         model,
         hmc,
         n_adapts + n_samples;
-        n_adapts = n_adapts,
-        initial_params = θ_init,
-        progress = false,
-        verbose = false,
+        n_adapts=n_adapts,
+        initial_params=θ_init,
+        progress=false,
+        verbose=false,
     )
 
     # Transform back to original space.
@@ -96,10 +108,10 @@ using Statistics: mean
         model,
         custom,
         n_adapts + n_samples;
-        n_adapts = 0,
-        initial_params = θ_init,
-        progress = false,
-        verbose = false,
+        n_adapts=0,
+        initial_params=θ_init,
+        progress=false,
+        verbose=false,
     )
 
     # Transform back to original space.
@@ -122,20 +134,20 @@ using Statistics: mean
         model,
         custom,
         10;
-        n_adapts = 0,
-        initial_params = θ_init,
-        progress = false,
-        verbose = false,
+        n_adapts=0,
+        initial_params=θ_init,
+        progress=false,
+        verbose=false,
     )
     samples2 = AbstractMCMC.sample(
         rng2,
         model,
         custom,
         10;
-        n_adapts = 0,
-        initial_params = θ_init,
-        progress = false,
-        verbose = false,
+        n_adapts=0,
+        initial_params=θ_init,
+        progress=false,
+        verbose=false,
     )
     @test mapreduce(*, samples1, samples2) do s1, s2
         s1.z.θ == s2.z.θ

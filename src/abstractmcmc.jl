@@ -30,6 +30,15 @@ getadaptor(state::HMCState) = state.adaptor
 getmetric(state::HMCState) = state.metric
 getintegrator(state::HMCState) = state.κ.τ.integrator
 
+function AbstractMCMC.getparams(state::HMCState)
+    # TODO(sunxd): should we return a copy?
+    return state.transition.z.θ
+end
+
+function AbstractMCMC.setparams!!(state::HMCState, θ)
+    return @set state.transition.z.θ = θ
+end
+
 """
     $(TYPEDSIGNATURES)
 
