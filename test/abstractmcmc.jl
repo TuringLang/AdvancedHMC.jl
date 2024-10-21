@@ -22,11 +22,7 @@ using Statistics: mean
     )
 
     @testset "getparams and setparams!!" begin
-        t, s = AbstractMCMC.step(
-            rng,
-            model,
-            nuts;
-        )
+        t, s = AbstractMCMC.step(rng, model, nuts;)
 
         θ = AbstractMCMC.getparams(s)
         @test θ == t.z.θ
