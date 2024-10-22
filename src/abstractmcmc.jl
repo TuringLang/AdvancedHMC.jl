@@ -38,8 +38,10 @@ end
 function AbstractMCMC.setparams!!(state::HMCState, params)
     hamiltonian = AdvancedHMC.Hamiltonian(state.metric, model)
     return Setfield.@set state.transition.z = AdvancedHMC.phasepoint(
-        hamiltonian, params, state.transition.z.r;
-        ℓκ=state.transition.z.ℓκ
+        hamiltonian,
+        params,
+        state.transition.z.r;
+        ℓκ = state.transition.z.ℓκ,
     )
 end
 
