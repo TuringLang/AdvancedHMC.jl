@@ -41,7 +41,7 @@ end
 # TODO: adopt https://github.com/TuringLang/MCMCTempering.jl/blob/deb96684496f3fbd011b9f70f28c49a161def23f/ext/MCMCTemperingAdvancedHMCExt.jl#L10-L17
 # if in the future the interface provides access to the log density function
 function AbstractMCMC.setparams!!(state::HMCState, params)
-    return @set state.transition.z.θ = θ
+    return @set state.transition.z.θ = params
 end
 
 """
