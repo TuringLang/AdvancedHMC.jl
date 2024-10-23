@@ -21,6 +21,18 @@ using Statistics: mean
         LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ_gdemo),
     )
 
+    @testset "getparams and setparams!!" begin
+        t, s = AbstractMCMC.step(rng, model, nuts;)
+
+        θ = AbstractMCMC.getparams(s)
+        @test θ == t.z.θ
+        @test AbstractMCMC.setparams!!(s, θ) == s
+
+        new_θ = randn(rng, 2)
+        new_state = AbstractMCMC.setparams!!(s, new_θ)
+        @test AbstractMCMC.getparams(new_state) == new_θ
+    end
+
     samples_nuts = AbstractMCMC.sample(
         rng,
         model,
