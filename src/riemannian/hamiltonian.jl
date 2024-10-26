@@ -11,23 +11,22 @@ phasepoint(
 # Negative kinetic energy
 #! Eq (13) of Girolami & Calderhead (2011)
 function neg_energy(
-    h::Hamiltonian{<:DenseRiemannianMetric, <:GaussianKinetic},
+    h::Hamiltonian{<:DenseRiemannianMetric,<:GaussianKinetic},
     r::T,
     θ::T,
 ) where {T<:AbstractVecOrMat}
     G = h.metric.map(h.metric.G(θ))
     # Need to consider the normalizing term as it is no longer same for different θs
     logZ = 1 / 2 * (size(G, 1) * log(2π) + logdet(G)) # it will be user's responsibility to make sure G is SPD and logdet(G) is defined
-    
     mul!(h.metric._temp, inv(G), r)
     # ldiv!(h.metric._temp, cholesky(G), r) # https://docs.julialang.org/en/v1/stdlib/LinearAlgebra/#LinearAlgebra.ldiv!
     return -logZ - dot(r, h.metric._temp) / 2
 end
 
 function neg_energy(
-    h::Hamiltonian{<:DenseRiemannianMetric, <:AbstractRelativisticKinetic},
+    h::Hamiltonian{<:DenseRiemannianMetric,<:AbstractRelativisticKinetic},
     r::T,
-    θ::T
+    θ::T,
 ) where {T<:AbstractVecOrMat}
     G = h.metric.map(h.metric.G(θ))
     # Need to consider the normalizing term as it is no longer same for different θs
@@ -39,12 +38,12 @@ function neg_energy(
 
     mul!(h.metric._temp, inv(G), r)
     # ldiv!(h.metric._temp, cholesky(G), r) # https://docs.julialang.org/en/v1/stdlib/LinearAlgebra/#LinearAlgebra.ldiv!
-    return -relativistic_energy(h.kinetic, r, h.metric._temp) - logZ_partial 
+    return -relativistic_energy(h.kinetic, r, h.metric._temp) - logZ_partial
 end
 
 # QUES L31 of hamiltonian.jl now reads a bit weird (semantically)
 function ∂H∂θ(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}, <:GaussianKinetic},
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap},<:GaussianKinetic},
     θ::AbstractVecOrMat{T},
     r::AbstractVecOrMat{T},
 ) where {T}
@@ -68,7 +67,7 @@ function ∂H∂θ(
 end
 
 function ∂H∂θ(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}, <:AbstractRelativisticKinetic},
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap},<:AbstractRelativisticKinetic},
     θ::AbstractVecOrMat{T},
     r::AbstractVecOrMat{T},
 ) where {T}
@@ -130,7 +129,8 @@ function ∂H∂θ_cache(
     term_2 = Q * D * J * D * Q'
 
     isdiag = ∂H∂θ isa AbstractMatrix
-    g = isdiag ?
+    g =
+        isdiag ?
         -(∂ℓπ∂θ - 1 / 2 * diag(term_1_cached * ∂H∂θ) + 1 / 2 * diag(term_2 * ∂H∂θ)) :
         -mapreduce(vcat, 1:d) do i
             ∂H∂θᵢ = ∂H∂θ[:, :, i]
@@ -149,8 +149,8 @@ end
     r::AbstractVecOrMat{T},
 ) where {T} = ∂H∂θ_cache(h, θ, r)
 function ∂H∂θ_cache(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap},<:RelativisticKinetic}, 
-    θ::AbstractVecOrMat{T}, 
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap},<:RelativisticKinetic},
+    θ::AbstractVecOrMat{T},
     r::AbstractVecOrMat{T};
     return_cache = false,
     cache = nothing,
@@ -207,11 +207,16 @@ function ∂H∂θ_cache(
     # @assert false
 
     isdiag = ∂H∂θ isa AbstractMatrix
-    g = isdiag ?
-        -(∂ℓπ∂θ - 1 / 2 * diag(term_1_cached * ∂H∂θ) + 1 / 2 * (1 / mass) * diag(term_2 * ∂H∂θ)) :
+    g =
+        isdiag ?
+        -(
+            ∂ℓπ∂θ - 1 / 2 * diag(term_1_cached * ∂H∂θ) +
+            1 / 2 * (1 / mass) * diag(term_2 * ∂H∂θ)
+        ) :
         -mapreduce(vcat, 1:d) do i
-            ∂H∂θᵢ = ∂H∂θ[:,:,i]
-            ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * (1 / mass) * tr(term_2 * ∂H∂θᵢ) # (v2) cache friendly
+            ∂H∂θᵢ = ∂H∂θ[:, :, i]
+            ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) +
+            1 / 2 * (1 / mass) * tr(term_2 * ∂H∂θᵢ) # (v2) cache friendly
         end
 
     dv = DualValue(ℓπ, g)
@@ -220,8 +225,11 @@ end
 
 # FIXME This implementation for dimensionwise is incorrect
 function ∂H∂θ(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap},<:DimensionwiseRelativisticKinetic}, 
-    θ::AbstractVecOrMat{T}, 
+    h::Hamiltonian{
+        <:DenseRiemannianMetric{T,<:SoftAbsMap},
+        <:DimensionwiseRelativisticKinetic,
+    },
+    θ::AbstractVecOrMat{T},
     r::AbstractVecOrMat{T},
 ) where {T}
     ℓπ, ∂ℓπ∂θ = h.∂ℓπ∂θ(θ)
@@ -251,7 +259,7 @@ function ∂H∂θ(
 
     term_2_cached = Q * D * J * D * Q'
     g = -mapreduce(vcat, 1:d) do i
-        ∂H∂θᵢ = ∂H∂θ[:,:,i]
+        ∂H∂θᵢ = ∂H∂θ[:, :, i]
         # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
         # NOTE Some further optimization can be done here: cache the 1st product all together
         ∂ℓπ∂θ[i] - 1 / 2 * term_1_cached[i] * -tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
@@ -262,7 +270,7 @@ end
 
 #! Eq (14) of Girolami & Calderhead (2011)
 function ∂H∂r(
-    h::Hamiltonian{<:DenseRiemannianMetric, <:GaussianKinetic},
+    h::Hamiltonian{<:DenseRiemannianMetric,<:GaussianKinetic},
     θ::AbstractVecOrMat,
     r::AbstractVecOrMat,
 )
@@ -277,7 +285,11 @@ function ∂H∂r(
     return G \ r # NOTE it's actually pretty weird that ∂H∂θ returns DualValue but ∂H∂r doesn't
 end
 
-function ∂H∂r(h::Hamiltonian{<:DenseRiemannianMetric, <:AbstractRelativisticKinetic}, θ::AbstractVecOrMat, r::AbstractVecOrMat)
+function ∂H∂r(
+    h::Hamiltonian{<:DenseRiemannianMetric,<:AbstractRelativisticKinetic},
+    θ::AbstractVecOrMat,
+    r::AbstractVecOrMat,
+)
     M = h.metric.map(h.metric.G(θ))
     # M⁻¹ = inv(M)
     # cholM⁻¹ = cholesky(Symmetric(M⁻¹)).U

@@ -14,7 +14,7 @@ end
 #! The definition of SoftAbs from Page 3 of Betancourt (2012)
 function softabs(X, α = 20.0)
     F = eigen(
-        Symmetric(X)    # NOTE ~Symmetric~ is needed to avid eigen returns complex numbers
+        Symmetric(X),    # NOTE ~Symmetric~ is needed to avid eigen returns complex numbers
     ) # ReverseDiff cannot diff through `eigen`
     Q = hcat(F.vectors)
     λ = F.values
@@ -22,7 +22,7 @@ function softabs(X, α = 20.0)
     return Q * Diagonal(softabsλ) * Q', Q, λ, softabsλ
 end
 
-function softabs(X::T, α = 20.0) where {T <: Diagonal}
+function softabs(X::T, α = 20.0) where {T<:Diagonal}
     Q = I
     λ = X.diag
     softabsλ = λ .* coth.(α * λ)
@@ -59,7 +59,7 @@ Base.show(io::IO, dem::DenseRiemannianMetric) = print(io, "DenseRiemannianMetric
 function _rand(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::DenseRiemannianMetric{T},
-    kinetic::Union{GaussianKinetic, <:AbstractRelativisticKinetic{T}},
+    kinetic::Union{GaussianKinetic,<:AbstractRelativisticKinetic{T}},
     θ::AbstractVecOrMat,
 ) where {T}
     r = _rand(rng, UnitEuclideanMetric(size(metric)), kinetic)
@@ -69,8 +69,12 @@ function _rand(
     return r
 end
 
-Base.rand(rng::AbstractRNG, metric::AbstractRiemannianMetric, kinetic::AbstractKinetic, θ::AbstractVecOrMat) =
-    _rand(rng, metric, kinetic, θ)
+Base.rand(
+    rng::AbstractRNG,
+    metric::AbstractRiemannianMetric,
+    kinetic::AbstractKinetic,
+    θ::AbstractVecOrMat,
+) = _rand(rng, metric, kinetic, θ)
 Base.rand(
     rng::AbstractVector{<:AbstractRNG},
     metric::AbstractRiemannianMetric,
