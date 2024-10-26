@@ -1,6 +1,6 @@
 name = "AdvancedHMC"
 uuid = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
-version = "0.6.1"
+version = "0.6.2"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
@@ -31,7 +31,7 @@ AdvancedHMCMCMCChainsExt = "MCMCChains"
 AdvancedHMCOrdinaryDiffEqExt = "OrdinaryDiffEq"
 
 [compat]
-AbstractMCMC = "4.2, 5"
+AbstractMCMC = "5"
 AdaptiveRejectionSampling = "0.1.1"
 ArgCheck = "1, 2"
 CUDA = "3, 4, 5"
@@ -50,7 +50,9 @@ SimpleUnPack = "1.1"
 Statistics = "1.6"
 StatsBase = "0.31, 0.32, 0.33, 0.34"
 StatsFuns = "0.8, 0.9, 1"
-julia = "1.6"
+LinearAlgebra = "1.6"
+Random = "1.6"
+julia = "1.6.7"
 
 [extras]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
