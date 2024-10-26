@@ -52,8 +52,6 @@ export Hamiltonian
 
 include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
-include("riemannian/integrator.jl")
-export GeneralizedLeapfrog
 
 include("trajectory.jl")
 export Trajectory,
@@ -127,6 +125,38 @@ export sample
 
 include("constructors.jl")
 export HMCSampler, HMC, NUTS, HMCDA
+
+module Experimental # experimental module 
+
+using Random, Statistics, LinearAlgebra
+using ..AdvancedHMC
+
+import ..AdvancedHMC: ∂H∂r, neg_energy, AbstractKinetic
+import Random: AbstractRNG
+include("relativistic/hamiltonian.jl")
+export RelativisticKinetic, DimensionwiseRelativisticKinetic
+
+using AdaptiveRejectionSampling: RejectionSampler, run_sampler!
+import ..AdvancedHMC: _rand
+include("relativistic/metric.jl")
+
+using ..AdvancedHMC:
+    @unpack, TYPEDEF, TYPEDFIELDS, AbstractScalarOrVec, AbstractLeapfrog, step, step_size
+import ..AdvancedHMC: ∂H∂θ, ∂H∂r, DualValue, PhasePoint, phasepoint, step
+include("riemannian/integrator.jl")
+export GeneralizedLeapfrog
+
+import AdvancedHMC: _rand
+using AdvancedHMC: AbstractMetric, PhasePoint
+using LinearAlgebra: eigen, cholesky, Symmetric, Diagonal
+include("riemannian/metric.jl")
+export IdentityMap, SoftAbsMap, DenseRiemannianMetric
+
+import AdvancedHMC: DualValue, phasepoint, neg_energy, ∂H∂θ, ∂H∂r
+using LinearAlgebra: logabsdet, tr
+include("riemannian/hamiltonian.jl")
+
+end # end of experimental module
 
 include("abstractmcmc.jl")
 
