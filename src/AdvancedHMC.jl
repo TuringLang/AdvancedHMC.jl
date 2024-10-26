@@ -150,7 +150,7 @@ import AdvancedHMC: _rand
 using AdvancedHMC: AbstractMetric, PhasePoint
 using LinearAlgebra: eigen, cholesky, Symmetric, Diagonal
 include("riemannian/metric.jl")
-export DenseRiemannianMetric
+export IdentityMap, SoftAbsMap, DenseRiemannianMetric
 
 import AdvancedHMC: DualValue, phasepoint, neg_energy, ∂H∂θ, ∂H∂r
 using LinearAlgebra: logabsdet, tr
