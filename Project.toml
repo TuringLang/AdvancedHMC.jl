@@ -30,7 +30,7 @@ AdvancedHMCMCMCChainsExt = "MCMCChains"
 AdvancedHMCOrdinaryDiffEqExt = "OrdinaryDiffEq"
 
 [compat]
-AbstractMCMC = "5.5"
+AbstractMCMC = "5.6"
 ArgCheck = "1, 2"
 CUDA = "3, 4, 5"
 DocStringExtensions = "0.8, 0.9"
