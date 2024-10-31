@@ -26,8 +26,12 @@ using Statistics: mean
 
         θ = AbstractMCMC.getparams(s)
         @test θ == t.z.θ
-        @test AbstractMCMC.setparams!!(model, s, θ) == s
-
+        new_state = AbstractMCMC.setparams!!(model, s, θ)
+        @test new_state.transition.z.θ == θ
+        @test new_state.transition.z.ℓπ == s.transition.z.ℓπ
+        @test new_state.transition.z.ℓκ == s.transition.z.ℓκ
+        @test new_state.transition.z.r == s.transition.z.r
+        
         new_θ = randn(rng, 2)
         new_state = AbstractMCMC.setparams!!(model, s, new_θ)
         @test AbstractMCMC.getparams(new_state) == new_θ
