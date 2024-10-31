@@ -34,7 +34,11 @@ function AbstractMCMC.getparams(state::HMCState)
     return state.transition.z.θ
 end
 
-function AbstractMCMC.setparams!!(model::AbstractMCMC.LogDensityModel, state::HMCState, params)
+function AbstractMCMC.setparams!!(
+    model::AbstractMCMC.LogDensityModel,
+    state::HMCState,
+    params,
+)
     hamiltonian = AdvancedHMC.Hamiltonian(state.metric, model)
     return Setfield.@set state.transition.z = AdvancedHMC.phasepoint(
         hamiltonian,
