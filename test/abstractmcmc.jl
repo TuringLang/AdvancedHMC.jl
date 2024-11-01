@@ -21,12 +21,56 @@ using Statistics: mean
         LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ_gdemo),
     )
 
+    @testset "getparams and setparams!!" begin
+        t, s = AbstractMCMC.step(rng, model, nuts;)
+
+        θ = AbstractMCMC.getparams(s)
+        @test θ == t.z.θ
+        new_state = AbstractMCMC.setparams!!(model, s, θ)
+        @test new_state.transition.z.θ == θ
+        new_state_logπ = new_state.transition.z.ℓπ
+        @test new_state_logπ.value == s.transition.z.ℓπ.value
+        @test new_state_logπ.gradient == s.transition.z.ℓπ.gradient
+        new_state_logκ = new_state.transition.z.ℓκ
+        @test new_state_logκ.value == s.transition.z.ℓκ.value
+        @test new_state_logκ.gradient == s.transition.z.ℓκ.gradient
+        @test new_state.transition.z.r == s.transition.z.r
+
+        new_θ = randn(rng, 2)
+        new_state = AbstractMCMC.setparams!!(model, s, new_θ)
+        @test AbstractMCMC.getparams(new_state) == new_θ
+    end
+
     samples_nuts = AbstractMCMC.sample(
         rng,
         model,
         nuts,
         n_adapts + n_samples;
         n_adapts = n_adapts,
+        initial_params = θ_init,
+        progress = false,
+        verbose = false,
+    )
+
+    # Error if keyword argument `nadapts` is used
+    @test_throws ArgumentError AbstractMCMC.sample(
+        rng,
+        model,
+        nuts,
+        n_adapts + n_samples;
+        nadapts = n_adapts,
+        initial_params = θ_init,
+        progress = false,
+        verbose = false,
+    )
+    @test_throws ArgumentError AbstractMCMC.sample(
+        rng,
+        model,
+        nuts,
+        MCMCThreads(),
+        n_adapts + n_samples,
+        2;
+        nadapts = n_adapts,
         initial_params = θ_init,
         progress = false,
         verbose = false,

@@ -30,6 +30,24 @@ getadaptor(state::HMCState) = state.adaptor
 getmetric(state::HMCState) = state.metric
 getintegrator(state::HMCState) = state.κ.τ.integrator
 
+function AbstractMCMC.getparams(state::HMCState)
+    return state.transition.z.θ
+end
+
+function AbstractMCMC.setparams!!(
+    model::AbstractMCMC.LogDensityModel,
+    state::HMCState,
+    params,
+)
+    hamiltonian = AdvancedHMC.Hamiltonian(state.metric, model)
+    return Setfield.@set state.transition.z = AdvancedHMC.phasepoint(
+        hamiltonian,
+        params,
+        state.transition.z.r;
+        ℓκ = state.transition.z.ℓκ,
+    )
+end
+
 """
     $(TYPEDSIGNATURES)
 
@@ -47,6 +65,14 @@ function AbstractMCMC.sample(
     callback = nothing,
     kwargs...,
 )
+    if haskey(kwargs, :nadapts)
+        throw(
+            ArgumentError(
+                "keyword argument `nadapts` is unsupported. Please use `n_adapts` to specify the number of adaptation steps.",
+            ),
+        )
+    end
+
     if callback === nothing
         callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
         progress = false # don't use AMCMC's progress-funtionality
@@ -78,6 +104,13 @@ function AbstractMCMC.sample(
     callback = nothing,
     kwargs...,
 )
+    if haskey(kwargs, :nadapts)
+        throw(
+            ArgumentError(
+                "keyword argument `nadapts` is unsupported. Please use `n_adapts` to specify the number of adaptation steps.",
+            ),
+        )
+    end
 
     if callback === nothing
         callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
@@ -141,8 +174,17 @@ function AbstractMCMC.step(
     model::AbstractMCMC.LogDensityModel,
     spl::AbstractHMCSampler,
     state::HMCState;
+    n_adapts::Int = 0,
     kwargs...,
 )
+    if haskey(kwargs, :nadapts)
+        throw(
+            ArgumentError(
+                "keyword argument `nadapts` is unsupported. Please use `n_adapts` to specify the number of adaptation steps.",
+            ),
+        )
+    end
+
     # Compute transition.
     i = state.i + 1
     t_old = state.transition
@@ -158,7 +200,6 @@ function AbstractMCMC.step(
 
     # Adapt h and spl.
     tstat = stat(t)
-    n_adapts = kwargs[:n_adapts]
     h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
     tstat = merge(tstat, (is_adapt = isadapted,))
 
@@ -189,8 +230,8 @@ struct HMCProgressCallback{P}
     "If `progress` is not specified and this is `true` some information will be logged upon completion of adaptation."
     verbose::Bool
     "Number of divergent transitions fo far."
-    num_divergent_transitions::Ref{Int}
-    num_divergent_transitions_during_adaption::Ref{Int}
+    num_divergent_transitions::Base.RefValue{Int}
+    num_divergent_transitions_during_adaption::Base.RefValue{Int}
 end
 
 function HMCProgressCallback(n_samples; progress = true, verbose = false)
@@ -200,7 +241,16 @@ function HMCProgressCallback(n_samples; progress = true, verbose = false)
     HMCProgressCallback(pm, progress, verbose, Ref(0), Ref(0))
 end
 
-function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; nadapts = 0, kwargs...)
+function (cb::HMCProgressCallback)(
+    rng,
+    model,
+    spl,
+    t,
+    state,
+    i;
+    n_adapts::Int = 0,
+    kwargs...,
+)
     progress = cb.progress
     verbose = cb.verbose
     pm = cb.pm
@@ -246,8 +296,8 @@ function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; nadapts = 0, kw
             ),
         )
         # Report finish of adapation
-    elseif verbose && isadapted && i == nadapts
-        @info "Finished $nadapts adapation steps" adaptor κ.τ.integrator metric
+    elseif verbose && isadapted && i == n_adapts
+        @info "Finished $(n_adapts) adapation steps" adaptor κ.τ.integrator metric
     end
 end
 
