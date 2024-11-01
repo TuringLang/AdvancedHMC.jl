@@ -36,7 +36,7 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
         @warn "Skipping GPU tests because no GPU available."
     end
 
-    @main function runtests(patterns...; dry::Bool = false)
+    Comonicon.@main function runtests(patterns...; dry::Bool = false)
         retest(patterns...; dry = dry, verbose = Inf)
     end
 end

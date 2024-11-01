@@ -6,7 +6,13 @@ using Statistics: Statistics
 using SimpleUnPack: @unpack, @pack!
 
 using ..AdvancedHMC: DEBUG, AbstractScalarOrVec
+using DocStringExtensions
 
+"""
+$(TYPEDEF)
+
+Abstract type for HMC adaptors. 
+"""
 abstract type AbstractAdaptor end
 function getM⁻¹ end
 function getϵ end

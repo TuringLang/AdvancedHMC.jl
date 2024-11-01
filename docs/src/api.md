@@ -5,7 +5,7 @@ Documentation for AdvancedHMC.jl
 ```@contents
 ```
 
-## Structs
+## Types
 ```@docs
 ClassicNoUTurn
 HMCSampler
@@ -18,4 +18,11 @@ HMCDA
 
 ```@docs
 sample
+```
+
+## More types
+
+```@autodocs; canonical=false
+Modules = [AdvancedHMC, AdvancedHMC.Adaptation]
+Order   = [:type]
 ```

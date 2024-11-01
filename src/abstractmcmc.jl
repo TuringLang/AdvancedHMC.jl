@@ -30,6 +30,24 @@ getadaptor(state::HMCState) = state.adaptor
 getmetric(state::HMCState) = state.metric
 getintegrator(state::HMCState) = state.κ.τ.integrator
 
+function AbstractMCMC.getparams(state::HMCState)
+    return state.transition.z.θ
+end
+
+function AbstractMCMC.setparams!!(
+    model::AbstractMCMC.LogDensityModel,
+    state::HMCState,
+    params,
+)
+    hamiltonian = AdvancedHMC.Hamiltonian(state.metric, model)
+    return Setfield.@set state.transition.z = AdvancedHMC.phasepoint(
+        hamiltonian,
+        params,
+        state.transition.z.r;
+        ℓκ = state.transition.z.ℓκ,
+    )
+end
+
 """
     $(TYPEDSIGNATURES)
 
@@ -38,7 +56,7 @@ A convenient wrapper around `AbstractMCMC.sample` avoiding explicit construction
 
 function AbstractMCMC.sample(
     rng::Random.AbstractRNG,
-    model::LogDensityModel,
+    model::AbstractMCMC.LogDensityModel,
     sampler::AbstractHMCSampler,
     N::Integer;
     n_adapts::Int = min(div(N, 10), 1_000),
@@ -47,6 +65,14 @@ function AbstractMCMC.sample(
     callback = nothing,
     kwargs...,
 )
+    if haskey(kwargs, :nadapts)
+        throw(
+            ArgumentError(
+                "keyword argument `nadapts` is unsupported. Please use `n_adapts` to specify the number of adaptation steps.",
+            ),
+        )
+    end
+
     if callback === nothing
         callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
         progress = false # don't use AMCMC's progress-funtionality
@@ -67,7 +93,7 @@ end
 
 function AbstractMCMC.sample(
     rng::Random.AbstractRNG,
-    model::LogDensityModel,
+    model::AbstractMCMC.LogDensityModel,
     sampler::AbstractHMCSampler,
     parallel::AbstractMCMC.AbstractMCMCEnsemble,
     N::Integer,
@@ -78,6 +104,13 @@ function AbstractMCMC.sample(
     callback = nothing,
     kwargs...,
 )
+    if haskey(kwargs, :nadapts)
+        throw(
+            ArgumentError(
+                "keyword argument `nadapts` is unsupported. Please use `n_adapts` to specify the number of adaptation steps.",
+            ),
+        )
+    end
 
     if callback === nothing
         callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
@@ -101,9 +134,9 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::LogDensityModel,
+    model::AbstractMCMC.LogDensityModel,
     spl::AbstractHMCSampler;
-    init_params = nothing,
+    initial_params = nothing,
     kwargs...,
 )
     # Unpack model
@@ -117,8 +150,8 @@ function AbstractMCMC.step(
 
     # Define integration algorithm
     # Find good eps if not provided one
-    init_params = make_init_params(rng, spl, logdensity, init_params)
-    ϵ = make_step_size(rng, spl, hamiltonian, init_params)
+    initial_params = make_initial_params(rng, spl, logdensity, initial_params)
+    ϵ = make_step_size(rng, spl, hamiltonian, initial_params)
     integrator = make_integrator(spl, ϵ)
 
     # Make kernel
@@ -128,7 +161,7 @@ function AbstractMCMC.step(
     adaptor = make_adaptor(spl, metric, integrator)
 
     # Get an initial sample.
-    h, t = AdvancedHMC.sample_init(rng, hamiltonian, init_params)
+    h, t = AdvancedHMC.sample_init(rng, hamiltonian, initial_params)
 
     # Compute next transition and state.
     state = HMCState(0, t, metric, κ, adaptor)
@@ -138,11 +171,20 @@ end
 
 function AbstractMCMC.step(
     rng::AbstractRNG,
-    model::LogDensityModel,
+    model::AbstractMCMC.LogDensityModel,
     spl::AbstractHMCSampler,
     state::HMCState;
+    n_adapts::Int = 0,
     kwargs...,
 )
+    if haskey(kwargs, :nadapts)
+        throw(
+            ArgumentError(
+                "keyword argument `nadapts` is unsupported. Please use `n_adapts` to specify the number of adaptation steps.",
+            ),
+        )
+    end
+
     # Compute transition.
     i = state.i + 1
     t_old = state.transition
@@ -158,7 +200,6 @@ function AbstractMCMC.step(
 
     # Adapt h and spl.
     tstat = stat(t)
-    n_adapts = kwargs[:n_adapts]
     h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
     tstat = merge(tstat, (is_adapt = isadapted,))
 
@@ -189,8 +230,8 @@ struct HMCProgressCallback{P}
     "If `progress` is not specified and this is `true` some information will be logged upon completion of adaptation."
     verbose::Bool
     "Number of divergent transitions fo far."
-    num_divergent_transitions::Ref{Int}
-    num_divergent_transitions_during_adaption::Ref{Int}
+    num_divergent_transitions::Base.RefValue{Int}
+    num_divergent_transitions_during_adaption::Base.RefValue{Int}
 end
 
 function HMCProgressCallback(n_samples; progress = true, verbose = false)
@@ -200,7 +241,16 @@ function HMCProgressCallback(n_samples; progress = true, verbose = false)
     HMCProgressCallback(pm, progress, verbose, Ref(0), Ref(0))
 end
 
-function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; nadapts = 0, kwargs...)
+function (cb::HMCProgressCallback)(
+    rng,
+    model,
+    spl,
+    t,
+    state,
+    i;
+    n_adapts::Int = 0,
+    kwargs...,
+)
     progress = cb.progress
     verbose = cb.verbose
     pm = cb.pm
@@ -243,26 +293,26 @@ function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; nadapts = 0, kw
             ),
         )
         # Report finish of adapation
-    elseif verbose && isadapted && i == nadapts
-        @info "Finished $nadapts adapation steps" adaptor κ.τ.integrator metric
+    elseif verbose && isadapted && i == n_adapts
+        @info "Finished $(n_adapts) adapation steps" adaptor κ.τ.integrator metric
     end
 end
 
 #############
 ### Utils ###
 #############
-function make_init_params(
+function make_initial_params(
     rng::AbstractRNG,
     spl::AbstractHMCSampler,
     logdensity,
-    init_params,
+    initial_params,
 )
     T = sampler_eltype(spl)
-    if init_params == nothing
+    if initial_params == nothing
         d = LogDensityProblems.dimension(logdensity)
-        init_params = randn(rng, d)
+        initial_params = randn(rng, d)
     end
-    return T.(init_params)
+    return T.(initial_params)
 end
 
 #########
@@ -271,10 +321,10 @@ function make_step_size(
     rng::Random.AbstractRNG,
     spl::HMCSampler,
     hamiltonian::Hamiltonian,
-    init_params,
+    initial_params,
 )
     T = typeof(spl.κ.τ.integrator.ϵ)
-    ϵ = make_step_size(rng, spl.κ.τ.integrator, T, hamiltonian, init_params)
+    ϵ = make_step_size(rng, spl.κ.τ.integrator, T, hamiltonian, initial_params)
     return ϵ
 end
 
@@ -282,10 +332,10 @@ function make_step_size(
     rng::Random.AbstractRNG,
     spl::AbstractHMCSampler,
     hamiltonian::Hamiltonian,
-    init_params,
+    initial_params,
 )
     T = sampler_eltype(spl)
-    return make_step_size(rng, spl.integrator, T, hamiltonian, init_params)
+    return make_step_size(rng, spl.integrator, T, hamiltonian, initial_params)
 
 end
 
@@ -294,12 +344,12 @@ function make_step_size(
     integrator::AbstractIntegrator,
     T::Type,
     hamiltonian::Hamiltonian,
-    init_params,
+    initial_params,
 )
     if integrator.ϵ > 0
         ϵ = integrator.ϵ
     else
-        ϵ = find_good_stepsize(rng, hamiltonian, init_params)
+        ϵ = find_good_stepsize(rng, hamiltonian, initial_params)
         @info string("Found initial step size ", ϵ)
     end
     return T(ϵ)
@@ -310,9 +360,9 @@ function make_step_size(
     integrator::Symbol,
     T::Type,
     hamiltonian::Hamiltonian,
-    init_params,
+    initial_params,
 )
-    ϵ = find_good_stepsize(rng, hamiltonian, init_params)
+    ϵ = find_good_stepsize(rng, hamiltonian, initial_params)
     @info string("Found initial step size ", ϵ)
     return T(ϵ)
 end

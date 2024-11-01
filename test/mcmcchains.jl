@@ -23,8 +23,8 @@ using Statistics: mean
         model,
         sampler,
         n_adapts + n_samples;
-        nadapts = n_adapts,
-        init_params = θ_init,
+        n_adapts = n_adapts,
+        initial_params = θ_init,
         chain_type = Chains,
         progress = false,
         bijector = invlink_gdemo,

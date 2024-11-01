@@ -1,3 +1,8 @@
+"""
+$(TYPEDEF)
+
+Abstract type for preconditioning metrics. 
+"""
 abstract type AbstractMetric end
 
 _string_M⁻¹(mat::AbstractMatrix, n_chars::Int = 32) = _string_M⁻¹(diag(mat), n_chars)
@@ -124,7 +129,7 @@ function _rand(
     return r
 end
 
-# TODO The rand interface should be updated by rand from momentum distribution + optional affine transformation by metric
+# TODO (kai) The rand interface should be updated as "rand from momentum distribution + optional affine transformation by metric"
 Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic::AbstractKinetic) =
     _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
 Base.rand(
@@ -134,3 +139,19 @@ Base.rand(
 ) = _rand(rng, metric, kinetic)
 Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic) =
     rand(GLOBAL_RNG, metric, kinetic)
+
+# ignore θ by default unless defined by the specific kinetic (i.e. not position-dependent)
+Base.rand(
+    rng::AbstractRNG,
+    metric::AbstractMetric,
+    kinetic::AbstractKinetic,
+    θ::AbstractVecOrMat,
+) = rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
+Base.rand(
+    rng::AbstractVector{<:AbstractRNG},
+    metric::AbstractMetric,
+    kinetic::AbstractKinetic,
+    θ::AbstractVecOrMat,
+) = rand(rng, metric, kinetic)
+Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic, θ::AbstractVecOrMat) =
+    rand(metric, kinetic)
