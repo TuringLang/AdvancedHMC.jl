@@ -3,6 +3,9 @@ $(TYPEDEF)
 
 Abstract type for preconditioning metrics. 
 """
+
+include("quasi_MC.jl")
+
 abstract type AbstractMetric end
 
 _string_M⁻¹(mat::AbstractMatrix, n_chars::Int = 32) = _string_M⁻¹(diag(mat), n_chars)
@@ -104,8 +107,13 @@ function _rand(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::UnitEuclideanMetric{T},
     kinetic::GaussianKinetic,
+    quasi_seed::Union{Nothing, Quasi_MC_seed} = nothing
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    if isnothing(quasi_seed)
+        r = randn(rng, T, size(metric)...)
+    else
+        r = get_next_vector(quasi_seed)
+    end
     return r
 end
 
@@ -113,8 +121,13 @@ function _rand(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::DiagEuclideanMetric{T},
     kinetic::GaussianKinetic,
+    quasi_seed::Union{Nothing, Quasi_MC_seed} = nothing
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    if isnothing(quasi_seed)
+        r = randn(rng, T, size(metric)...)
+    else
+        r = get_next_vector(quasi_seed)
+    end
     r ./= metric.sqrtM⁻¹
     return r
 end
@@ -123,8 +136,13 @@ function _rand(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::DenseEuclideanMetric{T},
     kinetic::GaussianKinetic,
+    quasi_seed::Union{Nothing, Quasi_MC_seed} = nothing
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    if isnothing(quasi_seed)
+        r = randn(rng, T, size(metric)...)
+    else
+        r = get_next_vector(quasi_seed)
+    end
     ldiv!(metric.cholM⁻¹, r)
     return r
 end
@@ -153,5 +171,23 @@ Base.rand(
     kinetic::AbstractKinetic,
     θ::AbstractVecOrMat,
 ) = rand(rng, metric, kinetic)
+
+
 Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic, θ::AbstractVecOrMat) =
     rand(metric, kinetic)
+
+
+Base.rand(
+    rng::AbstractRNG,
+    metric::AbstractMetric,
+    kinetic::AbstractKinetic,
+    θ::AbstractVecOrMat,
+    quasi_mc::Quasi_MC_seed
+) = _rand(rng, metric, kinetic, quasi_mc)
+Base.rand(
+    rng::AbstractVector{<:AbstractRNG},
+    metric::AbstractMetric,
+    kinetic::AbstractKinetic,
+    θ::AbstractVecOrMat,
+    quasi_mc::Quasi_MC_seed
+) = _rand(rng, metric, kinetic, quasi_mc)
