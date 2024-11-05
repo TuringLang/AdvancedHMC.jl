@@ -6,8 +6,7 @@ using Statistics: mean, var, middle
 using LinearAlgebra:
     Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
 using StatsFuns: logaddexp, logsumexp
-import Random
-using Random: GLOBAL_RNG, AbstractRNG
+import Random: Random, AbstractRNG
 using ProgressMeter: ProgressMeter
 using SimpleUnPack: @unpack
 
