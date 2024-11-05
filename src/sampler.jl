@@ -167,6 +167,42 @@ function sample(
     progress::Bool = false,
     (pm_next!)::Function = pm_next!,
 ) where {T<:AbstractVecOrMat{<:AbstractFloat}}
+    # Prevent adaptor from being mutated
+    adaptor = deepcopy(adaptor)
+    # Then call sample_mutating_adaptor with the same arguments
+    return sample_mutating_adaptor(
+        rng,
+        h,
+        κ,
+        θ,
+        n_samples,
+        adaptor,
+        n_adapts;
+        drop_warmup = drop_warmup,
+        verbose = verbose,
+        progress = progress,
+        (pm_next!) = pm_next!,
+    )
+end
+
+"""
+    sample_mutating_adaptor(args...; kwargs...)
+
+The same as `sample`, but mutates the `adaptor` argument.
+"""
+function sample_mutating_adaptor(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    h::Hamiltonian,
+    κ::HMCKernel,
+    θ::T,
+    n_samples::Int,
+    adaptor::AbstractAdaptor = NoAdaptation(),
+    n_adapts::Int = min(div(n_samples, 10), 1_000);
+    drop_warmup = false,
+    verbose::Bool = true,
+    progress::Bool = false,
+    (pm_next!)::Function = pm_next!,
+) where {T<:AbstractVecOrMat{<:AbstractFloat}}
     @assert !(drop_warmup && (adaptor isa Adaptation.NoAdaptation)) "Cannot drop warmup samples if there is no adaptation phase."
     # Prepare containers to store sampling results
     n_keep = n_samples - (drop_warmup ? n_adapts : 0)
@@ -181,7 +217,6 @@ function sample(
         nothing
     time = @elapsed for i = 1:n_samples
         # Make a transition
-        # i == 2 && error(κ.τ.integrator)
         t = transition(rng, h, κ, t.z)
         # Adapt h and κ; what mutable is the adaptor
         tstat = stat(t)
