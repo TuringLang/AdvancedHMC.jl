@@ -62,6 +62,7 @@ end
     n_steps = 10
     n_samples = 22_000
     n_adapts = 4_000
+
     @testset "$metricsym" for (metricsym, metric) in Dict(
         :UnitEuclideanMetric => UnitEuclideanMetric(D),
         :DiagEuclideanMetric => DiagEuclideanMetric(D),
@@ -157,6 +158,7 @@ end
             end
         end
     end
+
     @testset "drop_warmup" begin
         nuts = NUTS(0.8)
         metric = DiagEuclideanMetric(D)
@@ -190,5 +192,33 @@ end
         )
         @test length(samples) == n_samples
         @test length(stats) == n_samples
+    end
+
+    @testset "reproducibility" begin
+        # Multiple calls to sample() should yield the same results
+        nuts = NUTS(0.8)
+        metric = DiagEuclideanMetric(D)
+        h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+        integrator = Leapfrog(ϵ)
+        κ = AdvancedHMC.make_kernel(nuts, integrator)
+        adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
+
+        all_samples = []
+        for i = 1:5
+            samples, stats = sample(
+                Random.MersenneTwister(42),
+                h,
+                κ,
+                θ_init,
+                100, # n_samples -- don't need so many
+                adaptor,
+                50, # n_adapts -- likewise
+                verbose = false,
+                progress = false,
+                drop_warmup = true,
+            )
+            push!(all_samples, samples)
+        end
+        @test all(map(s -> s ≈ all_samples[1], all_samples[2:end]))
     end
 end

@@ -118,7 +118,7 @@ sample(
     progress::Bool = false,
     (pm_next!)::Function = pm_next!,
 ) = sample(
-    GLOBAL_RNG,
+    Random.default_rng(),
     h,
     κ,
     θ,
@@ -146,7 +146,7 @@ sample(
     )
 Sample `n_samples` samples using the proposal `κ` under Hamiltonian `h`.
 - The randomness is controlled by `rng`. 
-    - If `rng` is not provided, `GLOBAL_RNG` will be used.
+    - If `rng` is not provided, `Random.default_rng()` will be used.
 - The initial point is given by `θ`.
 - The adaptor is set by `adaptor`, for which the default is no adaptation.
     - It will perform `n_adapts` steps of adaptation, for which the default is the minimum of `1_000` and 10% of `n_samples`
@@ -155,6 +155,42 @@ Sample `n_samples` samples using the proposal `κ` under Hamiltonian `h`.
 - `progress` controls whether to show the progress meter or not
 """
 function sample(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    h::Hamiltonian,
+    κ::HMCKernel,
+    θ::T,
+    n_samples::Int,
+    adaptor::AbstractAdaptor = NoAdaptation(),
+    n_adapts::Int = min(div(n_samples, 10), 1_000);
+    drop_warmup = false,
+    verbose::Bool = true,
+    progress::Bool = false,
+    (pm_next!)::Function = pm_next!,
+) where {T<:AbstractVecOrMat{<:AbstractFloat}}
+    # Prevent adaptor from being mutated
+    adaptor = deepcopy(adaptor)
+    # Then call sample_mutating_adaptor with the same arguments
+    return sample_mutating_adaptor(
+        rng,
+        h,
+        κ,
+        θ,
+        n_samples,
+        adaptor,
+        n_adapts;
+        drop_warmup = drop_warmup,
+        verbose = verbose,
+        progress = progress,
+        (pm_next!) = pm_next!,
+    )
+end
+
+"""
+    sample_mutating_adaptor(args...; kwargs...)
+
+The same as `sample`, but mutates the `adaptor` argument.
+"""
+function sample_mutating_adaptor(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
     κ::HMCKernel,

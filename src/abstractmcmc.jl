@@ -55,7 +55,7 @@ A convenient wrapper around `AbstractMCMC.sample` avoiding explicit construction
 """
 
 function AbstractMCMC.sample(
-    rng::Random.AbstractRNG,
+    rng::AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
     sampler::AbstractHMCSampler,
     N::Integer;
@@ -92,7 +92,7 @@ function AbstractMCMC.sample(
 end
 
 function AbstractMCMC.sample(
-    rng::Random.AbstractRNG,
+    rng::AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
     sampler::AbstractHMCSampler,
     parallel::AbstractMCMC.AbstractMCMCEnsemble,
@@ -318,7 +318,7 @@ end
 #########
 
 function make_step_size(
-    rng::Random.AbstractRNG,
+    rng::AbstractRNG,
     spl::HMCSampler,
     hamiltonian::Hamiltonian,
     initial_params,
@@ -329,7 +329,7 @@ function make_step_size(
 end
 
 function make_step_size(
-    rng::Random.AbstractRNG,
+    rng::AbstractRNG,
     spl::AbstractHMCSampler,
     hamiltonian::Hamiltonian,
     initial_params,
@@ -340,7 +340,7 @@ function make_step_size(
 end
 
 function make_step_size(
-    rng::Random.AbstractRNG,
+    rng::AbstractRNG,
     integrator::AbstractIntegrator,
     T::Type,
     hamiltonian::Hamiltonian,
@@ -356,7 +356,7 @@ function make_step_size(
 end
 
 function make_step_size(
-    rng::Random.AbstractRNG,
+    rng::AbstractRNG,
     integrator::Symbol,
     T::Type,
     hamiltonian::Hamiltonian,

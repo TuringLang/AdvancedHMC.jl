@@ -108,6 +108,10 @@ Base.isfinite(v::DualValue) = all(isfinite, v.value) && all(isfinite, v.gradient
 Base.isfinite(v::AbstractVecOrMat) = all(isfinite, v)
 Base.isfinite(z::PhasePoint) = isfinite(z.ℓπ) && isfinite(z.ℓκ)
 
+Base.isnan(v::DualValue) = any(isnan, v.value) || any(isnan, v.gradient)
+Base.isnan(v::AbstractVecOrMat) = any(isnan, v)
+Base.isnan(z::PhasePoint) = isnan(z.ℓπ) || isnan(z.ℓκ)
+
 ###
 ### Negative energy (or log probability) functions.
 ### NOTE: the general form (i.e. non-Euclidean) of K depends on both θ and r.
