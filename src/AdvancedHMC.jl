@@ -92,13 +92,13 @@ MassMatrixAdaptor(m::DiagEuclideanMetric{T}) where {T} =
 MassMatrixAdaptor(m::DenseEuclideanMetric{T}) where {T} =
     WelfordCov{T}(size(m); cov = copy(m.M⁻¹))
 
-MassMatrixAdaptor(m::Type{TM}, sz::Tuple{Vararg{Int}} = (2,)) where {TM<:AbstractMetric} =
-    MassMatrixAdaptor(Float64, m, sz)
+MassMatrixAdaptor(::Type{TM}, sz::Dims = (2,)) where {TM<:AbstractMetric} =
+    MassMatrixAdaptor(Float64, TM, sz)
 
 MassMatrixAdaptor(
     ::Type{T},
     ::Type{TM},
-    sz::Tuple{Vararg{Int}} = (2,),
+    sz::Dims = (2,),
 ) where {T,TM<:AbstractMetric} = MassMatrixAdaptor(TM(T, sz))
 
 # Deprecations

@@ -308,11 +308,12 @@ function make_initial_params(
     initial_params,
 )
     T = sampler_eltype(spl)
-    if initial_params == nothing
+    if initial_params === nothing
         d = LogDensityProblems.dimension(logdensity)
-        initial_params = randn(rng, d)
+        return randn(rng, T, d)
+    else
+        return T.(initial_params)
     end
-    return T.(initial_params)
 end
 
 #########
@@ -342,10 +343,10 @@ end
 function make_step_size(
     rng::Random.AbstractRNG,
     integrator::AbstractIntegrator,
-    T::Type,
+    ::Type{T},
     hamiltonian::Hamiltonian,
     initial_params,
-)
+) where {T}
     if integrator.ϵ > 0
         ϵ = integrator.ϵ
     else
@@ -358,10 +359,10 @@ end
 function make_step_size(
     rng::Random.AbstractRNG,
     integrator::Symbol,
-    T::Type,
+    ::Type{T},
     hamiltonian::Hamiltonian,
     initial_params,
-)
+) where {T}
     ϵ = find_good_stepsize(rng, hamiltonian, initial_params)
     @info string("Found initial step size ", ϵ)
     return T(ϵ)
@@ -370,21 +371,33 @@ end
 make_integrator(spl::HMCSampler, ϵ::Real) = spl.κ.τ.integrator
 make_integrator(spl::AbstractHMCSampler, ϵ::Real) = make_integrator(spl.integrator, ϵ)
 make_integrator(i::AbstractIntegrator, ϵ::Real) = i
-make_integrator(i::Symbol, ϵ::Real) = make_integrator(Val(i), ϵ)
-make_integrator(@nospecialize(i), ::Real) = error("Integrator $i not supported.")
-make_integrator(i::Val{:leapfrog}, ϵ::Real) = Leapfrog(ϵ)
-make_integrator(i::Val{:jitteredleapfrog}, ϵ::T) where {T<:Real} =
-    JitteredLeapfrog(ϵ, T(0.1ϵ))
-make_integrator(i::Val{:temperedleapfrog}, ϵ::T) where {T<:Real} = TemperedLeapfrog(ϵ, T(1))
+function make_integrator(i::Symbol, ϵ::Real)
+    float_ϵ = AbstractFloat(ϵ)
+    if i === :leapfrog
+        return Leapfrog(float_ϵ)
+    elseif i === :jitteredleapfrog
+        return JitteredLeapfrog(float_ϵ, float_ϵ / 10)
+    elseif i === :temperedleapfrog
+        return TemperedLeapfrog(float_ϵ, oneunit(float_ϵ))
+    else
+        error("Integrator $i not supported.")
+    end
+end
 
 #########
 
-make_metric(@nospecialize(i), T::Type, d::Int) = error("Metric $(typeof(i)) not supported.")
-make_metric(i::Symbol, T::Type, d::Int) = make_metric(Val(i), T, d)
-make_metric(i::AbstractMetric, T::Type, d::Int) = i
-make_metric(i::Val{:diagonal}, T::Type, d::Int) = DiagEuclideanMetric(T, d)
-make_metric(i::Val{:unit}, T::Type, d::Int) = UnitEuclideanMetric(T, d)
-make_metric(i::Val{:dense}, T::Type, d::Int) = DenseEuclideanMetric(T, d)
+make_metric(i::AbstractMetric, ::Type, ::Int) = i
+function make_metric(i::Symbol, ::Type{T}, d::Int) where {T}
+    if i === :diagonal
+        return DiagEuclideanMetric(T, d)
+    elseif i === :unit
+        return UnitEuclideanMetric(T, d)
+    elseif i === :dense
+        return DenseEuclideanMetric(T, d)
+    else
+        error("Metric $i not supported.")
+    end
+end
 
 function make_metric(spl::AbstractHMCSampler, logdensity)
     d = LogDensityProblems.dimension(logdensity)
