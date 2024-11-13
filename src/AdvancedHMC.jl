@@ -95,11 +95,8 @@ MassMatrixAdaptor(m::DenseEuclideanMetric{T}) where {T} =
 MassMatrixAdaptor(::Type{TM}, sz::Dims = (2,)) where {TM<:AbstractMetric} =
     MassMatrixAdaptor(Float64, TM, sz)
 
-MassMatrixAdaptor(
-    ::Type{T},
-    ::Type{TM},
-    sz::Dims = (2,),
-) where {T,TM<:AbstractMetric} = MassMatrixAdaptor(TM(T, sz))
+MassMatrixAdaptor(::Type{T}, ::Type{TM}, sz::Dims = (2,)) where {T,TM<:AbstractMetric} =
+    MassMatrixAdaptor(TM(T, sz))
 
 # Deprecations
 
