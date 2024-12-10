@@ -1,6 +1,6 @@
 name = "AdvancedHMC"
 uuid = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
-version = "0.6.3"
+version = "0.6.4"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
