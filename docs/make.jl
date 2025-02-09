@@ -10,8 +10,3 @@ makedocs(
     format = Documenter.HTML(),
     warnonly = [:cross_references],
 )
-
-deploydocs(
-    repo = "github.com/TuringLang/AdvancedHMC.jl.git",
-    push_preview = true, # allow PR to deploy
-)
