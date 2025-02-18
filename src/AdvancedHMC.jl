@@ -7,7 +7,7 @@ using LinearAlgebra:
     Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
 using StatsFuns: logaddexp, logsumexp
 import Random
-using Random: GLOBAL_RNG, AbstractRNG
+using Random: AbstractRNG
 using ProgressMeter: ProgressMeter
 using SimpleUnPack: @unpack
 
