@@ -37,6 +37,16 @@ function reset!(das::DAState{<:AbstractVector{T}}) where {T<:AbstractFloat}
     return das
 end
 
+function finalize!(das::DAState{<:AbstractFloat})
+    das.ϵ = exp(das.x_bar)
+    return das
+end
+
+function finalize!(das::DAState{<:AbstractVector{<:AbstractFloat}})
+    map!(exp, das.ϵ, das.x_bar)
+    return das
+end
+
 mutable struct MSSState{T<:AbstractScalarOrVec{<:AbstractFloat}}
     ϵ::T
 end
@@ -73,12 +83,12 @@ References
 Hoffman, M. D., & Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623.
 Nesterov, Y. (2009). Primal-dual subgradient methods for convex problems. Mathematical programming, 120(1), 221-259.
 """
-struct NesterovDualAveraging{T<:AbstractFloat} <: StepSizeAdaptor
+struct NesterovDualAveraging{T<:AbstractFloat,VT<:AbstractScalarOrVec{T}} <: StepSizeAdaptor
     γ::T
     t_0::T
     κ::T
     δ::T
-    state::DAState{<:AbstractScalarOrVec{T}}
+    state::DAState{VT}
 end
 Base.show(io::IO, a::NesterovDualAveraging) = print(
     io,
@@ -105,7 +115,7 @@ NesterovDualAveraging(
     NesterovDualAveraging(γ, t_0, κ, δ, DAState(ϵ))
 
 NesterovDualAveraging(δ::T, ϵ::VT) where {T<:AbstractFloat,VT<:AbstractScalarOrVec{T}} =
-    NesterovDualAveraging(T(0.05), T(10.0), T(0.75), δ, ϵ)
+    NesterovDualAveraging(T(1//20), T(10), T(3//4), δ, ϵ)
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
 # Note: This function is not merged with `adapt!` to empahsize the fact that
@@ -153,6 +163,6 @@ function reset!(da::NesterovDualAveraging)
 end
 
 function finalize!(da::NesterovDualAveraging)
-    map!(exp, da.state.ϵ, da.state.x_bar)
+    finalize!(da.state)
     return da
 end
