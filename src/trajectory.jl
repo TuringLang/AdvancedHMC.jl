@@ -133,7 +133,7 @@ $(TYPEDEF)
 Slice sampler for the starting single leaf tree.
 Slice variable is initialized.
 """
-SliceTS(rng::AbstractRNG, z0::PhasePoint) = SliceTS(z0, log(rand(rng)) - energy(z0), 1)
+SliceTS(rng::AbstractRNG, z0::PhasePoint) = SliceTS(z0, neg_energy(z0) - Random.randexp(rng), 1)
 
 """
 $(TYPEDEF)
@@ -143,7 +143,7 @@ Multinomial sampler for the starting single leaf tree.
 
 Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/base_nuts.hpp#L226
 """
-MultinomialTS(rng::AbstractRNG, z0::PhasePoint) = MultinomialTS(z0, zero(energy(z0)))
+MultinomialTS(rng::AbstractRNG, z0::PhasePoint) = MultinomialTS(z0, zero(neg_energy(z0)))
 
 """
 $(TYPEDEF)
@@ -153,7 +153,7 @@ Create a slice sampler for a single leaf tree:
 - the number of acceptable candicates is computed by comparing the slice variable against the current energy.
 """
 function SliceTS(s::SliceTS, H0::AbstractFloat, zcand::PhasePoint)
-    return SliceTS(zcand, s.ℓu, (s.ℓu <= -energy(zcand)) ? 1 : 0)
+    return SliceTS(zcand, s.ℓu, Int(s.ℓu <= neg_energy(zcand)))
 end
 
 """
@@ -163,13 +163,13 @@ Multinomial sampler for a trajectory consisting only a leaf node.
 - tree weight is the (unnormalised) energy of the leaf.
 """
 function MultinomialTS(s::MultinomialTS, H0::AbstractFloat, zcand::PhasePoint)
-    return MultinomialTS(zcand, H0 - energy(zcand))
+    return MultinomialTS(zcand, H0 + neg_energy(zcand))
 end
 
 function combine(rng::AbstractRNG, s1::SliceTS, s2::SliceTS)
     @assert s1.ℓu == s2.ℓu "Cannot combine two slice sampler with different slice variable"
     n = s1.n + s2.n
-    zcand = rand(rng) < s1.n / n ? s1.zcand : s2.zcand
+    zcand = n * rand(rng) < s1.n ? s1.zcand : s2.zcand
     return SliceTS(zcand, s1.ℓu, n)
 end
 
@@ -181,7 +181,7 @@ end
 
 function combine(rng::AbstractRNG, s1::MultinomialTS, s2::MultinomialTS)
     ℓw = logaddexp(s1.ℓw, s2.ℓw)
-    zcand = rand(rng) < exp(s1.ℓw - ℓw) ? s1.zcand : s2.zcand
+    zcand = ℓw < s1.ℓw + Random.randexp(rng) ? s1.zcand : s2.zcand
     return MultinomialTS(zcand, ℓw)
 end
 
@@ -190,10 +190,10 @@ function combine(zcand::PhasePoint, s1::MultinomialTS, s2::MultinomialTS)
     return MultinomialTS(zcand, ℓw)
 end
 
-mh_accept(rng::AbstractRNG, s::SliceTS, s′::SliceTS) = rand(rng) < min(1, s′.n / s.n)
+mh_accept(rng::AbstractRNG, s::SliceTS, s′::SliceTS) = s.n * rand(rng) < s′.n
 
 function mh_accept(rng::AbstractRNG, s::MultinomialTS, s′::MultinomialTS)
-    return rand(rng) < min(1, exp(s′.ℓw - s.ℓw))
+    return s.ℓw < s′.ℓw + Random.randexp(rng)
 end
 
 """
