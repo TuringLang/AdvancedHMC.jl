@@ -275,7 +275,7 @@ function transition(
             hamiltonian_energy = H,
             hamiltonian_energy_error = H - H0,
             # check numerical error in proposed phase point. 
-            numerical_error = isfinite(H′),
+            numerical_error = !all(isfinite, H′),
         ),
         stat(τ.integrator),
     )
