@@ -265,7 +265,8 @@ function (cb::HMCProgressCallback)(
 
     # Update progress meter
     if pm !== nothing
-        percentage_divergent_transitions = cb.num_divergent_transitions[] / max(i - n_adapts, 1)
+        percentage_divergent_transitions =
+            cb.num_divergent_transitions[] / max(i - n_adapts, 1)
         percentage_divergent_transitions_during_adaption =
             cb.num_divergent_transitions_during_adaption[] / min(i, n_adapts)
         if percentage_divergent_transitions > 0.25
