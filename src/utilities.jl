@@ -98,5 +98,5 @@ function randcat(
 ) where {T}
     u = _rand(rng, T, size(P, 2))
     C = cumsum(P; dims = 1)
-    return max.(vec(count(C .< u'; dims = 1))) .+ 1, 1)  # prevent numerical issue for Float32
+    return max.(vec(count(C .< u'; dims = 1)) .+ 1, 1)  # prevent numerical issue for Float32
 end
