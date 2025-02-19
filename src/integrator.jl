@@ -137,7 +137,7 @@ function jitter(
 ) where {FT<:AbstractFloat,T<:AbstractVector{FT}}
     ϵ = similar(lf.ϵ0)
     if rng isa AbstractRNG
-        rand!(rng, ϵ)
+        Random.rand!(rng, ϵ)
     else
         @argcheck length(rng) == length(ϵ)
         map!(Base.Fix2(rand, FT), ϵ, rng)
