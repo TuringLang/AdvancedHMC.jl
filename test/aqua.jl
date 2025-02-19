@@ -1,5 +1,5 @@
 using AdvancedHMC
-using Test
+using ReTest
 import Aqua
 
 @testset "Aqua" begin
