@@ -2,9 +2,9 @@ using ReTest, LinearAlgebra, Distributions, AdvancedHMC, Random, ForwardDiff
 using AdvancedHMC.Adaptation:
     WelfordVar, NaiveVar, WelfordCov, NaiveCov, get_estimation, get_estimation, reset!
 
-function runnuts(ℓπ, metric; n_samples = 4_000)
+function runnuts(ℓπ, metric; n_samples = 10_000)
     D = size(metric, 1)
-    n_adapts = 2_000
+    n_adapts = 5_000
     θ_init = rand(D)
     rng = MersenneTwister(0)
 
