@@ -129,8 +129,7 @@ update_nom_step_size(lf::JitteredLeapfrog, ϵ0) = @set lf.ϵ0 = ϵ0
 # Jitter step size; ref: https://github.com/stan-dev/stan/blob/1bb054027b01326e66ec610e95ef9b2a60aa6bec/src/stan/mcmc/hmc/base_hmc.hpp#L177-L178
 function jitter(rng::AbstractRNG, lf::JitteredLeapfrog{FT,FT}) where {FT<:AbstractFloat}
     ϵ = lf.ϵ0 * (1 + lf.jitter * (2 * rand(rng, FT) - 1))
-    @set lf.ϵ = ϵ
-    return lf
+    return @set lf.ϵ = ϵ
 end
 function jitter(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
@@ -144,8 +143,7 @@ function jitter(
         map!(Base.Fix2(rand, FT), ϵ, rng)
     end
     @. ϵ = lf.ϵ0 * (1 + lf.jitter * (2 * ϵ - 1))
-    @set lf.ϵ = ϵ
-    return lf
+    return @set lf.ϵ = ϵ
 end
 
 ### Tempering
