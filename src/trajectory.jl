@@ -697,16 +697,16 @@ function transition(
     j = 0
     while !isterminated(termination) && j < τ.termination_criterion.max_depth
         # Sample a direction; `-1` means left and `1` means right
-        v = rand(rng, [-1, 1])
-        if v == -1
+        vleft = rand(rng, Bool)
+        if vleft
             # Create a tree with depth `j` on the left
             tree′, sampler′, termination′ =
-                build_tree(rng, τ, h, tree.zleft, sampler, v, j, H0)
+                build_tree(rng, τ, h, tree.zleft, sampler, -1, j, H0)
             treeleft, treeright = tree′, tree
         else
             # Create a tree with depth `j` on the right
             tree′, sampler′, termination′ =
-                build_tree(rng, τ, h, tree.zright, sampler, v, j, H0)
+                build_tree(rng, τ, h, tree.zright, sampler, 1, j, H0)
             treeleft, treeright = tree, tree′
         end
         # Perform a MH step and increse depth if not terminated
@@ -843,8 +843,8 @@ function mh_accept_ratio(
     Horiginal::T,
     Hproposal::T,
 ) where {T<:AbstractFloat}
+    accept = Random.randexp(rng, T) > Hproposal - Horiginal
     α = min(one(T), exp(Horiginal - Hproposal))
-    accept = rand(rng, T) < α
     return accept, α
 end
 
@@ -853,12 +853,13 @@ function mh_accept_ratio(
     Horiginal::AbstractVector{<:T},
     Hproposal::AbstractVector{<:T},
 ) where {T<:AbstractFloat}
-    α = min.(one(T), exp.(Horiginal .- Hproposal))
     # NOTE: There is a chance that sharing the RNG over multiple
     #       chains for accepting / rejecting might couple
     #       the chains. We need to revisit this more rigirously 
     #       in the future. See discussions at 
     #       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
-    accept = rand(rng, T, length(Horiginal)) .< α
+    _rng = rng isa AbstractRNG ? (rng,) : rng
+    accept = Random.randexp.(_rng, (T,)) .> Hproposal .- Horiginal
+    α = min.(one(T), exp.(Horiginal .- Hproposal))
     return accept, α
 end
