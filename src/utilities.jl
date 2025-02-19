@@ -2,8 +2,16 @@ const AbstractScalarOrVec{T} = Union{T,AbstractVector{T}} where {T<:AbstractFloa
 
 # Support of passing a vector of RNGs
 
+function _randn(rng::AbstractRNG, ::Type{T}, n_chains::Int) where {T}
+    return randn(rng, T, n_chains)
+end
 function _randn(rng::AbstractRNG, ::Type{T}, dim::Int, n_chains::Int) where {T}
     return randn(rng, T, dim, n_chains)
+end
+
+function _randn(rngs::AbstractVector{<:AbstractRNG}, ::Type{T}, n_chains::Int) where {T}
+    @argcheck length(rngs) == n_chains
+    return map(Base.Fix2(randn, T), rngs)
 end
 function _randn(
     rngs::AbstractVector{<:AbstractRNG},
@@ -13,9 +21,7 @@ function _randn(
 ) where {T}
     @argcheck length(rngs) == n_chains
     out = similar(rngs, T, dim, n_chains)
-    for (x, rng) in zip(eachcol(out), rngs)
-        randn!(rng, x)
-    end
+    map!(randn!, eachcol(out), rngs)
     return out
 end
 
