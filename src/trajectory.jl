@@ -844,7 +844,7 @@ function mh_accept_ratio(
     Horiginal::T,
     Hproposal::T,
 ) where {T<:AbstractFloat}
-    accept = Random.randexp(rng, T) > Hproposal - Horiginal
+    accept = Hproposal < Horiginal + Random.randexp(rng, T)
     α = min(one(T), exp(Horiginal - Hproposal))
     return accept, α
 end
@@ -860,7 +860,7 @@ function mh_accept_ratio(
     #       in the future. See discussions at 
     #       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
     _rng = rng isa AbstractRNG ? (rng,) : rng
-    accept = Random.randexp.(_rng, (T,)) .> Hproposal .- Horiginal
+    accept = Hproposal .< Horiginal .+ Random.randexp.(_rng, (T,))
     α = min.(one(T), exp.(Horiginal .- Hproposal))
     return accept, α
 end
