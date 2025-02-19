@@ -1,5 +1,19 @@
 const AbstractScalarOrVec{T} = Union{T,AbstractVector{T}} where {T<:AbstractFloat}
 
+# Support of passing a vector of RNGs
+
+function _randn(rng::AbstractRNG, ::Type{T}, dim::Int, n_chains::Int) where {T}
+    return randn(rng, T, dim, n_chains)
+end
+function _randn(rngs::AbstractVector{<:AbstractRNG}, ::Type{T}, dim::Int, n_chains::Int) where {T}
+    @argcheck length(rngs) == n_chains
+    out = similar(rngs, T, dim, n_chains)
+    for (x, rng) in zip(eachcol(out), rngs)
+        randn!(rng, x)
+    end
+    return out
+end
+
 """ 
 `rand_coupled` produces coupled randomness given a vector of RNGs. For example, 
 when a vector of RNGs is provided, `rand_coupled` peforms a single `rand` call 

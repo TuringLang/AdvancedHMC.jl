@@ -99,7 +99,7 @@ function _rand(
     metric::UnitEuclideanMetric{T},
     kinetic::GaussianKinetic,
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    r = _randn(rng, T, size(metric)...)
     return r
 end
 
@@ -108,7 +108,7 @@ function _rand(
     metric::DiagEuclideanMetric{T},
     kinetic::GaussianKinetic,
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    r = _randn(rng, T, size(metric)...)
     r ./= metric.sqrtM⁻¹
     return r
 end
@@ -118,7 +118,7 @@ function _rand(
     metric::DenseEuclideanMetric{T},
     kinetic::GaussianKinetic,
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    r = _randn(rng, T, size(metric)...)
     ldiv!(metric.cholM⁻¹, r)
     return r
 end
