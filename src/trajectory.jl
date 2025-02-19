@@ -133,7 +133,8 @@ $(TYPEDEF)
 Slice sampler for the starting single leaf tree.
 Slice variable is initialized.
 """
-SliceTS(rng::AbstractRNG, z0::PhasePoint) = SliceTS(z0, neg_energy(z0) - Random.randexp(rng), 1)
+SliceTS(rng::AbstractRNG, z0::PhasePoint) =
+    SliceTS(z0, neg_energy(z0) - Random.randexp(rng), 1)
 
 """
 $(TYPEDEF)
