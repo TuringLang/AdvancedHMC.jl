@@ -2,9 +2,6 @@ const AbstractScalarOrVec{T} = Union{T,AbstractVector{T}} where {T<:AbstractFloa
 
 # Support of passing a vector of RNGs
 
-function _rand(rng::AbstractRNG, ::Type{T}, n_chains::Int) where {T}
-    return rand(rng, T, n_chains)
-end
 function _randn(rng::AbstractRNG, ::Type{T}, n_chains::Int) where {T}
     return randn(rng, T, n_chains)
 end
@@ -12,10 +9,6 @@ function _randn(rng::AbstractRNG, ::Type{T}, dim::Int, n_chains::Int) where {T}
     return randn(rng, T, dim, n_chains)
 end
 
-function _rand(rngs::AbstractVector{<:AbstractRNG}, ::Type{T}, n_chains::Int) where {T}
-    @argcheck length(rngs) == n_chains
-    return map(Base.Fix2(rand, T), rngs)
-end
 function _randn(rngs::AbstractVector{<:AbstractRNG}, ::Type{T}, n_chains::Int) where {T}
     @argcheck length(rngs) == n_chains
     return map(Base.Fix2(randn, T), rngs)
@@ -96,7 +89,12 @@ function randcat(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     P::AbstractMatrix{T},
 ) where {T}
-    u = _rand(rng, T, size(P, 2))
+    u = if rng isa AbstractRNG
+        rand(rng, T, size(P, 2))
+    else
+        @argcheck length(rng) == size(P, 2)
+        map(Base.Fix2(rand, T), rng)
+    end
     C = cumsum(P; dims = 1)
     return max.(vec(count(C .< u'; dims = 1)) .+ 1, 1)  # prevent numerical issue for Float32
 end

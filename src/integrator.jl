@@ -127,20 +127,26 @@ nom_step_size(lf::JitteredLeapfrog) = lf.ϵ0
 update_nom_step_size(lf::JitteredLeapfrog, ϵ0) = @set lf.ϵ0 = ϵ0
 
 # Jitter step size; ref: https://github.com/stan-dev/stan/blob/1bb054027b01326e66ec610e95ef9b2a60aa6bec/src/stan/mcmc/hmc/base_hmc.hpp#L177-L178
-function _jitter(
+function jitter(rng::AbstractRNG, lf::JitteredLeapfrog{FT,FT}) where {FT<:AbstractFloat}
+    ϵ = lf.ϵ0 * (1 + lf.jitter * (2 * rand(rng, FT) - 1))
+    @set lf.ϵ = ϵ
+    return lf
+end
+function jitter(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     lf::JitteredLeapfrog{FT,T},
-) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}}
-    ϵ = lf.ϵ0 .* (1 .+ lf.jitter .* (2 .* rand(rng) .- 1))
-    return @set lf.ϵ = FT.(ϵ)
+) where {FT<:AbstractFloat,T<:AbstractVector{FT}}
+    ϵ = similar(lf.ϵ0)
+    if rng isa AbstractRNG
+        rand!(rng, ϵ)
+    else
+        @argcheck length(rng) == length(ϵ)
+        map!(Base.Fix2(rand, FT), ϵ, rng)
+    end
+    @. ϵ = lf.ϵ0 * (1 + lf.jitter * (2 * ϵ - 1))
+    @set lf.ϵ = ϵ
+    return lf
 end
-
-jitter(rng::AbstractRNG, lf::JitteredLeapfrog) = _jitter(rng, lf)
-
-jitter(
-    rng::AbstractVector{<:AbstractRNG},
-    lf::JitteredLeapfrog{FT,T},
-) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} = _jitter(rng, lf)
 
 ### Tempering
 # TODO: add ref or at least explain what exactly we're doing

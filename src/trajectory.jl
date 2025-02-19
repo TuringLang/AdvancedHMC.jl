@@ -859,6 +859,10 @@ function mh_accept_ratio(
     #       the chains. We need to revisit this more rigirously 
     #       in the future. See discussions at 
     #       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
-    accept = _rand(rng, T, length(Horiginal)) .< α
+    accept = if rng isa AbstractRNG
+        rand(rng, T, length(α)) .< α
+    else
+        rand.(rng, (T,)) .< α
+    end
     return accept, α
 end
