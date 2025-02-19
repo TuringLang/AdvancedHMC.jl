@@ -30,6 +30,12 @@ jobs:
           - ubuntu-latest
           - macOS-latest
           - windows-latest
+        exclude:
+          - version: 'min'
+            os: macOS-latest # Apple Silicon
+        include:
+          - version: 'min'
+            os: macOS-13 # Intel
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
