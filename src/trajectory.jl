@@ -820,7 +820,7 @@ function find_good_stepsize(
         DEBUG && @debug "Bisection step" H′ ϵ_mid "α = $(min(1, exp(ΔH)))"
         if ΔH > log_a_max
             ϵ = ϵ_mid
-        elseif ΔH < log_a_min)
+        elseif ΔH < log_a_min
             ϵ′ = ϵ_mid
         else
             ϵ = ϵ_mid
