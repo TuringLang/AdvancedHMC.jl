@@ -21,7 +21,7 @@ function _randn(
 ) where {T}
     @argcheck length(rngs) == n_chains
     out = similar(rngs, T, dim, n_chains)
-    map!(randn!, eachcol(out), rngs)
+    map!(Random.randn!, eachcol(out), rngs)
     return out
 end
 
