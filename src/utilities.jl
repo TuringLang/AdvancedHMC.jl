@@ -96,8 +96,7 @@ function randcat(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     P::AbstractMatrix{T},
 ) where {T}
-    u = rand(rng, T, size(P, 2))
+    u = _rand(rng, T, size(P, 2))
     C = cumsum(P; dims = 1)
-    indices = convert.(Int, vec(sum(C .< u'; dims = 1))) .+ 1
-    return max.(indices, 1)  # prevent numerical issue for Float32
+    return max.(vec(count(C .< u'; dims = 1))) .+ 1, 1)  # prevent numerical issue for Float32
 end
