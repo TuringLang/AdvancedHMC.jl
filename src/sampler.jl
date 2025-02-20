@@ -118,7 +118,7 @@ sample(
     progress::Bool = false,
     (pm_next!)::Function = pm_next!,
 ) = sample(
-    GLOBAL_RNG,
+    Random.default_rng(),
     h,
     κ,
     θ,
@@ -146,7 +146,7 @@ sample(
     )
 Sample `n_samples` samples using the proposal `κ` under Hamiltonian `h`.
 - The randomness is controlled by `rng`. 
-    - If `rng` is not provided, `GLOBAL_RNG` will be used.
+    - If `rng` is not provided, the default random number generator (`Random.default_rng()`) will be used.
 - The initial point is given by `θ`.
 - The adaptor is set by `adaptor`, for which the default is no adaptation.
     - It will perform `n_adapts` steps of adaptation, for which the default is the minimum of `1_000` and 10% of `n_samples`
