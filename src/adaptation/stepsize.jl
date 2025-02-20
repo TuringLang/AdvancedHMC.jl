@@ -102,7 +102,7 @@ function adapt_stepsize!(
     da::NesterovDualAveraging{T},
     α::AbstractScalarOrVec{<:T},
 ) where {T<:AbstractFloat}
-    DEBUG && @debug "Adapting step size..." α
+    @debug "Adapting step size..." α
 
     # Clip average MH acceptance probability
     if α isa AbstractVector
@@ -124,7 +124,7 @@ function adapt_stepsize!(
     x_bar = (one(T) - η_x) * x_bar .+ η_x * x
 
     ϵ = exp.(x)
-    DEBUG && @debug "Adapting step size..." "new ϵ = $ϵ" "old ϵ = $(da.state.ϵ)"
+    @debug "Adapting step size..." new_ϵ = ϵ old_ϵ = da.state.ϵ
 
     # TODO: we might want to remove this when all other numerical issues are correctly handelled
     if any(isnan.(ϵ)) || any(isinf.(ϵ))

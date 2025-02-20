@@ -39,7 +39,7 @@ using Statistics: mean
             @test AdvancedHMC.nom_step_size(lf) == ϵ0
             @test AdvancedHMC.step_size(lf) == ϵ0
 
-            lf2 = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
+            lf2 = AdvancedHMC.jitter(Random.default_rng(), lf)
             @test lf2 === lf
             @test AdvancedHMC.nom_step_size(lf2) == ϵ0
             @test AdvancedHMC.step_size(lf2) == ϵ0
@@ -53,7 +53,7 @@ using Statistics: mean
             @test lf.ϵ == ϵ0
             @test AdvancedHMC.step_size(lf) == lf.ϵ
 
-            lf2 = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
+            lf2 = AdvancedHMC.jitter(Random.default_rng(), lf)
             @test lf2.ϵ0 == ϵ0
             @test AdvancedHMC.nom_step_size(lf2) == ϵ0
             @test lf2.ϵ != ϵ0

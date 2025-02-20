@@ -145,7 +145,7 @@ Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic, θ) =
     rand_momentum(rng, metric, kinetic)    # this disambiguity is required by Random.rand
 Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractMetric, kinetic, θ) =
     rand_momentum(rng, metric, kinetic)
-Base.rand(metric::AbstractMetric, kinetic, θ) = rand(GLOBAL_RNG, metric, kinetic)
+Base.rand(metric::AbstractMetric, kinetic, θ) = rand(Random.default_rng(), metric, kinetic)
 
 ### metric.jl
 
