@@ -223,13 +223,11 @@ logging behavior of the non-AbstractMCMC [`sample`](@ref).
 $(FIELDS)
 """
 struct HMCProgressCallback{P}
-    "`Progress` meter from ProgressMeters.jl."
+    "`Progress` meter from ProgressMeters.jl, or `nothing`."
     pm::P
-    "Specifies whether or not to use display a progress bar."
-    progress::Bool
-    "If `progress` is not specified and this is `true` some information will be logged upon completion of adaptation."
+    "If `pm === nothing` and this is `true` some information will be logged upon completion of adaptation."
     verbose::Bool
-    "Number of divergent transitions fo far."
+    "Number of divergent transitions."
     num_divergent_transitions::Base.RefValue{Int}
     num_divergent_transitions_during_adaption::Base.RefValue{Int}
 end
@@ -238,7 +236,7 @@ function HMCProgressCallback(n_samples; progress = true, verbose = false)
     pm =
         progress ? ProgressMeter.Progress(n_samples, desc = "Sampling", barlen = 31) :
         nothing
-    HMCProgressCallback(pm, progress, verbose, Ref(0), Ref(0))
+    HMCProgressCallback(pm, verbose, Ref(0), Ref(0))
 end
 
 function (cb::HMCProgressCallback)(
@@ -251,7 +249,6 @@ function (cb::HMCProgressCallback)(
     n_adapts::Int = 0,
     kwargs...,
 )
-    progress = cb.progress
     verbose = cb.verbose
     pm = cb.pm
 
@@ -267,10 +264,11 @@ function (cb::HMCProgressCallback)(
     end
 
     # Update progress meter
-    if progress
-        percentage_divergent_transitions = cb.num_divergent_transitions[] / i
+    if pm !== nothing
+        percentage_divergent_transitions =
+            cb.num_divergent_transitions[] / max(i - n_adapts, 1)
         percentage_divergent_transitions_during_adaption =
-            cb.num_divergent_transitions_during_adaption[] / i
+            cb.num_divergent_transitions_during_adaption[] / min(i, n_adapts)
         if percentage_divergent_transitions > 0.25
             @warn "The level of numerical errors is high. Please check the model carefully." maxlog =
                 3
