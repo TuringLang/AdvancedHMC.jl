@@ -38,7 +38,7 @@ end
     end
 end
 
-@testset "Metric" begin
+@testset "Energy" begin
     n_tests = 10
 
     for T in [Float32, Float64]
