@@ -3,7 +3,7 @@
 ####
 #### Developers' Notes
 ####
-#### Not all functions that use `rng` require a fallback function with `GLOBAL_RNG`
+#### Not all functions that use `rng` require a fallback function with `Random.default_rng()`
 #### as default. In short, only those exported to other libries need such a fallback
 #### function. Internal uses shall always use the explict `rng` version. (Kai Xu 6/Jul/19)
 
@@ -241,10 +241,10 @@ $(SIGNATURES)
 
 Make a MCMC transition from phase point `z` using the trajectory `τ` under Hamiltonian `h`.
 
-NOTE: This is a RNG-implicit fallback function for `transition(GLOBAL_RNG, τ, h, z)`
+NOTE: This is a RNG-implicit fallback function for `transition(Random.default_rng(), τ, h, z)`
 """
 function transition(τ::Trajectory, h::Hamiltonian, z::PhasePoint)
-    return transition(GLOBAL_RNG, τ, h, z)
+    return transition(Random.default_rng(), τ, h, z)
 end
 
 ###
@@ -791,7 +791,7 @@ function find_good_stepsize(
         ϵ′ = direction == 1 ? d * ϵ : 1 / d * ϵ
         z′, H′ = A(h, z, ϵ)
         ΔH = H - H′
-        DEBUG && @debug "Crossing step" direction H′ ϵ "α = $(min(1, exp(ΔH)))"
+        @debug "Crossing step" direction H′ ϵ α = min(1, exp(ΔH))
         if (direction == 1) && !(ΔH > log(a_cross))
             break
         elseif (direction == -1) && !(ΔH < log(a_cross))
@@ -815,7 +815,7 @@ function find_good_stepsize(
         ϵ_mid = middle(ϵ, ϵ′)
         z′, H′ = A(h, z, ϵ_mid)
         ΔH = H - H′
-        DEBUG && @debug "Bisection step" H′ ϵ_mid "α = $(min(1, exp(ΔH)))"
+        @debug "Bisection step" H′ ϵ_mid α = min(1, exp(ΔH))
         if (exp(ΔH) > a_max)
             ϵ = ϵ_mid
         elseif (exp(ΔH) < a_min)
@@ -834,7 +834,7 @@ function find_good_stepsize(
     θ::AbstractVector{<:AbstractFloat};
     max_n_iters::Int = 100,
 )
-    return find_good_stepsize(GLOBAL_RNG, h, θ; max_n_iters = max_n_iters)
+    return find_good_stepsize(Random.default_rng(), h, θ; max_n_iters = max_n_iters)
 end
 
 "Perform MH acceptance based on energy, i.e. negative log probability."

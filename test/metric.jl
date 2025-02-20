@@ -10,7 +10,7 @@ using ReTest, Random, AdvancedHMC
             DiagEuclideanMetric((D, n_chains)),
             # DenseEuclideanMetric((D, n_chains)) # not supported ATM
         ]
-            r = rand(rng, metric)
+            r = rand(rng, metric, GaussianKinetic())
             all_same = true
             for i = 2:n_chains
                 all_same = all_same && r[:, i] == r[:, 1]

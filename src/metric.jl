@@ -132,7 +132,7 @@ Base.rand(
     kinetic::AbstractKinetic,
 ) = _rand(rng, metric, kinetic)
 Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic) =
-    rand(GLOBAL_RNG, metric, kinetic)
+    rand(Random.default_rng(), metric, kinetic)
 
 # ignore θ by default unless defined by the specific kinetic (i.e. not position-dependent)
 Base.rand(
