@@ -193,10 +193,11 @@ function sample(
         end
         tstat = merge(tstat, (is_adapt = isadapted,))
         # Update progress meter
-        if progress
-            percentage_divergent_transitions = num_divergent_transitions / i
+        if pm !== nothing
+            percentage_divergent_transitions =
+                num_divergent_transitions / max(i - n_adapts, 1)
             percentage_divergent_transitions_during_adaption =
-                num_divergent_transitions_during_adaption / i
+                num_divergent_transitions_during_adaption / min(i, n_adapts)
             if percentage_divergent_transitions > 0.25
                 @warn "The level of numerical errors is high. Please check the model carefully." maxlog =
                     3
