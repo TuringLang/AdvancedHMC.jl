@@ -58,15 +58,15 @@ struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat},V<:DualValue}
     ℓκ::V # Cached neg kinect energy for the current r.
     function PhasePoint(θ::T, r::T, ℓπ::V, ℓκ::V) where {T,V}
         @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
-        if any(isfinite.((θ, r, ℓπ, ℓκ)) .== false)
-            # @warn "The current proposal will be rejected due to numerical error(s)." isfinite.((θ, r, ℓπ, ℓκ))
-            # NOTE eltype has to be inlined to avoid type stability issue; see #267
+        if !isfinite(ℓπ)
             ℓπ = DualValue(
-                map(v -> isfinite(v) ? v : -eltype(T)(Inf), ℓπ.value),
+                map(v -> isfinite(v) ? v : oftype(v, -Inf), ℓπ.value),
                 ℓπ.gradient,
             )
+        end
+        if !isfinite(ℓκ)
             ℓκ = DualValue(
-                map(v -> isfinite(v) ? v : -eltype(T)(Inf), ℓκ.value),
+                map(v -> isfinite(v) ? v : oftype(v, -Inf), ℓκ.value),
                 ℓκ.gradient,
             )
         end
@@ -105,7 +105,6 @@ end
 
 
 Base.isfinite(v::DualValue) = all(isfinite, v.value) && all(isfinite, v.gradient)
-Base.isfinite(v::AbstractVecOrMat) = all(isfinite, v)
 Base.isfinite(z::PhasePoint) = isfinite(z.ℓπ) && isfinite(z.ℓκ)
 
 ###
