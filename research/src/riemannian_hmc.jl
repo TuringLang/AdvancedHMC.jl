@@ -142,9 +142,9 @@ refresh(
 # To change L146 of metric.jl
 # Ignore θ by default (i.e. not position-dependent)
 Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic, θ) =
-    _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
+    rand_momentum(rng, metric, kinetic)    # this disambiguity is required by Random.rand
 Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractMetric, kinetic, θ) =
-    _rand(rng, metric, kinetic)
+    rand_momentum(rng, metric, kinetic)
 Base.rand(metric::AbstractMetric, kinetic, θ) = rand(Random.default_rng(), metric, kinetic)
 
 ### metric.jl
@@ -208,13 +208,13 @@ Base.size(e::DenseRiemannianMetric) = e.size
 Base.size(e::DenseRiemannianMetric, dim::Int) = e.size[dim]
 Base.show(io::IO, dem::DenseRiemannianMetric) = print(io, "DenseRiemannianMetric(...)")
 
-function _rand(
+function rand_momentum(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::DenseRiemannianMetric{T},
     kinetic,
     θ,
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    r = _randn(rng, T, size(metric)...)
     G⁻¹ = inv(metric.map(metric.G(θ)))
     chol = cholesky(Symmetric(G⁻¹))
     ldiv!(chol.U, r)
@@ -222,13 +222,13 @@ function _rand(
 end
 
 Base.rand(rng::AbstractRNG, metric::AbstractRiemannianMetric, kinetic, θ) =
-    _rand(rng, metric, kinetic, θ)
+    rand_momentum(rng, metric, kinetic, θ)
 Base.rand(
     rng::AbstractVector{<:AbstractRNG},
     metric::AbstractRiemannianMetric,
     kinetic,
     θ,
-) = _rand(rng, metric, kinetic, θ)
+) = rand_momentum(rng, metric, kinetic, θ)
 
 ### hamiltonian.jl
 

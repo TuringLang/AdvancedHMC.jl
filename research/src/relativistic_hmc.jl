@@ -56,7 +56,7 @@ using AdaptiveRejectionSampling: RejectionSampler, run_sampler!
 import AdvancedHMC: _rand
 
 # TODO Support AbstractVector{<:AbstractRNG}
-function _rand(
+function rand_momentum(
     rng::AbstractRNG,
     metric::UnitEuclideanMetric{T},
     kinetic::RelativisticKinetic{T},
@@ -71,12 +71,12 @@ function _rand(
 end
 
 # TODO Support AbstractVector{<:AbstractRNG}
-function _rand(
+function rand_momentum(
     rng::AbstractRNG,
     metric::DiagEuclideanMetric{T},
     kinetic::RelativisticKinetic{T},
 ) where {T}
-    r = _rand(rng, UnitEuclideanMetric(size(metric)), kinetic)
+    r = rand_momentum(rng, UnitEuclideanMetric(size(metric)), kinetic)
     # p' = A p where A = sqrtM
     r ./= metric.sqrtM⁻¹
     return r

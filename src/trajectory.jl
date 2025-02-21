@@ -858,8 +858,11 @@ function mh_accept_ratio(
     #       the chains. We need to revisit this more rigirously 
     #       in the future. See discussions at 
     #       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
-    _rng = rng isa AbstractRNG ? (rng,) : rng
-    accept = Hproposal .< Horiginal .+ Random.randexp.(_rng, (T,))
+    accept = if rng isa AbstractRNG
+        Hproposal .< Horiginal .+ Random.randexp(rng, T, length(Hproposal))
+    else
+        Hproposal .< Horiginal .+ Random.randexp.(rng, (T,))
+    end
     α = min.(one(T), exp.(Horiginal .- Hproposal))
     return accept, α
 end

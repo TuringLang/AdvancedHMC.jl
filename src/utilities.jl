@@ -2,18 +2,27 @@ const AbstractScalarOrVec{T} = Union{T,AbstractVector{T}} where {T<:AbstractFloa
 
 # Support of passing a vector of RNGs
 
-Base.rand(rng::AbstractVector{<:AbstractRNG}) = rand.(rng)
-
-Base.randn(rng::AbstractVector{<:AbstractRNG}) = randn.(rng)
-
-function Base.rand(rng::AbstractVector{<:AbstractRNG}, T, n_chains::Int)
-    @argcheck length(rng) == n_chains
-    return rand.(rng, T)
+function _randn(rng::AbstractRNG, ::Type{T}, n_chains::Int) where {T}
+    return randn(rng, T, n_chains)
+end
+function _randn(rng::AbstractRNG, ::Type{T}, dim::Int, n_chains::Int) where {T}
+    return randn(rng, T, dim, n_chains)
 end
 
-function Base.randn(rng::AbstractVector{<:AbstractRNG}, T, dim::Int, n_chains::Int)
-    @argcheck length(rng) == n_chains
-    return cat(randn.(rng, T, dim)...; dims = 2)
+function _randn(rngs::AbstractVector{<:AbstractRNG}, ::Type{T}, n_chains::Int) where {T}
+    @argcheck length(rngs) == n_chains
+    return map(Base.Fix2(randn, T), rngs)
+end
+function _randn(
+    rngs::AbstractVector{<:AbstractRNG},
+    ::Type{T},
+    dim::Int,
+    n_chains::Int,
+) where {T}
+    @argcheck length(rngs) == n_chains
+    out = similar(rngs, T, dim, n_chains)
+    foreach(Random.randn!, rngs, eachcol(out))
+    return out
 end
 
 """ 
@@ -80,8 +89,12 @@ function randcat(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     P::AbstractMatrix{T},
 ) where {T}
-    u = rand(rng, T, size(P, 2))
+    u = if rng isa AbstractRNG
+        rand(rng, T, size(P, 2))
+    else
+        @argcheck length(rng) == size(P, 2)
+        map(Base.Fix2(rand, T), rng)
+    end
     C = cumsum(P; dims = 1)
-    indices = convert.(Int, vec(sum(C .< u'; dims = 1))) .+ 1
-    return max.(indices, 1)  # prevent numerical issue for Float32
+    return max.(vec(count(C .< u'; dims = 1)) .+ 1, 1)  # prevent numerical issue for Float32
 end
