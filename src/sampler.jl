@@ -94,7 +94,7 @@ end
 Progress meter update with all trajectory stats, iteration number and metric shown.
 """
 function pm_next!(pm, stat::NamedTuple)
-    ProgressMeter.next!(pm; showvalues = [tuple(s...) for s in pairs(stat)])
+    ProgressMeter.next!(pm; showvalues = map(tuple, values(stat), keys(stat)))
 end
 
 """
@@ -118,7 +118,7 @@ sample(
     progress::Bool = false,
     (pm_next!)::Function = pm_next!,
 ) = sample(
-    GLOBAL_RNG,
+    Random.default_rng(),
     h,
     κ,
     θ,
@@ -146,7 +146,7 @@ sample(
     )
 Sample `n_samples` samples using the proposal `κ` under Hamiltonian `h`.
 - The randomness is controlled by `rng`. 
-    - If `rng` is not provided, `GLOBAL_RNG` will be used.
+    - If `rng` is not provided, the default random number generator (`Random.default_rng()`) will be used.
 - The initial point is given by `θ`.
 - The adaptor is set by `adaptor`, for which the default is no adaptation.
     - It will perform `n_adapts` steps of adaptation, for which the default is the minimum of `1_000` and 10% of `n_samples`
@@ -193,10 +193,11 @@ function sample(
         end
         tstat = merge(tstat, (is_adapt = isadapted,))
         # Update progress meter
-        if progress
-            percentage_divergent_transitions = num_divergent_transitions / i
+        if pm !== nothing
+            percentage_divergent_transitions =
+                num_divergent_transitions / max(i - n_adapts, 1)
             percentage_divergent_transitions_during_adaption =
-                num_divergent_transitions_during_adaption / i
+                num_divergent_transitions_during_adaption / min(i, n_adapts)
             if percentage_divergent_transitions > 0.25
                 @warn "The level of numerical errors is high. Please check the model carefully." maxlog =
                     3

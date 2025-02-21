@@ -23,7 +23,7 @@ function test_stats(
         :hamiltonian_energy_error,
         :is_adapt,
     )
-        @test all(map(s -> in(name, propertynames(s)), stats))
+        @test all(s -> in(name, propertynames(s)), stats)
     end
     is_adapts = getproperty.(stats, :is_adapt)
     @test is_adapts[1:n_adapts] == ones(Bool, n_adapts)
@@ -49,7 +49,7 @@ function test_stats(
         :tree_depth,
         :numerical_error,
     )
-        @test all(map(s -> in(name, propertynames(s)), stats))
+        @test all(s -> in(name, propertynames(s)), stats)
     end
     is_adapts = getproperty.(stats, :is_adapt)
     @test is_adapts[1:n_adapts] == ones(Bool, n_adapts)

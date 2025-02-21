@@ -43,7 +43,7 @@ using AdvancedHMC: neg_energy, energy
             hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
 
             if hessmap isa SoftAbsMap || # only test kinetic energy for SoftAbsMap as that of IdentityMap can be non-PD
-               all(iszero.(x)) # or for x==0 that I know it's PD
+               all(iszero, x) # or for x==0 that I know it's PD
                 @testset "Kinetic energy" begin
                     Σ = hamiltonian.metric.map(hamiltonian.metric.G(x))
                     @test neg_energy(hamiltonian, r, x) ≈ logpdf(MvNormal(zeros(D), Σ), r)

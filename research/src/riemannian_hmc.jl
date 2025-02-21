@@ -145,7 +145,7 @@ Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic, θ) =
     _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
 Base.rand(rng::AbstractVector{<:AbstractRNG}, metric::AbstractMetric, kinetic, θ) =
     _rand(rng, metric, kinetic)
-Base.rand(metric::AbstractMetric, kinetic, θ) = rand(GLOBAL_RNG, metric, kinetic)
+Base.rand(metric::AbstractMetric, kinetic, θ) = rand(Random.default_rng(), metric, kinetic)
 
 ### metric.jl
 
@@ -356,7 +356,7 @@ function ∂H∂r(
     r::AbstractVecOrMat,
 )
     H = h.metric.G(θ)
-    # if any(.!(isfinite.(H)))
+    # if !all(isfinite, H)
     #     println("θ: ", θ)
     #     println("H: ", H)
     # end
