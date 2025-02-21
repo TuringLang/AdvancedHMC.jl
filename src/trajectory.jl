@@ -275,7 +275,7 @@ function transition(
             hamiltonian_energy = H,
             hamiltonian_energy_error = H - H0,
             # check numerical error in proposed phase point. 
-            numerical_error = isfinite(H′),
+            numerical_error = !all(isfinite, H′),
         ),
         stat(τ.integrator),
     )
@@ -296,13 +296,12 @@ function accept_phasepoint!(
 end
 function accept_phasepoint!(z::T, z′::T, is_accept) where {T<:PhasePoint{<:AbstractMatrix}}
     # Revert unaccepted proposals in `z′`
-    is_reject = (!).(is_accept)
-    if any(is_reject)
+    if !all(is_accept)
         # Convert logical indexing to number indexing to support CUDA.jl
         # NOTE: for x::CuArray, x[:,Vector{Bool}]  is NOT supported
         #                       x[:,CuVector{Int}] is NOT supported
         #                       x[:,Vector{Int}]   is     supported
-        is_reject = findall(is_reject) |> Array
+        is_reject = Vector(findall(!, is_accept))
         z′.θ[:, is_reject] = z.θ[:, is_reject]
         z′.r[:, is_reject] = z.r[:, is_reject]
         z′.ℓπ.value[is_reject] = z.ℓπ.value[is_reject]

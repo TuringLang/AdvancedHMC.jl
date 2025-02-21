@@ -356,7 +356,7 @@ function ∂H∂r(
     r::AbstractVecOrMat,
 )
     H = h.metric.G(θ)
-    # if any(.!(isfinite.(H)))
+    # if !all(isfinite, H)
     #     println("θ: ", θ)
     #     println("H: ", H)
     # end

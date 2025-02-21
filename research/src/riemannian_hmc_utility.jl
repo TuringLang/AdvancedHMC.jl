@@ -43,7 +43,7 @@ function prepare_sample_target(hps, θ₀, ℓπ)
     fstabilize = H -> H + hps.λ * I
     Gfunc = x -> begin
         H = fstabilize(Hfunc(x)[3])
-        any(.!(isfinite.(H))) ? diagm(ones(length(x))) : H
+        all(isfinite, H) ? H : diagm(ones(length(x)))
     end
     _∂G∂θfunc = gen_∂G∂θ_fwd(Vfunc, θ₀; f = fstabilize) # size==(4, 2)
     ∂G∂θfunc = x -> reshape_∂G∂θ(_∂G∂θfunc(x)) # size==(2, 2, 2)
