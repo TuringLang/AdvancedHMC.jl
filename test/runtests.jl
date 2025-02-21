@@ -3,6 +3,8 @@ using FillArrays
 using AdvancedHMC: AdvancedHMC
 using LogDensityProblems: LogDensityProblems
 using LogDensityProblemsAD: LogDensityProblemsAD
+using MCMCChains
+using OrdinaryDiffEq
 using ReTest
 
 println("Environment variables for testing")
@@ -17,6 +19,7 @@ include("common.jl")
 if GROUP == "All" || GROUP == "AdvancedHMC"
     using ReTest, CUDA
 
+    include("aqua.jl")
     include("metric.jl")
     include("hamiltonian.jl")
     include("integrator.jl")
