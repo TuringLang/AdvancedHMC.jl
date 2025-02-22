@@ -163,9 +163,7 @@ function Hamiltonian(
 )
     return Hamiltonian(metric, ℓπ.logdensity, kind; kwargs...)
 end
-Hamiltonian(metric::AbstractMetric, ℓπ, m::Module; kwargs...) =
-    Hamiltonian(metric, ℓπ, Val(Symbol(m)); kwargs...)
-function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val}; kwargs...)
+function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val,Module}; kwargs...)
     if LogDensityProblems.capabilities(ℓπ) === nothing
         throw(
             ArgumentError(
@@ -173,7 +171,11 @@ function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val}; kwa
             ),
         )
     end
-    ℓ = LogDensityProblemsAD.ADgradient(kind, ℓπ; kwargs...)
+    ℓ = LogDensityProblemsAD.ADgradient(
+        kind isa Val ? kind : Val(Symbol(kind)),
+        ℓπ;
+        kwargs...,
+    )
     return Hamiltonian(metric, ℓ)
 end
 
