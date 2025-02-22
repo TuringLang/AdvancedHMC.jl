@@ -101,7 +101,7 @@ $(TYPEDFIELDS)
 """
 struct SliceTS{F<:AbstractFloat,P<:PhasePoint} <: AbstractTrajectorySampler
     "Sampled candidate `PhasePoint`."
-    zcand::PhasePoint
+    zcand::P
     "Slice variable in log-space."
     ℓu::F
     "Number of acceptable candidates, i.e. those with probability larger than slice variable `u`."

@@ -106,7 +106,8 @@ function check_subtree_u_turns(h, z0, z1, rho)
     # The left and right subtree are created in such a way that the
     # check_left_subtree and check_right_subtree checks should be equivalent
     # to the general no U-turn check.
-    tleft = AdvancedHMC.BinaryTree(z0, z0, AdvancedHMC.TurnStatistic(rho - z1.r), 0.0, 0, 0.0)
+    tleft =
+        AdvancedHMC.BinaryTree(z0, z0, AdvancedHMC.TurnStatistic(rho - z1.r), 0.0, 0, 0.0)
     tright =
         AdvancedHMC.BinaryTree(z1, z1, AdvancedHMC.TurnStatistic(rho - z0.r), 0.0, 0, 0.0)
 
