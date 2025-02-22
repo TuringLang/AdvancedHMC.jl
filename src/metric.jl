@@ -94,43 +94,43 @@ Base.show(io::IO, dem::DenseEuclideanMetric) =
 
 # `rand` functions for `metric` types.
 
-function _rand(
+function rand_momentum(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::UnitEuclideanMetric{T},
     kinetic::GaussianKinetic,
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    r = _randn(rng, T, size(metric)...)
     return r
 end
 
-function _rand(
+function rand_momentum(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::DiagEuclideanMetric{T},
     kinetic::GaussianKinetic,
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    r = _randn(rng, T, size(metric)...)
     r ./= metric.sqrtM⁻¹
     return r
 end
 
-function _rand(
+function rand_momentum(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::DenseEuclideanMetric{T},
     kinetic::GaussianKinetic,
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    r = _randn(rng, T, size(metric)...)
     ldiv!(metric.cholM⁻¹, r)
     return r
 end
 
 # TODO (kai) The rand interface should be updated as "rand from momentum distribution + optional affine transformation by metric"
 Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic::AbstractKinetic) =
-    _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
+    rand_momentum(rng, metric, kinetic)    # this disambiguity is required by Random.rand
 Base.rand(
     rng::AbstractVector{<:AbstractRNG},
     metric::AbstractMetric,
     kinetic::AbstractKinetic,
-) = _rand(rng, metric, kinetic)
+) = rand_momentum(rng, metric, kinetic)
 Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic) =
     rand(Random.default_rng(), metric, kinetic)
 
