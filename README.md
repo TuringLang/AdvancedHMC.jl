@@ -290,7 +290,7 @@ function sample(
 Draw `n_samples` samples using the kernel `κ` under the Hamiltonian system `h`
 
 - The randomness is controlled by `rng`.
-  - If `rng` is not provided, `GLOBAL_RNG` will be used.
+  - If `rng` is not provided, the default random number generator (`Random.default_rng()`) will be used.
 - The initial point is given by `θ`.
 - The adaptor is set by `adaptor`, for which the default is no adaptation.
   - It will perform `n_adapts` steps of adaptation, for which the default is `1_000` or 10% of `n_samples`, whichever is lower. 
