@@ -206,3 +206,21 @@ refresh(
     z.θ,
     ref.α * z.r + sqrt(1 - ref.α^2) * rand(rng, h.metric, h.kinetic, z.θ),
 )
+
+
+
+include("quasi_MC.jl")
+
+"Quasi-random momentum refreshment."
+struct QuasiRandomMomentumRefreshment <: AbstractMomentumRefreshment 
+    quasi_seed::Quasi_MC_seed
+end
+
+function refresh(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    ref::QuasiRandomMomentumRefreshment,
+    h::Hamiltonian,
+    z::PhasePoint,
+) 
+    return phasepoint(h, z.θ, rand(rng, h.metric, h.kinetic, z.θ, ref.quasi_seed))
+end
