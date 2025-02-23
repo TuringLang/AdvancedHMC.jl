@@ -122,7 +122,8 @@ using Statistics: mean
         for lf in [Leapfrog(ϵ), DiffEqIntegrator(ϵ, VerletLeapfrog())]
             q_init = randn(1)
             h = Hamiltonian(UnitEuclideanMetric(1), negU, ForwardDiff)
-            p_init = AdvancedHMC.rand_momentum(Random.default_rng(), h.metric, h.kinetic, q_init)
+            p_init =
+                AdvancedHMC.rand_momentum(Random.default_rng(), h.metric, h.kinetic, q_init)
 
             q, p = copy(q_init), copy(p_init)
             z = AdvancedHMC.phasepoint(h, q, p)
