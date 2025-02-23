@@ -127,7 +127,7 @@ end
         Leapfrog(find_good_stepsize(h, θ_init)),
         GeneralisedNoUTurn(),
     )
-    r_init = AdvancedHMC.rand(h.metric, h.kinetic)
+    r_init = AdvancedHMC.rand_momentum(Random.default_rng(), h.metric, h.kinetic, θ_init)
 
     @testset "Passing RNG" begin
         τ_with_jittered_lf = Trajectory{MultinomialTS}(
