@@ -50,7 +50,7 @@ function gettraj(rng, h, ϵ = 0.1, n_steps = 50)
     lf = Leapfrog(ϵ)
 
     q_init = randn(rng, D)
-    p_init = AdvancedHMC.rand(rng, h.metric, h.kinetic)
+    p_init = AdvancedHMC.rand_momentum(rng, h.metric, h.kinetic, q_init)
     z = AdvancedHMC.phasepoint(h, q_init, p_init)
 
     traj_z = Vector(undef, n_steps)
