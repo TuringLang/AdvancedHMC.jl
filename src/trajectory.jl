@@ -769,32 +769,34 @@ function find_good_stepsize(
     max_n_iters::Int = 100,
 ) where {T<:Real}
     # Initialize searching parameters
-    ϵ′ = ϵ = T(0.1)
-    a_min, a_cross, a_max = T(0.25), T(0.5), T(0.75) # minimal, crossing, maximal accept ratio
-    d = T(2.0)
+    ϵ′ = ϵ = T(1 // 10)
+    # minimal, crossing, maximal log accept ratio
+    log_a_min = 2 * T(loghalf)
+    log_a_cross = T(loghalf)
+    log_a_max = log(T(3 // 4))
+    d = T(2)
+    invd = inv(d)
     # Create starting phase point
     r = rand_momentum(rng, h.metric, h.kinetic, θ) # sample momentum variable
     z = phasepoint(h, θ, r)
     H = energy(z)
 
     # Make a proposal phase point to decide direction
-    z′, H′ = A(h, z, ϵ)
+    _, H′ = A(h, z, ϵ)
     ΔH = H - H′ # compute the energy difference; `exp(ΔH)` is the MH accept ratio
-    direction = ΔH > log(a_cross) ? 1 : -1
+    ratio_too_high = ΔH > log_a_cross
 
     # Crossing step: increase/decrease ϵ until accept ratio cross a_cross.
     for _ = 1:max_n_iters
-        # `direction` being  `1` means MH ratio too high
+        # `ratio_too_high` being  `true` means MH ratio too high
         #     - this means our step size is too small, thus we increase
-        # `direction` being `-1` means MH ratio too small
-        #     - this means our step szie is too large, thus we decrease
-        ϵ′ = direction == 1 ? d * ϵ : 1 / d * ϵ
-        z′, H′ = A(h, z, ϵ)
+        # `ratio_to_high` being `false` means MH ratio too small
+        #     - this means our step size is too large, thus we decrease
+        ϵ′ = ratio_too_high ? d * ϵ : invd * ϵ
+        _, H′ = A(h, z, ϵ)
         ΔH = H - H′
         @debug "Crossing step" direction H′ ϵ α = min(1, exp(ΔH))
-        if (direction == 1) && !(ΔH > log(a_cross))
-            break
-        elseif (direction == -1) && !(ΔH < log(a_cross))
+        if xor(ratio_too_high, ΔH > log_a_cross)
             break
         else
             ϵ = ϵ′
@@ -806,19 +808,19 @@ function find_good_stepsize(
     # Bisection step: ensure final accept ratio: a_min < a < a_max.
     # See https://en.wikipedia.org/wiki/Bisection_method
 
-    ϵ, ϵ′ = ϵ < ϵ′ ? (ϵ, ϵ′) : (ϵ′, ϵ)  # ensure ϵ < ϵ′;
+    ϵ, ϵ′ = minmax(ϵ, ϵ′) # ensure ϵ < ϵ′;
     # Here we want to use a value between these two given the
     # criteria that this value also gives us a MH ratio between `a_min` and `a_max`.
     # This condition is quite mild and only intended to avoid cases where
     # the middle value of `ϵ` and `ϵ′` is too extreme.
     for _ = 1:max_n_iters
         ϵ_mid = middle(ϵ, ϵ′)
-        z′, H′ = A(h, z, ϵ_mid)
+        _, H′ = A(h, z, ϵ_mid)
         ΔH = H - H′
         @debug "Bisection step" H′ ϵ_mid α = min(1, exp(ΔH))
-        if (exp(ΔH) > a_max)
+        if ΔH > log_a_max
             ϵ = ϵ_mid
-        elseif (exp(ΔH) < a_min)
+        elseif ΔH < log_a_min
             ϵ′ = ϵ_mid
         else
             ϵ = ϵ_mid
