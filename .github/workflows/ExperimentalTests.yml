@@ -3,7 +3,7 @@ name: TestExperimentalFeatures
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
 
 concurrency:

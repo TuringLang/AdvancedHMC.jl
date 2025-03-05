@@ -1,10 +1,10 @@
 name: Format
 
 on:
-  pull_request:
   push:
     branches:
-      - master
+      - main
+  pull_request:
 
 concurrency:
   # Skip intermediate builds: always.
