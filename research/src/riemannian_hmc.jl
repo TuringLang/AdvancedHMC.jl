@@ -3,8 +3,7 @@ using Random
 ### integrator.jl
 
 import AdvancedHMC: ∂H∂θ, ∂H∂r, DualValue, PhasePoint, phasepoint, step
-using AdvancedHMC:
-    @unpack, TYPEDEF, TYPEDFIELDS, AbstractScalarOrVec, AbstractLeapfrog, step_size
+using AdvancedHMC: TYPEDEF, TYPEDFIELDS, AbstractScalarOrVec, AbstractLeapfrog, step_size
 
 """
 $(TYPEDEF)
@@ -60,12 +59,12 @@ function step(
         for j = 1:lf.n
             # Reuse cache for the first iteration
             if j == 1
-                @unpack value, gradient = z.ℓπ
+                (; value, gradient) = z.ℓπ
             elseif j == 2 # cache intermediate values that depends on θ only (which are unchanged)
                 retval, cache = ∂H∂θ_cache(h, θ_init, r_half; return_cache = true)
-                @unpack value, gradient = retval
+                (; value, gradient) = retval
             else # reuse cache
-                @unpack value, gradient = ∂H∂θ_cache(h, θ_init, r_half; cache = cache)
+                (; value, gradient) = ∂H∂θ_cache(h, θ_init, r_half; cache = cache)
             end
             r_half = r_init - ϵ / 2 * gradient
             # println("r_half: ", r_half)
@@ -78,7 +77,7 @@ function step(
             # println("θ_full :", θ_full)
         end
         #! Eq (18) of Girolami & Calderhead (2011)
-        @unpack value, gradient = ∂H∂θ(h, θ_full, r_half)
+        (; value, gradient) = ∂H∂θ(h, θ_full, r_half)
         r_full = r_half - ϵ / 2 * gradient
         # println("r_full: ", r_full)
         # Tempering

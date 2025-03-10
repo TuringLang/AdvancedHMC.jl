@@ -16,8 +16,7 @@ function AdvancedHMC.step(
     fwd::Bool = n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
     res::Union{Vector{P},P} = z,
 ) where {P<:AdvancedHMC.PhasePoint}
-
-    AdvancedHMC.@unpack θ, r = z
+    (; θ, r) = z
     # For DynamicalODEProblem `u` is `θ` and `v` is `r`
     # f1 is dr/dt RHS function
     # f2 is dθ/dt RHS function

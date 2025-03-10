@@ -25,14 +25,14 @@ function reset!(das::DAState{T}) where {T<:AbstractFloat}
     das.m = 0
     das.μ = computeμ(das.ϵ)
     das.x_bar = zero(T)
-    das.H_bar = zero(T)
+    return das.H_bar = zero(T)
 end
 
 function reset!(das::DAState{<:AbstractVector{T}}) where {T<:AbstractFloat}
     das.m = 0
     das.μ .= computeμ(das.ϵ)
     das.x_bar .= zero(T)
-    das.H_bar .= zero(T)
+    return das.H_bar .= zero(T)
 end
 
 mutable struct MSSState{T<:AbstractScalarOrVec{<:AbstractFloat}}
@@ -60,8 +60,9 @@ struct ManualSSAdaptor{T<:AbstractScalarOrVec{<:AbstractFloat}} <: StepSizeAdapt
 end
 Base.show(io::IO, a::ManualSSAdaptor) = print(io, "ManualSSAdaptor()")
 
-ManualSSAdaptor(initϵ::T) where {T<:AbstractScalarOrVec{<:AbstractFloat}} =
-    ManualSSAdaptor{T}(MSSState(initϵ))
+function ManualSSAdaptor(initϵ::T) where {T<:AbstractScalarOrVec{<:AbstractFloat}}
+    return ManualSSAdaptor{T}(MSSState(initϵ))
+end
 
 """
 An implementation of the Nesterov dual averaging algorithm to tune step size.
@@ -78,22 +79,24 @@ struct NesterovDualAveraging{T<:AbstractFloat,S<:AbstractScalarOrVec{T}} <: Step
     δ::T
     state::DAState{S}
 end
-Base.show(io::IO, a::NesterovDualAveraging) = print(
-    io,
-    "NesterovDualAveraging(γ=$(a.γ), t_0=$(a.t_0), κ=$(a.κ), δ=$(a.δ), state.ϵ=$(getϵ(a)))",
-)
+function Base.show(io::IO, a::NesterovDualAveraging)
+    return print(
+        io,
+        "NesterovDualAveraging(γ=$(a.γ), t_0=$(a.t_0), κ=$(a.κ), δ=$(a.δ), state.ϵ=$(getϵ(a)))",
+    )
+end
 
-NesterovDualAveraging(
-    γ::T,
-    t_0::T,
-    κ::T,
-    δ::T,
-    ϵ::VT,
-) where {T<:AbstractFloat,VT<:AbstractScalarOrVec{T}} =
-    NesterovDualAveraging(γ, t_0, κ, δ, DAState(ϵ))
+function NesterovDualAveraging(
+    γ::T, t_0::T, κ::T, δ::T, ϵ::VT
+) where {T<:AbstractFloat,VT<:AbstractScalarOrVec{T}}
+    return NesterovDualAveraging(γ, t_0, κ, δ, DAState(ϵ))
+end
 
-NesterovDualAveraging(δ::T, ϵ::VT) where {T<:AbstractFloat,VT<:AbstractScalarOrVec{T}} =
-    NesterovDualAveraging(T(0.05), T(10.0), T(0.75), δ, ϵ)
+function NesterovDualAveraging(
+    δ::T, ϵ::VT
+) where {T<:AbstractFloat,VT<:AbstractScalarOrVec{T}}
+    return NesterovDualAveraging(T(0.05), T(10.0), T(0.75), δ, ϵ)
+end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
 # Note: This function is not merged with `adapt!` to empahsize the fact that
@@ -111,8 +114,8 @@ function adapt_stepsize!(
         α = α > 1 ? one(T) : α
     end
 
-    @unpack state, γ, t_0, κ, δ = da
-    @unpack μ, m, x_bar, H_bar = state
+    (; state, γ, t_0, κ, δ) = da
+    (; μ, m, x_bar, H_bar) = state
 
     m = m + 1
 
@@ -130,10 +133,13 @@ function adapt_stepsize!(
     if !all(isfinite, ϵ)
         @warn "Incorrect ϵ = $ϵ; ϵ_previous = $(da.state.ϵ) is used instead."
         # FIXME: this revert is buggy for batch mode
-        @unpack m, ϵ, x_bar, H_bar = state
+        (; m, ϵ, x_bar, H_bar) = state
     end
 
-    @pack! state = m, ϵ, x_bar, H_bar
+    state.m = m
+    state.ϵ = ϵ
+    state.x_bar = x_bar
+    return state.H_bar = H_bar
 end
 
 adapt!(

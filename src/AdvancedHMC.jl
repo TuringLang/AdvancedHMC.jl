@@ -4,10 +4,9 @@ using Statistics: mean, var, middle
 using LinearAlgebra:
     Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
 using StatsFuns: logaddexp, logsumexp
-import Random
+using Random: Random
 using Random: AbstractRNG
 using ProgressMeter: ProgressMeter
-using SimpleUnPack: @unpack
 
 using Setfield
 import Setfield: ConstructionBase
@@ -19,7 +18,7 @@ using DocStringExtensions
 using LogDensityProblems
 using LogDensityProblemsAD: LogDensityProblemsAD
 
-import AbstractMCMC
+using AbstractMCMC: AbstractMCMC
 using AbstractMCMC: LogDensityModel
 
 import StatsBase: sample

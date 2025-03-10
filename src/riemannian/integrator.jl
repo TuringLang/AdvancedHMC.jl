@@ -62,12 +62,12 @@ function step(
         for j = 1:lf.n
             # Reuse cache for the first iteration
             if j == 1
-                @unpack value, gradient = z.ℓπ
+                (; value, gradient) = z.ℓπ
             elseif j == 2 # cache intermediate values that depends on θ only (which are unchanged)
-                retval, cache = ∂H∂θ_cache(h, θ_init, r_half; return_cache = true)
-                @unpack value, gradient = retval
+                retval, cache = ∂H∂θ_cache(h, θ_init, r_half; return_cache=true)
+                (; value, gradient) = retval
             else # reuse cache
-                @unpack value, gradient = ∂H∂θ_cache(h, θ_init, r_half; cache = cache)
+                (; value, gradient) = ∂H∂θ_cache(h, θ_init, r_half; cache=cache)
             end
             r_half = r_init - ϵ / 2 * gradient
         end
@@ -78,7 +78,7 @@ function step(
             θ_full = θ_init + ϵ / 2 * (term_1 + ∂H∂r(h, θ_full, r_half))
         end
         # eq (18) of Girolami & Calderhead (2011)
-        @unpack value, gradient = ∂H∂θ(h, θ_full, r_half)
+        (; value, gradient) = ∂H∂θ(h, θ_full, r_half)
         r_full = r_half - ϵ / 2 * gradient
         # Tempering
         #r = temper(lf, r, (i=i, is_half=false), n_steps)
