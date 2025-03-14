@@ -88,7 +88,7 @@ NesterovDualAveraging(
     t_0::T,
     κ::T,
     δ::T,
-    ϵ::VT
+    ϵ::VT,
 ) where {T<:AbstractFloat,VT<:AbstractScalarOrVec{T}} =
     NesterovDualAveraging(γ, t_0, κ, δ, DAState(ϵ))
 
