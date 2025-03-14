@@ -221,7 +221,7 @@ function step(
 
     (; θ, r) = z
     (; value, gradient) = z.ℓπ
-    for i in 1:n_steps
+    for i = 1:n_steps
         # Tempering
         r = temper(lf, r, (i = i, is_half = true), n_steps)
         # Take a half leapfrog step for momentum variable

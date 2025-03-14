@@ -64,10 +64,10 @@ function step(
             if j == 1
                 (; value, gradient) = z.ℓπ
             elseif j == 2 # cache intermediate values that depends on θ only (which are unchanged)
-                retval, cache = ∂H∂θ_cache(h, θ_init, r_half; return_cache=true)
+                retval, cache = ∂H∂θ_cache(h, θ_init, r_half; return_cache = true)
                 (; value, gradient) = retval
             else # reuse cache
-                (; value, gradient) = ∂H∂θ_cache(h, θ_init, r_half; cache=cache)
+                (; value, gradient) = ∂H∂θ_cache(h, θ_init, r_half; cache = cache)
             end
             r_half = r_init - ϵ / 2 * gradient
         end

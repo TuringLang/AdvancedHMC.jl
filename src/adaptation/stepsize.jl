@@ -60,7 +60,7 @@ struct ManualSSAdaptor{T<:AbstractScalarOrVec{<:AbstractFloat}} <: StepSizeAdapt
 end
 Base.show(io::IO, a::ManualSSAdaptor) = print(io, "ManualSSAdaptor()")
 
-ManualSSAdaptor(initϵ::T) where {T<:AbstractScalarOrVec{<:AbstractFloat}} = 
+ManualSSAdaptor(initϵ::T) where {T<:AbstractScalarOrVec{<:AbstractFloat}} =
     ManualSSAdaptor{T}(MSSState(initϵ))
 
 """
@@ -79,18 +79,20 @@ struct NesterovDualAveraging{T<:AbstractFloat,S<:AbstractScalarOrVec{T}} <: Step
     state::DAState{S}
 end
 Base.show(io::IO, a::NesterovDualAveraging) = print(
-        io,
-        "NesterovDualAveraging(γ=$(a.γ), t_0=$(a.t_0), κ=$(a.κ), δ=$(a.δ), state.ϵ=$(getϵ(a)))",
-    )
+    io,
+    "NesterovDualAveraging(γ=$(a.γ), t_0=$(a.t_0), κ=$(a.κ), δ=$(a.δ), state.ϵ=$(getϵ(a)))",
+)
 
 NesterovDualAveraging(
-    γ::T, t_0::T, κ::T, δ::T, ϵ::VT
+    γ::T,
+    t_0::T,
+    κ::T,
+    δ::T,
+    ϵ::VT
 ) where {T<:AbstractFloat,VT<:AbstractScalarOrVec{T}} = 
     NesterovDualAveraging(γ, t_0, κ, δ, DAState(ϵ))
 
-NesterovDualAveraging(
-    δ::T, ϵ::VT
-) where {T<:AbstractFloat,VT<:AbstractScalarOrVec{T}} = 
+NesterovDualAveraging(δ::T, ϵ::VT) where {T<:AbstractFloat,VT<:AbstractScalarOrVec{T}} =
     NesterovDualAveraging(T(0.05), T(10.0), T(0.75), δ, ϵ)
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
