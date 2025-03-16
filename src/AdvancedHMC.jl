@@ -7,7 +7,6 @@ using StatsFuns: logaddexp, logsumexp
 import Random
 using Random: AbstractRNG
 using ProgressMeter: ProgressMeter
-using SimpleUnPack: @unpack
 
 using Setfield
 import Setfield: ConstructionBase

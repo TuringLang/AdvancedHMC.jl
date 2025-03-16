@@ -118,7 +118,7 @@ end
 
 function Base.push!(wv::WelfordVar, s::AbstractVecOrMat{T}) where {T}
     wv.n += 1
-    @unpack δ, μ, M, n = wv
+    (; δ, μ, M, n) = wv
     n = T(n)
     δ .= s - μ
     μ .= μ + δ / n
@@ -127,7 +127,7 @@ end
 
 # https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
 function get_estimation(wv::WelfordVar{T}) where {T<:AbstractFloat}
-    @unpack n, M, var = wv
+    (; n, M) = wv
     @assert n >= 2 "Cannot estimate variance with only one sample"
     n, ϵ = T(n), T(1e-3)
     return n / ((n + 5) * (n - 1)) * M .+ ϵ * (5 / (n + 5))
@@ -206,7 +206,7 @@ end
 
 function Base.push!(wc::WelfordCov, s::AbstractVector{T}) where {T}
     wc.n += 1
-    @unpack δ, μ, n, M = wc
+    (; δ, μ, n, M) = wc
     n = T(n)
     δ .= s - μ
     μ .= μ + δ / n
@@ -215,7 +215,7 @@ end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/covar_adaptation.hpp
 function get_estimation(wc::WelfordCov{T}) where {T<:AbstractFloat}
-    @unpack n, M, cov = wc
+    (; n, M) = wc
     @assert n >= 2 "Cannot get covariance with only one sample"
     n, ϵ = T(n), T(1e-3)
     return n / ((n + 5) * (n - 1)) * M + ϵ * (5 / (n + 5)) * LinearAlgebra.I

@@ -53,7 +53,7 @@ function transition(
     κ::HMCKernel,
     z::PhasePoint,
 )
-    @unpack refreshment, τ = κ
+    (; refreshment, τ) = κ
     @set! τ.integrator = jitter(rng, τ.integrator)
     z = refresh(rng, refreshment, h, z)
     return transition(rng, τ, h, z)

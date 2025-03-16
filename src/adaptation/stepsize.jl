@@ -111,8 +111,8 @@ function adapt_stepsize!(
         α = α > 1 ? one(T) : α
     end
 
-    @unpack state, γ, t_0, κ, δ = da
-    @unpack μ, m, x_bar, H_bar = state
+    (; state, γ, t_0, κ, δ) = da
+    (; μ, m, x_bar, H_bar) = state
 
     m = m + 1
 
@@ -130,10 +130,14 @@ function adapt_stepsize!(
     if !all(isfinite, ϵ)
         @warn "Incorrect ϵ = $ϵ; ϵ_previous = $(da.state.ϵ) is used instead."
         # FIXME: this revert is buggy for batch mode
-        @unpack m, ϵ, x_bar, H_bar = state
+        (; m, ϵ, x_bar, H_bar) = state
     end
 
-    @pack! state = m, ϵ, x_bar, H_bar
+    state.m = m
+    state.ϵ = ϵ
+    state.x_bar = x_bar
+    state.H_bar = H_bar
+    return nothing
 end
 
 adapt!(

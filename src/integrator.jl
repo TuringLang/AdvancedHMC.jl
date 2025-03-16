@@ -219,8 +219,8 @@ function step(
         z
     end
 
-    @unpack θ, r = z
-    @unpack value, gradient = z.ℓπ
+    (; θ, r) = z
+    (; value, gradient) = z.ℓπ
     for i = 1:n_steps
         # Tempering
         r = temper(lf, r, (i = i, is_half = true), n_steps)
@@ -230,7 +230,7 @@ function step(
         ∇r = ∂H∂r(h, r)
         θ = θ + ϵ .* ∇r
         # Take a half leapfrog step for momentum variable
-        @unpack value, gradient = ∂H∂θ(h, θ)
+        (; value, gradient) = ∂H∂θ(h, θ)
         r = r - ϵ / 2 .* gradient
         # Tempering
         r = temper(lf, r, (i = i, is_half = false), n_steps)
