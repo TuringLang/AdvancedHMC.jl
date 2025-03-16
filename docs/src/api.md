@@ -6,6 +6,7 @@ Documentation for AdvancedHMC.jl
 ```
 
 ## Types
+
 ```@docs
 ClassicNoUTurn
 HMCSampler

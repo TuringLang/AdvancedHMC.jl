@@ -3,16 +3,17 @@
 Assuming you are in the local folder of the root of AdvancedHMC.jl,
 you can use the following command to run all tests locally:
 
-``` sh
+```sh
 julia --project=@. -e 'using Pkg; Pkg.test(; test_args=ARGS)' 
 ```
-If you are in a different folder, 
+
+If you are in a different folder,
 you can change `@.` to the root of AdvancedHMC.jl.
 
 Further, the testing is set up to accept positional arguments to run a subset of tests by filtering.
 For example, below runs only tests for `Adaptation`:
 
-``` sh
+```sh
 julia --project=@. -e 'using Pkg; Pkg.test(; test_args=ARGS)' "Adaptation"
 ```
 
