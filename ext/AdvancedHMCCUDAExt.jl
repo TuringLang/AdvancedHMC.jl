@@ -1,9 +1,9 @@
 module AdvancedHMCCUDAExt
 
 if isdefined(Base, :get_extension)
-    import AdvancedHMC
-    import CUDA
-    import Random
+    using AdvancedHMC: AdvancedHMC
+    using CUDA: CUDA
+    using Random: Random
 else
     import ..AdvancedHMC
     import ..CUDA

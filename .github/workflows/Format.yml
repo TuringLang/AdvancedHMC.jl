@@ -28,6 +28,7 @@ jobs:
           format("."; verbose=true)
         shell: julia --color=yes {0}
       - uses: reviewdog/action-suggester@v1
+        if: github.event_name == 'pull_request'
         with:
           tool_name: JuliaFormatter
           fail_on_error: true

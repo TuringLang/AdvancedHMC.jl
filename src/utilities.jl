@@ -14,10 +14,7 @@ function _randn(rngs::AbstractVector{<:AbstractRNG}, ::Type{T}, n_chains::Int) w
     return map(Base.Fix2(randn, T), rngs)
 end
 function _randn(
-    rngs::AbstractVector{<:AbstractRNG},
-    ::Type{T},
-    dim::Int,
-    n_chains::Int,
+    rngs::AbstractVector{<:AbstractRNG}, ::Type{T}, dim::Int, n_chains::Int
 ) where {T}
     @argcheck length(rngs) == n_chains
     out = similar(rngs, T, dim, n_chains)
@@ -49,7 +46,7 @@ function randcat(rng::AbstractRNG, p::AbstractVector{T}) where {T}
     c = zero(eltype(p))
     i = 0
     while c < u
-        c += p[i+=1]
+        c += p[i += 1]
     end
     return max(i, 1)
 end
@@ -86,8 +83,7 @@ Then `C .< u'` is
 thus `convert.(Int, vec(sum(C .< u'; dims=1))) .+ 1` equals `[1, 2]`.
 """
 function randcat(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
-    P::AbstractMatrix{T},
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, P::AbstractMatrix{T}
 ) where {T}
     u = if rng isa AbstractRNG
         rand(rng, T, size(P, 2))
@@ -95,6 +91,6 @@ function randcat(
         @argcheck length(rng) == size(P, 2)
         map(Base.Fix2(rand, T), rng)
     end
-    C = cumsum(P; dims = 1)
-    return max.(vec(count(C .< u'; dims = 1)) .+ 1, 1)  # prevent numerical issue for Float32
+    C = cumsum(P; dims=1)
+    return max.(vec(count(C .< u'; dims=1)) .+ 1, 1)  # prevent numerical issue for Float32
 end

@@ -50,9 +50,12 @@ abstract type AbstractLeapfrog{T} <: AbstractIntegrator end
 
 step_size(lf::AbstractLeapfrog) = lf.ϵ
 jitter(::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, lf::AbstractLeapfrog) = lf
-temper(lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int) =
-    r
-stat(lf::AbstractLeapfrog) = (step_size = step_size(lf), nom_step_size = nom_step_size(lf))
+function temper(
+    lf::AbstractLeapfrog, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int
+)
+    return r
+end
+stat(lf::AbstractLeapfrog) = (step_size=step_size(lf), nom_step_size=nom_step_size(lf))
 
 update_nom_step_size(lf::AbstractLeapfrog, ϵ) = @set lf.ϵ = ϵ
 
@@ -116,7 +119,7 @@ end
 JitteredLeapfrog(ϵ0, jitter) = JitteredLeapfrog(ϵ0, jitter, ϵ0)
 
 function Base.show(io::IO, l::JitteredLeapfrog)
-    print(
+    return print(
         io,
         "JitteredLeapfrog(ϵ0=$(round.(l.ϵ0; sigdigits=3)), jitter=$(round.(l.jitter; sigdigits=3)), ϵ=$(round.(l.ϵ; sigdigits=3)))",
     )
@@ -132,8 +135,7 @@ function jitter(rng::AbstractRNG, lf::JitteredLeapfrog{FT,FT}) where {FT<:Abstra
     return @set lf.ϵ = ϵ
 end
 function jitter(
-    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
-    lf::JitteredLeapfrog{FT,T},
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, lf::JitteredLeapfrog{FT,T}
 ) where {FT<:AbstractFloat,T<:AbstractVector{FT}}
     ϵ = similar(lf.ϵ0)
     if rng isa AbstractRNG
@@ -170,9 +172,8 @@ struct TemperedLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: Abstrac
 end
 
 function Base.show(io::IO, l::TemperedLeapfrog)
-    print(
-        io,
-        "TemperedLeapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)), α=$(round.(l.α; sigdigits=3)))",
+    return print(
+        io, "TemperedLeapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)), α=$(round.(l.α; sigdigits=3)))"
     )
 end
 
@@ -198,15 +199,16 @@ end
 
 # `step` method for integrators above
 # method for `DiffEqIntegrator` is defined in the OrdinaryDiffEq extension
-const DefaultLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} =
-    Union{Leapfrog{T},JitteredLeapfrog{FT,T},TemperedLeapfrog{FT,T}}
+const DefaultLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} = Union{
+    Leapfrog{T},JitteredLeapfrog{FT,T},TemperedLeapfrog{FT,T}
+}
 function step(
     lf::DefaultLeapfrog{FT,T},
     h::Hamiltonian,
     z::P,
-    n_steps::Int = 1;
-    fwd::Bool = n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
-    full_trajectory::Val{FullTraj} = Val(false),
+    n_steps::Int=1;
+    fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
+    full_trajectory::Val{FullTraj}=Val(false),
 ) where {FT<:AbstractFloat,T<:AbstractScalarOrVec{FT},P<:PhasePoint,FullTraj}
     n_steps = abs(n_steps)  # to support `n_steps < 0` cases
 
@@ -221,9 +223,9 @@ function step(
 
     (; θ, r) = z
     (; value, gradient) = z.ℓπ
-    for i = 1:n_steps
+    for i in 1:n_steps
         # Tempering
-        r = temper(lf, r, (i = i, is_half = true), n_steps)
+        r = temper(lf, r, (i=i, is_half=true), n_steps)
         # Take a half leapfrog step for momentum variable
         r = r - ϵ / 2 .* gradient
         # Take a full leapfrog step for position variable
@@ -233,9 +235,9 @@ function step(
         (; value, gradient) = ∂H∂θ(h, θ)
         r = r - ϵ / 2 .* gradient
         # Tempering
-        r = temper(lf, r, (i = i, is_half = false), n_steps)
+        r = temper(lf, r, (i=i, is_half=false), n_steps)
         # Create a new phase point by caching the logdensity and gradient
-        z = phasepoint(h, θ, r; ℓπ = DualValue(value, gradient))
+        z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
         # Update result
         if FullTraj
             res[i] = z
