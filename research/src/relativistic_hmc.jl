@@ -9,17 +9,14 @@ struct RelativisticKinetic{T} <: AbstractKinetic
     c::T
 end
 
-
 function ∂H∂r(
-    h::Hamiltonian{<:UnitEuclideanMetric,<:RelativisticKinetic},
-    r::AbstractVecOrMat,
+    h::Hamiltonian{<:UnitEuclideanMetric,<:RelativisticKinetic}, r::AbstractVecOrMat
 )
     mass = h.kinetic.m .* sqrt.(r .^ 2 ./ (h.kinetic.m .^ 2 * h.kinetic.c .^ 2) .+ 1)
     return r ./ mass
 end
 function ∂H∂r(
-    h::Hamiltonian{<:DiagEuclideanMetric,<:RelativisticKinetic},
-    r::AbstractVecOrMat,
+    h::Hamiltonian{<:DiagEuclideanMetric,<:RelativisticKinetic}, r::AbstractVecOrMat
 )
     r = h.metric.sqrtM⁻¹ .* r
     mass = h.kinetic.m .* sqrt.(r .^ 2 ./ (h.kinetic.m .^ 2 * h.kinetic.c .^ 2) .+ 1)
@@ -27,11 +24,8 @@ function ∂H∂r(
     return h.metric.sqrtM⁻¹ .* retval # (15)
 end
 
-
 function neg_energy(
-    h::Hamiltonian{<:UnitEuclideanMetric,<:RelativisticKinetic},
-    r::T,
-    θ::T,
+    h::Hamiltonian{<:UnitEuclideanMetric,<:RelativisticKinetic}, r::T, θ::T
 ) where {T<:AbstractVector}
     return -sum(
         h.kinetic.m .* h.kinetic.c .^ 2 .*
@@ -40,9 +34,7 @@ function neg_energy(
 end
 
 function neg_energy(
-    h::Hamiltonian{<:DiagEuclideanMetric,<:RelativisticKinetic},
-    r::T,
-    θ::T,
+    h::Hamiltonian{<:DiagEuclideanMetric,<:RelativisticKinetic}, r::T, θ::T
 ) where {T<:AbstractVector}
     r = h.metric.sqrtM⁻¹ .* r
     return -sum(
@@ -51,19 +43,16 @@ function neg_energy(
     )
 end
 
-
 using AdaptiveRejectionSampling: RejectionSampler, run_sampler!
 import AdvancedHMC: _rand
 
 # TODO Support AbstractVector{<:AbstractRNG}
 function rand_momentum(
-    rng::AbstractRNG,
-    metric::UnitEuclideanMetric{T},
-    kinetic::RelativisticKinetic{T},
+    rng::AbstractRNG, metric::UnitEuclideanMetric{T}, kinetic::RelativisticKinetic{T}
 ) where {T}
     h_temp = Hamiltonian(metric, kinetic, identity, identity)
     densityfunc = x -> exp(neg_energy(h_temp, [x], [x]))
-    sampler = RejectionSampler(densityfunc, (-Inf, Inf); max_segments = 5)
+    sampler = RejectionSampler(densityfunc, (-Inf, Inf); max_segments=5)
     sz = size(metric)
     r = run_sampler!(rng, sampler, prod(sz))
     r = reshape(r, sz)
@@ -72,9 +61,7 @@ end
 
 # TODO Support AbstractVector{<:AbstractRNG}
 function rand_momentum(
-    rng::AbstractRNG,
-    metric::DiagEuclideanMetric{T},
-    kinetic::RelativisticKinetic{T},
+    rng::AbstractRNG, metric::DiagEuclideanMetric{T}, kinetic::RelativisticKinetic{T}
 ) where {T}
     r = rand_momentum(rng, UnitEuclideanMetric(size(metric)), kinetic)
     # p' = A p where A = sqrtM

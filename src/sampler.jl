@@ -2,8 +2,7 @@
 
 update(h::Hamiltonian, ::AbstractAdaptor) = h
 function update(
-    h::Hamiltonian,
-    adaptor::Union{MassMatrixAdaptor,NaiveHMCAdaptor,StanHMCAdaptor},
+    h::Hamiltonian, adaptor::Union{MassMatrixAdaptor,NaiveHMCAdaptor,StanHMCAdaptor}
 )
     metric = renew(h.metric, getM⁻¹(adaptor))
     return @set h.metric = metric
@@ -11,8 +10,7 @@ end
 
 update(τ::Trajectory, ::AbstractAdaptor) = τ
 function update(
-    τ::Trajectory,
-    adaptor::Union{StepSizeAdaptor,NaiveHMCAdaptor,StanHMCAdaptor},
+    τ::Trajectory, adaptor::Union{StepSizeAdaptor,NaiveHMCAdaptor,StanHMCAdaptor}
 )
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
     integrator = update_nom_step_size(τ.integrator, getϵ(adaptor))
@@ -59,7 +57,7 @@ function transition(
     return transition(rng, τ, h, z)
 end
 
-Adaptation.adapt!(
+function Adaptation.adapt!(
     h::Hamiltonian,
     κ::AbstractMCMCKernel,
     adaptor::Adaptation.NoAdaptation,
@@ -67,7 +65,9 @@ Adaptation.adapt!(
     n_adapts::Int,
     θ::AbstractVecOrMat{<:AbstractFloat},
     α::AbstractScalarOrVec{<:AbstractFloat},
-) = h, κ, false
+)
+    return h, κ, false
+end
 
 function Adaptation.adapt!(
     h::Hamiltonian,
@@ -94,7 +94,8 @@ end
 Progress meter update with all trajectory stats, iteration number and metric shown.
 """
 function pm_next!(pm, stat::NamedTuple)
-    ProgressMeter.next!(pm; showvalues = map(tuple, values(stat), keys(stat)))
+    ProgressMeter.next!(pm; showvalues=map(tuple, values(stat), keys(stat)))
+    return nothing
 end
 
 """
@@ -106,30 +107,32 @@ simple_pm_next!(pm, stat::NamedTuple) = ProgressMeter.next!(pm)
 ## Sampling functions
 ##
 
-sample(
+function sample(
     h::Hamiltonian,
     κ::AbstractMCMCKernel,
     θ::AbstractVecOrMat{<:AbstractFloat},
     n_samples::Int,
-    adaptor::AbstractAdaptor = NoAdaptation(),
-    n_adapts::Int = min(div(n_samples, 10), 1_000);
-    drop_warmup = false,
-    verbose::Bool = true,
-    progress::Bool = false,
-    (pm_next!)::Function = pm_next!,
-) = sample(
-    Random.default_rng(),
-    h,
-    κ,
-    θ,
-    n_samples,
-    adaptor,
-    n_adapts;
-    drop_warmup = drop_warmup,
-    verbose = verbose,
-    progress = progress,
-    (pm_next!) = pm_next!,
+    adaptor::AbstractAdaptor=NoAdaptation(),
+    n_adapts::Int=min(div(n_samples, 10), 1_000);
+    drop_warmup=false,
+    verbose::Bool=true,
+    progress::Bool=false,
+    (pm_next!)::Function=pm_next!,
 )
+    return sample(
+        Random.default_rng(),
+        h,
+        κ,
+        θ,
+        n_samples,
+        adaptor,
+        n_adapts;
+        drop_warmup=drop_warmup,
+        verbose=verbose,
+        progress=progress,
+        (pm_next!)=pm_next!,
+    )
+end
 
 """
     sample(
@@ -160,12 +163,12 @@ function sample(
     κ::HMCKernel,
     θ::T,
     n_samples::Int,
-    adaptor::AbstractAdaptor = NoAdaptation(),
-    n_adapts::Int = min(div(n_samples, 10), 1_000);
-    drop_warmup = false,
-    verbose::Bool = true,
-    progress::Bool = false,
-    (pm_next!)::Function = pm_next!,
+    adaptor::AbstractAdaptor=NoAdaptation(),
+    n_adapts::Int=min(div(n_samples, 10), 1_000);
+    drop_warmup=false,
+    verbose::Bool=true,
+    progress::Bool=false,
+    (pm_next!)::Function=pm_next!,
 ) where {T<:AbstractVecOrMat{<:AbstractFloat}}
     @assert !(drop_warmup && (adaptor isa Adaptation.NoAdaptation)) "Cannot drop warmup samples if there is no adaptation phase."
     # Prepare containers to store sampling results
@@ -176,22 +179,19 @@ function sample(
     # Initial sampling
     h, t = sample_init(rng, h, θ)
     # Progress meter
-    pm =
-        progress ? ProgressMeter.Progress(n_samples, desc = "Sampling", barlen = 31) :
-        nothing
-    time = @elapsed for i = 1:n_samples
+    pm = progress ? ProgressMeter.Progress(n_samples; desc="Sampling", barlen=31) : nothing
+    time = @elapsed for i in 1:n_samples
         # Make a transition
         t = transition(rng, h, κ, t.z)
         # Adapt h and κ; what mutable is the adaptor
         tstat = stat(t)
-        h, κ, isadapted =
-            adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
+        h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
         if isadapted
             num_divergent_transitions_during_adaption += tstat.numerical_error
         else
             num_divergent_transitions += tstat.numerical_error
         end
-        tstat = merge(tstat, (is_adapt = isadapted,))
+        tstat = merge(tstat, (is_adapt=isadapted,))
         # Update progress meter
         if pm !== nothing
             percentage_divergent_transitions =
@@ -206,17 +206,15 @@ function sample(
             pm_next!(
                 pm,
                 (
-                    iterations = i,
-                    ratio_divergent_transitions = round(
-                        percentage_divergent_transitions;
-                        digits = 2,
+                    iterations=i,
+                    ratio_divergent_transitions=round(
+                        percentage_divergent_transitions; digits=2
                     ),
-                    ratio_divergent_transitions_during_adaption = round(
-                        percentage_divergent_transitions_during_adaption;
-                        digits = 2,
+                    ratio_divergent_transitions_during_adaption=round(
+                        percentage_divergent_transitions_during_adaption; digits=2
                     ),
                     tstat...,
-                    mass_matrix = h.metric,
+                    mass_matrix=h.metric,
                 ),
             )
             # Report finish of adapation
@@ -239,8 +237,9 @@ function sample(
             n_chains = size(θ, 2)
             # Make sure that arrays are on CPU before printing.
             EBFMI_est = convert(Vector{eltype(EBFMI_est)}, EBFMI_est)
-            average_acceptance_rate =
-                convert(Vector{eltype(average_acceptance_rate)}, average_acceptance_rate)
+            average_acceptance_rate = convert(
+                Vector{eltype(average_acceptance_rate)}, average_acceptance_rate
+            )
             EBFMI_est = "[" * join(EBFMI_est, ", ") * "]"
             average_acceptance_rate = "[" * join(average_acceptance_rate, ", ") * "]"
         end

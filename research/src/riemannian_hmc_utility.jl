@@ -1,7 +1,7 @@
 using Random, LinearAlgebra, ReverseDiff, ForwardDiff, VecTargets
 
 # Fisher information metric
-function gen_∂G∂θ_rev(Vfunc, x; f = identity)
+function gen_∂G∂θ_rev(Vfunc, x; f=identity)
     _Hfunc = VecTargets.gen_hess(Vfunc, ReverseDiff.track.(x))
     Hfunc = x -> _Hfunc(x)[3]
     # QUES What's the best output format of this function?
@@ -16,7 +16,7 @@ function gen_hess_fwd(func, x::AbstractVector)
     return hess
 end
 
-function gen_∂G∂θ_fwd(Vfunc, x; f = identity)
+function gen_∂G∂θ_fwd(Vfunc, x; f=identity)
     _Hfunc = gen_hess_fwd(Vfunc, x)
     Hfunc = x -> _Hfunc(x)[3]
     # QUES What's the best output format of this function?
@@ -24,7 +24,7 @@ function gen_∂G∂θ_fwd(Vfunc, x; f = identity)
     d = length(x)
     out = zeros(eltype(x), d^2, d)
     return x -> ForwardDiff.jacobian!(out, Hfunc, x, cfg)
-    out # default output shape [∂H∂x₁; ∂H∂x₂; ...]
+    return out # default output shape [∂H∂x₁; ∂H∂x₂; ...]
 end
 # 1.764 ms 
 # fwd -> 5.338 μs 
@@ -32,7 +32,7 @@ end
 
 function reshape_∂G∂θ(H)
     d = size(H, 2)
-    return cat((H[(i-1)*d+1:i*d, :] for i = 1:d)...; dims = 3)
+    return cat((H[((i - 1) * d + 1):(i * d), :] for i in 1:d)...; dims=3)
 end
 
 function prepare_sample_target(hps, θ₀, ℓπ)
@@ -45,21 +45,28 @@ function prepare_sample_target(hps, θ₀, ℓπ)
         H = fstabilize(Hfunc(x)[3])
         all(isfinite, H) ? H : diagm(ones(length(x)))
     end
-    _∂G∂θfunc = gen_∂G∂θ_fwd(Vfunc, θ₀; f = fstabilize) # size==(4, 2)
+    _∂G∂θfunc = gen_∂G∂θ_fwd(Vfunc, θ₀; f=fstabilize) # size==(4, 2)
     ∂G∂θfunc = x -> reshape_∂G∂θ(_∂G∂θfunc(x)) # size==(2, 2, 2)
 
     return Vfunc, Hfunc, Gfunc, ∂G∂θfunc
 end
 
-function prepare_sample(hps; rng = MersenneTwister(1110))
-    target =
-        hps.target == :gaussian ? HighDimGaussian(2) :
-        hps.target == :banana ? Banana() :
-        hps.target == :funnel ? Funnel() :
-        hps.target == :funnel101 ? Funnel(101) :
-        hps.target == :spiral ? Spiral(8, 0.1) :
-        hps.target == :mogs ? TwoDimGaussianMixtures() :
+function prepare_sample(hps; rng=MersenneTwister(1110))
+    target = if hps.target == :gaussian
+        HighDimGaussian(2)
+    elseif hps.target == :banana
+        Banana()
+    elseif hps.target == :funnel
+        Funnel()
+    elseif hps.target == :funnel101
+        Funnel(101)
+    elseif hps.target == :spiral
+        Spiral(8, 0.1)
+    elseif hps.target == :mogs
+        TwoDimGaussianMixtures()
+    else
         @error "Unknown target $(hps.target)"
+    end
 
     θ₀ = rand(rng, dim(target))
 
@@ -69,22 +76,28 @@ function prepare_sample(hps; rng = MersenneTwister(1110))
     _, _, Gfunc, ∂G∂θfunc = prepare_sample_target(hps, θ₀, ℓπ)
 
     D = dim(target)
-    metric =
-        hps.metric == :dense_euclidean ? DenseEuclideanMetric(D) :
-        hps.metric == :dense_riemannian ? DenseRiemannianMetric((D,), Gfunc, ∂G∂θfunc) :
-        hps.metric == :dense_riemannian_softabs ?
-        DenseRiemannianMetric((D,), Gfunc, ∂G∂θfunc, SoftAbsMap(hps.α)) :
+    metric = if hps.metric == :dense_euclidean
+        DenseEuclideanMetric(D)
+    elseif hps.metric == :dense_riemannian
+        DenseRiemannianMetric((D,), Gfunc, ∂G∂θfunc)
+    elseif hps.metric == :dense_riemannian_softabs
+        DenseRiemannianMetric((D,), Gfunc, ∂G∂θfunc, SoftAbsMap(hps.α))
+    else
         @error "Unknown metric $(hps.metric)"
+    end
     kinetic = GaussianKinetic()
 
     hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
 
     TS = EndPointTS
 
-    integrator =
-        hps.integrator == :lf ? Leapfrog(hps.ϵ) :
-        hps.integrator == :glf ? GeneralizedLeapfrog(hps.ϵ, hps.n) :
+    integrator = if hps.integrator == :lf
+        Leapfrog(hps.ϵ)
+    elseif hps.integrator == :glf
+        GeneralizedLeapfrog(hps.ϵ, hps.n)
+    else
         @error "Unknown integrator $(hps.integrator)"
+    end
 
     tc = FixedNSteps(hps.L)
 
@@ -93,17 +106,11 @@ function prepare_sample(hps; rng = MersenneTwister(1110))
     return (; rng, target, hamiltonian, proposal, θ₀)
 end
 
-function sample_target(hps; rng = MersenneTwister(1110))
-    rng, target, hamiltonian, proposal, θ₀ = prepare_sample(hps; rng = rng)
+function sample_target(hps; rng=MersenneTwister(1110))
+    rng, target, hamiltonian, proposal, θ₀ = prepare_sample(hps; rng=rng)
 
     samples, stats = sample(
-        rng,
-        hamiltonian,
-        proposal,
-        θ₀,
-        hps.n_samples;
-        progress = false,
-        verbose = true,
+        rng, hamiltonian, proposal, θ₀, hps.n_samples; progress=false, verbose=true
     )
 
     return (; target, hamiltonian, samples, stats)

@@ -2,7 +2,7 @@ using ReTest, LinearAlgebra, Distributions, AdvancedHMC, Random, ForwardDiff
 using AdvancedHMC.Adaptation:
     WelfordVar, NaiveVar, WelfordCov, NaiveCov, get_estimation, get_estimation, reset!
 
-function runnuts(ℓπ, metric; n_samples = 10_000)
+function runnuts(ℓπ, metric; n_samples=10_000)
     D = size(metric, 1)
     n_adapts = 5_000
     θ_init = rand(D)
@@ -14,8 +14,8 @@ function runnuts(ℓπ, metric; n_samples = 10_000)
     integrator = AdvancedHMC.make_integrator(nuts, step_size)
     κ = AdvancedHMC.make_kernel(nuts, integrator)
     adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
-    samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose = false)
-    return (samples = samples, stats = stats, adaptor = adaptor)
+    samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose=false)
+    return (samples=samples, stats=stats, adaptor=adaptor)
 end
 
 @testset "Adaptation" begin
@@ -35,7 +35,7 @@ end
         estimators = [var_estimators..., cov_estimators...]
 
         for dist in [MvNormal(zeros(D), I), Dirichlet(D, 1)]
-            for _ = 1:n_samples
+            for _ in 1:n_samples
                 s = rand(dist)
                 for estimator in estimators
                     push!(estimator, s)
@@ -70,23 +70,20 @@ end
         AdvancedHMC.adapt!(pc3, θ, 1.0)
         @test AdvancedHMC.Adaptation.getM⁻¹(pc2) == ones(length(θ))
         @test AdvancedHMC.Adaptation.getM⁻¹(pc3) ==
-              LinearAlgebra.diagm(0 => ones(length(θ)))
+            LinearAlgebra.diagm(0 => ones(length(θ)))
     end
 
     @testset "Stan HMC adaptors" begin
         θ = [0.0, 0.0, 0.0, 0.0]
 
         adaptor1 = StanHMCAdaptor(
-            MassMatrixAdaptor(UnitEuclideanMetric),
-            NesterovDualAveraging(0.8, 0.5),
+            MassMatrixAdaptor(UnitEuclideanMetric), NesterovDualAveraging(0.8, 0.5)
         )
         adaptor2 = StanHMCAdaptor(
-            MassMatrixAdaptor(DiagEuclideanMetric),
-            NesterovDualAveraging(0.8, 0.5),
+            MassMatrixAdaptor(DiagEuclideanMetric), NesterovDualAveraging(0.8, 0.5)
         )
         adaptor3 = StanHMCAdaptor(
-            MassMatrixAdaptor(DenseEuclideanMetric),
-            NesterovDualAveraging(0.8, 0.5),
+            MassMatrixAdaptor(DenseEuclideanMetric), NesterovDualAveraging(0.8, 0.5)
         )
         for a in [adaptor1, adaptor2, adaptor3]
             AdvancedHMC.initialize!(a, 1_000)
@@ -97,19 +94,16 @@ end
         end
         @test AdvancedHMC.Adaptation.getM⁻¹(adaptor2) == ones(length(θ))
         @test AdvancedHMC.Adaptation.getM⁻¹(adaptor3) ==
-              LinearAlgebra.diagm(0 => ones(length(θ)))
+            LinearAlgebra.diagm(0 => ones(length(θ)))
 
         @test_deprecated StanHMCAdaptor(
-            1_000,
-            MassMatrixAdaptor(DiagEuclideanMetric),
-            NesterovDualAveraging(0.8, 0.5),
+            1_000, MassMatrixAdaptor(DiagEuclideanMetric), NesterovDualAveraging(0.8, 0.5)
         )
 
         @testset "buffer > `n_adapts`" begin
             AdvancedHMC.initialize!(
                 StanHMCAdaptor(
-                    MassMatrixAdaptor(DenseEuclideanMetric),
-                    NesterovDualAveraging(0.8, 0.5),
+                    MassMatrixAdaptor(DenseEuclideanMetric), NesterovDualAveraging(0.8, 0.5)
                 ),
                 100,
             )
@@ -120,7 +114,7 @@ end
         D = 10
         n_tests = 5
         @testset "DiagEuclideanMetric" begin
-            for _ = 1:n_tests
+            for _ in 1:n_tests
                 Random.seed!(1)
 
                 # Random variance
@@ -138,7 +132,7 @@ end
         end
 
         @testset "DenseEuclideanMetric" begin
-            for _ = 1:n_tests
+            for _ in 1:n_tests
                 # Random covariance
                 m = randn(D, D)
                 Σ = m' * m
@@ -153,18 +147,17 @@ end
                 @test res.adaptor.pc.cov ≈ Σ rtol = 0.25
             end
         end
-
     end
 
     @testset "Initialisation adaptor by metric" begin
         ℓπ = LogDensityDistribution(MvNormal(Eye(D)))
 
         mass_init = fill(0.5, D)
-        res = runnuts(ℓπ, DiagEuclideanMetric(mass_init); n_samples = 1)
+        res = runnuts(ℓπ, DiagEuclideanMetric(mass_init); n_samples=1)
         @test res.adaptor.pc.var == mass_init
 
         mass_init = diagm(0 => fill(0.5, D))
-        res = runnuts(ℓπ, DenseEuclideanMetric(mass_init); n_samples = 1)
+        res = runnuts(ℓπ, DenseEuclideanMetric(mass_init); n_samples=1)
         @test res.adaptor.pc.cov == mass_init
     end
 

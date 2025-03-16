@@ -203,9 +203,7 @@ $(TYPEDEF)
 Numerically simulated Hamiltonian trajectories.
 """
 struct Trajectory{
-    TS<:AbstractTrajectorySampler,
-    I<:AbstractIntegrator,
-    TC<:AbstractTerminationCriterion,
+    TS<:AbstractTrajectorySampler,I<:AbstractIntegrator,TC<:AbstractTerminationCriterion
 }
     "Integrator used to simulate trajectory."
     integrator::I
@@ -213,18 +211,22 @@ struct Trajectory{
     termination_criterion::TC
 end
 
-Trajectory{TS}(integrator::I, termination_criterion::TC) where {TS,I,TC} =
-    Trajectory{TS,I,TC}(integrator, termination_criterion)
+function Trajectory{TS}(integrator::I, termination_criterion::TC) where {TS,I,TC}
+    return Trajectory{TS,I,TC}(integrator, termination_criterion)
+end
 
 ConstructionBase.constructorof(::Type{<:Trajectory{TS}}) where {TS} = Trajectory{TS}
 
 function Base.show(io::IO, τ::Trajectory{TS}) where {TS}
-    print(io, "Trajectory{$TS}(integrator=$(τ.integrator), tc=$(τ.termination_criterion))")
+    return print(
+        io, "Trajectory{$TS}(integrator=$(τ.integrator), tc=$(τ.termination_criterion))"
+    )
 end
 
 nsteps(τ::Trajectory{TS,I,TC}) where {TS,I,TC<:FixedNSteps} = τ.termination_criterion.L
-nsteps(τ::Trajectory{TS,I,TC}) where {TS,I,TC<:FixedIntegrationTime} =
-    max(1, floor(Int, τ.termination_criterion.λ / nom_step_size(τ.integrator)))
+function nsteps(τ::Trajectory{TS,I,TC}) where {TS,I,TC<:FixedIntegrationTime}
+    return max(1, floor(Int, τ.termination_criterion.λ / nom_step_size(τ.integrator)))
+end
 
 ##
 ## Kernel interface
@@ -269,14 +271,14 @@ function transition(
     H, H′ = energy(z), energy(z′)
     tstat = merge(
         (
-            n_steps = nsteps(τ),
-            is_accept = is_accept,
-            acceptance_rate = α,
-            log_density = z.ℓπ.value,
-            hamiltonian_energy = H,
-            hamiltonian_energy_error = H - H0,
+            n_steps=nsteps(τ),
+            is_accept=is_accept,
+            acceptance_rate=α,
+            log_density=z.ℓπ.value,
+            hamiltonian_energy=H,
+            hamiltonian_energy_error=H - H0,
             # check numerical error in proposed phase point. 
-            numerical_error = !all(isfinite, H′),
+            numerical_error=!all(isfinite, H′),
         ),
         stat(τ.integrator),
     )
@@ -285,9 +287,7 @@ end
 
 # Return the accepted phase point
 function accept_phasepoint!(
-    z::T,
-    z′::T,
-    is_accept::Bool,
+    z::T, z′::T, is_accept::Bool
 ) where {T<:PhasePoint{<:AbstractVector}}
     if is_accept
         return z′
@@ -328,9 +328,7 @@ end
 ### Multinomial sampling from trajectory
 
 function randcat(
-    rng::AbstractRNG,
-    zs::AbstractVector{<:PhasePoint},
-    unnorm_ℓp::AbstractVector,
+    rng::AbstractRNG, zs::AbstractVector{<:PhasePoint}, unnorm_ℓp::AbstractVector
 )
     p = exp.(unnorm_ℓp .- logsumexp(unnorm_ℓp))
     i = randcat(rng, p)
@@ -340,7 +338,7 @@ end
 # zs is in the form of Vector{PhasePoint{Matrix}} and has shape [n_steps][dim, n_chains]
 function randcat(rng, zs::AbstractVector{<:PhasePoint}, unnorm_ℓP::AbstractMatrix)
     z = similar(first(zs))
-    P = exp.(unnorm_ℓP .- logsumexp(unnorm_ℓP; dims = 2)) # (n_chains, n_steps)
+    P = exp.(unnorm_ℓP .- logsumexp(unnorm_ℓP; dims=2)) # (n_chains, n_steps)
     is = randcat(rng, P')
     foreach(enumerate(is)) do (i_chain, i_step)
         zi = zs[i_step]
@@ -359,13 +357,13 @@ function sample_phasepoint(rng, τ::Trajectory{MultinomialTS}, h, z)
     # TODO: Deal with vectorized-mode generically.
     #       Currently the direction of multiple chains are always coupled
     n_steps_fwd = rand_coupled(rng, 0:n_steps)
-    zs_fwd = step(τ.integrator, h, z, n_steps_fwd; fwd = true, full_trajectory = Val(true))
+    zs_fwd = step(τ.integrator, h, z, n_steps_fwd; fwd=true, full_trajectory=Val(true))
     n_steps_bwd = n_steps - n_steps_fwd
-    zs_bwd = step(τ.integrator, h, z, n_steps_bwd; fwd = false, full_trajectory = Val(true))
+    zs_bwd = step(τ.integrator, h, z, n_steps_bwd; fwd=false, full_trajectory=Val(true))
     zs = vcat(reverse(zs_bwd)..., z, zs_fwd...)
     ℓweights = -energy.(zs)
     if eltype(ℓweights) <: AbstractVector
-        ℓweights = cat(ℓweights...; dims = 2)
+        ℓweights = cat(ℓweights...; dims=2)
     end
     unnorm_ℓprob = ℓweights
     z′ = randcat(rng, zs, unnorm_ℓprob)
@@ -373,7 +371,7 @@ function sample_phasepoint(rng, τ::Trajectory{MultinomialTS}, h, z)
     Hs = -ℓweights
     ΔH = Hs .- energy(z)
     α = exp.(min.(0, -ΔH))  # this is a matrix for vectorized mode and a vector otherwise
-    α = typeof(α) <: AbstractVector ? mean(α) : vec(mean(α; dims = 2))
+    α = typeof(α) <: AbstractVector ? mean(α) : vec(mean(α; dims=2))
     return z′, true, α
 end
 
@@ -435,8 +433,9 @@ Base.@kwdef struct StrictGeneralisedNoUTurn{F<:AbstractFloat} <: DynamicTerminat
     max_depth::Int = 10
     Δ_max::F = 1000.0
 end
-GeneralisedNoUTurn(tc::StrictGeneralisedNoUTurn) =
-    GeneralisedNoUTurn(tc.max_depth, tc.Δ_max)
+function GeneralisedNoUTurn(tc::StrictGeneralisedNoUTurn)
+    return GeneralisedNoUTurn(tc.max_depth, tc.Δ_max)
+end
 
 struct TurnStatistic{T}
     "Integral or sum of momenta along the integration path."
@@ -445,8 +444,9 @@ end
 TurnStatistic() = TurnStatistic(undef)
 
 TurnStatistic(::ClassicNoUTurn, ::PhasePoint) = TurnStatistic()
-TurnStatistic(::Union{GeneralisedNoUTurn,StrictGeneralisedNoUTurn}, z::PhasePoint) =
-    TurnStatistic(z.r)
+function TurnStatistic(::Union{GeneralisedNoUTurn,StrictGeneralisedNoUTurn}, z::PhasePoint)
+    return TurnStatistic(z.r)
+end
 
 combine(ts::TurnStatistic{T}, ::TurnStatistic{T}) where {T<:UndefInitializer} = ts
 combine(tsl::T, tsr::T) where {T<:TurnStatistic} = TurnStatistic(tsl.rho + tsr.rho)
@@ -467,10 +467,12 @@ struct Termination
     numerical::Bool
 end
 
-Base.show(io::IO, d::Termination) =
-    print(io, "Termination(dynamic=$(d.dynamic), numerical=$(d.numerical))")
-Base.:*(d1::Termination, d2::Termination) =
-    Termination(d1.dynamic || d2.dynamic, d1.numerical || d2.numerical)
+function Base.show(io::IO, d::Termination)
+    return print(io, "Termination(dynamic=$(d.dynamic), numerical=$(d.numerical))")
+end
+function Base.:*(d1::Termination, d2::Termination)
+    return Termination(d1.dynamic || d2.dynamic, d1.numerical || d2.numerical)
+end
 isterminated(d::Termination) = d.dynamic || d.numerical
 
 """
@@ -488,10 +490,7 @@ $(SIGNATURES)
 Check termination of a Hamiltonian trajectory.
 """
 function Termination(
-    s::MultinomialTS,
-    nt::Trajectory,
-    H0::F,
-    H′::F,
+    s::MultinomialTS, nt::Trajectory, H0::F, H′::F
 ) where {F<:AbstractFloat}
     return Termination(false, !(-H0 < nt.termination_criterion.Δ_max + -H′))
 end
@@ -595,10 +594,7 @@ Do a U-turn check between the rightmost phase point of `t` and the rightmost
 phase point of `tleft`, the left subtree.
 """
 function check_right_subtree(
-    h::Hamiltonian,
-    t::T,
-    tleft::T,
-    tright::T,
+    h::Hamiltonian, t::T, tleft::T, tright::T
 ) where {T<:BinaryTree}
     rho = tleft.zright.r + tright.ts.rho
     s = generalised_uturn_criterion(rho, ∂H∂r(h, tleft.zright.r), ∂H∂r(h, t.zright.r))
@@ -610,11 +606,7 @@ function generalised_uturn_criterion(rho, p_sharp_minus, p_sharp_plus)
 end
 
 function isterminated(
-    tc::TC,
-    h::Hamiltonian,
-    t::BinaryTree,
-    _tleft,
-    _tright,
+    tc::TC, h::Hamiltonian, t::BinaryTree, _tleft, _tright
 ) where {TC<:Union{ClassicNoUTurn,GeneralisedNoUTurn}}
     return isterminated(tc, h, t)
 end
@@ -630,9 +622,7 @@ function build_tree(
     j::Int,
     H0::AbstractFloat,
 ) where {
-    TS<:AbstractTrajectorySampler,
-    I<:AbstractIntegrator,
-    TC<:DynamicTerminationCriterion,
+    TS<:AbstractTrajectorySampler,I<:AbstractIntegrator,TC<:DynamicTerminationCriterion
 }
     if j == 0
         # Base case - take one leapfrog step in the direction v.
@@ -651,13 +641,15 @@ function build_tree(
         if !isterminated(termination′)
             # Expand left
             if v == -1
-                tree′′, sampler′′, termination′′ =
-                    build_tree(rng, nt, h, tree′.zleft, sampler, v, j - 1, H0) # left tree
+                tree′′, sampler′′, termination′′ = build_tree(
+                    rng, nt, h, tree′.zleft, sampler, v, j - 1, H0
+                ) # left tree
                 treeleft, treeright = tree′′, tree′
                 # Expand right
             else
-                tree′′, sampler′′, termination′′ =
-                    build_tree(rng, nt, h, tree′.zright, sampler, v, j - 1, H0) # right tree
+                tree′′, sampler′′, termination′′ = build_tree(
+                    rng, nt, h, tree′.zright, sampler, v, j - 1, H0
+                ) # right tree
                 treeleft, treeright = tree′, tree′′
             end
             tree′ = combine(treeleft, treeright)
@@ -672,23 +664,13 @@ function build_tree(
 end
 
 function transition(
-    rng::AbstractRNG,
-    τ::Trajectory{TS,I,TC},
-    h::Hamiltonian,
-    z0::PhasePoint,
+    rng::AbstractRNG, τ::Trajectory{TS,I,TC}, h::Hamiltonian, z0::PhasePoint
 ) where {
-    TS<:AbstractTrajectorySampler,
-    I<:AbstractIntegrator,
-    TC<:DynamicTerminationCriterion,
+    TS<:AbstractTrajectorySampler,I<:AbstractIntegrator,TC<:DynamicTerminationCriterion
 }
     H0 = energy(z0)
     tree = BinaryTree(
-        z0,
-        z0,
-        TurnStatistic(τ.termination_criterion, z0),
-        zero(H0),
-        zero(Int),
-        zero(H0),
+        z0, z0, TurnStatistic(τ.termination_criterion, z0), zero(H0), zero(Int), zero(H0)
     )
     sampler = TS(rng, z0)
     termination = Termination(false, false)
@@ -700,13 +682,15 @@ function transition(
         vleft = rand(rng, Bool)
         if vleft
             # Create a tree with depth `j` on the left
-            tree′, sampler′, termination′ =
-                build_tree(rng, τ, h, tree.zleft, sampler, -1, j, H0)
+            tree′, sampler′, termination′ = build_tree(
+                rng, τ, h, tree.zleft, sampler, -1, j, H0
+            )
             treeleft, treeright = tree′, tree
         else
             # Create a tree with depth `j` on the right
-            tree′, sampler′, termination′ =
-                build_tree(rng, τ, h, tree.zright, sampler, 1, j, H0)
+            tree′, sampler′, termination′ = build_tree(
+                rng, τ, h, tree.zright, sampler, 1, j, H0
+            )
             treeleft, treeright = tree, tree′
         end
         # Perform a MH step and increse depth if not terminated
@@ -730,15 +714,15 @@ function transition(
     H = energy(zcand)
     tstat = merge(
         (
-            n_steps = tree.nα,
-            is_accept = true,
-            acceptance_rate = tree.sum_α / tree.nα,
-            log_density = zcand.ℓπ.value,
-            hamiltonian_energy = H,
-            hamiltonian_energy_error = H - H0,
-            max_hamiltonian_energy_error = tree.ΔH_max,
-            tree_depth = j,
-            numerical_error = termination.numerical,
+            n_steps=tree.nα,
+            is_accept=true,
+            acceptance_rate=tree.sum_α / tree.nα,
+            log_density=zcand.ℓπ.value,
+            hamiltonian_energy=H,
+            hamiltonian_energy_error=H - H0,
+            max_hamiltonian_energy_error=tree.ΔH_max,
+            tree_depth=j,
+            numerical_error=termination.numerical,
         ),
         stat(τ.integrator),
     )
@@ -763,10 +747,7 @@ end
 
 "Find a good initial leap-frog step-size via heuristic search."
 function find_good_stepsize(
-    rng::AbstractRNG,
-    h::Hamiltonian,
-    θ::AbstractVector{T};
-    max_n_iters::Int = 100,
+    rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=100
 ) where {T<:Real}
     # Initialize searching parameters
     ϵ′ = ϵ = T(0.1)
@@ -783,7 +764,7 @@ function find_good_stepsize(
     direction = ΔH > log(a_cross) ? 1 : -1
 
     # Crossing step: increase/decrease ϵ until accept ratio cross a_cross.
-    for _ = 1:max_n_iters
+    for _ in 1:max_n_iters
         # `direction` being  `1` means MH ratio too high
         #     - this means our step size is too small, thus we increase
         # `direction` being `-1` means MH ratio too small
@@ -811,7 +792,7 @@ function find_good_stepsize(
     # criteria that this value also gives us a MH ratio between `a_min` and `a_max`.
     # This condition is quite mild and only intended to avoid cases where
     # the middle value of `ϵ` and `ϵ′` is too extreme.
-    for _ = 1:max_n_iters
+    for _ in 1:max_n_iters
         ϵ_mid = middle(ϵ, ϵ′)
         z′, H′ = A(h, z, ϵ_mid)
         ΔH = H - H′
@@ -830,18 +811,14 @@ function find_good_stepsize(
 end
 
 function find_good_stepsize(
-    h::Hamiltonian,
-    θ::AbstractVector{<:AbstractFloat};
-    max_n_iters::Int = 100,
+    h::Hamiltonian, θ::AbstractVector{<:AbstractFloat}; max_n_iters::Int=100
 )
-    return find_good_stepsize(Random.default_rng(), h, θ; max_n_iters = max_n_iters)
+    return find_good_stepsize(Random.default_rng(), h, θ; max_n_iters=max_n_iters)
 end
 
 "Perform MH acceptance based on energy, i.e. negative log probability."
 function mh_accept_ratio(
-    rng::AbstractRNG,
-    Horiginal::T,
-    Hproposal::T,
+    rng::AbstractRNG, Horiginal::T, Hproposal::T
 ) where {T<:AbstractFloat}
     accept = Hproposal < Horiginal + Random.randexp(rng, T)
     α = min(one(T), exp(Horiginal - Hproposal))

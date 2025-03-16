@@ -14,19 +14,12 @@ using Statistics: mean
         h = Hamiltonian(metric, ℓπ_gdemo, ForwardDiff)
         integrator = Leapfrog(0.1)
         κ = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
-        adaptor =
-            StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
+        adaptor = StanHMCAdaptor(
+            MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator)
+        )
 
         samples, _ = sample(
-            rng,
-            h,
-            κ,
-            θ_init,
-            n_samples,
-            adaptor,
-            n_adapts;
-            progress = false,
-            verbose = false,
+            rng, h, κ, θ_init, n_samples, adaptor, n_adapts; progress=false, verbose=false
         )
 
         m_est = mean(map(invlink_gdemo, samples[1000:end]))
