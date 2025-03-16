@@ -3,7 +3,6 @@ using ReTest, AdvancedHMC
 using LinearAlgebra: dot
 
 @testset "Relativistic" begin
-
     @testset "Hamiltonian" begin
         @testset "Construction" begin
             f = x -> dot(x, x)
@@ -13,5 +12,4 @@ using LinearAlgebra: dot
             @test h.kinetic isa RelativisticKinetic
         end
     end
-
 end

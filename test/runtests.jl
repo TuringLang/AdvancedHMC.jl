@@ -39,8 +39,8 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
         @warn "Skipping GPU tests because no GPU available."
     end
 
-    Comonicon.@main function runtests(patterns...; dry::Bool = false)
-        retest(patterns...; dry = dry, verbose = Inf)
+    Comonicon.@main function runtests(patterns...; dry::Bool=false)
+        return retest(patterns...; dry=dry, verbose=Inf)
     end
 end
 
@@ -48,7 +48,7 @@ if GROUP == "All" || GROUP == "Experimental"
     using Pkg
     # activate separate test environment
     Pkg.activate(joinpath(DIRECTORY_AdvancedHMC, "research"))
-    Pkg.develop(PackageSpec(; path = DIRECTORY_AdvancedHMC))
+    Pkg.develop(PackageSpec(; path=DIRECTORY_AdvancedHMC))
     Pkg.instantiate()
     include(joinpath(DIRECTORY_AdvancedHMC, "research/tests", "runtests.jl"))
 end
@@ -58,7 +58,7 @@ if GROUP == "All" || GROUP == "Downstream"
     try
         # activate separate test environment
         Pkg.activate(DIRECTORY_Turing_tests)
-        Pkg.develop(PackageSpec(; path = DIRECTORY_AdvancedHMC))
+        Pkg.develop(PackageSpec(; path=DIRECTORY_AdvancedHMC))
         Pkg.instantiate()
 
         # make sure that the new environment is considered `using` and `import` statements

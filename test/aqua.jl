@@ -1,6 +1,6 @@
 using AdvancedHMC
 using ReTest
-import Aqua
+using Aqua: Aqua
 
 @testset "Aqua" begin
     Aqua.test_all(AdvancedHMC)

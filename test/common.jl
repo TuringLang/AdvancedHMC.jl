@@ -26,8 +26,9 @@ function LogDensityProblems.logdensity(ld::LogDensityDistribution, y)
     x, logjac = Bijectors.with_logabsdet_jacobian(b, y)
     return logpdf(d, x) + logjac
 end
-LogDensityProblems.capabilities(::Type{<:LogDensityDistribution}) =
-    LogDensityProblems.LogDensityOrder{0}()
+function LogDensityProblems.capabilities(::Type{<:LogDensityDistribution})
+    return LogDensityProblems.LogDensityOrder{0}()
+end
 
 # Hand-coded multivariate Gaussian
 
@@ -44,8 +45,9 @@ end
 
 LogDensityProblems.dimension(g::Gaussian) = dim(g.m)
 LogDensityProblems.logdensity(g::Gaussian, x) = ℓπ_gaussian(g.m.g.s, x)
-LogDensityProblems.capabilities(::Type{<:Gaussian}) =
-    LogDensityProblems.LogDensityOrder{0}()
+function LogDensityProblems.capabilities(::Type{<:Gaussian})
+    return LogDensityProblems.LogDensityOrder{0}()
+end
 
 function ∇ℓπ_gaussianl(m, s, x)
     g = m .- x
@@ -55,7 +57,7 @@ end
 
 function get_ℓπ(g::Gaussian)
     ℓπ(x::AbstractVector) = sum(ℓπ_gaussian(g.m, g.s, x))
-    ℓπ(x::AbstractMatrix) = dropdims(sum(ℓπ_gaussian(g.m, g.s, x); dims = 1); dims = 1)
+    ℓπ(x::AbstractMatrix) = dropdims(sum(ℓπ_gaussian(g.m, g.s, x); dims=1); dims=1)
     return ℓπ
 end
 
@@ -66,7 +68,7 @@ function get_∇ℓπ(g::Gaussian)
     end
     function ∇ℓπ(x::AbstractMatrix)
         val, grad = ∇ℓπ_gaussianl(g.m, g.s, x)
-        return dropdims(sum(val; dims = 1); dims = 1), grad
+        return dropdims(sum(val; dims=1); dims=1), grad
     end
     return ∇ℓπ
 end
@@ -103,12 +105,13 @@ end
 # Make compat with `LogDensityProblems`.
 LogDensityProblems.dimension(::typeof(ℓπ_gdemo)) = 2
 LogDensityProblems.logdensity(::typeof(ℓπ_gdemo), θ) = ℓπ_gdemo(θ)
-LogDensityProblems.capabilities(::Type{typeof(ℓπ_gdemo)}) =
-    LogDensityProblems.LogDensityOrder{0}()
+function LogDensityProblems.capabilities(::Type{typeof(ℓπ_gdemo)})
+    return LogDensityProblems.LogDensityOrder{0}()
+end
 
 test_show(x) = test_show(s -> length(s) > 0, x)
 function test_show(pred, x)
-    io = IOBuffer(; append = true)
+    io = IOBuffer(; append=true)
     show(io, x)
     s = read(io, String)
     @test pred(s)
