@@ -4,10 +4,8 @@ using Statistics: mean, var, middle
 using LinearAlgebra:
     Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
 using StatsFuns: logaddexp, logsumexp, loghalf
-import Random
-using Random: AbstractRNG
+using Random: Random, AbstractRNG
 using ProgressMeter: ProgressMeter
-using SimpleUnPack: @unpack
 
 using Setfield
 import Setfield: ConstructionBase
@@ -19,8 +17,7 @@ using DocStringExtensions
 using LogDensityProblems
 using LogDensityProblemsAD: LogDensityProblemsAD
 
-import AbstractMCMC
-using AbstractMCMC: LogDensityModel
+using AbstractMCMC: AbstractMCMC, LogDensityModel
 
 import StatsBase: sample
 
@@ -79,29 +76,36 @@ import .Adaptation:
 
 # Helpers for initializing adaptors via AHMC structs
 
-StepSizeAdaptor(δ::AbstractFloat, stepsize::AbstractScalarOrVec{<:AbstractFloat}) =
-    NesterovDualAveraging(δ, stepsize)
-StepSizeAdaptor(δ::AbstractFloat, i::AbstractIntegrator) =
-    StepSizeAdaptor(δ, nom_step_size(i))
+function StepSizeAdaptor(δ::AbstractFloat, stepsize::AbstractScalarOrVec{<:AbstractFloat})
+    return NesterovDualAveraging(δ, stepsize)
+end
+function StepSizeAdaptor(δ::AbstractFloat, i::AbstractIntegrator)
+    return StepSizeAdaptor(δ, nom_step_size(i))
+end
 
 MassMatrixAdaptor(m::UnitEuclideanMetric{T}) where {T} = UnitMassMatrix{T}()
-MassMatrixAdaptor(m::DiagEuclideanMetric{T}) where {T} =
-    WelfordVar{T}(size(m); var = copy(m.M⁻¹))
-MassMatrixAdaptor(m::DenseEuclideanMetric{T}) where {T} =
-    WelfordCov{T}(size(m); cov = copy(m.M⁻¹))
+function MassMatrixAdaptor(m::DiagEuclideanMetric{T}) where {T}
+    return WelfordVar{T}(size(m); var=copy(m.M⁻¹))
+end
+function MassMatrixAdaptor(m::DenseEuclideanMetric{T}) where {T}
+    return WelfordCov{T}(size(m); cov=copy(m.M⁻¹))
+end
 
-MassMatrixAdaptor(::Type{TM}, sz::Dims = (2,)) where {TM<:AbstractMetric} =
-    MassMatrixAdaptor(Float64, TM, sz)
+function MassMatrixAdaptor(::Type{TM}, sz::Dims=(2,)) where {TM<:AbstractMetric}
+    return MassMatrixAdaptor(Float64, TM, sz)
+end
 
-MassMatrixAdaptor(::Type{T}, ::Type{TM}, sz::Dims = (2,)) where {T,TM<:AbstractMetric} =
-    MassMatrixAdaptor(TM(T, sz))
+function MassMatrixAdaptor(
+    ::Type{T}, ::Type{TM}, sz::Dims=(2,)
+) where {T,TM<:AbstractMetric}
+    return MassMatrixAdaptor(TM(T, sz))
+end
 
 # Deprecations
 
 @deprecate StanHMCAdaptor(n_adapts, pc, ssa) initialize!(StanHMCAdaptor(pc, ssa), n_adapts)
 @deprecate NesterovDualAveraging(δ::AbstractFloat, i::AbstractIntegrator) StepSizeAdaptor(
-    δ,
-    i,
+    δ, i
 )
 @deprecate Preconditioner(args...) MassMatrixAdaptor(args...)
 
@@ -156,16 +160,11 @@ end
 
 ## With explicit AD specification
 function Hamiltonian(
-    metric::AbstractMetric,
-    ℓπ::LogDensityModel,
-    kind::Union{Symbol,Val,Module};
-    kwargs...,
+    metric::AbstractMetric, ℓπ::LogDensityModel, kind::Union{Symbol,Val,Module}; kwargs...
 )
     return Hamiltonian(metric, ℓπ.logdensity, kind; kwargs...)
 end
-Hamiltonian(metric::AbstractMetric, ℓπ, m::Module; kwargs...) =
-    Hamiltonian(metric, ℓπ, Val(Symbol(m)); kwargs...)
-function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val}; kwargs...)
+function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val,Module}; kwargs...)
     if LogDensityProblems.capabilities(ℓπ) === nothing
         throw(
             ArgumentError(
@@ -173,7 +172,9 @@ function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val}; kwa
             ),
         )
     end
-    ℓ = LogDensityProblemsAD.ADgradient(kind, ℓπ; kwargs...)
+    ℓ = LogDensityProblemsAD.ADgradient(
+        kind isa Val ? kind : Val(Symbol(kind)), ℓπ; kwargs...
+    )
     return Hamiltonian(metric, ℓ)
 end
 
@@ -194,12 +195,11 @@ function __init__()
     Base.Experimental.register_error_hint(MethodError) do io, exc, arg_types, kwargs
         n = length(arg_types)
         if exc.f === step &&
-           (n == 3 || n == 4) &&
-           arg_types[1] <: DiffEqIntegrator &&
-           arg_types[2] <: Hamiltonian &&
-           arg_types[3] <: PhasePoint &&
-           (n == 3 || arg_types[4] === Int)
-
+            (n == 3 || n == 4) &&
+            arg_types[1] <: DiffEqIntegrator &&
+            arg_types[2] <: Hamiltonian &&
+            arg_types[3] <: PhasePoint &&
+            (n == 3 || arg_types[4] === Int)
             print(io, "\\nDid you forget to load OrdinaryDiffEq?")
         end
     end

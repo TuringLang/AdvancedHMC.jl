@@ -8,9 +8,7 @@ using Statistics: mean, var, cov
 unicodeplots()
 
 function test_stats(
-    ::Trajectory{TS,I,TC},
-    stats,
-    n_adapts,
+    ::Trajectory{TS,I,TC}, stats, n_adapts
 ) where {TS,I,TC<:StaticTerminationCriterion}
     for name in (
         :step_size,
@@ -23,17 +21,15 @@ function test_stats(
         :hamiltonian_energy_error,
         :is_adapt,
     )
-        @test all(map(s -> in(name, propertynames(s)), stats))
+        @test all(s -> in(name, propertynames(s)), stats)
     end
     is_adapts = getproperty.(stats, :is_adapt)
     @test is_adapts[1:n_adapts] == ones(Bool, n_adapts)
-    @test is_adapts[(n_adapts+1):end] == zeros(Bool, length(stats) - n_adapts)
+    @test is_adapts[(n_adapts + 1):end] == zeros(Bool, length(stats) - n_adapts)
 end
 
 function test_stats(
-    ::Trajectory{TS,I,TC},
-    stats,
-    n_adapts,
+    ::Trajectory{TS,I,TC}, stats, n_adapts
 ) where {TS,I,TC<:DynamicTerminationCriterion}
     for name in (
         :step_size,
@@ -49,11 +45,11 @@ function test_stats(
         :tree_depth,
         :numerical_error,
     )
-        @test all(map(s -> in(name, propertynames(s)), stats))
+        @test all(s -> in(name, propertynames(s)), stats)
     end
     is_adapts = getproperty.(stats, :is_adapt)
     @test is_adapts[1:n_adapts] == ones(Bool, n_adapts)
-    @test is_adapts[(n_adapts+1):end] == zeros(Bool, length(stats) - n_adapts)
+    @test is_adapts[(n_adapts + 1):end] == zeros(Bool, length(stats) - n_adapts)
 end
 
 @testset "sample" begin
@@ -103,12 +99,7 @@ end
                 @testset "NoAdaptation" begin
                     Random.seed!(1)
                     samples, stats = sample(
-                        h,
-                        HMCKernel(τ),
-                        θ_init,
-                        n_samples;
-                        verbose = false,
-                        progress = PROGRESS,
+                        h, HMCKernel(τ), θ_init, n_samples; verbose=false, progress=PROGRESS
                     )
                     @test mean(samples) ≈ zeros(D) atol = RNDATOL
                 end
@@ -117,12 +108,10 @@ end
                     :MassMatrixAdaptorOnly => MassMatrixAdaptor(metric),
                     :StepSizeAdaptorOnly => StepSizeAdaptor(0.8, τ.integrator),
                     :NaiveHMCAdaptor => NaiveHMCAdaptor(
-                        MassMatrixAdaptor(metric),
-                        StepSizeAdaptor(0.8, τ.integrator),
+                        MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, τ.integrator)
                     ),
                     :StanHMCAdaptor => StanHMCAdaptor(
-                        MassMatrixAdaptor(metric),
-                        StepSizeAdaptor(0.8, τ.integrator),
+                        MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, τ.integrator)
                     ),
                 )
                     # Skip adaptation tests with tempering
@@ -148,10 +137,10 @@ end
                         n_samples,
                         adaptor,
                         n_adapts;
-                        verbose = false,
-                        progress = PROGRESS,
+                        verbose=false,
+                        progress=PROGRESS,
                     )
-                    @test mean(samples[(n_adapts+1):end]) ≈ zeros(D) atol = RNDATOL
+                    @test mean(samples[(n_adapts + 1):end]) ≈ zeros(D) atol = RNDATOL
                     test_stats(τ_used, stats, n_adapts)
                 end
             end
@@ -171,9 +160,9 @@ end
             n_samples,
             adaptor,
             n_adapts;
-            verbose = false,
-            progress = false,
-            drop_warmup = true,
+            verbose=false,
+            progress=false,
+            drop_warmup=true,
         )
         @test length(samples) == n_samples - n_adapts
         @test length(stats) == n_samples - n_adapts
@@ -184,9 +173,9 @@ end
             n_samples,
             adaptor,
             n_adapts;
-            verbose = false,
-            progress = false,
-            drop_warmup = false,
+            verbose=false,
+            progress=false,
+            drop_warmup=false,
         )
         @test length(samples) == n_samples
         @test length(stats) == n_samples

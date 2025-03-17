@@ -2,8 +2,9 @@ using AdvancedHMC, AbstractMCMC, Random
 
 get_kernel_hyperparams(spl::HMC, state) = state.κ.τ.termination_criterion.L
 get_kernel_hyperparams(spl::HMCDA, state) = state.κ.τ.termination_criterion.λ
-get_kernel_hyperparams(spl::NUTS, state) =
-    state.κ.τ.termination_criterion.max_depth, state.κ.τ.termination_criterion.Δ_max
+function get_kernel_hyperparams(spl::NUTS, state)
+    return state.κ.τ.termination_criterion.max_depth, state.κ.τ.termination_criterion.Δ_max
+end
 
 get_kernel_hyperparamsT(spl::HMC, state) = typeof(state.κ.τ.termination_criterion.L)
 get_kernel_hyperparamsT(spl::HMCDA, state) = typeof(state.κ.τ.termination_criterion.λ)
@@ -20,110 +21,110 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
             (
                 HMC(T(0.1), 25),
                 (
-                    adaptor_type = NoAdaptation,
-                    metric_type = DiagEuclideanMetric{T},
-                    integrator_type = Leapfrog{T},
-                    kernel_hp = 25,
+                    adaptor_type=NoAdaptation,
+                    metric_type=DiagEuclideanMetric{T},
+                    integrator_type=Leapfrog{T},
+                    kernel_hp=25,
                 ),
             ),
             (
-                HMC(25, integrator = Leapfrog(T(0.1))),
+                HMC(25; integrator=Leapfrog(T(0.1))),
                 (
-                    adaptor_type = NoAdaptation,
-                    metric_type = DiagEuclideanMetric{T},
-                    integrator_type = Leapfrog{T},
-                    kernel_hp = 25,
+                    adaptor_type=NoAdaptation,
+                    metric_type=DiagEuclideanMetric{T},
+                    integrator_type=Leapfrog{T},
+                    kernel_hp=25,
                 ),
             ),
             (
-                HMC(25, metric = DiagEuclideanMetric(ones(T, 2))),
+                HMC(25; metric=DiagEuclideanMetric(ones(T, 2))),
                 (
-                    adaptor_type = NoAdaptation,
-                    metric_type = DiagEuclideanMetric{T},
-                    integrator_type = Leapfrog{T},
-                    kernel_hp = 25,
+                    adaptor_type=NoAdaptation,
+                    metric_type=DiagEuclideanMetric{T},
+                    integrator_type=Leapfrog{T},
+                    kernel_hp=25,
                 ),
             ),
             (
-                HMC(25, integrator = Leapfrog(T(0.1)), metric = :unit),
+                HMC(25; integrator=Leapfrog(T(0.1)), metric=:unit),
                 (
-                    adaptor_type = NoAdaptation,
-                    metric_type = UnitEuclideanMetric{T},
-                    integrator_type = Leapfrog{T},
-                    kernel_hp = 25,
+                    adaptor_type=NoAdaptation,
+                    metric_type=UnitEuclideanMetric{T},
+                    integrator_type=Leapfrog{T},
+                    kernel_hp=25,
                 ),
             ),
             (
-                HMC(25, integrator = Leapfrog(T(0.1)), metric = :dense),
+                HMC(25; integrator=Leapfrog(T(0.1)), metric=:dense),
                 (
-                    adaptor_type = NoAdaptation,
-                    metric_type = DenseEuclideanMetric{T},
-                    integrator_type = Leapfrog{T},
-                    kernel_hp = 25,
+                    adaptor_type=NoAdaptation,
+                    metric_type=DenseEuclideanMetric{T},
+                    integrator_type=Leapfrog{T},
+                    kernel_hp=25,
                 ),
             ),
             (
-                HMCDA(T(0.8), one(T), integrator = Leapfrog(T(0.1))),
+                HMCDA(T(0.8), one(T); integrator=Leapfrog(T(0.1))),
                 (
-                    adaptor_type = NesterovDualAveraging,
-                    metric_type = DiagEuclideanMetric{T},
-                    integrator_type = Leapfrog{T},
-                    kernel_hp = one(T),
+                    adaptor_type=NesterovDualAveraging,
+                    metric_type=DiagEuclideanMetric{T},
+                    integrator_type=Leapfrog{T},
+                    kernel_hp=one(T),
                 ),
             ),
             # This should perform the correct promotion for the 2nd argument.
             (
-                HMCDA(T(0.8), 1, integrator = Leapfrog(T(0.1))),
+                HMCDA(T(0.8), 1; integrator=Leapfrog(T(0.1))),
                 (
-                    adaptor_type = NesterovDualAveraging,
-                    metric_type = DiagEuclideanMetric{T},
-                    integrator_type = Leapfrog{T},
-                    kernel_hp = one(T),
+                    adaptor_type=NesterovDualAveraging,
+                    metric_type=DiagEuclideanMetric{T},
+                    integrator_type=Leapfrog{T},
+                    kernel_hp=one(T),
                 ),
             ),
             (
-                NUTS(T(0.8); max_depth = 20, Δ_max = T(2000.0)),
+                NUTS(T(0.8); max_depth=20, Δ_max=T(2000.0)),
                 (
-                    adaptor_type = StanHMCAdaptor,
-                    metric_type = DiagEuclideanMetric{T},
-                    integrator_type = Leapfrog{T},
-                    kernel_hp = (20, T(2000.0)),
+                    adaptor_type=StanHMCAdaptor,
+                    metric_type=DiagEuclideanMetric{T},
+                    integrator_type=Leapfrog{T},
+                    kernel_hp=(20, T(2000.0)),
                 ),
             ),
             (
-                NUTS(T(0.8); metric = :unit),
+                NUTS(T(0.8); metric=:unit),
                 (
-                    adaptor_type = StanHMCAdaptor,
-                    metric_type = UnitEuclideanMetric{T},
-                    integrator_type = Leapfrog{T},
-                    kernel_hp = (10, T(1000.0)),
+                    adaptor_type=StanHMCAdaptor,
+                    metric_type=UnitEuclideanMetric{T},
+                    integrator_type=Leapfrog{T},
+                    kernel_hp=(10, T(1000.0)),
                 ),
             ),
             (
-                NUTS(T(0.8); metric = :dense),
+                NUTS(T(0.8); metric=:dense),
                 (
-                    adaptor_type = StanHMCAdaptor,
-                    metric_type = DenseEuclideanMetric{T},
-                    integrator_type = Leapfrog{T},
-                    kernel_hp = (10, T(1000.0)),
+                    adaptor_type=StanHMCAdaptor,
+                    metric_type=DenseEuclideanMetric{T},
+                    integrator_type=Leapfrog{T},
+                    kernel_hp=(10, T(1000.0)),
                 ),
             ),
             (
-                NUTS(T(0.8); integrator = :jitteredleapfrog),
+                NUTS(T(0.8); integrator=:jitteredleapfrog),
                 (
-                    adaptor_type = StanHMCAdaptor,
-                    metric_type = DiagEuclideanMetric{T},
-                    integrator_type = JitteredLeapfrog{T,T},
-                    kernel_hp = (10, T(1000.0)),
+                    adaptor_type=StanHMCAdaptor,
+                    metric_type=DiagEuclideanMetric{T},
+                    integrator_type=JitteredLeapfrog{T,T},
+                    kernel_hp=(10, T(1000.0)),
                 ),
             ),
             (
-                NUTS(T(0.8); integrator = :temperedleapfrog),
+                NUTS(T(0.8); integrator=:temperedleapfrog),
                 (
-                    adaptor_type = StanHMCAdaptor,
-                    metric_type = DiagEuclideanMetric{T},
-                    integrator_type = TemperedLeapfrog{T,T},
-                    kernel_hp = (10, T(1000.0)),
+                    adaptor_type=StanHMCAdaptor,
+                    metric_type=DiagEuclideanMetric{T},
+                    integrator_type=TemperedLeapfrog{T,T},
+                    kernel_hp=(10, T(1000.0)),
                 ),
             ),
         ]
@@ -132,11 +133,7 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
 
             # Step.
             transition, state = AbstractMCMC.step(
-                rng,
-                model,
-                sampler;
-                n_adapts = 0,
-                initial_params = θ_init,
+                rng, model, sampler; n_adapts=0, initial_params=θ_init
             )
             # Verify that the types are preserved in the transition.
             @test eltype(transition.z.θ) == T

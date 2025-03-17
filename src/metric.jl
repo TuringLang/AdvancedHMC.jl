@@ -5,8 +5,8 @@ Abstract type for preconditioning metrics.
 """
 abstract type AbstractMetric end
 
-_string_M⁻¹(mat::AbstractMatrix, n_chars::Int = 32) = _string_M⁻¹(diag(mat), n_chars)
-function _string_M⁻¹(vec::AbstractVector, n_chars::Int = 32)
+_string_M⁻¹(mat::AbstractMatrix, n_chars::Int=32) = _string_M⁻¹(diag(mat), n_chars)
+function _string_M⁻¹(vec::AbstractVector, n_chars::Int=32)
     s_vec = string(vec)
     l = length(s_vec)
     s_dots = " ...]"
@@ -19,11 +19,13 @@ struct UnitEuclideanMetric{T,A<:Union{Tuple{Int},Tuple{Int,Int}}} <: AbstractMet
     size::A
 end
 
-UnitEuclideanMetric(::Type{T}, sz) where {T} =
-    UnitEuclideanMetric(UniformScaling{T}(one(T)), sz)
+function UnitEuclideanMetric(::Type{T}, sz) where {T}
+    return UnitEuclideanMetric(UniformScaling{T}(one(T)), sz)
+end
 UnitEuclideanMetric(sz) = UnitEuclideanMetric(Float64, sz)
-UnitEuclideanMetric(::Type{T}, dim::Int) where {T} =
-    UnitEuclideanMetric(UniformScaling{T}(one(T)), (dim,))
+function UnitEuclideanMetric(::Type{T}, dim::Int) where {T}
+    return UnitEuclideanMetric(UniformScaling{T}(one(T)), (dim,))
+end
 UnitEuclideanMetric(dim::Int) = UnitEuclideanMetric(Float64, (dim,))
 
 renew(ue::UnitEuclideanMetric, M⁻¹) = UnitEuclideanMetric(M⁻¹, ue.size)
@@ -31,8 +33,9 @@ renew(ue::UnitEuclideanMetric, M⁻¹) = UnitEuclideanMetric(M⁻¹, ue.size)
 Base.eltype(::UnitEuclideanMetric{T}) where {T} = T
 Base.size(e::UnitEuclideanMetric) = e.size
 Base.size(e::UnitEuclideanMetric, dim::Int) = e.size[dim]
-Base.show(io::IO, uem::UnitEuclideanMetric) =
-    print(io, "UnitEuclideanMetric($(_string_M⁻¹(ones(uem.size))))")
+function Base.show(io::IO, uem::UnitEuclideanMetric)
+    return print(io, "UnitEuclideanMetric($(_string_M⁻¹(ones(uem.size))))")
+end
 
 struct DiagEuclideanMetric{T,A<:AbstractVecOrMat{T}} <: AbstractMetric
     # Diagnal of the inverse of the mass matrix
@@ -55,8 +58,9 @@ renew(ue::DiagEuclideanMetric, M⁻¹) = DiagEuclideanMetric(M⁻¹)
 
 Base.eltype(::DiagEuclideanMetric{T}) where {T} = T
 Base.size(e::DiagEuclideanMetric, dim...) = size(e.M⁻¹, dim...)
-Base.show(io::IO, dem::DiagEuclideanMetric) =
-    print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
+function Base.show(io::IO, dem::DiagEuclideanMetric)
+    return print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
+end
 
 struct DenseEuclideanMetric{
     T,
@@ -74,78 +78,56 @@ end
 
 # TODO: make dense mass matrix support matrix-mode parallel
 function DenseEuclideanMetric(
-    M⁻¹::Union{AbstractMatrix{T},AbstractArray{T,3}},
+    M⁻¹::Union{AbstractMatrix{T},AbstractArray{T,3}}
 ) where {T<:AbstractFloat}
     _temp = Vector{T}(undef, Base.front(size(M⁻¹)))
     return DenseEuclideanMetric(M⁻¹, cholesky(Symmetric(M⁻¹)).U, _temp)
 end
 DenseEuclideanMetric(::Type{T}, D::Int) where {T} = DenseEuclideanMetric(Matrix{T}(I, D, D))
 DenseEuclideanMetric(D::Int) = DenseEuclideanMetric(Float64, D)
-DenseEuclideanMetric(::Type{T}, sz::Tuple{Int}) where {T} =
-    DenseEuclideanMetric(Matrix{T}(I, first(sz), first(sz)))
+function DenseEuclideanMetric(::Type{T}, sz::Tuple{Int}) where {T}
+    return DenseEuclideanMetric(Matrix{T}(I, first(sz), first(sz)))
+end
 DenseEuclideanMetric(sz::Tuple{Int}) = DenseEuclideanMetric(Float64, sz)
 
 renew(ue::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
 
 Base.eltype(::DenseEuclideanMetric{T}) where {T} = T
 Base.size(e::DenseEuclideanMetric, dim...) = size(e._temp, dim...)
-Base.show(io::IO, dem::DenseEuclideanMetric) =
-    print(io, "DenseEuclideanMetric(diag=$(_string_M⁻¹(dem.M⁻¹)))")
+function Base.show(io::IO, dem::DenseEuclideanMetric)
+    return print(io, "DenseEuclideanMetric(diag=$(_string_M⁻¹(dem.M⁻¹)))")
+end
 
 # `rand` functions for `metric` types.
 
-function _rand(
+function rand_momentum(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::UnitEuclideanMetric{T},
     kinetic::GaussianKinetic,
+    ::AbstractVecOrMat,
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    r = _randn(rng, T, size(metric)...)
     return r
 end
 
-function _rand(
+function rand_momentum(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::DiagEuclideanMetric{T},
     kinetic::GaussianKinetic,
+    ::AbstractVecOrMat,
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    r = _randn(rng, T, size(metric)...)
     r ./= metric.sqrtM⁻¹
     return r
 end
 
-function _rand(
+function rand_momentum(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::DenseEuclideanMetric{T},
     kinetic::GaussianKinetic,
+    ::AbstractVecOrMat,
 ) where {T}
-    r = randn(rng, T, size(metric)...)
+    r = _randn(rng, T, size(metric)...)
     ldiv!(metric.cholM⁻¹, r)
     return r
 end
-
-# TODO (kai) The rand interface should be updated as "rand from momentum distribution + optional affine transformation by metric"
-Base.rand(rng::AbstractRNG, metric::AbstractMetric, kinetic::AbstractKinetic) =
-    _rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
-Base.rand(
-    rng::AbstractVector{<:AbstractRNG},
-    metric::AbstractMetric,
-    kinetic::AbstractKinetic,
-) = _rand(rng, metric, kinetic)
-Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic) =
-    rand(Random.default_rng(), metric, kinetic)
-
-# ignore θ by default unless defined by the specific kinetic (i.e. not position-dependent)
-Base.rand(
-    rng::AbstractRNG,
-    metric::AbstractMetric,
-    kinetic::AbstractKinetic,
-    θ::AbstractVecOrMat,
-) = rand(rng, metric, kinetic)    # this disambiguity is required by Random.rand
-Base.rand(
-    rng::AbstractVector{<:AbstractRNG},
-    metric::AbstractMetric,
-    kinetic::AbstractKinetic,
-    θ::AbstractVecOrMat,
-) = rand(rng, metric, kinetic)
-Base.rand(metric::AbstractMetric, kinetic::AbstractKinetic, θ::AbstractVecOrMat) =
-    rand(metric, kinetic)

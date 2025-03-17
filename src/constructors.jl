@@ -89,7 +89,7 @@ struct NUTS{T<:Real,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,Abstract
     metric::M
 end
 
-function NUTS(δ; max_depth = 10, Δ_max = 1000.0, integrator = :leapfrog, metric = :diagonal)
+function NUTS(δ; max_depth=10, Δ_max=1000.0, integrator=:leapfrog, metric=:diagonal)
     T = determine_sampler_eltype(δ, integrator, metric)
     return NUTS(T(δ), max_depth, T(Δ_max), integrator, metric)
 end
@@ -119,8 +119,9 @@ struct HMC{I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} 
 end
 
 HMC(ϵ::Real, n_leapfrog::Int) = HMC(n_leapfrog, Leapfrog(ϵ), :diagonal)
-HMC(n_leapfrog; integrator = :leapfrog, metric = :diagonal) =
-    HMC(n_leapfrog, integrator, metric)
+function HMC(n_leapfrog; integrator=:leapfrog, metric=:diagonal)
+    return HMC(n_leapfrog, integrator, metric)
+end
 
 sampler_eltype(sampler::HMC) = determine_sampler_eltype(sampler.metric, sampler.integrator)
 
@@ -144,18 +145,19 @@ For more information, please view the following paper ([arXiv link](https://arxi
   setting path lengths in Hamiltonian Monte Carlo." Journal of Machine Learning
   Research 15, no. 1 (2014): 1593-1623.
 """
-struct HMCDA{T<:Real} <: AbstractHMCSampler
+struct HMCDA{T<:Real,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <:
+       AbstractHMCSampler
     "Target acceptance rate for dual averaging."
     δ::T
     "Target leapfrog length."
     λ::T
     "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
-    integrator::Union{Symbol,AbstractIntegrator}
+    integrator::I
     "Choice of initial metric;  `Symbol` means it is automatically initialised. The metric type will be preserved during automatic initialisation and adaption."
-    metric::Union{Symbol,AbstractMetric}
+    metric::M
 end
 
-function HMCDA(δ, λ; integrator = :leapfrog, metric = :diagonal)
+function HMCDA(δ, λ; integrator=:leapfrog, metric=:diagonal)
     T = determine_sampler_eltype(δ, λ, integrator, metric)
     return HMCDA(T(δ), T(λ), integrator, metric)
 end

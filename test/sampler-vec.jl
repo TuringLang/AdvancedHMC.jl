@@ -37,8 +37,9 @@ using Statistics: mean, var, cov
 
         # NoAdaptation
         Random.seed!(100)
-        samples, stats =
-            sample(h, HMCKernel(τ), θ_init_list[i_test], n_samples; verbose = false)
+        samples, stats = sample(
+            h, HMCKernel(τ), θ_init_list[i_test], n_samples; verbose=false
+        )
         @test mean(samples) ≈ zeros(D, n_chains) atol = RNDATOL * n_chains
 
         # Adaptation
@@ -59,20 +60,20 @@ using Statistics: mean, var, cov
                 n_samples,
                 adaptor,
                 n_adapts;
-                verbose = false,
-                progress = false,
+                verbose=false,
+                progress=false,
             )
             @test mean(samples) ≈ zeros(D, n_chains) atol = RNDATOL * n_chains
         end
 
         # Passing a vector of same RNGs
-        rng = [MersenneTwister(1) for _ = 1:n_chains]
+        rng = [MersenneTwister(1) for _ in 1:n_chains]
         h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∂ℓπ∂θ)
         θ_init = repeat(rand(D), 1, n_chains)
-        samples, stats = sample(rng, h, HMCKernel(τ), θ_init, n_samples; verbose = false)
+        samples, stats = sample(rng, h, HMCKernel(τ), θ_init, n_samples; verbose=false)
         all_same = true
-        for i_sample = 2:10
-            for j = 2:n_chains
+        for i_sample in 2:10
+            for j in 2:n_chains
                 all_same = all_same && samples[i_sample][:, j] == samples[i_sample][:, 1]
             end
         end
@@ -87,8 +88,9 @@ using Statistics: mean, var, cov
         time_mat = Vector{Float64}(undef, n_chains_max)
         for (i, n_chains) in enumerate(n_chains_list)
             h = Hamiltonian(metricT((D, n_chains)), ℓπ, ∂ℓπ∂θ)
-            t = @elapsed samples, stats =
-                sample(h, κ, θ_init_list[i], n_samples; verbose = false)
+            t = @elapsed samples, stats = sample(
+                h, κ, θ_init_list[i], n_samples; verbose=false
+            )
             time_mat[i] = t
         end
 
@@ -96,10 +98,11 @@ using Statistics: mean, var, cov
         time_seperate = Vector{Float64}(undef, n_chains_max)
 
         for (i, n_chains) in enumerate(n_chains_list)
-            t = @elapsed for j = 1:n_chains
+            t = @elapsed for j in 1:n_chains
                 h = Hamiltonian(metricT(D), ℓπ, ∂ℓπ∂θ)
-                samples, stats =
-                    sample(h, κ, θ_init_list[i][:, j], n_samples; verbose = false)
+                samples, stats = sample(
+                    h, κ, θ_init_list[i][:, j], n_samples; verbose=false
+                )
             end
             time_seperate[i] = t
         end
@@ -108,18 +111,12 @@ using Statistics: mean, var, cov
         fig = lineplot(
             collect(1:n_chains_max),
             time_mat;
-            title = "Scalabiliry of multiple chains",
-            name = "vectorization",
-            xlabel = "Num of chains",
-            ylabel = "Time (s)",
+            title="Scalabiliry of multiple chains",
+            name="vectorization",
+            xlabel="Num of chains",
+            ylabel="Time (s)",
         )
-        lineplot!(
-            fig,
-            collect(n_chains_list),
-            time_seperate;
-            color = :blue,
-            name = "seperate",
-        )
+        lineplot!(fig, collect(n_chains_list), time_seperate; color=:blue, name="seperate")
         println()
         show(fig)
         println()
