@@ -1,14 +1,7 @@
 module AdvancedHMCCUDAExt
 
-if isdefined(Base, :get_extension)
-    using AdvancedHMC: AdvancedHMC
-    using CUDA: CUDA
-    using Random: Random
-else
-    import ..AdvancedHMC
-    import ..CUDA
-    import ..Random
-end
+using AdvancedHMC: AdvancedHMC, Random
+using CUDA: CUDA
 
 function AdvancedHMC.refresh(
     rng::Union{Random.AbstractRNG,AbstractVector{<:Random.AbstractRNG}},
