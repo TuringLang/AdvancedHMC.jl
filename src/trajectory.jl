@@ -750,11 +750,11 @@ function find_good_stepsize(
     rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=100
 ) where {T<:Real}
     # Initialize searching parameters
-    ϵ′ = ϵ = T(1 // 10)
+    ϵ′ = ϵ = T(1//10)
     # minimal, crossing, maximal log accept ratio
     log_a_min = 2 * T(loghalf)
     log_a_cross = T(loghalf)
-    log_a_max = log(T(3 // 4))
+    log_a_max = log(T(3//4))
     d = T(2)
     invd = inv(d)
     # Create starting phase point
@@ -771,12 +771,13 @@ function find_good_stepsize(
     for _ in 1:max_n_iters
         # `ratio_too_high` being  `true` means MH ratio too high
         #     - this means our step size is too small, thus we increase
-        # `ratio_to_high` being `false` means MH ratio too small
+        # `ratio_too_high` being `false` means MH ratio too small
         #     - this means our step size is too large, thus we decrease
         ϵ′ = ratio_too_high ? d * ϵ : invd * ϵ
         _, H′ = A(h, z, ϵ)
         ΔH = H - H′
         @debug "Crossing step" direction H′ ϵ α = min(1, exp(ΔH))
+        # stop if there is no crossing; otherwise, continue to half or double stepsize. 
         if xor(ratio_too_high, ΔH > log_a_cross)
             break
         else
