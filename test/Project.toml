@@ -1,5 +1,6 @@
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Bijectors = "76274a88-744f-5084-9051-94815aaf08c4"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Comonicon = "863f3e99-da2a-4334-8734-de3dacbe5542"

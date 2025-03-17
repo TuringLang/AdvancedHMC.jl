@@ -12,8 +12,7 @@ using AdvancedHMC: neg_energy, energy
 δ(a, b) = maximum(abs.(a - b))
 
 @testset "Riemannian" begin
-
-    hps = (; λ = 1e-2, α = 20.0, ϵ = 0.1, n = 6, L = 8)
+    hps = (; λ=1e-2, α=20.0, ϵ=0.1, n=6, L=8)
 
     @testset "$(nameof(typeof(target)))" for target in [HighDimGaussian(2), Funnel()]
         rng = MersenneTwister(1110)
@@ -43,7 +42,7 @@ using AdvancedHMC: neg_energy, energy
             hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
 
             if hessmap isa SoftAbsMap || # only test kinetic energy for SoftAbsMap as that of IdentityMap can be non-PD
-               all(iszero.(x)) # or for x==0 that I know it's PD
+                all(iszero, x) # or for x==0 that I know it's PD
                 @testset "Kinetic energy" begin
                     Σ = hamiltonian.metric.map(hamiltonian.metric.G(x))
                     @test neg_energy(hamiltonian, r, x) ≈ logpdf(MvNormal(zeros(D), Σ), r)
@@ -63,10 +62,8 @@ using AdvancedHMC: neg_energy, energy
 
             @testset "∂H∂r" begin
                 @test δ(finite_difference_gradient(Hamifuncr, r), ∂H∂r(hamiltonian, x, r)) <
-                      1e-4
+                    1e-4
             end
         end
-
     end
-
 end

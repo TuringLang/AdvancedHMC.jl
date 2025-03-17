@@ -11,11 +11,12 @@ function adapt!(
     adaptor::MassMatrixAdaptor,
     θ::AbstractVecOrMat{<:AbstractFloat},
     α::AbstractScalarOrVec{<:AbstractFloat},
-    is_update::Bool = true,
+    is_update::Bool=true,
 )
     resize!(adaptor, θ)
     push!(adaptor, θ)
     is_update && update!(adaptor)
+    return nothing
 end
 
 ## Unit mass matrix adaptor
@@ -34,12 +35,14 @@ reset!(::UnitMassMatrix) = nothing
 
 getM⁻¹(::UnitMassMatrix{T}) where {T} = LinearAlgebra.UniformScaling{T}(one(T))
 
-adapt!(
+function adapt!(
     ::UnitMassMatrix,
     ::AbstractVecOrMat{<:AbstractFloat},
     ::AbstractScalarOrVec{<:AbstractFloat},
-    is_update::Bool = true,
-) = nothing
+    is_update::Bool=true,
+)
+    return nothing
+end
 
 ## Diagonal mass matrix adaptor
 
@@ -50,7 +53,7 @@ getM⁻¹(ve::DiagMatrixEstimator) = ve.var
 Base.string(ve::DiagMatrixEstimator) = string(getM⁻¹(ve))
 
 function update!(ve::DiagMatrixEstimator)
-    ve.n >= ve.n_min && (ve.var .= get_estimation(ve))
+    return ve.n >= ve.n_min && (ve.var .= get_estimation(ve))
 end
 
 # NOTE: this naive variance estimator is used only in testing
@@ -90,15 +93,14 @@ end
 Base.show(io::IO, ::WelfordVar) = print(io, "WelfordVar")
 
 function WelfordVar{T}(
-    sz::Union{Tuple{Int},Tuple{Int,Int}};
-    n_min::Int = 10,
-    var = ones(T, sz),
+    sz::Union{Tuple{Int},Tuple{Int,Int}}; n_min::Int=10, var=ones(T, sz)
 ) where {T<:AbstractFloat}
     return WelfordVar(0, n_min, zeros(T, sz), zeros(T, sz), zeros(T, sz), var)
 end
 
-WelfordVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...) =
-    WelfordVar{Float64}(sz; kwargs...)
+function WelfordVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...)
+    return WelfordVar{Float64}(sz; kwargs...)
+end
 
 function Base.resize!(wv::WelfordVar, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
     if size(θ) != size(wv.var)
@@ -114,20 +116,22 @@ function reset!(wv::WelfordVar{T}) where {T<:AbstractFloat}
     wv.n = 0
     wv.μ .= zero(T)
     wv.M .= zero(T)
+    return nothing
 end
 
 function Base.push!(wv::WelfordVar, s::AbstractVecOrMat{T}) where {T}
     wv.n += 1
-    @unpack δ, μ, M, n = wv
+    (; δ, μ, M, n) = wv
     n = T(n)
     δ .= s - μ
     μ .= μ + δ / n
     M .= M + δ .* δ * ((n - 1) / n)    # eqv. to `M + (s - μ) .* δ`
+    return nothing
 end
 
 # https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
 function get_estimation(wv::WelfordVar{T}) where {T<:AbstractFloat}
-    @unpack n, M, var = wv
+    (; n, M) = wv
     @assert n >= 2 "Cannot estimate variance with only one sample"
     n, ϵ = T(n), T(1e-3)
     return n / ((n + 5) * (n - 1)) * M .+ ϵ * (5 / (n + 5))
@@ -143,6 +147,7 @@ Base.string(ce::DenseMatrixEstimator) = string(LinearAlgebra.diag(getM⁻¹(ce))
 
 function update!(ce::DenseMatrixEstimator)
     ce.n >= ce.n_min && (ce.cov .= get_estimation(ce))
+    return nothing
 end
 
 # NOTE: This naive covariance estimator is used only in testing.
@@ -178,9 +183,7 @@ end
 Base.show(io::IO, ::WelfordCov) = print(io, "WelfordCov")
 
 function WelfordCov{T}(
-    sz::Tuple{Int};
-    n_min::Int = 10,
-    cov = LinearAlgebra.diagm(0 => ones(T, first(sz))),
+    sz::Tuple{Int}; n_min::Int=10, cov=LinearAlgebra.diagm(0 => ones(T, first(sz)))
 ) where {T<:AbstractFloat}
     d = first(sz)
     return WelfordCov(0, n_min, zeros(T, d), zeros(T, d, d), zeros(T, d), cov)
@@ -202,20 +205,22 @@ function reset!(wc::WelfordCov{T}) where {T<:AbstractFloat}
     wc.n = 0
     wc.μ .= zero(T)
     wc.M .= zero(T)
+    return nothing
 end
 
 function Base.push!(wc::WelfordCov, s::AbstractVector{T}) where {T}
     wc.n += 1
-    @unpack δ, μ, n, M = wc
+    (; δ, μ, n, M) = wc
     n = T(n)
     δ .= s - μ
     μ .= μ + δ / n
     M .= M + (s - μ) * δ'
+    return nothing
 end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/covar_adaptation.hpp
 function get_estimation(wc::WelfordCov{T}) where {T<:AbstractFloat}
-    @unpack n, M, cov = wc
+    (; n, M) = wc
     @assert n >= 2 "Cannot get covariance with only one sample"
     n, ϵ = T(n), T(1e-3)
     return n / ((n + 5) * (n - 1)) * M + ϵ * (5 / (n + 5)) * LinearAlgebra.I

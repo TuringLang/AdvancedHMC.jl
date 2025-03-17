@@ -3,9 +3,8 @@ export Adaptation
 
 using LinearAlgebra: LinearAlgebra
 using Statistics: Statistics
-using SimpleUnPack: @unpack, @pack!
 
-using ..AdvancedHMC: DEBUG, AbstractScalarOrVec
+using ..AdvancedHMC: AbstractScalarOrVec
 using DocStringExtensions
 
 """
@@ -38,8 +37,9 @@ struct NaiveHMCAdaptor{M<:MassMatrixAdaptor,Tssa<:StepSizeAdaptor} <: AbstractAd
     pc::M
     ssa::Tssa
 end
-Base.show(io::IO, a::NaiveHMCAdaptor) =
-    print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
+function Base.show(io::IO, a::NaiveHMCAdaptor)
+    return print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
+end
 
 getM⁻¹(ca::NaiveHMCAdaptor) = getM⁻¹(ca.pc)
 getϵ(ca::NaiveHMCAdaptor) = getϵ(ca.ssa)
@@ -52,10 +52,12 @@ function adapt!(
 )
     adapt!(nca.ssa, θ, α)
     adapt!(nca.pc, θ, α)
+    return nothing
 end
 function reset!(aca::NaiveHMCAdaptor)
     reset!(aca.ssa)
     reset!(aca.pc)
+    return nothing
 end
 initialize!(adaptor::NaiveHMCAdaptor, n_adapts::Int) = nothing
 finalize!(aca::NaiveHMCAdaptor) = finalize!(aca.ssa)

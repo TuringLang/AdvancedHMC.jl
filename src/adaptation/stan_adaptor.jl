@@ -46,10 +46,11 @@ function initialize!(
     state.window_start = window_start
     state.window_end = window_end
     state.window_splits = window_splits
+    return nothing
 end
 
 function Base.show(io::IO, state::StanHMCAdaptorState)
-    print(
+    return print(
         io,
         "window($(state.window_start), $(state.window_end)), window_splits(" *
         string(join(state.window_splits, ", ")) *
@@ -68,25 +69,22 @@ struct StanHMCAdaptor{M<:MassMatrixAdaptor,Tssa<:StepSizeAdaptor} <: AbstractAda
     window_size::Int
     state::StanHMCAdaptorState
 end
-Base.show(io::IO, a::StanHMCAdaptor) = print(
-    io,
-    "StanHMCAdaptor(\n    pc=$(a.pc),\n    ssa=$(a.ssa),\n    init_buffer=$(a.init_buffer), term_buffer=$(a.term_buffer), window_size=$(a.window_size),\n    state=$(a.state)\n)",
-)
+function Base.show(io::IO, a::StanHMCAdaptor)
+    return print(
+        io,
+        "StanHMCAdaptor(\n    pc=$(a.pc),\n    ssa=$(a.ssa),\n    init_buffer=$(a.init_buffer), term_buffer=$(a.term_buffer), window_size=$(a.window_size),\n    state=$(a.state)\n)",
+    )
+end
 
 function StanHMCAdaptor(
     pc::MassMatrixAdaptor,
     ssa::StepSizeAdaptor;
-    init_buffer::Int = 75,
-    term_buffer::Int = 50,
-    window_size::Int = 25,
+    init_buffer::Int=75,
+    term_buffer::Int=50,
+    window_size::Int=25,
 )
     return StanHMCAdaptor(
-        pc,
-        ssa,
-        init_buffer,
-        term_buffer,
-        window_size,
-        StanHMCAdaptorState(),
+        pc, ssa, init_buffer, term_buffer, window_size, StanHMCAdaptorState()
     )
 end
 
@@ -105,8 +103,9 @@ function initialize!(adaptor::StanHMCAdaptor, n_adapts::Int)
 end
 finalize!(adaptor::StanHMCAdaptor) = finalize!(adaptor.ssa)
 
-is_in_window(a::StanHMCAdaptor) =
-    a.state.i >= a.state.window_start && a.state.i <= a.state.window_end
+function is_in_window(a::StanHMCAdaptor)
+    return a.state.i >= a.state.window_start && a.state.i <= a.state.window_end
+end
 is_window_end(a::StanHMCAdaptor) = a.state.i in a.state.window_splits
 
 function adapt!(

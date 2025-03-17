@@ -10,7 +10,7 @@ using Statistics: mean
 
     θ_init = randn(D)
     h = Hamiltonian(UnitEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
-    r_init = AdvancedHMC.rand(h.metric, h.kinetic)
+    r_init = AdvancedHMC.rand_momentum(Random.default_rng(), h.metric, h.kinetic, θ_init)
 
     n_steps = 10
 
@@ -18,14 +18,14 @@ using Statistics: mean
         z = AdvancedHMC.phasepoint(h, copy(θ_init), copy(r_init))
         z_step_loop = z
 
-        t_step_loop = @elapsed for i = 1:n_steps
+        t_step_loop = @elapsed for i in 1:n_steps
             z_step_loop = AdvancedHMC.step(lf, h, z_step_loop)
         end
 
         t_step = @elapsed z_step = AdvancedHMC.step(lf, h, z, n_steps)
 
         @info "Performance of loop of step() v.s. step()" n_steps t_step_loop t_step t_step_loop /
-                                                                                     t_step
+            t_step
 
         @test z_step_loop.θ ≈ z_step.θ atol = DETATOL
         @test z_step_loop.r ≈ z_step.r atol = DETATOL
@@ -39,7 +39,7 @@ using Statistics: mean
             @test AdvancedHMC.nom_step_size(lf) == ϵ0
             @test AdvancedHMC.step_size(lf) == ϵ0
 
-            lf2 = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
+            lf2 = AdvancedHMC.jitter(Random.default_rng(), lf)
             @test lf2 === lf
             @test AdvancedHMC.nom_step_size(lf2) == ϵ0
             @test AdvancedHMC.step_size(lf2) == ϵ0
@@ -53,7 +53,7 @@ using Statistics: mean
             @test lf.ϵ == ϵ0
             @test AdvancedHMC.step_size(lf) == lf.ϵ
 
-            lf2 = AdvancedHMC.jitter(Random.GLOBAL_RNG, lf)
+            lf2 = AdvancedHMC.jitter(Random.default_rng(), lf)
             @test lf2.ϵ0 == ϵ0
             @test AdvancedHMC.nom_step_size(lf2) == ϵ0
             @test lf2.ϵ != ϵ0
@@ -90,20 +90,19 @@ using Statistics: mean
         αsqrt = 2.0
         lf = TemperedLeapfrog(ϵ, αsqrt^2)
         r = ones(5)
-        r1 = AdvancedHMC.temper(lf, r, (i = 1, is_half = true), 3)
-        r2 = AdvancedHMC.temper(lf, r, (i = 1, is_half = false), 3)
-        r3 = AdvancedHMC.temper(lf, r, (i = 2, is_half = true), 3)
-        r4 = AdvancedHMC.temper(lf, r, (i = 2, is_half = false), 3)
-        r5 = AdvancedHMC.temper(lf, r, (i = 3, is_half = true), 3)
-        r6 = AdvancedHMC.temper(lf, r, (i = 3, is_half = false), 3)
+        r1 = AdvancedHMC.temper(lf, r, (i=1, is_half=true), 3)
+        r2 = AdvancedHMC.temper(lf, r, (i=1, is_half=false), 3)
+        r3 = AdvancedHMC.temper(lf, r, (i=2, is_half=true), 3)
+        r4 = AdvancedHMC.temper(lf, r, (i=2, is_half=false), 3)
+        r5 = AdvancedHMC.temper(lf, r, (i=3, is_half=true), 3)
+        r6 = AdvancedHMC.temper(lf, r, (i=3, is_half=false), 3)
         @test r1 == αsqrt * ones(5)
         @test r2 == αsqrt * ones(5)
         @test r3 == αsqrt * ones(5)
         @test r4 == inv(αsqrt) * ones(5)
         @test r5 == inv(αsqrt) * ones(5)
         @test r6 == inv(αsqrt) * ones(5)
-        @test_throws BoundsError AdvancedHMC.temper(lf, r, (i = 4, is_half = false), 3)
-
+        @test_throws BoundsError AdvancedHMC.temper(lf, r, (i=4, is_half=false), 3)
     end
 
     @testset "Analytical solution to Eq (2.11) of Neal (2011)" begin
@@ -122,7 +121,9 @@ using Statistics: mean
         for lf in [Leapfrog(ϵ), DiffEqIntegrator(ϵ, VerletLeapfrog())]
             q_init = randn(1)
             h = Hamiltonian(UnitEuclideanMetric(1), negU, ForwardDiff)
-            p_init = AdvancedHMC.rand(h.metric, h.kinetic)
+            p_init = AdvancedHMC.rand_momentum(
+                Random.default_rng(), h.metric, h.kinetic, q_init
+            )
 
             q, p = copy(q_init), copy(p_init)
             z = AdvancedHMC.phasepoint(h, q, p)
@@ -131,7 +132,7 @@ using Statistics: mean
             qs = zeros(n_steps)
             ps = zeros(n_steps)
             Hs = zeros(n_steps)
-            for i = 1:n_steps
+            for i in 1:n_steps
                 z = AdvancedHMC.step(lf, h, z)
                 qs[i] = z.θ[1]
                 ps[i] = z.r[1]
@@ -151,5 +152,4 @@ using Statistics: mean
             @test all(x -> abs(x - mean(Hs)) < 2e-3, Hs)
         end
     end
-
 end

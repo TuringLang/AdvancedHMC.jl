@@ -1,8 +1,8 @@
 module AdvancedHMCOrdinaryDiffEqExt
 
 if isdefined(Base, :get_extension)
-    import AdvancedHMC
-    import OrdinaryDiffEq
+    using AdvancedHMC: AdvancedHMC
+    using OrdinaryDiffEq: OrdinaryDiffEq
 else
     import ..AdvancedHMC
     import ..OrdinaryDiffEq
@@ -12,12 +12,11 @@ function AdvancedHMC.step(
     integrator::AdvancedHMC.DiffEqIntegrator,
     h::AdvancedHMC.Hamiltonian,
     z::P,
-    n_steps::Int = 1;
-    fwd::Bool = n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
-    res::Union{Vector{P},P} = z,
+    n_steps::Int=1;
+    fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
+    res::Union{Vector{P},P}=z,
 ) where {P<:AdvancedHMC.PhasePoint}
-
-    AdvancedHMC.@unpack θ, r = z
+    (; θ, r) = z
     # For DynamicalODEProblem `u` is `θ` and `v` is `r`
     # f1 is dr/dt RHS function
     # f2 is dθ/dt RHS function
@@ -31,14 +30,14 @@ function AdvancedHMC.step(
     problem = OrdinaryDiffEq.DynamicalODEProblem(f1, f2, v0, u0, tspan)
     diffeq_integrator = OrdinaryDiffEq.init(
         problem,
-        integrator.solver,
-        save_everystep = false,
-        save_start = false,
-        save_end = false,
-        dt = ϵ,
+        integrator.solver;
+        save_everystep=false,
+        save_start=false,
+        save_end=false,
+        dt=ϵ,
     )
 
-    for i = 1:abs(n_steps)
+    for i in 1:abs(n_steps)
         OrdinaryDiffEq.step!(diffeq_integrator)
         solution = diffeq_integrator.u.x  # (r, θ) at the proposed step
         z = AdvancedHMC.phasepoint(h, solution[2], solution[1])

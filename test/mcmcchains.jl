@@ -10,7 +10,7 @@ using Statistics: mean
     θ_init = randn(rng, 2)
 
     model = AdvancedHMC.LogDensityModel(
-        LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ_gdemo),
+        LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ_gdemo)
     )
     integrator = Leapfrog(1e-3)
     kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
@@ -23,18 +23,18 @@ using Statistics: mean
         model,
         sampler,
         n_adapts + n_samples;
-        n_adapts = n_adapts,
-        initial_params = θ_init,
-        chain_type = Chains,
-        progress = false,
-        bijector = invlink_gdemo,
-        verbose = false,
+        n_adapts=n_adapts,
+        initial_params=θ_init,
+        chain_type=Chains,
+        progress=false,
+        bijector=invlink_gdemo,
+        verbose=false,
     )
 
     # Transform back to original space.
     # NOTE: We're not correcting for the `logabsdetjac` here since, but
     # we're only interested in the mean it doesn't matter.
-    m_est = mean(samples[n_adapts+1:end])
+    m_est = mean(samples[(n_adapts + 1):end])
 
     @test m_est[:, 2] ≈ [49 / 24, 7 / 6] atol = RNDATOL
 end

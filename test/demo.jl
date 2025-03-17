@@ -46,13 +46,12 @@ using LinearAlgebra
         n_samples,
         adaptor,
         n_adapts;
-        progress = false,
-        verbose = false,
+        progress=false,
+        verbose=false,
     )
 
     @test length(samples) == n_samples
     @test length(stats) == n_samples
-
 end
 
 # -- test ComponentsArrays comparability
@@ -60,7 +59,7 @@ end
 @testset "Demo ComponentsArrays" begin
 
     # target distribution parametrized by ComponentsArray
-    p1 = ComponentVector(μ = 2.0, σ = 1)
+    p1 = ComponentVector(; μ=2.0, σ=1)
     struct DemoProblemComponentArrays end
 
     function LogDensityProblems.logdensity(::DemoProblemComponentArrays, p::ComponentArray)
@@ -77,7 +76,7 @@ end
     metric = DiagEuclideanMetric(D)
 
     # choose AD framework or provide a function manually
-    hamiltonian = Hamiltonian(metric, ℓπ, Val(:ForwardDiff); x = p1)
+    hamiltonian = Hamiltonian(metric, ℓπ, Val(:ForwardDiff); x=p1)
 
     # Define a leapfrog solver, with initial step size chosen heuristically
     initial_ϵ = find_good_stepsize(hamiltonian, p1)
@@ -96,8 +95,8 @@ end
         n_samples,
         adaptor,
         n_adapts;
-        progress = false,
-        verbose = false,
+        progress=false,
+        verbose=false,
     )
 
     @test length(samples) == n_samples

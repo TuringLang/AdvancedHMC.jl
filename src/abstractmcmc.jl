@@ -35,16 +35,11 @@ function AbstractMCMC.getparams(state::HMCState)
 end
 
 function AbstractMCMC.setparams!!(
-    model::AbstractMCMC.LogDensityModel,
-    state::HMCState,
-    params,
+    model::AbstractMCMC.LogDensityModel, state::HMCState, params
 )
     hamiltonian = AdvancedHMC.Hamiltonian(state.metric, model)
     return Setfield.@set state.transition.z = AdvancedHMC.phasepoint(
-        hamiltonian,
-        params,
-        state.transition.z.r;
-        ℓκ = state.transition.z.ℓκ,
+        hamiltonian, params, state.transition.z.r; ℓκ=state.transition.z.ℓκ
     )
 end
 
@@ -59,10 +54,10 @@ function AbstractMCMC.sample(
     model::AbstractMCMC.LogDensityModel,
     sampler::AbstractHMCSampler,
     N::Integer;
-    n_adapts::Int = min(div(N, 10), 1_000),
-    progress = true,
-    verbose = false,
-    callback = nothing,
+    n_adapts::Int=min(div(N, 10), 1_000),
+    progress=true,
+    verbose=false,
+    callback=nothing,
     kwargs...,
 )
     if haskey(kwargs, :nadapts)
@@ -74,7 +69,7 @@ function AbstractMCMC.sample(
     end
 
     if callback === nothing
-        callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
+        callback = HMCProgressCallback(N; progress=progress, verbose=verbose)
         progress = false # don't use AMCMC's progress-funtionality
     end
 
@@ -83,10 +78,10 @@ function AbstractMCMC.sample(
         model,
         sampler,
         N;
-        n_adapts = n_adapts,
-        progress = progress,
-        verbose = verbose,
-        callback = callback,
+        n_adapts=n_adapts,
+        progress=progress,
+        verbose=verbose,
+        callback=callback,
         kwargs...,
     )
 end
@@ -98,10 +93,10 @@ function AbstractMCMC.sample(
     parallel::AbstractMCMC.AbstractMCMCEnsemble,
     N::Integer,
     nchains::Integer;
-    n_adapts::Int = min(div(N, 10), 1_000),
-    progress = true,
-    verbose = false,
-    callback = nothing,
+    n_adapts::Int=min(div(N, 10), 1_000),
+    progress=true,
+    verbose=false,
+    callback=nothing,
     kwargs...,
 )
     if haskey(kwargs, :nadapts)
@@ -113,7 +108,7 @@ function AbstractMCMC.sample(
     end
 
     if callback === nothing
-        callback = HMCProgressCallback(N, progress = progress, verbose = verbose)
+        callback = HMCProgressCallback(N; progress=progress, verbose=verbose)
         progress = false # don't use AMCMC's progress-funtionality
     end
 
@@ -124,10 +119,10 @@ function AbstractMCMC.sample(
         parallel,
         N,
         nchains;
-        n_adapts = n_adapts,
-        progress = progress,
-        verbose = verbose,
-        callback = callback,
+        n_adapts=n_adapts,
+        progress=progress,
+        verbose=verbose,
+        callback=callback,
         kwargs...,
     )
 end
@@ -136,7 +131,7 @@ function AbstractMCMC.step(
     rng::AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
     spl::AbstractHMCSampler;
-    initial_params = nothing,
+    initial_params=nothing,
     kwargs...,
 )
     # Unpack model
@@ -174,7 +169,7 @@ function AbstractMCMC.step(
     model::AbstractMCMC.LogDensityModel,
     spl::AbstractHMCSampler,
     state::HMCState;
-    n_adapts::Int = 0,
+    n_adapts::Int=0,
     kwargs...,
 )
     if haskey(kwargs, :nadapts)
@@ -201,7 +196,7 @@ function AbstractMCMC.step(
     # Adapt h and spl.
     tstat = stat(t)
     h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
-    tstat = merge(tstat, (is_adapt = isadapted,))
+    tstat = merge(tstat, (is_adapt=isadapted,))
 
     # Compute next transition and state.
     newstate = HMCState(i, t, h.metric, κ, adaptor)
@@ -223,35 +218,21 @@ logging behavior of the non-AbstractMCMC [`sample`](@ref).
 $(FIELDS)
 """
 struct HMCProgressCallback{P}
-    "`Progress` meter from ProgressMeters.jl."
+    "`Progress` meter from ProgressMeters.jl, or `nothing`."
     pm::P
-    "Specifies whether or not to use display a progress bar."
-    progress::Bool
-    "If `progress` is not specified and this is `true` some information will be logged upon completion of adaptation."
+    "If `pm === nothing` and this is `true` some information will be logged upon completion of adaptation."
     verbose::Bool
-    "Number of divergent transitions fo far."
+    "Number of divergent transitions."
     num_divergent_transitions::Base.RefValue{Int}
     num_divergent_transitions_during_adaption::Base.RefValue{Int}
 end
 
-function HMCProgressCallback(n_samples; progress = true, verbose = false)
-    pm =
-        progress ? ProgressMeter.Progress(n_samples, desc = "Sampling", barlen = 31) :
-        nothing
-    HMCProgressCallback(pm, progress, verbose, Ref(0), Ref(0))
+function HMCProgressCallback(n_samples; progress=true, verbose=false)
+    pm = progress ? ProgressMeter.Progress(n_samples; desc="Sampling", barlen=31) : nothing
+    return HMCProgressCallback(pm, verbose, Ref(0), Ref(0))
 end
 
-function (cb::HMCProgressCallback)(
-    rng,
-    model,
-    spl,
-    t,
-    state,
-    i;
-    n_adapts::Int = 0,
-    kwargs...,
-)
-    progress = cb.progress
+function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; n_adapts::Int=0, kwargs...)
     verbose = cb.verbose
     pm = cb.pm
 
@@ -267,10 +248,11 @@ function (cb::HMCProgressCallback)(
     end
 
     # Update progress meter
-    if progress
-        percentage_divergent_transitions = cb.num_divergent_transitions[] / i
+    if pm !== nothing
+        percentage_divergent_transitions =
+            cb.num_divergent_transitions[] / max(i - n_adapts, 1)
         percentage_divergent_transitions_during_adaption =
-            cb.num_divergent_transitions_during_adaption[] / i
+            cb.num_divergent_transitions_during_adaption[] / min(i, n_adapts)
         if percentage_divergent_transitions > 0.25
             @warn "The level of numerical errors is high. Please check the model carefully." maxlog =
                 3
@@ -279,17 +261,15 @@ function (cb::HMCProgressCallback)(
         pm_next!(
             pm,
             (
-                iterations = i,
-                ratio_divergent_transitions = round(
-                    percentage_divergent_transitions;
-                    digits = 2,
+                iterations=i,
+                ratio_divergent_transitions=round(
+                    percentage_divergent_transitions; digits=2
                 ),
-                ratio_divergent_transitions_during_adaption = round(
-                    percentage_divergent_transitions_during_adaption;
-                    digits = 2,
+                ratio_divergent_transitions_during_adaption=round(
+                    percentage_divergent_transitions_during_adaption; digits=2
                 ),
                 tstat...,
-                mass_matrix = metric,
+                mass_matrix=metric,
             ),
         )
         # Report finish of adapation
@@ -302,10 +282,7 @@ end
 ### Utils ###
 #############
 function make_initial_params(
-    rng::AbstractRNG,
-    spl::AbstractHMCSampler,
-    logdensity,
-    initial_params,
+    rng::AbstractRNG, spl::AbstractHMCSampler, logdensity, initial_params
 )
     T = sampler_eltype(spl)
     if initial_params === nothing
@@ -319,10 +296,7 @@ end
 #########
 
 function make_step_size(
-    rng::Random.AbstractRNG,
-    spl::HMCSampler,
-    hamiltonian::Hamiltonian,
-    initial_params,
+    rng::Random.AbstractRNG, spl::HMCSampler, hamiltonian::Hamiltonian, initial_params
 )
     T = typeof(spl.κ.τ.integrator.ϵ)
     ϵ = make_step_size(rng, spl.κ.τ.integrator, T, hamiltonian, initial_params)
@@ -337,7 +311,6 @@ function make_step_size(
 )
     T = sampler_eltype(spl)
     return make_step_size(rng, spl.integrator, T, hamiltonian, initial_params)
-
 end
 
 function make_step_size(
@@ -420,9 +393,7 @@ function make_adaptor(spl::HMC, metric::AbstractMetric, integrator::AbstractInte
 end
 
 function make_adaptor(
-    spl::HMCSampler,
-    metric::AbstractMetric,
-    integrator::AbstractIntegrator,
+    spl::HMCSampler, metric::AbstractMetric, integrator::AbstractIntegrator
 )
     return spl.adaptor
 end
@@ -431,7 +402,7 @@ end
 
 function make_kernel(spl::NUTS, integrator::AbstractIntegrator)
     return HMCKernel(
-        Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn(spl.max_depth, spl.Δ_max)),
+        Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn(spl.max_depth, spl.Δ_max))
     )
 end
 
