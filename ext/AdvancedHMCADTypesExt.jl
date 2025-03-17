@@ -1,28 +1,13 @@
 module AdvancedHMCADTypesExt
 
-if isdefined(Base, :get_extension)
-    using AdvancedHMC:
-        AbstractMetric,
-        Hamiltonian,
-        LogDensityModel,
-        LogDensityProblems,
-        LogDensityProblemsAD
-    using ADTypes: AbstractADType
-else
-    using ..AdvancedHMC:
-        AbstractMetric,
-        Hamiltonian,
-        LogDensityModel,
-        LogDensityProblems,
-        LogDensityProblemsAD
-    using ..ADTypes: AbstractADType
-end
+using AdvancedHMC: AbstractMetric, Hamiltonian
+using AbstractMCMC: LogDensityModel
+using LogDensityProblems: LogDensityProblems
+using LogDensityProblemsAD: LogDensityProblemsAD
+using ADTypes: AbstractADType
 
 function Hamiltonian(
-    metric::AbstractMetric,
-    ℓπ::LogDensityModel,
-    kind::AbstractADType;
-    kwargs...,
+    metric::AbstractMetric, ℓπ::LogDensityModel, kind::AbstractADType; kwargs...
 )
     return Hamiltonian(metric, ℓπ.logdensity, kind; kwargs...)
 end

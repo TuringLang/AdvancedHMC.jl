@@ -1,6 +1,6 @@
 using ReTest
-using AdvancedHMC, Distributions, ForwardDiff, ComponentArrays, AbstractMCMC
-using LinearAlgebra, ADTypes
+using AdvancedHMC, Distributions, ForwardDiff, Zygote, ComponentArrays, AbstractMCMC
+using LinearAlgebra, ADTypes, LogDensityProblemsAD
 
 @testset "Demo" begin
     # Define the target distribution using the `LogDensityProblem` interface
@@ -106,57 +106,38 @@ end
     @test "σ" ∈ labels
 end
 
-# -- test ADTypes compatibility
-
-@testset "Demo with ADTyes" begin
-    # Define the target distribution using the `LogDensityProblem` interface
-    struct DemoProblem
-        dim::Int
-    end
-
-    LogDensityProblems.logdensity(p::DemoProblem, θ) = logpdf(MvNormal(zeros(p.dim), I), θ)
-    LogDensityProblems.dimension(p::DemoProblem) = p.dim
-    LogDensityProblems.capabilities(::Type{DemoProblem}) =
-        LogDensityProblems.LogDensityOrder{0}()
-
-    # Choose parameter dimensionality and initial parameter value
-    D = 10
-    initial_θ = rand(D)
-    ℓπ = DemoProblem(D)
-
+@testset "ADTyes" begin
     # Set the number of samples to draw and warmup iterations
     n_samples, n_adapts = 2_000, 1_000
-
+    initial_θ = rand(D)
     # Define a Hamiltonian system
     metric = DiagEuclideanMetric(D)
-    hamiltonian = Hamiltonian(metric, ℓπ, AutoForwardDiff())
 
-    # Define a leapfrog solver, with initial step size chosen heuristically
-    initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
-    integrator = Leapfrog(initial_ϵ)
+    @testset "Test with different AD" begin
+        for ad in [AutoForwardDiff(), AutoZygote()]
+            hamiltonian = Hamiltonian(metric, ℓπ_gdemo, ad)
 
-    # Define an HMC sampler, with the following components
-    #   - multinomial sampling scheme,
-    #   - generalised No-U-Turn criteria, and
-    #   - windowed adaption for step-size and diagonal mass matrix
-    proposal = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
-    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
+            initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+            integrator = Leapfrog(initial_ϵ)
 
-    # Run the sampler to draw samples from the specified Gaussian, where
-    #   - `samples` will store the samples
-    #   - `stats` will store diagnostic statistics for each sample
-    samples, stats = sample(
-        hamiltonian,
-        proposal,
-        initial_θ,
-        n_samples,
-        adaptor,
-        n_adapts;
-        progress = false,
-        verbose = false,
-    )
+            kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+            adaptor = StanHMCAdaptor(
+                MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator)
+            )
 
-    @test length(samples) == n_samples
-    @test length(stats) == n_samples
+            samples, stats = sample(
+                hamiltonian,
+                kernel,
+                initial_θ,
+                n_samples,
+                adaptor,
+                n_adapts;
+                progress=false,
+                verbose=false,
+            )
 
+            @test length(samples) == n_samples
+            @test length(stats) == n_samples
+        end
+    end
 end

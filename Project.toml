@@ -24,19 +24,19 @@ MCMCChains = "c7f686f2-ff18-58e9-bc7b-31028e88f75d"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 
 [extensions]
-AdvancedHMCADTypesExt = "ADTypes"
+AdvancedHMCADTypesExt = ["ADTypes", "AbstractMCMC", "LogDensityProblems", "LogDensityProblemsAD"]
 AdvancedHMCCUDAExt = "CUDA"
 AdvancedHMCMCMCChainsExt = "MCMCChains"
 AdvancedHMCOrdinaryDiffEqExt = "OrdinaryDiffEq"
 
 [compat]
-ADTypes = "1.14"
+ADTypes = "1"
 AbstractMCMC = "5.6"
 ArgCheck = "1, 2"
 CUDA = "3, 4, 5"
 DocStringExtensions = "0.8, 0.9"
 LogDensityProblems = "2"
-LogDensityProblemsAD = "1"
+LogDensityProblemsAD = "1.13"
 MCMCChains = "5, 6"
 OrdinaryDiffEq = "6"
 ProgressMeter = "1"
