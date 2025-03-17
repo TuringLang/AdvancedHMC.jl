@@ -91,20 +91,22 @@ struct NesterovDualAveraging{T<:AbstractFloat,S<:AbstractScalarOrVec{T}} <: Step
     δ::T
     state::DAState{S}
 end
-Base.show(io::IO, a::NesterovDualAveraging) = print(
-    io,
-    "NesterovDualAveraging(γ=",
-    a.γ,
-    ", t_0=",
-    a.t_0,
-    ", κ=",
-    a.κ,
-    ", δ=",
-    a.δ,
-    ", state.ϵ=",
-    getϵ(a),
-    ")",
-)
+function Base.show(io::IO, a::NesterovDualAveraging)
+    return print(
+        io,
+        "NesterovDualAveraging(γ=",
+        a.γ,
+        ", t_0=",
+        a.t_0,
+        ", κ=",
+        a.κ,
+        ", δ=",
+        a.δ,
+        ", state.ϵ=",
+        getϵ(a),
+        ")",
+    )
+end
 
 function NesterovDualAveraging(
     γ::T, t_0::T, κ::T, δ::T, ϵ::VT
@@ -115,15 +117,14 @@ end
 function NesterovDualAveraging(
     δ::T, ϵ::VT
 ) where {T<:AbstractFloat,VT<:AbstractScalarOrVec{T}}
-    return NesterovDualAveraging(T(1 // 20), T(10), T(3 // 4), δ, ϵ)
+    return NesterovDualAveraging(T(1//20), T(10), T(3//4), δ, ϵ)
 end
 
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
 # Note: This function is not merged with `adapt!` to empahsize the fact that
 #       step size adaptation is not dependent on `θ`.
 function adapt_stepsize!(
-    da::NesterovDualAveraging{T},
-    α::AbstractScalarOrVec{T},
+    da::NesterovDualAveraging{T}, α::AbstractScalarOrVec{T}
 ) where {T<:AbstractFloat}
     @debug "Adapting step size..." α
 
