@@ -187,9 +187,6 @@ struct DiffEqIntegrator{T<:AbstractScalarOrVec{<:AbstractFloat},DiffEqSolver} <:
 end
 export DiffEqIntegrator
 
-if !isdefined(Base, :get_extension)
-    using Requires
-end
 function __init__()
     # Better error message if users forgot to load OrdinaryDiffEq
     Base.Experimental.register_error_hint(MethodError) do io, exc, arg_types, kwargs
@@ -201,19 +198,6 @@ function __init__()
             arg_types[3] <: PhasePoint &&
             (n == 3 || arg_types[4] === Int)
             print(io, "\\nDid you forget to load OrdinaryDiffEq?")
-        end
-    end
-    @static if !isdefined(Base, :get_extension)
-        @require OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed" begin
-            include("../ext/AdvancedHMCOrdinaryDiffEqExt.jl")
-        end
-
-        @require CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba" begin
-            include("../ext/AdvancedHMCCUDAExt.jl")
-        end
-
-        @require MCMCChains = "c7f686f2-ff18-58e9-bc7b-31028e88f75d" begin
-            include("../ext/AdvancedHMCMCMCChainsExt.jl")
         end
     end
 end
