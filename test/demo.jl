@@ -113,31 +113,29 @@ end
     # Define a Hamiltonian system
     metric = DiagEuclideanMetric(D)
 
-    @testset "Test with different AD" begin
-        for ad in [AutoForwardDiff(), AutoZygote()]
-            hamiltonian = Hamiltonian(metric, ℓπ_gdemo, ad)
+    for ad in [AutoForwardDiff(), AutoZygote()]
+        hamiltonian = Hamiltonian(metric, ℓπ_gdemo, ad)
 
-            initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
-            integrator = Leapfrog(initial_ϵ)
+        initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+        integrator = Leapfrog(initial_ϵ)
 
-            kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
-            adaptor = StanHMCAdaptor(
-                MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator)
-            )
+        kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+        adaptor = StanHMCAdaptor(
+            MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator)
+        )
 
-            samples, stats = sample(
-                hamiltonian,
-                kernel,
-                initial_θ,
-                n_samples,
-                adaptor,
-                n_adapts;
-                progress=false,
-                verbose=false,
-            )
+        samples, stats = sample(
+            hamiltonian,
+            kernel,
+            initial_θ,
+            n_samples,
+            adaptor,
+            n_adapts;
+            progress=false,
+            verbose=false,
+        )
 
-            @test length(samples) == n_samples
-            @test length(stats) == n_samples
-        end
+        @test length(samples) == n_samples
+        @test length(stats) == n_samples
     end
 end
