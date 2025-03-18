@@ -1,12 +1,7 @@
 module AdvancedHMCOrdinaryDiffEqExt
 
-if isdefined(Base, :get_extension)
-    using AdvancedHMC: AdvancedHMC
-    using OrdinaryDiffEq: OrdinaryDiffEq
-else
-    import ..AdvancedHMC
-    import ..OrdinaryDiffEq
-end
+using AdvancedHMC: AdvancedHMC
+using OrdinaryDiffEq: OrdinaryDiffEq
 
 function AdvancedHMC.step(
     integrator::AdvancedHMC.DiffEqIntegrator,
