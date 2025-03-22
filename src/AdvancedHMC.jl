@@ -19,7 +19,6 @@ using ArgCheck: @argcheck
 using DocStringExtensions
 
 using LogDensityProblems
-using LogDensityProblemsAD: LogDensityProblemsAD
 
 using AbstractMCMC: AbstractMCMC, LogDensityModel
 

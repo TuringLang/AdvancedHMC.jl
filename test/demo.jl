@@ -106,7 +106,7 @@ end
     @test "σ" ∈ labels
 end
 
-@testset "ADTyes" begin
+@testset "ADTypes" begin
     # Set the number of samples to draw and warmup iterations
     n_samples, n_adapts = 2_000, 1_000
     initial_θ = rand(D)

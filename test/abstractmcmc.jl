@@ -17,9 +17,7 @@ using Statistics: mean
     adaptor = AdvancedHMC.make_adaptor(nuts, metric, integrator)
     custom = HMCSampler(κ, metric, adaptor)
 
-    model = AdvancedHMC.LogDensityModel(
-        LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ_gdemo)
-    )
+    model = AdvancedHMC.LogDensityModel(ℓπ_gdemo)
 
     @testset "getparams and setparams!!" begin
         t, s = AbstractMCMC.step(rng, model, nuts;)

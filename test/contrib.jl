@@ -4,7 +4,7 @@ using ReTest, AdvancedHMC, ForwardDiff, Zygote
     @testset "ad" begin
         metric = UnitEuclideanMetric(D)
         h_hand = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-        h_forwarddiff = Hamiltonian(metric, ℓπ; adtpye=AutoForwardDiff())
+        h_forwarddiff = Hamiltonian(metric, ℓπ; adtype=AutoForwardDiff())
         h_zygote = Hamiltonian(metric, ℓπ; adtype=AutoZygote())
         for x in [rand(D), rand(D, 10)]
             v_hand, g_hand = h_hand.∂ℓπ∂θ(x)
