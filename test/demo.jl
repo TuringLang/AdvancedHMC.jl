@@ -1,6 +1,6 @@
 using ReTest
 using AdvancedHMC, Distributions, ForwardDiff, Zygote, ComponentArrays, AbstractMCMC
-using LinearAlgebra, ADTypes, LogDensityProblemsAD
+using LinearAlgebra, ADTypes
 
 @testset "Demo" begin
     # Define the target distribution using the `LogDensityProblem` interface
@@ -23,7 +23,7 @@ using LinearAlgebra, ADTypes, LogDensityProblemsAD
 
     # Define a Hamiltonian system
     metric = DiagEuclideanMetric(D)
-    hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
+    hamiltonian = Hamiltonian(metric, ℓπ)
 
     # Define a leapfrog solver, with initial step size chosen heuristically
     initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
@@ -76,7 +76,7 @@ end
     metric = DiagEuclideanMetric(D)
 
     # choose AD framework or provide a function manually
-    hamiltonian = Hamiltonian(metric, ℓπ, Val(:ForwardDiff); x=p1)
+    hamiltonian = Hamiltonian(metric, ℓπ; x=p1)
 
     # Define a leapfrog solver, with initial step size chosen heuristically
     initial_ϵ = find_good_stepsize(hamiltonian, p1)
@@ -114,7 +114,7 @@ end
     metric = DiagEuclideanMetric(D)
 
     for ad in [AutoForwardDiff(), AutoZygote()]
-        hamiltonian = Hamiltonian(metric, ℓπ_gdemo, ad)
+        hamiltonian = Hamiltonian(metric, ℓπ_gdemo; adtype=ad)
 
         initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
         integrator = Leapfrog(initial_ϵ)

@@ -120,7 +120,7 @@ using Statistics: mean
         ϵ = 0.01
         for lf in [Leapfrog(ϵ), DiffEqIntegrator(ϵ, VerletLeapfrog())]
             q_init = randn(1)
-            h = Hamiltonian(UnitEuclideanMetric(1), negU, ForwardDiff)
+            h = Hamiltonian(UnitEuclideanMetric(1), negU; adtype=AutoForwardDiff())
             p_init = AdvancedHMC.rand_momentum(
                 Random.default_rng(), h.metric, h.kinetic, q_init
             )

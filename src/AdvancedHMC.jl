@@ -1,11 +1,15 @@
 module AdvancedHMC
 
+using ADTypes
 using Statistics: mean, var, middle
 using LinearAlgebra:
     Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
 using StatsFuns: logaddexp, logsumexp, loghalf
 using Random: Random, AbstractRNG
+using Reexport: @reexport
+@reexport using ADTypes
 using ProgressMeter: ProgressMeter
+import DifferentiationInterface: DifferentiationInterface as DI
 
 using Setfield
 import Setfield: ConstructionBase
@@ -130,10 +134,12 @@ export HMCSampler, HMC, NUTS, HMCDA
 include("abstractmcmc.jl")
 
 ## Without explicit AD backend
-function Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel; kwargs...)
-    return Hamiltonian(metric, ℓ.logdensity; kwargs...)
+function Hamiltonian(
+    metric::AbstractMetric, ℓ::LogDensityModel; adtype=AutoForwardDiff(), kwargs...
+)
+    return Hamiltonian(metric, ℓ.logdensity; adtype, kwargs...)
 end
-function Hamiltonian(metric::AbstractMetric, ℓ; kwargs...)
+function Hamiltonian(metric::AbstractMetric, ℓ; adtype=AutoForwardDiff(), kwargs...)
     cap = LogDensityProblems.capabilities(ℓ)
     if cap === nothing
         throw(
@@ -146,7 +152,12 @@ function Hamiltonian(metric::AbstractMetric, ℓ; kwargs...)
     ℓπ = if cap === LogDensityProblems.LogDensityOrder{0}()
         # In this case ℓ does not support evaluation of the gradient of the log density function
         # We use ForwardDiff to compute the gradient
-        LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓ; kwargs...)
+        _logdensity = Base.Fix1(LogDensityProblems.logdensity, ℓ)
+        _logdensity_and_gradient = function (x)
+            prep = DI.prepare_gradient(_logdensity, adtype, x)
+            return DI.value_and_gradient(_logdensity, prep, adtype, x)
+        end
+        return Hamiltonian(metric, _logdensity, _logdensity_and_gradient)
     else
         # In this case ℓ already supports evaluation of the gradient of the log density function
         ℓ
@@ -156,26 +167,6 @@ function Hamiltonian(metric::AbstractMetric, ℓ; kwargs...)
         Base.Fix1(LogDensityProblems.logdensity, ℓπ),
         Base.Fix1(LogDensityProblems.logdensity_and_gradient, ℓπ),
     )
-end
-
-## With explicit AD specification
-function Hamiltonian(
-    metric::AbstractMetric, ℓπ::LogDensityModel, kind::Union{Symbol,Val,Module}; kwargs...
-)
-    return Hamiltonian(metric, ℓπ.logdensity, kind; kwargs...)
-end
-function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val,Module}; kwargs...)
-    if LogDensityProblems.capabilities(ℓπ) === nothing
-        throw(
-            ArgumentError(
-                "The log density function does not support the LogDensityProblems.jl interface",
-            ),
-        )
-    end
-    ℓ = LogDensityProblemsAD.ADgradient(
-        kind isa Val ? kind : Val(Symbol(kind)), ℓπ; kwargs...
-    )
-    return Hamiltonian(metric, ℓ)
 end
 
 ### Init
