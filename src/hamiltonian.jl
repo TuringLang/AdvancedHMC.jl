@@ -61,7 +61,7 @@ struct PhasePoint{T<:AbstractVecOrMat{<:AbstractFloat},V<:DualValue}
     ℓπ::V # Cached neg potential energy for the current θ.
     ℓκ::V # Cached neg kinect energy for the current r.
     function PhasePoint(θ::T, r::T, ℓπ::V, ℓκ::V) where {T,V}
-        @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓπ.gradient)
+        @argcheck length(θ) == length(r) == length(ℓπ.gradient) == length(ℓκ.gradient)
         if !isfinite(ℓπ)
             ℓπ = DualValue(
                 map(v -> isfinite(v) ? v : oftype(v, -Inf), ℓπ.value), ℓπ.gradient
