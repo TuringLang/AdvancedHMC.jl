@@ -1,6 +1,6 @@
 using ReTest
 using AdvancedHMC, Distributions, ForwardDiff, ComponentArrays, AbstractMCMC
-using LinearAlgebra
+using LinearAlgebra, ADTypes
 
 @testset "Demo" begin
     # Define the target distribution using the `LogDensityProblem` interface
@@ -104,4 +104,41 @@ end
     labels = ComponentArrays.labels(samples[1])
     @test "μ" ∈ labels
     @test "σ" ∈ labels
+end
+
+@testset "ADTypes" begin
+    # Set the number of samples to draw and warmup iterations
+    n_samples, n_adapts = 2_000, 1_000
+    initial_θ = rand(D)
+    # Define a Hamiltonian system
+    metric = DiagEuclideanMetric(D)
+
+    hamiltonian_ldp = Hamiltonian(metric, ℓπ_gdemo, AutoForwardDiff())
+
+    model = AbstractMCMC.LogDensityModel(ℓπ_gdemo)
+    hamiltonian_ldm = Hamiltonian(metric, model, AutoForwardDiff())
+
+    for hamiltonian in (hamiltonian_ldp, hamiltonian_ldm)
+        initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+        integrator = Leapfrog(initial_ϵ)
+
+        kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+        adaptor = StanHMCAdaptor(
+            MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator)
+        )
+
+        samples, stats = sample(
+            hamiltonian,
+            kernel,
+            initial_θ,
+            n_samples,
+            adaptor,
+            n_adapts;
+            progress=false,
+            verbose=false,
+        )
+
+        @test length(samples) == n_samples
+        @test length(stats) == n_samples
+    end
 end
