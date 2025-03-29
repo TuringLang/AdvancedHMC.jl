@@ -131,7 +131,7 @@ include("abstractmcmc.jl")
 
 ## Without explicit AD backend
 function Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel; kwargs...)
-    return Hamiltonian(metric, ℓ.logdensity; adtype, kwargs...)
+    return Hamiltonian(metric, ℓ.logdensity; kwargs...)
 end
 function Hamiltonian(metric::AbstractMetric, ℓ; kwargs...)
     cap = LogDensityProblems.capabilities(ℓ)
