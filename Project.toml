@@ -29,7 +29,7 @@ AdvancedHMCMCMCChainsExt = "MCMCChains"
 AdvancedHMCOrdinaryDiffEqExt = "OrdinaryDiffEq"
 
 [compat]
-ADTypes = "1.14.0"
+ADTypes = "1"
 AbstractMCMC = "5.6"
 ArgCheck = "1, 2"
 CUDA = "3, 4, 5"

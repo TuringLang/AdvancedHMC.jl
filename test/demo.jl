@@ -113,25 +113,32 @@ end
     # Define a Hamiltonian system
     metric = DiagEuclideanMetric(D)
 
-    hamiltonian = Hamiltonian(metric, ℓπ_gdemo; adtype=AutoForwardDiff())
+    hamiltonian_ldp = Hamiltonian(metric, ℓπ_gdemo, AutoForwardDiff())
 
-    initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
-    integrator = Leapfrog(initial_ϵ)
+    model = AbstractMCMC.LogDensityModel(ℓπ_gdemo)
+    hamiltonian_ldm = Hamiltonian(metric, model, AutoForwardDiff())
 
-    kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
-    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
+    for hamiltonian in (hamiltonian_ldp, hamiltonian_ldm)
+        initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+        integrator = Leapfrog(initial_ϵ)
 
-    samples, stats = sample(
-        hamiltonian,
-        kernel,
-        initial_θ,
-        n_samples,
-        adaptor,
-        n_adapts;
-        progress=false,
-        verbose=false,
-    )
+        kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+        adaptor = StanHMCAdaptor(
+            MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator)
+        )
 
-    @test length(samples) == n_samples
-    @test length(stats) == n_samples
+        samples, stats = sample(
+            hamiltonian,
+            kernel,
+            initial_θ,
+            n_samples,
+            adaptor,
+            n_adapts;
+            progress=false,
+            verbose=false,
+        )
+
+        @test length(samples) == n_samples
+        @test length(stats) == n_samples
+    end
 end
