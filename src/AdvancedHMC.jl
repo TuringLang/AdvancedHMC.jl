@@ -130,12 +130,10 @@ export HMCSampler, HMC, NUTS, HMCDA
 include("abstractmcmc.jl")
 
 ## Without explicit AD backend
-function Hamiltonian(
-    metric::AbstractMetric, ℓ::LogDensityModel; adtype=AutoForwardDiff(), kwargs...
-)
+function Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel; kwargs...)
     return Hamiltonian(metric, ℓ.logdensity; adtype, kwargs...)
 end
-function Hamiltonian(metric::AbstractMetric, ℓ; adtype=AutoForwardDiff(), kwargs...)
+function Hamiltonian(metric::AbstractMetric, ℓ; kwargs...)
     cap = LogDensityProblems.capabilities(ℓ)
     if cap === nothing
         throw(
