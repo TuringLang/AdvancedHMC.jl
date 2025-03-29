@@ -11,7 +11,7 @@ using Statistics: mean
         θ_init = randn(rng, 2)
 
         metric = DiagEuclideanMetric(2)
-        h = Hamiltonian(metric, ℓπ_gdemo)
+        h = Hamiltonian(metric, ℓπ_gdemo, ForwardDiff)
         integrator = Leapfrog(0.1)
         κ = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
         adaptor = StanHMCAdaptor(

@@ -9,7 +9,7 @@ function runnuts(ℓπ, metric; n_samples=10_000)
     rng = MersenneTwister(0)
 
     nuts = NUTS(0.8)
-    h = Hamiltonian(metric, ℓπ)
+    h = Hamiltonian(metric, ℓπ, ForwardDiff)
     step_size = AdvancedHMC.make_step_size(rng, nuts, h, θ_init)
     integrator = AdvancedHMC.make_integrator(nuts, step_size)
     κ = AdvancedHMC.make_kernel(nuts, integrator)

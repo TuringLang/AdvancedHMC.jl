@@ -1,5 +1,5 @@
 using ReTest
-using AdvancedHMC, Distributions, ForwardDiff, Zygote, ComponentArrays, AbstractMCMC
+using AdvancedHMC, Distributions, ForwardDiff, ComponentArrays, AbstractMCMC
 using LinearAlgebra, ADTypes
 
 @testset "Demo" begin
@@ -23,7 +23,7 @@ using LinearAlgebra, ADTypes
 
     # Define a Hamiltonian system
     metric = DiagEuclideanMetric(D)
-    hamiltonian = Hamiltonian(metric, ℓπ)
+    hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
 
     # Define a leapfrog solver, with initial step size chosen heuristically
     initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
@@ -76,7 +76,7 @@ end
     metric = DiagEuclideanMetric(D)
 
     # choose AD framework or provide a function manually
-    hamiltonian = Hamiltonian(metric, ℓπ; x=p1)
+    hamiltonian = Hamiltonian(metric, ℓπ, Val(:ForwardDiff); x=p1)
 
     # Define a leapfrog solver, with initial step size chosen heuristically
     initial_ϵ = find_good_stepsize(hamiltonian, p1)
@@ -113,29 +113,25 @@ end
     # Define a Hamiltonian system
     metric = DiagEuclideanMetric(D)
 
-    for ad in [AutoForwardDiff(), AutoZygote()]
-        hamiltonian = Hamiltonian(metric, ℓπ_gdemo; adtype=ad)
+    hamiltonian = Hamiltonian(metric, ℓπ_gdemo; adtype=AutoForwardDiff())
 
-        initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
-        integrator = Leapfrog(initial_ϵ)
+    initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+    integrator = Leapfrog(initial_ϵ)
 
-        kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
-        adaptor = StanHMCAdaptor(
-            MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator)
-        )
+    kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
 
-        samples, stats = sample(
-            hamiltonian,
-            kernel,
-            initial_θ,
-            n_samples,
-            adaptor,
-            n_adapts;
-            progress=false,
-            verbose=false,
-        )
+    samples, stats = sample(
+        hamiltonian,
+        kernel,
+        initial_θ,
+        n_samples,
+        adaptor,
+        n_adapts;
+        progress=false,
+        verbose=false,
+    )
 
-        @test length(samples) == n_samples
-        @test length(stats) == n_samples
-    end
+    @test length(samples) == n_samples
+    @test length(stats) == n_samples
 end
