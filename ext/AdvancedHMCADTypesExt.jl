@@ -1,9 +1,7 @@
 module AdvancedHMCADTypesExt
 
-using AbstractMCMC: LogDensityModel
-using AdvancedHMC: AbstractMetric, Hamiltonian
-using LogDensityProblems: LogDensityProblems
-using LogDensityProblemsAD: LogDensityProblemsAD
+using AdvancedHMC:
+    AbstractMetric, LogDensityModel, Hamiltonian, LogDensityProblems, LogDensityProblemsAD
 using ADTypes: AbstractADType
 
 function Hamiltonian(
