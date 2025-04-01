@@ -22,3 +22,5 @@ makedocs(;
         "References" => "references.md",
     ],
 )
+
+deploydocs(; repo="github.com/TuringLang/AdvancedHMC.jl.git", push_preview=true)
