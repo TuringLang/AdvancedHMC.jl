@@ -1,4 +1,4 @@
-using ReTest, Random, AdvancedHMC, ForwardDiff
+using ReTest, Random, AdvancedHMC, ForwardDiff, ADTypes
 using Statistics: mean
 
 @testset "Models" begin
@@ -11,7 +11,7 @@ using Statistics: mean
         θ_init = randn(rng, 2)
 
         metric = DiagEuclideanMetric(2)
-        h = Hamiltonian(metric, ℓπ_gdemo, ForwardDiff)
+        h = Hamiltonian(metric, ℓπ_gdemo, AutoForwardDiff())
         integrator = Leapfrog(0.1)
         κ = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
         adaptor = StanHMCAdaptor(

@@ -1,4 +1,4 @@
-using ReTest, LinearAlgebra, Distributions, AdvancedHMC, Random, ForwardDiff
+using ReTest, LinearAlgebra, Distributions, AdvancedHMC, Random, ForwardDiff, ADTypes
 using AdvancedHMC.Adaptation:
     WelfordVar, NaiveVar, WelfordCov, NaiveCov, get_estimation, get_estimation, reset!
 
@@ -9,7 +9,7 @@ function runnuts(ℓπ, metric; n_samples=10_000)
     rng = MersenneTwister(0)
 
     nuts = NUTS(0.8)
-    h = Hamiltonian(metric, ℓπ, ForwardDiff)
+    h = Hamiltonian(metric, ℓπ, AutoForwardDiff())
     step_size = AdvancedHMC.make_step_size(rng, nuts, h, θ_init)
     integrator = AdvancedHMC.make_integrator(nuts, step_size)
     κ = AdvancedHMC.make_kernel(nuts, integrator)

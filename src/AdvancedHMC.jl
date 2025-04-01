@@ -1,5 +1,6 @@
 module AdvancedHMC
 
+using ADTypes: AbstractADType, AutoForwardDiff
 using Statistics: mean, var, middle
 using LinearAlgebra:
     Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
@@ -20,6 +21,8 @@ using LogDensityProblemsAD: LogDensityProblemsAD
 using AbstractMCMC: AbstractMCMC, LogDensityModel
 
 import StatsBase: sample
+
+import DifferentiationInterface: DifferentiationInterface as DI
 
 const DEFAULT_FLOAT_TYPE = typeof(float(0))
 
@@ -146,7 +149,11 @@ function Hamiltonian(metric::AbstractMetric, ℓ; kwargs...)
     ℓπ = if cap === LogDensityProblems.LogDensityOrder{0}()
         # In this case ℓ does not support evaluation of the gradient of the log density function
         # We use ForwardDiff to compute the gradient
-        LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓ; kwargs...)
+        _logdensity = Base.Fix1(LogDensityProblems.logdensity, ℓ)
+        _logdensity_and_gradient =
+            x -> DI.value_and_gradient(_logdensity, AutoForwardDiff(), x)
+        #LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓ; kwargs...)
+        return Hamiltonian(metric, _logdensity, _logdensity_and_gradient)
     else
         # In this case ℓ already supports evaluation of the gradient of the log density function
         ℓ
@@ -160,11 +167,11 @@ end
 
 ## With explicit AD specification
 function Hamiltonian(
-    metric::AbstractMetric, ℓπ::LogDensityModel, kind::Union{Symbol,Val,Module}; kwargs...
+    metric::AbstractMetric, ℓπ::LogDensityModel, kind::AbstractADType; kwargs...
 )
     return Hamiltonian(metric, ℓπ.logdensity, kind; kwargs...)
 end
-function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val,Module}; kwargs...)
+function Hamiltonian(metric::AbstractMetric, ℓπ, kind::AbstractADType; kwargs...)
     if LogDensityProblems.capabilities(ℓπ) === nothing
         throw(
             ArgumentError(
@@ -172,10 +179,9 @@ function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val,Modul
             ),
         )
     end
-    ℓ = LogDensityProblemsAD.ADgradient(
-        kind isa Val ? kind : Val(Symbol(kind)), ℓπ; kwargs...
-    )
-    return Hamiltonian(metric, ℓ)
+    _logdensity = Base.Fix1(LogDensityProblems.logdensity, ℓπ)
+    _logdensity_and_gradient = x -> DI.value_and_gradient(_logdensity, kind, x)
+    return Hamiltonian(metric, _logdensity, _logdensity_and_gradient)
 end
 
 ### Init

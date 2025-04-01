@@ -1,5 +1,5 @@
 using ReTest
-using AdvancedHMC, Distributions, ForwardDiff, ComponentArrays, AbstractMCMC
+using AdvancedHMC, Distributions, ForwardDiff, ComponentArrays, AbstractMCMC, ADTypes
 using LinearAlgebra, ADTypes
 
 @testset "Demo" begin
@@ -23,7 +23,7 @@ using LinearAlgebra, ADTypes
 
     # Define a Hamiltonian system
     metric = DiagEuclideanMetric(D)
-    hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
+    hamiltonian = Hamiltonian(metric, ℓπ, AutoForwardDiff())
 
     # Define a leapfrog solver, with initial step size chosen heuristically
     initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
@@ -76,7 +76,7 @@ end
     metric = DiagEuclideanMetric(D)
 
     # choose AD framework or provide a function manually
-    hamiltonian = Hamiltonian(metric, ℓπ, Val(:ForwardDiff); x=p1)
+    hamiltonian = Hamiltonian(metric, ℓπ, AutoForwardDiff(); x=p1)
 
     # Define a leapfrog solver, with initial step size chosen heuristically
     initial_ϵ = find_good_stepsize(hamiltonian, p1)

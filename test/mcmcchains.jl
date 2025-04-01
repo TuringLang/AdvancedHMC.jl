@@ -1,4 +1,4 @@
-using ReTest, Random, AdvancedHMC, ForwardDiff, AbstractMCMC, MCMCChains
+using ReTest, Random, AdvancedHMC, ForwardDiff, AbstractMCMC, MCMCChains, ADTypes
 using Statistics: mean
 
 @testset "MCMCChains w/ gdemo" begin
@@ -10,7 +10,7 @@ using Statistics: mean
     θ_init = randn(rng, 2)
 
     model = AdvancedHMC.LogDensityModel(
-        LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ_gdemo)
+        LogDensityProblemsAD.ADgradient(AutoForwardDiff(), ℓπ_gdemo)
     )
     integrator = Leapfrog(1e-3)
     kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))

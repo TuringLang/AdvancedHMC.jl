@@ -1,4 +1,4 @@
-using ReTest, Random, AdvancedHMC, ForwardDiff, AbstractMCMC
+using ReTest, Random, AdvancedHMC, ForwardDiff, AbstractMCMC, ADTypes
 using Statistics: mean
 
 @testset "AbstractMCMC w/ gdemo" begin
@@ -18,7 +18,7 @@ using Statistics: mean
     custom = HMCSampler(κ, metric, adaptor)
 
     model = AdvancedHMC.LogDensityModel(
-        LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ_gdemo)
+        LogDensityProblemsAD.ADgradient(AutoForwardDiff(), ℓπ_gdemo)
     )
 
     @testset "getparams and setparams!!" begin
