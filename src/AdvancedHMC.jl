@@ -143,11 +143,11 @@ end
 
 ## With explicit AD specification
 function Hamiltonian(
-    metric::AbstractMetric, ℓπ::LogDensityModel, kind::AbstractADType; kwargs...
+    metric::AbstractMetric, ℓπ::LogDensityModel, adtype::AbstractADType; kwargs...
 )
-    return Hamiltonian(metric, ℓπ.logdensity, kind; kwargs...)
+    return Hamiltonian(metric, ℓπ.logdensity, adtype; kwargs...)
 end
-function Hamiltonian(metric::AbstractMetric, ℓπ, kind::AbstractADType; kwargs...)
+function Hamiltonian(metric::AbstractMetric, ℓπ, adtype::AbstractADType; kwargs...)
     cap = LogDensityProblems.capabilities(ℓπ)
     if cap === nothing
         throw(
@@ -159,7 +159,7 @@ function Hamiltonian(metric::AbstractMetric, ℓπ, kind::AbstractADType; kwargs
     _logdensity = Base.Fix1(LogDensityProblems.logdensity, ℓπ)
     _logdensity_and_gradient = if cap === LogDensityProblems.LogDensityOrder{0}()
         # In this case ℓπ does not support evaluation of the gradient of the log density function
-        x -> DI.value_and_gradient(_logdensity, kind, x)
+        x -> DI.value_and_gradient(_logdensity, adtype, x)
     else
         Base.Fix1(LogDensityProblems.logdensity_and_gradient, ℓπ)
     end
