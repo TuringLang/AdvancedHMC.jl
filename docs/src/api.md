@@ -1,7 +1,7 @@
 # Detailed API for AdvancedHMC.jl
 
 An important design goal of AdvancedHMC.jl is modularity; we would like to support algorithmic research on HMC.
-This modularity means that different HMC variants can be easily constructed by composing various components, such as preconditioning metric (i.e., mass matrix), leapfrog integrators, trajectories (static or dynamic), adaption schemes, etc. In this documentation, we will explain the detailed usage of different modules in AdancedHMC.jl to provide a comprehensive udnerstanding of how AdvancedHMC.jl can achieve both modularity and efficiency.
+This modularity means that different HMC variants can be easily constructed by composing various components, such as preconditioning metric (i.e., mass matrix), leapfrog integrators, trajectories (static or dynamic), adaption schemes, etc. In this section, we will explain the detailed usage of different modules in AdancedHMC.jl to provide a comprehensive udnerstanding of how AdvancedHMC.jl can achieve both modularity and efficiency. The section highlights the key components of AdvancedHMC.jl, with a complete documentation provided at the end.
 
 ### [Hamiltonian mass matrix (`metric`)](@id hamiltonian_mm)
 
@@ -73,9 +73,7 @@ Draw `n_samples` samples using the kernel `κ` under the Hamiltonian system `h`
 
 Note that the function signature of the `sample` function exported by `AdvancedHMC.jl` differs from the [`sample`](https://turinglang.org/dev/docs/using-turing/guide#modelling-syntax-explained) function used by `Turing.jl`. We refer to the documentation of `Turing.jl` for more details on the latter.
 
-Note that the function signature of the `sample` function exported by `AdvancedHMC.jl` differs from the [`sample`](https://turinglang.org/dev/docs/using-turing/guide#modelling-syntax-explained) function used by `Turing.jl`. We refer to the documentation of `Turing.jl` for more details on the latter.
-
-## More types
+## Full documentation of APIs in AdvancedHMC.jl
 
 ```@autodocs; canonical=false
 Modules = [AdvancedHMC, AdvancedHMC.Adaptation]

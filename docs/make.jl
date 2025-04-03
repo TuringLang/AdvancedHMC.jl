@@ -18,6 +18,8 @@ makedocs(;
         "Get Started" => "get_started.md",
         "Automatic Differentiation Backends" => "autodiff.md",
         "Detailed API" => "api.md",
+        "Interfaces" => "interfaces.md",
+        "News" => "news.md",
         "Change Log" => "changelog.md",
         "References" => "references.md",
     ],

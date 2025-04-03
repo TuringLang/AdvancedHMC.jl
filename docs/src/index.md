@@ -7,17 +7,8 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://turinglang.github.io/AdvancedHMC.jl/dev/)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-AdvancedHMC.jl provides a robust, modular, and efficient implementation of advanced HMC algorithms. An illustrative example of AdvancedHMC's usage is given below. AdvancedHMC.jl is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia.
+AdvancedHMC.jl provides a robust, modular, and efficient implementation of advanced Hamiltonian Monte Carlo(HMC) algorithms. AdvancedHMC.jl is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia.
 If you are interested in using AdvancedHMC.jl through a probabilistic programming language, please check it out!
-
-**Interfaces**
-
-  - [`IMP.hmc`](https://github.com/salilab/hmc): an experimental Python module for the Integrative Modeling Platform, which uses AdvancedHMC in its backend to sample protein structures.
-
-**NEWS**
-
-  - We presented a paper for AdvancedHMC.jl at [AABI](http://approximateinference.org/) in 2019 in Vancouver, Canada. ([abs](http://proceedings.mlr.press/v118/xu20a.html), [pdf](http://proceedings.mlr.press/v118/xu20a/xu20a.pdf), [OpenReview](https://openreview.net/forum?id=rJgzckn4tH))
-  - We presented a poster for AdvancedHMC.jl at [StanCon 2019](https://mc-stan.org/events/stancon2019Cambridge/) in Cambridge, UK. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
 
 ## Citing AdvancedHMC.jl
 

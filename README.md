@@ -10,34 +10,52 @@
 AdvancedHMC.jl provides a robust, modular, and efficient implementation of advanced HMC algorithms. An illustrative example of AdvancedHMC's usage is given below. AdvancedHMC.jl is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia.
 If you are interested in using AdvancedHMC.jl through a probabilistic programming language, please check it out!
 
-**Interfaces**
+## Hands on AdvancedHMC.jl
 
-  - [`IMP.hmc`](https://github.com/salilab/hmc): an experimental Python module for the Integrative Modeling Platform, which uses AdvancedHMC in its backend to sample protein structures.
+Let's see how to sample a Hamiltonian using AdvanedHMC.jl
 
-**NEWS**
+```julia
+using AdvancedHMC, LogDensityProblems, ForwardDiff
+# Define the target distribution using the `LogDensityProblem` interface
+struct LogTargetDensity
+    dim::Int
+end
+# standard multivariate normal distribution
+LogDensityProblems.logdensity(p::LogTargetDensity, θ) = -sum(abs2, θ) / 2
+LogDensityProblems.dimension(p::LogTargetDensity) = p.dim
+function LogDensityProblems.capabilities(::Type{LogTargetDensity})
+    return LogDensityProblems.LogDensityOrder{0}()
+end
 
-  - We presented a paper for AdvancedHMC.jl at [AABI](http://approximateinference.org/) in 2019 in Vancouver, Canada. ([abs](http://proceedings.mlr.press/v118/xu20a.html), [pdf](http://proceedings.mlr.press/v118/xu20a/xu20a.pdf), [OpenReview](https://openreview.net/forum?id=rJgzckn4tH))
-  - We presented a poster for AdvancedHMC.jl at [StanCon 2019](https://mc-stan.org/events/stancon2019Cambridge/) in Cambridge, UK. ([pdf](https://github.com/TuringLang/AdvancedHMC.jl/files/3730367/StanCon-AHMC.pdf))
+D = 10; # parameter dimensionality
+initial_θ = rand(D); # initial parameter value
+ℓπ = LogTargetDensity(D)
 
-**API CHANGES**
+# Set the number of samples to draw and warmup iterations
+n_samples, n_adapts = 2_000, 1_000
 
-  - [v0.5.0] **Breaking!** Convenience constructors for common samplers changed to:
-    
-      + `HMC(leapfrog_stepsize::Real, n_leapfrog::Int)`
-      + `NUTS(target_acceptance::Real)`
-      + `HMCDA(target_acceptance::Real, integration_time::Real)`
+# Define a Hamiltonian system
+metric = DiagEuclideanMetric(D)
+hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
 
-  - [v0.2.22] Three functions are renamed.
-    
-      + `Preconditioner(metric::AbstractMetric)` -> `MassMatrixAdaptor(metric)` and
-      + `NesterovDualAveraging(δ, integrator::AbstractIntegrator)` -> `StepSizeAdaptor(δ, integrator)`
-      + `find_good_eps` -> `find_good_stepsize`
-  - [v0.2.15] `n_adapts` is no longer needed to construct `StanHMCAdaptor`; the old constructor is deprecated.
-  - [v0.2.8] Two Hamiltonian trajectory sampling methods are renamed to avoid a name clash with Distributions.
-    
-      + `Multinomial` -> `MultinomialTS`
-      + `Slice` -> `SliceTS`
-  - [v0.2.0] The gradient function passed to `Hamiltonian` is supposed to return a value-gradient tuple now.
+# Define a leapfrog solver, with the initial step size chosen heuristically
+initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
+integrator = Leapfrog(initial_ϵ)
+
+# Define an HMC sampler with the following components
+#   - multinomial sampling scheme,
+#   - generalised No-U-Turn criteria, and
+#   - windowed adaption for step-size and diagonal mass matrix
+kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
+
+# Run the sampler to draw samples from the specified Gaussian, where
+#   - `samples` will store the samples
+#   - `stats` will store diagnostic statistics for each sample
+samples, stats = sample(
+    hamiltonian, kernel, initial_θ, n_samples, adaptor, n_adapts; progress=true
+)
+```
 
 ## Citing AdvancedHMC.jl
 
