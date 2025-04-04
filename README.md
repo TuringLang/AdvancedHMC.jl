@@ -15,7 +15,11 @@ If you are interested in using AdvancedHMC.jl through a probabilistic programmin
 Let's see how to sample a Hamiltonian using AdvanedHMC.jl
 
 ```julia
-using AdvancedHMC, LogDensityProblems, ForwardDiff
+using AdvancedHMC, AbstractMCMC
+
+# load some autodiff tools
+using LogDensityProblems, ForwardDiff, LogDensityProblemsAD, ADTypes 
+
 # Define the target distribution using the `LogDensityProblem` interface
 struct LogTargetDensity
     dim::Int
@@ -27,33 +31,23 @@ function LogDensityProblems.capabilities(::Type{LogTargetDensity})
     return LogDensityProblems.LogDensityOrder{0}()
 end
 
-D = 10; # parameter dimensionality
-initial_θ = rand(D); # initial parameter value
+# parameter dimensionality
+D = 10; 
+
+# define a LogDensityModel
 ℓπ = LogTargetDensity(D)
+model = AdvancedHMC.LogDensityModel(LogDensityProblemsAD.ADgradient(AutoForwardDiff(), ℓπ))
 
-# Set the number of samples to draw and warmup iterations
-n_samples, n_adapts = 2_000, 1_000
+# initial parameter value
+initial_θ = rand(D);
 
-# Define a Hamiltonian system
-metric = DiagEuclideanMetric(D)
-hamiltonian = Hamiltonian(metric, ℓπ, ForwardDiff)
+# specify sampling algorithms and iterations
+n_samples, n_adapts, δ = 1_000, 2_000, 0.8
+sampler = NUTS(δ)
 
-# Define a leapfrog solver, with the initial step size chosen heuristically
-initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
-integrator = Leapfrog(initial_ϵ)
-
-# Define an HMC sampler with the following components
-#   - multinomial sampling scheme,
-#   - generalised No-U-Turn criteria, and
-#   - windowed adaption for step-size and diagonal mass matrix
-kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
-adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
-
-# Run the sampler to draw samples from the specified Gaussian, where
-#   - `samples` will store the samples
-#   - `stats` will store diagnostic statistics for each sample
-samples, stats = sample(
-    hamiltonian, kernel, initial_θ, n_samples, adaptor, n_adapts; progress=true
+# Now sample
+samples = AbstractMCMC.sample(
+    model, sampler, n_adapts + n_samples; n_adapts=n_adapts, initial_params=initial_θ
 )
 ```
 
