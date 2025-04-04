@@ -71,7 +71,8 @@ n_adapts, n_samples = 2_000, 1_000
 initial_θ = randn(D)
 
 samples = AbstractMCMC.sample(
-    Random.default_rng()model,
+    Random.default_rng(),
+    model,
     sampler,
     n_adapts + n_samples;
     n_adapts=n_adapts,
