@@ -10,11 +10,12 @@
 **AdvancedHMC.jl** provides robust, modular, and efficient implementations of advanced Hamiltonian Monte Carlo (HMC) algorithms in Julia. It serves as a backend for probabilistic programming languages like [Turing.jl](https://github.com/TuringLang/Turing.jl), but can also be used directly for flexible MCMC sampling when fine-grained control is desired.
 
 **Key Features**
-* Implementations of state-of-the-art HMC variants (e.g., NUTS).
-* Modular design allowing customization of metrics, trajectories, and adaptation.
-* Integration with the [LogDensityProblems.jl](https://github.com/tpapp/LogDensityProblems.jl) interface for defining target distributions.
-* Compatibility with various automatic differentiation backends via [LogDensityProblemsAD.jl](https://github.com/TuringLang/LogDensityProblemsAD.jl).
-* Built upon the [AbstractMCMC.jl](https://github.com/TuringLang/AbstractMCMC.jl) interface for MCMC sampling.
+
+  - Implementations of state-of-the-art HMC variants (e.g., NUTS).
+  - Modular design allowing customization of metrics, trajectories, and adaptation.
+  - Integration with the [LogDensityProblems.jl](https://github.com/tpapp/LogDensityProblems.jl) interface for defining target distributions.
+  - Compatibility with various automatic differentiation backends via [LogDensityProblemsAD.jl](https://github.com/TuringLang/LogDensityProblemsAD.jl).
+  - Built upon the [AbstractMCMC.jl](https://github.com/TuringLang/AbstractMCMC.jl) interface for MCMC sampling.
 
 ## Installation
 
@@ -28,7 +29,6 @@ Pkg.add("AdvancedHMC")
 ## Quick Start: Sampling a Multivariate Normal
 
 Here's a basic example demonstrating how to sample from a target distribution (a standard multivariate normal) using the No-U-Turn Sampler (NUTS).
-
 
 ```julia
 using AdvancedHMC, AbstractMCMC
@@ -44,7 +44,9 @@ end
 LogDensityProblems.logdensity(p::LogTargetDensity, θ) = -sum(abs2, θ) / 2
 LogDensityProblems.dimension(p::LogTargetDensity) = p.dim
 # Declare that the log density function is defined
-LogDensityProblems.capabilities(::Type{LogTargetDensity}) = LogDensityProblems.LogDensityOrder{0}()
+function LogDensityProblems.capabilities(::Type{LogTargetDensity})
+    return LogDensityProblems.LogDensityOrder{0}()
+end
 
 # Set parameter dimensionality
 D = 10
@@ -69,26 +71,26 @@ n_adapts, n_samples = 2_000, 1_000
 initial_θ = randn(D)
 
 samples = AbstractMCMC.sample(
-    Random.default_rng() # Optional: Use a specific RNG
-    model,
+    Random.default_rng()model,
     sampler,
     n_adapts + n_samples;
     n_adapts=n_adapts,
     initial_params=initial_θ,
-    progress=true # Optional: Show a progress bar
+    progress=true, # Optional: Show a progress bar
 )
 
 # `samples` now contains the MCMC chain. You can analyze it using packages
 # like StatsPlots.jl, ArviZ.jl, or MCMCChains.jl.
 ```
 
-For more advanced usage, please refer to the [docs]([url](https://turinglang.org/AdvancedHMC.jl/dev/get_started/)). 
-
+For more advanced usage, please refer to the [docs](%5Burl%5D(https://turinglang.org/AdvancedHMC.jl/dev/get_started/)).
 
 ## Contributing
-Contributions are highly welcome! If you find a bug, have a suggestion, or want to contribute code, please open an issue or pull request. 
+
+Contributions are highly welcome! If you find a bug, have a suggestion, or want to contribute code, please open an issue or pull request.
 
 ## License
+
 AdvancedHMC.jl is licensed under the MIT License. See the LICENSE file for details.
 
 ## Citing AdvancedHMC.jl
