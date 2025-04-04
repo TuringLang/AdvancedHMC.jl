@@ -1,11 +1,11 @@
-using ReTest, AdvancedHMC, ForwardDiff, Zygote
+using ReTest, AdvancedHMC, ForwardDiff, Zygote, ADTypes
 
 @testset "contrib" begin
     @testset "ad" begin
         metric = UnitEuclideanMetric(D)
         h_hand = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
-        h_forwarddiff = Hamiltonian(metric, ℓπ, ForwardDiff)
-        h_zygote = Hamiltonian(metric, ℓπ, Zygote)
+        h_forwarddiff = Hamiltonian(metric, ℓπ, AutoForwardDiff())
+        h_zygote = Hamiltonian(metric, ℓπ, AutoZygote())
         for x in [rand(D), rand(D, 10)]
             v_hand, g_hand = h_hand.∂ℓπ∂θ(x)
             v_forwarddiff, g_forwarddiff = h_forwarddiff.∂ℓπ∂θ(x)
