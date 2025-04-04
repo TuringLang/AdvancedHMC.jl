@@ -11,7 +11,7 @@
 
 **Key Features**
 
-  - Implementations of state-of-the-art HMC variants (e.g., NUTS).
+  - Implementations of state-of-the-art [HMC variants](https://turinglang.org/AdvancedHMC.jl/dev/api/) (e.g., NUTS).
   - Modular design allowing customization of metrics, trajectories, and adaptation.
   - Integration with the [LogDensityProblems.jl](https://github.com/tpapp/LogDensityProblems.jl) interface for defining target distributions.
   - Compatibility with various automatic differentiation backends via [LogDensityProblemsAD.jl](https://github.com/TuringLang/LogDensityProblemsAD.jl).
