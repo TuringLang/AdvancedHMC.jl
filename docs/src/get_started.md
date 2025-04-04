@@ -53,7 +53,7 @@ samples, stats = sample(
 )
 ```
 
-## Parallel sampling
+## Parallel Sampling
 
 AdvancedHMC enables parallel sampling (either distributed or multi-thread) via Julia's [parallel computing functions](https://docs.julialang.org/en/v1/manual/parallel-computing/).
 It also supports vectorized sampling for static HMC.
@@ -80,13 +80,14 @@ Threads.@threads for i in 1:nchains
 end
 ```
 
-## Using the `AbstractMCMC` interface
+## Using the `AbstractMCMC` Interface
 
 Users can also use the `AbstractMCMC` interface to sample, which is also used in Turing.jl.
 In order to show how this is done let us start from our previous example where we defined a `LogTargetDensity`, `ℓπ`.
 
 ```julia
 using AbstractMCMC, LogDensityProblemsAD
+
 # Wrap the previous LogTargetDensity as LogDensityModel 
 # where ℓπ::LogTargetDensity
 model = AdvancedHMC.LogDensityModel(LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), ℓπ))
@@ -116,7 +117,7 @@ In the previous examples, we built the sampler by manually specifying the integr
     hmc = HMC(ϵ, n_leapfrog)
     ```
     
-    Equivalent to:
+    is equivalent to:
     
     ```julia
     metric = DiagEuclideanMetric(D)
@@ -136,7 +137,7 @@ In the previous examples, we built the sampler by manually specifying the integr
     nuts = NUTS(δ)
     ```
     
-    Equivalent to:
+    is equivalent to:
     
     ```julia
     metric = DiagEuclideanMetric(D)
@@ -156,7 +157,7 @@ In the previous examples, we built the sampler by manually specifying the integr
     hmcda = HMCDA(δ, λ)
     ```
     
-    Equivalent to:
+    is equivalent to:
     
     ```julia
     metric = DiagEuclideanMetric(D)
