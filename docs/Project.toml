@@ -1,3 +1,9 @@
 [deps]
 AdvancedHMC = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DocumenterCitations = "daee34ce-89f3-4625-b898-19384cb65244"
+
+[compat]
+AdvancedHMC = "0.7"
+Documenter = "1"
+DocumenterCitations = "1"

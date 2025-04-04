@@ -1,8 +1,28 @@
 using Pkg
 
-using Documenter
+using Documenter, DocumenterCitations
 using AdvancedHMC
 
-# cp(joinpath(@__DIR__, "../README.md"), joinpath(@__DIR__, "src/index.md"))
+bib = CitationBibliography(joinpath(@__DIR__, "src", "refs.bib"))
 
-makedocs(; sitename="AdvancedHMC", format=Documenter.HTML(), warnonly=[:cross_references])
+makedocs(;
+    sitename="AdvancedHMC",
+    format=Documenter.HTML(;
+        assets=["assets/favicon.ico"],
+        canonical="https://turinglang.org/AdvancedHMC.jl/stable/",
+    ),
+    warnonly=[:cross_references],
+    plugins=[bib],
+    pages=[
+        "AdvancedHMC.jl" => "index.md",
+        "Get Started" => "get_started.md",
+        "Automatic Differentiation Backends" => "autodiff.md",
+        "Detailed API" => "api.md",
+        "Interfaces" => "interfaces.md",
+        "News" => "news.md",
+        "Change Log" => "changelog.md",
+        "References" => "references.md",
+    ],
+)
+
+deploydocs(; repo="github.com/TuringLang/AdvancedHMC.jl.git", push_preview=true)
