@@ -1,4 +1,4 @@
-name: IntegrationTest
+name: Integration with Turing
 
 on:
   push:
