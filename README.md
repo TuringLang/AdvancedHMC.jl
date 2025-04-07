@@ -13,7 +13,7 @@
 
   - Implementation of state-of-the-art [HMC variants](https://turinglang.org/AdvancedHMC.jl/dev/api/) (e.g., NUTS).
   - The modular design allows for the customization of metrics, Hamiltonian trajectory simulation, and adaptation.
-  - Integration with the [LogDensityProblems.jl](https://github.com/tpapp/LogDensityProblems.jl) interface for defining target distributions, and [LogDensityProblemsAD.jl](https://github.com/TuringLang/LogDensityProblemsAD.jl) for supporting automatic differentiation backends. 
+  - Integration with the [LogDensityProblems.jl](https://github.com/tpapp/LogDensityProblems.jl) interface for defining target distributions, and [LogDensityProblemsAD.jl](https://github.com/TuringLang/LogDensityProblemsAD.jl) for supporting automatic differentiation backends.
   - Built upon the [AbstractMCMC.jl](https://github.com/TuringLang/AbstractMCMC.jl) interface for MCMC sampling.
 
 ## Installation
