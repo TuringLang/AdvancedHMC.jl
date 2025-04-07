@@ -7,14 +7,13 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://turinglang.github.io/AdvancedHMC.jl/dev/)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-**AdvancedHMC.jl** provides robust, modular, and efficient implementations of advanced Hamiltonian Monte Carlo (HMC) algorithms in Julia. It serves as a backend for probabilistic programming languages like [Turing.jl](https://github.com/TuringLang/Turing.jl), but can also be used directly for flexible MCMC sampling when fine-grained control is desired.
+**AdvancedHMC.jl** provides robust, modular, and efficient implementation of advanced Hamiltonian Monte Carlo (HMC) algorithms in Julia. It is a backend for probabilistic programming languages like [Turing.jl](https://github.com/TuringLang/Turing.jl), but can also be used directly for flexible MCMC sampling when fine-grained control is desired.
 
 **Key Features**
 
-  - Implementations of state-of-the-art [HMC variants](https://turinglang.org/AdvancedHMC.jl/dev/api/) (e.g., NUTS).
-  - Modular design allowing customization of metrics, trajectories, and adaptation.
-  - Integration with the [LogDensityProblems.jl](https://github.com/tpapp/LogDensityProblems.jl) interface for defining target distributions.
-  - Compatibility with various automatic differentiation backends via [LogDensityProblemsAD.jl](https://github.com/TuringLang/LogDensityProblemsAD.jl).
+  - Implementation of state-of-the-art [HMC variants](https://turinglang.org/AdvancedHMC.jl/dev/api/) (e.g., NUTS).
+  - The modular design allows for the customization of metrics, Hamiltonian trajectory simulation, and adaptation.
+  - Integration with the [LogDensityProblems.jl](https://github.com/tpapp/LogDensityProblems.jl) interface for defining target distributions, and [LogDensityProblemsAD.jl](https://github.com/TuringLang/LogDensityProblemsAD.jl) for supporting automatic differentiation backends. 
   - Built upon the [AbstractMCMC.jl](https://github.com/TuringLang/AbstractMCMC.jl) interface for MCMC sampling.
 
 ## Installation
