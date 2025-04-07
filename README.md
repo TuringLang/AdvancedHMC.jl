@@ -84,7 +84,7 @@ samples = AbstractMCMC.sample(
 # like StatsPlots.jl, ArviZ.jl, or MCMCChains.jl.
 ```
 
-For more advanced usage, please refer to the [docs](%5Burl%5D(https://turinglang.org/AdvancedHMC.jl/dev/get_started/)).
+For more advanced usage, please refer to the [docs](https://turinglang.org/AdvancedHMC.jl/dev/get_started/).
 
 ## Contributing
 
