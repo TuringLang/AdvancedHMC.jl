@@ -1,6 +1,6 @@
 # Gradient in AdvancedHMC.jl
 
-AdvancedHMC.jl supports automatic differentiation using [`LogDensityProblemsAD`](https://github.com/tpapp/LogDensityProblemsAD.jl) across various AD backends and allows user-specified gradients. While the default AD backend for AdvancedHMC.jl is ForwardDiff.jl, we can seamlessly change to other backend like Mooncake.jl using various syntax like `Hamiltonian(metric, ℓπ, AutoMooncake(; config = nothing))`. While some AD backend support syntax like `Hamiltonian(metric, ℓπ, Zygote)`, `Hamiltonian(metric, ℓπ, Val(:Zygote))`, we recommend using ADTypes since that would allow you to have more freedom for specifying the AD backend:
+AdvancedHMC.jl supports automatic differentiation using [`LogDensityProblemsAD`](https://github.com/tpapp/LogDensityProblemsAD.jl) across various AD backends and allows user-specified gradients. While the default AD backend for AdvancedHMC.jl is ForwardDiff.jl, we can seamlessly change to other backend like Mooncake.jl using various syntax like `Hamiltonian(metric, ℓπ, AutoMooncake(; config = nothing))`. While some AD backends support syntax like `Hamiltonian(metric, ℓπ, Zygote)`, `Hamiltonian(metric, ℓπ, Val(:Zygote))`, we recommend using ADTypes since that would allow you to have more freedom for specifying the AD backend:
 
 ```julia
 using AdvancedHMC, ADTypes, DifferentiationInterface, Mooncake, Zygote
