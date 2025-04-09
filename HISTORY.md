@@ -2,10 +2,10 @@
 
   - [v0.7.1]
     
-      + We have a better documentation in https://turinglang.org/AdvancedHMC.jl/dev/
-      + ADTypes.jl can be used for specifying AD backend in `Hamiltonian(metric, ℓπ, AutoForwardDiff())`.
-      + SimpleUnpack.jl and Requires.jl are removed from dependency.
-      + `find_good_stepsize` now have less allocations
+      + README has been simplified, many docs transfered to docs: https://turinglang.org/AdvancedHMC.jl/dev/
+      + ADTypes.jl can be used for specifying the AD backend in `Hamiltonian(metric, ℓπ, AutoForwardDiff())`.
+      + SimpleUnpack.jl and Requires.jl are removed from the dependency.
+      + `find_good_stepsize` now have fewer allocations
 
   - [v0.7.0] **Breaking!**
     
