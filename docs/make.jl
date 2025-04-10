@@ -20,7 +20,6 @@ makedocs(;
         "Detailed API" => "api.md",
         "Interfaces" => "interfaces.md",
         "News" => "news.md",
-        "Change Log" => "changelog.md",
         "References" => "references.md",
     ],
 )
