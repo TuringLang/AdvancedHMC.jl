@@ -1,12 +1,7 @@
 module AdvancedHMCMCMCChainsExt
 
-if isdefined(Base, :get_extension)
-    using AdvancedHMC: AbstractMCMC, Transition, stat
-    using MCMCChains: Chains
-else
-    using ..AdvancedHMC: AbstractMCMC, Transition, stat
-    using ..MCMCChains: Chains
-end
+using AdvancedHMC: AbstractMCMC, Transition, stat
+using MCMCChains: Chains
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
