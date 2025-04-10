@@ -41,12 +41,16 @@ function ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat)
     return DualValue(res[1], -res[2])
 end
 
-∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat) = copy(r)
-function ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat)
-    return h.metric.M⁻¹ .* r
+∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric,<:GaussianKinetic}, r::AbstractArray) = copy(r)
+function ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric,<:GaussianKinetic}, r::AbstractArray)
+    out = similar(r)
+    out .= h.metric.M⁻¹ .* r
+    return out
 end
-function ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat)
-    return h.metric.M⁻¹ * r
+function ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::AbstractArray)
+    out = similar(r)
+    mul!(out, h.metric.M⁻¹, r)
+    return out
 end
 
 # TODO (kai) make the order of θ and r consistent with neg_energy
