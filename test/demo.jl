@@ -114,7 +114,7 @@ end
 
         # Define a Hamiltonian system
         ax = getaxes(p1)[1]
-        M⁻¹ = ComponentArray(rand(2, 2), ax, ax)
+        M⁻¹ = ComponentArray([2.0 1.0; 1.0 2.0], ax, ax)
         metric = DenseEuclideanMetric(M⁻¹)
 
         # choose AD framework or provide a function manually
