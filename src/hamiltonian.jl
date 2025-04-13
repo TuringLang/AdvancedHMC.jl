@@ -46,10 +46,7 @@ function ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric,<:GaussianKinetic}, r::Ab
     return h.metric.M⁻¹ .* r
 end
 function ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat)
-    (; M⁻¹) = h.metric
-    out = similar(r, promote_type(eltype(r), eltype(M⁻¹)))
-    mul!(out, M⁻¹, r)
-    return out
+    return h.metric.M⁻¹ * r
 end
 
 # TODO (kai) make the order of θ and r consistent with neg_energy
