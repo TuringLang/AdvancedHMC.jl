@@ -78,15 +78,16 @@ function get_estimation(nv::NaiveVar)
 end
 
 # Ref： https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_var_estimator.hpp
-mutable struct WelfordVar{T<:AbstractFloat,E<:AbstractVecOrMat{T}} <: DiagMatrixEstimator{T}
+mutable struct WelfordVar{T<:AbstractFloat,E<:AbstractVecOrMat{T},V<:AbstractVecOrMat{T}} <:
+               DiagMatrixEstimator{T}
     n::Int
     n_min::Int
     μ::E
     M::E
     δ::E    # cache for diff
-    var::E    # cache for variance
-    function WelfordVar(n::Int, n_min::Int, μ::E, M::E, δ::E, var::E) where {E}
-        return new{eltype(E),E}(n, n_min, μ, M, δ, var)
+    var::V    # cache for variance
+    function WelfordVar(n::Int, n_min::Int, μ::E, M::E, δ::E, var::V) where {E,V}
+        return new{eltype(E),E,V}(n, n_min, μ, M, δ, var)
     end
 end
 
@@ -171,13 +172,13 @@ function get_estimation(nc::NaiveCov)
 end
 
 # Ref: https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_covar_estimator.hpp
-mutable struct WelfordCov{F<:AbstractFloat} <: DenseMatrixEstimator{F}
+mutable struct WelfordCov{F<:AbstractFloat,C} <: DenseMatrixEstimator{F}
     n::Int
     n_min::Int
     μ::Vector{F}
     M::Matrix{F}
     δ::Vector{F}  # cache for diff
-    cov::Matrix{F}
+    cov::C
 end
 
 Base.show(io::IO, ::WelfordCov) = print(io, "WelfordCov")

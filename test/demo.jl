@@ -71,39 +71,84 @@ end
 
     ℓπ = DemoProblemComponentArrays()
 
-    # Define a Hamiltonian system
-    D = length(p1)          # number of parameters
-    metric = DiagEuclideanMetric(D)
+    @testset "Test Diagonal ComponentArray metric" begin
 
-    # choose AD framework or provide a function manually
-    hamiltonian = Hamiltonian(metric, ℓπ, Val(:ForwardDiff); x=p1)
+        # Define a Hamiltonian system
+        M⁻¹ = ComponentArray(; μ=1.0, σ=1.0)
+        metric = DiagEuclideanMetric(M⁻¹)
 
-    # Define a leapfrog solver, with initial step size chosen heuristically
-    initial_ϵ = find_good_stepsize(hamiltonian, p1)
-    integrator = Leapfrog(initial_ϵ)
+        # choose AD framework or provide a function manually
+        hamiltonian = Hamiltonian(metric, ℓπ, Val(:ForwardDiff))
 
-    # Define an HMC sampler, with the following components
-    proposal = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
-    adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
+        # Define a leapfrog solver, with initial step size chosen heuristically
+        initial_ϵ = find_good_stepsize(hamiltonian, p1)
+        integrator = Leapfrog(initial_ϵ)
 
-    # -- run sampler
-    n_samples, n_adapts = 100, 50
-    samples, stats = sample(
-        hamiltonian,
-        proposal,
-        p1,
-        n_samples,
-        adaptor,
-        n_adapts;
-        progress=false,
-        verbose=false,
-    )
+        # Define an HMC sampler, with the following components
+        proposal = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+        adaptor = StanHMCAdaptor(
+            MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator)
+        )
 
-    @test length(samples) == n_samples
-    @test length(stats) == n_samples
-    labels = ComponentArrays.labels(samples[1])
-    @test "μ" ∈ labels
-    @test "σ" ∈ labels
+        # -- run sampler
+        n_samples, n_adapts = 100, 50
+        samples, stats = sample(
+            hamiltonian,
+            proposal,
+            p1,
+            n_samples,
+            adaptor,
+            n_adapts;
+            progress=false,
+            verbose=false,
+        )
+
+        @test length(samples) == n_samples
+        @test length(stats) == n_samples
+        lab = ComponentArrays.labels(samples[1])
+        @test "μ" ∈ lab
+        @test "σ" ∈ lab
+    end
+
+    @testset "Test Dense ComponentArray metric" begin
+
+        # Define a Hamiltonian system
+        ax = getaxes(p1)[1]
+        M⁻¹ = ComponentArray(; rand(2, 2), ax, ax)
+        metric = DenseEuclideanMetric(M⁻¹)
+
+        # choose AD framework or provide a function manually
+        hamiltonian = Hamiltonian(metric, ℓπ, Val(:ForwardDiff))
+
+        # Define a leapfrog solver, with initial step size chosen heuristically
+        initial_ϵ = find_good_stepsize(hamiltonian, p1)
+        integrator = Leapfrog(initial_ϵ)
+
+        # Define an HMC sampler, with the following components
+        proposal = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+        adaptor = StanHMCAdaptor(
+            MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator)
+        )
+
+        # -- run sampler
+        n_samples, n_adapts = 100, 50
+        samples, stats = sample(
+            hamiltonian,
+            proposal,
+            p1,
+            n_samples,
+            adaptor,
+            n_adapts;
+            progress=false,
+            verbose=false,
+        )
+
+        @test length(samples) == n_samples
+        @test length(stats) == n_samples
+        lab = ComponentArrays.labels(samples[1])
+        @test "μ" ∈ lab
+        @test "σ" ∈ lab
+    end
 end
 
 @testset "ADTypes" begin
