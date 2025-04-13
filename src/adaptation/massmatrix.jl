@@ -172,7 +172,7 @@ function get_estimation(nc::NaiveCov)
 end
 
 # Ref: https://github.com/stan-dev/math/blob/develop/stan/math/prim/mat/fun/welford_covar_estimator.hpp
-mutable struct WelfordCov{F<:AbstractFloat,C<:Matrix{F}} <: DenseMatrixEstimator{F}
+mutable struct WelfordCov{F<:AbstractFloat,C<:AbstractMatrix{F}} <: DenseMatrixEstimator{F}
     n::Int
     n_min::Int
     μ::Vector{F}
