@@ -102,7 +102,7 @@ function WelfordVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...)
     return WelfordVar{Float64}(sz; kwargs...)
 end
 
-function Base.resize!(wv::WelfordVar, θ::AbstractVecOrMat{T}) where {T<:AbstractFloat}
+function Base.resize!(wv::WelfordVar, θ::AbstractMatrix{T}) where {T<:AbstractFloat}
     if size(θ) != size(wv.var)
         @assert wv.n == 0 "Cannot resize a var estimator when it contains samples."
         wv.μ = zeros(T, size(θ))
@@ -112,10 +112,32 @@ function Base.resize!(wv::WelfordVar, θ::AbstractVecOrMat{T}) where {T<:Abstrac
     end
 end
 
+function Base.resize!(wv::WelfordVar, θ::AbstractVector{T}) where {T<:AbstractFloat}
+    if length(θ) != size(wv.var, 1)
+        @assert wv.n == 0 "Cannot resize a var estimator when it contains samples."
+        n = length(θ)
+        __fill!(wv.μ, n, T(0))
+        __fill!(wv.M, n, T(0))
+        __fill!(wv.δ, n, T(0))
+        __fill!(wv.var, n, T(1))
+    end
+end
+
+function __fill!(x::AbstractVector, n, V)
+    N = n - length(x)
+    if N > 0
+        append!(x, fill(V, N))
+    else
+        resize!(x, n)
+        fill!(x, V)
+    end
+    return nothing
+end
+
 function reset!(wv::WelfordVar{T}) where {T<:AbstractFloat}
     wv.n = 0
-    wv.μ .= zero(T)
-    wv.M .= zero(T)
+    fill!(wv.μ, zero(T))
+    fill!(wv.M, zero(T))
     return nothing
 end
 
@@ -194,8 +216,9 @@ WelfordCov(sz::Tuple{Int}; kwargs...) = WelfordCov{Float64}(sz; kwargs...)
 function Base.resize!(wc::WelfordCov, θ::AbstractVector{T}) where {T<:AbstractFloat}
     if length(θ) != size(wc.cov, 1)
         @assert wc.n == 0 "Cannot resize a var estimator when it contains samples."
-        wc.μ = zeros(T, length(θ))
-        wc.δ = zeros(T, length(θ))
+        n = length(θ)
+        __fill!(wc.μ, n, T(0))
+        __fill!(wc.δ, n, T(0))
         wc.M = zeros(T, length(θ), length(θ))
         wc.cov = LinearAlgebra.diagm(0 => ones(T, length(θ)))
     end
@@ -203,8 +226,8 @@ end
 
 function reset!(wc::WelfordCov{T}) where {T<:AbstractFloat}
     wc.n = 0
-    wc.μ .= zero(T)
-    wc.M .= zero(T)
+    fill!(wc.μ, zero(T))
+    fill!(wc.M, zero(T))
     return nothing
 end
 
