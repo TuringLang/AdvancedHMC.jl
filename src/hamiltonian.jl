@@ -43,9 +43,15 @@ end
 
 ∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat) = copy(r)
 function ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat)
+    (; M⁻¹) = h.metric
+    (first(axes(M⁻¹)) !== first(axes(r))) &&
+        throw(ArgumentError("Axes of mass matrix and momentum must match"))
     return h.metric.M⁻¹ .* r
 end
 function ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat)
+    (; M⁻¹) = h.metric
+    (last(axes(M⁻¹)) !== first(axes(r))) &&
+        throw(ArgumentError("Axes of mass matrix and momentum must match"))
     return h.metric.M⁻¹ * r
 end
 
