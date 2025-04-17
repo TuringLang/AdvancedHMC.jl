@@ -46,13 +46,13 @@ function ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric,<:GaussianKinetic}, r::Ab
     (; M⁻¹) = h.metric
     (first(__axes(M⁻¹)) !== first(__axes(r))) &&
         throw(ArgumentError("Axes of mass matrix and momentum must match"))
-    return h.metric.M⁻¹ .* r
+    return M⁻¹ .* r
 end
 function ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat)
     (; M⁻¹) = h.metric
     (last(__axes(M⁻¹)) !== first(__axes(r))) &&
         throw(ArgumentError("Axes of mass matrix and momentum must match"))
-    return h.metric.M⁻¹ * r
+    return M⁻¹ * r
 end
 
 # TODO (kai) make the order of θ and r consistent with neg_energy

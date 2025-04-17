@@ -25,7 +25,7 @@ end
 """
     __axes(r::AbstractVecOrMat)
 
-Return the axes of input `r` where `r` can be generic arrays or custom arrays.
+Return the axes of input `r`, where `r` can be `AbstractArrays`, `ComponentArrays` or other custom arrays.
 """
 @inline __axes(r::AbstractVecOrMat) = axes(r)
 
