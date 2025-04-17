@@ -214,13 +214,13 @@ end
 WelfordCov(sz::Tuple{Int}; kwargs...) = WelfordCov{Float64}(sz; kwargs...)
 
 function Base.resize!(wc::WelfordCov, θ::AbstractVector{T}) where {T<:AbstractFloat}
-    if length(θ) != size(wc.cov, 1)
+    n = length(θ)
+    if n != size(wc.cov, 1)
         @assert wc.n == 0 "Cannot resize a var estimator when it contains samples."
-        n = length(θ)
         __fill!(wc.μ, n, T(0))
         __fill!(wc.δ, n, T(0))
-        wc.M = zeros(T, length(θ), length(θ))
-        wc.cov = LinearAlgebra.diagm(0 => ones(T, length(θ)))
+        wc.M = zeros(T, n, n)
+        wc.cov = LinearAlgebra.diagm(0 => ones(T, n))
     end
 end
 
