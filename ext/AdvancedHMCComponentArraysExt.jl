@@ -1,7 +1,5 @@
 module AdvancedHMCComponentArraysExt
 
-using LinearAlgebra
-
 using AdvancedHMC: AdvancedHMC, __axes
 using ComponentArrays: ComponentVecOrMat, getaxes
 
