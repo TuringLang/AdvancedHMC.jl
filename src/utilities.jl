@@ -22,6 +22,13 @@ function _randn(
     return out
 end
 
+"""
+    __axes(r::AbstractVecOrMat)
+
+Return the axes of input `r` where `r` can be generic arrays or custom arrays.
+"""
+@inline __axes(r::AbstractVecOrMat) = axes(r)
+
 """ 
 `rand_coupled` produces coupled randomness given a vector of RNGs. For example, 
 when a vector of RNGs is provided, `rand_coupled` peforms a single `rand` call 
