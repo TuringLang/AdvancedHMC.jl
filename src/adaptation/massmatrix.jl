@@ -103,34 +103,42 @@ function WelfordVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...)
 end
 
 function Base.resize!(wv::WelfordVar, θ::AbstractMatrix{T}) where {T<:AbstractFloat}
-    if size(θ) != size(wv.var)
+    size_θ = size(θ)
+    if size_θ != size(wv.var)
         @assert wv.n == 0 "Cannot resize a var estimator when it contains samples."
-        wv.μ = zeros(T, size(θ))
-        wv.M = zeros(T, size(θ))
-        wv.δ = zeros(T, size(θ))
-        wv.var = ones(T, size(θ))
+        wv.μ = zeros(T, size_θ)
+        wv.M = zeros(T, size_θ)
+        wv.δ = zeros(T, size_θ)
+        wv.var = ones(T, size_θ)
     end
 end
 
 function Base.resize!(wv::WelfordVar, θ::AbstractVector{T}) where {T<:AbstractFloat}
-    if length(θ) != size(wv.var, 1)
+    n = length(θ)
+    if n != size(wv.var, 1)
         @assert wv.n == 0 "Cannot resize a var estimator when it contains samples."
-        n = length(θ)
-        __fill!(wv.μ, n, T(0))
-        __fill!(wv.M, n, T(0))
-        __fill!(wv.δ, n, T(0))
-        __fill!(wv.var, n, T(1))
+        __resize_fill!(wv.μ, n, T(0))
+        __resize_fill!(wv.M, n, T(0))
+        __resize_fill!(wv.δ, n, T(0))
+        __resize_fill!(wv.var, n, T(1))
     end
 end
 
-function __fill!(x::AbstractVector, n, V)
-    N = n - length(x)
-    if N > 0
-        append!(x, fill(V, N))
+"""
+    __resize_fill!(x::AbstractVector, new_length::Int, v::T)
+
+Resize `x` according to `new_length`:
+ - If `new_length` is bigger than the current length of `x`, expand `x` to `new_length` and fill `x` with `v`.
+ - If `new_length` is smaller than the current length of `x`, resize `x` to `new_length` and fill `x` with `v`.
+"""
+function __resize_fill!(x::AbstractVector, new_length::Int, v::T) where {T<:Number}
+    length_diff = new_length - length(x)
+    if length_diff > 0
+        append!(x, Vector{T}(undef, length_diff))
     else
-        resize!(x, n)
-        fill!(x, V)
+        resize!(x, new_length)
     end
+    fill!(x, v)
     return nothing
 end
 
@@ -217,8 +225,8 @@ function Base.resize!(wc::WelfordCov, θ::AbstractVector{T}) where {T<:AbstractF
     n = length(θ)
     if n != size(wc.cov, 1)
         @assert wc.n == 0 "Cannot resize a var estimator when it contains samples."
-        __fill!(wc.μ, n, T(0))
-        __fill!(wc.δ, n, T(0))
+        __resize_fill!(wc.μ, n, T(0))
+        __resize_fill!(wc.δ, n, T(0))
         wc.M = zeros(T, n, n)
         wc.cov = LinearAlgebra.diagm(0 => ones(T, n))
     end
