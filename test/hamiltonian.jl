@@ -39,6 +39,14 @@ end
 
         @test z1.ℓπ.value == z2.ℓπ.value
         @test z1.ℓκ.value == z2.ℓκ.value
+
+        # Test gradient length mismatch of neg potential and kinetic energy in PhasePoint
+        @test_throws ArgumentError PhasePoint(
+            [T(Inf)],
+            [T(Inf)],
+            DualValue(zero(T), [zero(T)]),
+            DualValue(zero(T), zeros(T, 2)),
+        )
     end
 end
 
