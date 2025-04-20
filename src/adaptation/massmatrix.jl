@@ -13,7 +13,7 @@ function adapt!(
     α::AbstractScalarOrVec{<:AbstractFloat},
     is_update::Bool=true,
 )
-    resize_with!(adaptor, θ)
+    resize!(adaptor, size(θ))
     push!(adaptor, θ)
     is_update && update!(adaptor)
     return nothing
@@ -29,7 +29,7 @@ UnitMassMatrix() = UnitMassMatrix{Float64}()
 
 Base.string(::UnitMassMatrix) = "I"
 
-resize_with!(pc::UnitMassMatrix, θ::AbstractVecOrMat) = nothing
+Base.resize!(pc::UnitMassMatrix, size_θ::Tuple) = nothing
 
 reset!(::UnitMassMatrix) = nothing
 
@@ -102,8 +102,7 @@ function WelfordVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...)
     return WelfordVar{Float64}(sz; kwargs...)
 end
 
-function resize_with!(wv::WelfordVar, θ::AbstractMatrix{T}) where {T<:AbstractFloat}
-    size_θ = size(θ)
+function Base.resize!(wv::WelfordVar{T}, size_θ::Tuple{Int,Int}) where {T<:AbstractFloat}
     if size_θ != size(wv.var)
         @assert wv.n == 0 "Cannot resize a var estimator when it contains samples."
         wv.μ = zeros(T, size_θ)
@@ -113,8 +112,8 @@ function resize_with!(wv::WelfordVar, θ::AbstractMatrix{T}) where {T<:AbstractF
     end
 end
 
-function resize_with!(wv::WelfordVar, θ::AbstractVector{T}) where {T<:AbstractFloat}
-    length_θ = length(θ)
+function Base.resize!(wv::WelfordVar{T}, size_θ::Tuple{Int}) where {T<:AbstractFloat}
+    length_θ = first(size_θ)
     if length_θ != size(wv.var, 1)
         @assert wv.n == 0 "Cannot resize a var estimator when it contains samples."
         fill!(resize!(wv.μ, length_θ), T(0))
@@ -203,8 +202,8 @@ end
 
 WelfordCov(sz::Tuple{Int}; kwargs...) = WelfordCov{Float64}(sz; kwargs...)
 
-function resize_with!(wc::WelfordCov, θ::AbstractVector{T}) where {T<:AbstractFloat}
-    length_θ = length(θ)
+function Base.resize!(wc::WelfordCov{T}, size_θ::Tuple{Int}) where {T<:AbstractFloat}
+    length_θ = first(size_θ)
     if length_θ != size(wc.cov, 1)
         @assert wc.n == 0 "Cannot resize a var estimator when it contains samples."
         fill!(resize!(wc.μ, length_θ), T(0))
