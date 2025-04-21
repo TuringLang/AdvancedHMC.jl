@@ -117,7 +117,7 @@ function adapt!(
 
     adapt!(tp.ssa, θ, α)
 
-    resize!(tp.pc, θ) # Resize pre-conditioner if necessary.
+    resize_adaptor!(tp.pc, size(θ)) # Resize pre-conditioner if necessary.
 
     # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/adapt_diag_e_nuts.hpp
     if is_in_window(tp)
