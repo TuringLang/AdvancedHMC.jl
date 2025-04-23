@@ -43,10 +43,22 @@ end
 
 ∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat) = copy(r)
 function ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat)
-    return h.metric.M⁻¹ .* r
+    (; M⁻¹) = h.metric
+    axes_M⁻¹ = __axes(M⁻¹)
+    axes_r = __axes(r)
+    (first(axes_M⁻¹) !== first(axes_r)) && throw(
+        ArgumentError("AxesMismatch: M⁻¹ has axes $(axes_M⁻¹) but r has axes $(axes_r)")
+    )
+    return M⁻¹ .* r
 end
 function ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat)
-    return h.metric.M⁻¹ * r
+    (; M⁻¹) = h.metric
+    axes_M⁻¹ = __axes(M⁻¹)
+    axes_r = __axes(r)
+    (last(axes_M⁻¹) !== first(axes_r)) && throw(
+        ArgumentError("AxesMismatch: M⁻¹ has axes $(axes_M⁻¹) but r has axes $(axes_r)")
+    )
+    return M⁻¹ * r
 end
 
 # TODO (kai) make the order of θ and r consistent with neg_energy
