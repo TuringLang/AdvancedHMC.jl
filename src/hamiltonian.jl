@@ -44,14 +44,20 @@ end
 ∂H∂r(h::Hamiltonian{<:UnitEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat) = copy(r)
 function ∂H∂r(h::Hamiltonian{<:DiagEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat)
     (; M⁻¹) = h.metric
-    (first(__axes(M⁻¹)) !== first(__axes(r))) &&
-        throw(ArgumentError("Axes of mass matrix and momentum must match"))
+    axes_M⁻¹ = __axes(M⁻¹)
+    axes_r = __axes(r)
+    (first(axes_M⁻¹) !== first(axes_r)) && throw(
+        ArgumentError("AxesMismatch: M⁻¹ has axes $(axes_M⁻¹) but r has axes $(axes_r)")
+    )
     return M⁻¹ .* r
 end
 function ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat)
     (; M⁻¹) = h.metric
-    (last(__axes(M⁻¹)) !== first(__axes(r))) &&
-        throw(ArgumentError("Axes of mass matrix and momentum must match"))
+    axes_M⁻¹ = __axes(M⁻¹)
+    axes_r = __axes(r)
+    (last(axes_M⁻¹) !== first(axes_r)) && throw(
+        ArgumentError("AxesMismatch: M⁻¹ has axes $(axes_M⁻¹) but r has axes $(axes_r)")
+    )
     return M⁻¹ * r
 end
 
