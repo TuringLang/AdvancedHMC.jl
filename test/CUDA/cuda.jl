@@ -1,4 +1,10 @@
-using ReTest
+using Pkg
+Pkg.activate(@__DIR__)
+Pkg.develop(; path=joinpath(@__DIR__, "..", ".."))
+
+include(joinpath(@__DIR__, "..", "common.jl"))
+
+using Test
 using AdvancedHMC
 using AdvancedHMC: DualValue, PhasePoint
 using CUDA
@@ -22,31 +28,24 @@ using CUDA
     samples, stats = sample(hamiltonian, proposal, θ₀, n_samples)
 end
 
-#=
-Broken! See https://github.com/JuliaTesting/ReTest.jl/issues/50
 @testset "PhasePoint GPU" begin
     for T in [Float32, Float64]
-        init_z1() = PhasePoint(
-            CuArray([T(NaN) T(NaN)]),
-            CuArray([T(NaN) T(NaN)]),
-            DualValue(CuArray(zeros(T, 2)), CuArray(zeros(T, 1, 2))),
-            DualValue(CuArray(zeros(T, 2)), CuArray(zeros(T, 1, 2))),
-        )
-        init_z2() = PhasePoint(
-            CuArray([T(Inf) T(Inf)]),
-            CuArray([T(Inf) T(Inf)]),
-            DualValue(CuArray(zeros(T, 2)), CuArray(zeros(T, 1, 2))),
-            DualValue(CuArray(zeros(T, 2)), CuArray(zeros(T, 1, 2))),
-        )
-
-        @test_logs (
-            :warn,
-            "The current proposal will be rejected due to numerical error(s).",
-        ) init_z1()
-        @test_logs (
-            :warn,
-            "The current proposal will be rejected due to numerical error(s).",
-        ) init_z2()
+        function init_z1()
+            return PhasePoint(
+                CuArray([T(NaN) T(NaN)]),
+                CuArray([T(NaN) T(NaN)]),
+                DualValue(CuArray(zeros(T, 2)), CuArray(zeros(T, 1, 2))),
+                DualValue(CuArray(zeros(T, 2)), CuArray(zeros(T, 1, 2))),
+            )
+        end
+        function init_z2()
+            return PhasePoint(
+                CuArray([T(Inf) T(Inf)]),
+                CuArray([T(Inf) T(Inf)]),
+                DualValue(CuArray(zeros(T, 2)), CuArray(zeros(T, 1, 2))),
+                DualValue(CuArray(zeros(T, 2)), CuArray(zeros(T, 1, 2))),
+            )
+        end
 
         z1 = init_z1()
         z2 = init_z2()
@@ -55,4 +54,3 @@ Broken! See https://github.com/JuliaTesting/ReTest.jl/issues/50
         @test z1.ℓκ.value == z2.ℓκ.value
     end
 end
-=#

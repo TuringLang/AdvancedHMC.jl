@@ -17,7 +17,7 @@ const GROUP = get(ENV, "AHMC_TEST_GROUP", "AdvancedHMC")
 include("common.jl")
 
 if GROUP == "All" || GROUP == "AdvancedHMC"
-    using ReTest, CUDA
+    using ReTest
 
     include("aqua.jl")
     include("metric.jl")
@@ -32,12 +32,6 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
     include("abstractmcmc.jl")
     include("mcmcchains.jl")
     include("constructors.jl")
-
-    if CUDA.functional()
-        include("cuda.jl")
-    else
-        @warn "Skipping GPU tests because no GPU available."
-    end
 
     Comonicon.@main function runtests(patterns...; dry::Bool=false)
         return retest(patterns...; dry=dry, verbose=Inf)
