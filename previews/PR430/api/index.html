@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Detailed API · AdvancedHMC</title><meta name="title" content="Detailed API · AdvancedHMC"/><meta property="og:title" content="Detailed API · AdvancedHMC"/><meta property="twitter:title" content="Detailed API · AdvancedHMC"/><meta name="description" content="Documentation for AdvancedHMC."/><meta property="og:description" content="Documentation for AdvancedHMC."/><meta property="twitter:description" content="Documentation for AdvancedHMC."/><meta property="og:url" content="https://turinglang.org/AdvancedHMC.jl/stable/api/"/><meta property="twitter:url" content="https://turinglang.org/AdvancedHMC.jl/stable/api/"/><link rel="canonical" href="https://turinglang.org/AdvancedHMC.jl/stable/api/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="../assets/favicon.ico" rel="icon" type="image/x-icon"/></head><body>
+<!-- NAVBAR START -->
+<style>
+    html {
+        scroll-padding-top: calc(55px + 1rem);
+    }
+
+    /* Documenter css tweaks */
+    .docs-sidebar {
+        margin-top: 3.75rem;
+    }
+
+    #documenter {
+        margin-top: 3.75rem;
+    }
+
+    .docs-version-selector {
+        margin-bottom: 60px !important;
+    }
+
+    @media screen and (max-width: 1056px) {
+        .docs-version-selector {
+            margin-bottom: 60px !important;
+        }
+
+        .docs-sidebar {
+            margin-top: 0 !important;
+        }
+    }
+    /* Documenter css tweaks ends here */
+
+    :root {
+        --heading-color: white;
+        --item-color: rgb(165, 165, 165);
+        --primary-bg: #073c44;
+        --hover-color: #8faad2;
+    }
+
+    .ext-navigation {
+        position: fixed;
+        height: 3.75rem;
+        top: 0;
+        width: 100%;
+        background-color: var(--primary-bg);
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        padding: 0 1.0625rem;
+        transition: transform 0.3s;
+    }
+
+    .ext-navbar-logo {
+        margin-left: 0.625rem;
+    }
+
+    .ext-nav-links {
+        display: flex;
+        align-items: center;
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        flex-grow: 1;
+    }
+
+    .ext-nav-links li {
+        margin-left: 1rem !important;
+    }
+
+    .ext-nav-link {
+        color: white !important;
+        text-decoration: none;
+        font-size: 1.0625rem !important;
+        transition: color 0.2s ease;
+        cursor: pointer;
+    }
+
+    .ext-nav-link:hover,
+    .ext-navbar-item-single a:hover {
+        color: var(--hover-color) !important;
+    }
+
+    .ext-navbar-item-single a {
+        color: #fff !important;
+    }
+
+    .ext-menu-toggle {
+        display: none;
+        font-size: 1.5rem;
+        color: white;
+        cursor: pointer;
+    }
+
+    .ext-dropdown {
+        display: none;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-template-rows: auto auto auto;
+        padding: 1.875rem;
+        position: absolute;
+        width: 100%;
+        left: 0;
+        background-color: #083c44;
+        line-height: 1.875rem;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        transform: translateY(-0.625rem);
+    }
+
+    #library-handler::after {
+        content: "▼";
+        font-size: 0.6875rem;
+        margin-left: 0.3125rem;
+        transition: transform 0.3s ease-in-out;
+    }
+
+    #library-handler.open::after {
+        content: "▲";
+    }
+
+    .ext-dropdown.show {
+        display: grid;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .ext-dropdown ul {
+        height: auto;
+        width: 12.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .ext-dropdown ul li {
+        text-align: left;
+    }
+
+    .navbar-sub-item {
+        list-style: none;
+    }
+
+    .ext-dropdown ul a li {
+        color: var(--item-color);
+        width: 15.625rem;
+        border-radius: 3px;
+        padding: 0.125rem 0.625rem;
+        transition: background-color 0.2s ease;
+    }
+
+    .ext-dropdown ul a li:hover {
+        background-color: rgba(107, 107, 107, 0.5);
+    }
+
+    .ext-dropdown-item-heading {
+        color: var(--heading-color);
+        text-align: center;
+    }
+
+    /* Responsive styling */
+    @media (max-width: 966px) {
+        .ext-dropdown {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .ext-nav-links {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            background-color: var(--primary-bg);
+            position: absolute;
+            top: 3.75rem;
+            left: 0;
+            padding: 0.625rem 0;
+            height: auto;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgb(141, 141, 141) grey;
+        }
+
+        .ext-nav-links.show {
+            display: flex;
+        }
+
+        .ext-nav-links li {
+            margin: 0.625rem 0;
+            text-align: center;
+        }
+
+        .ext-menu-toggle {
+            display: block;
+            margin-left: auto;
+        }
+
+        .ext-navigation.hide {
+            transform: translateY(-3.75rem);
+        }
+
+        .ext-dropdown {
+            place-content: center;
+            text-align: center;
+            grid-template-columns: 1fr;
+            line-height: 1.25rem;
+            padding: 0.625rem;
+        }
+
+        .ext-dropdown ul {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 0.3125rem;
+        }
+
+        .ext-dropdown ul li {
+            text-align: center;
+        }
+
+        .ext-dropdown ul a li {
+            width: 100%;
+        }
+
+        .ext-dropdown ul a li:hover {
+            background-color: var(--primary-bg);
+            color: #fff;
+        }
+
+        /* Modified scroll bar */
+        .ext-nav-links::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-track {
+            box-shadow: inset 0 0 5px grey;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-thumb {
+            background: rgb(141, 141, 141);
+            border-radius: 3px;
+        }
+
+        .ext-nav-links::-webkit-scrollbar-thumb:hover {
+            background: #9b9b9b;
+        }
+    }
+</style>
+<nav class="ext-navigation">
+    <a href="https://turinglang.org/">
+        <img src="https://turinglang.org/assets/images/turing-logo.svg" alt="Turing Logo" class="ext-navbar-logo" height="24px" width="40px">
+    </a>
+    <a style="color: white !important; font-size: 21.25px !important; margin-left: 10px;" href="https://turinglang.org/">Turing.jl</a>
+    <ul class="ext-nav-links">
+        <li>
+            <a class="ext-nav-link" href="https://turinglang.org/docs/tutorials/docs-00-getting-started/">Get Started</a>
+        </li>
+        <li>
+            <a class="ext-nav-link" href="https://turinglang.org/docs/tutorials/00-introduction/">Tutorials</a>
+        </li>
+        <li>
+            <p class="ext-nav-link" id="library-handler">Libraries</p>
+            <div class="ext-dropdown" id="ext-dropdown-items">
+                <ul>
+                    <li class="ext-dropdown-item-heading">Modelling Languages</li>
+                    <a href="https://turinglang.org/DynamicPPL.jl/">
+                        <li>DynamicPPL</li>
+                    </a>
+                    <a href="https://turinglang.org/JuliaBUGS.jl/">
+                        <li>JuliaBUGS</li>
+                    </a>
+                    <a href="https://turinglang.org/TuringGLM.jl/">
+                        <li>TuringGLM</li>
+                    </a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading">MCMC</li>
+                    <a href="https://turinglang.org/AdvancedHMC.jl/">
+                        <li>AdvancedHMC</li>
+                    </a>
+                    <a href="https://turinglang.org/AbstractMCMC.jl/">
+                        <li>AbstractMCMC</li>
+                    </a>
+                    <a href="https://github.com/theogf/ThermodynamicIntegration.jl">
+                        <li>ThermodynamicIntegration</li>
+                    </a>
+                    <a href="https://turinglang.org/AdvancedPS.jl/">
+                        <li>AdvancedPS</li>
+                    </a>
+                    <a href="https://turinglang.org/SliceSampling.jl/">
+                        <li>SliceSampling</li>
+                    </a>
+                    <a href="https://turinglang.org/EllipticalSliceSampling.jl/">
+                        <li>EllipticalSliceSampling</li>
+                    </a>
+                    <a href="https://turinglang.org/NestedSamplers.jl/">
+                        <li>NestedSamplers</li>
+                    </a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading">Diagnostics</li>
+                    <a href="https://turinglang.org/MCMCChains.jl/">
+                        <li>MCMCChains</li>
+                    </a>
+                    <a href="https://turinglang.org/MCMCDiagnosticTools.jl/">
+                        <li>MCMCDiagnosticTools</li>
+                    </a>
+                    <a href="https://turinglang.org/ParetoSmooth.jl/">
+                        <li>ParetoSmooth</li>
+                    </a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading">Gaussian Processes</li>
+                    <a href="https://juliagaussianprocesses.github.io/AbstractGPs.jl/">
+                        <li>AbstractGPs</li>
+                    </a>
+                    <a href="https://juliagaussianprocesses.github.io/KernelFunctions.jl/">
+                        <li>KernelFunctions</li>
+                    </a>
+                    <a href="https://juliagaussianprocesses.github.io/ApproximateGPs.jl/">
+                        <li>ApproximateGPs</li>
+                    </a>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading ext-navbar-item-single">
+                        <a href="https://turinglang.org/Bijectors.jl/">Bijectors</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading ext-navbar-item-single">
+                        <a href="https://turinglang.org/TuringCallbacks.jl/">TuringCallbacks</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="ext-dropdown-item-heading ext-navbar-item-single">
+                        <a href="https://turinglang.org/TuringBenchmarking.jl/">TuringBenchmarking</a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        <li>
+            <a class="ext-nav-link" href="https://turinglang.org/news/">News</a>
+        </li>
+        <li>
+            <a class="ext-nav-link" href="https://turinglang.org/team/">Team</a>
+        </li>
+    </ul>
+    <a href="https://x.com/TuringLang" style="margin-left: 15px; padding-top: 2px">
+        <svg fill="#ffffff" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32px" height="32px" viewBox="-209.92 -209.92 931.84 931.84" xml:space="preserve" stroke="#ffffff">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <g id="7935ec95c421cee6d86eb22ecd12f847">
+                    <path style="display: inline"
+                        d="M459.186,151.787c0.203,4.501,0.305,9.023,0.305,13.565 c0,138.542-105.461,298.285-298.274,298.285c-59.209,0-114.322-17.357-160.716-47.104c8.212,0.973,16.546,1.47,25.012,1.47 c49.121,0,94.318-16.759,130.209-44.884c-45.887-0.841-84.596-31.154-97.938-72.804c6.408,1.227,12.968,1.886,19.73,1.886 c9.55,0,18.816-1.287,27.617-3.68c-47.955-9.633-84.1-52.001-84.1-102.795c0-0.446,0-0.882,0.011-1.318 c14.133,7.847,30.294,12.562,47.488,13.109c-28.134-18.796-46.637-50.885-46.637-87.262c0-19.212,5.16-37.218,14.193-52.7 c51.707,63.426,128.941,105.156,216.072,109.536c-1.784-7.675-2.718-15.674-2.718-23.896c0-57.891,46.941-104.832,104.832-104.832 c30.173,0,57.404,12.734,76.525,33.102c23.887-4.694,46.313-13.423,66.569-25.438c-7.827,24.485-24.434,45.025-46.089,58.002 c21.209-2.535,41.426-8.171,60.222-16.505C497.448,118.542,479.666,137.004,459.186,151.787z">
+                    </path>
+                </g>
+            </g>
+        </svg>
+    </a>
+    <a href="https://github.com/TuringLang/Turing.jl">
+        <svg width="32px" height="32px" viewBox="-8.2 -8.2 36.40 36.40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#000000">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <title>github [#142]</title>
+                <desc>Created with Sketch.</desc>
+                <defs></defs>
+                <g id="Page-1" stroke-width="0.0002" fill="none" fill-rule="evenodd">
+                    <g id="Dribbble-Light-Preview" transform="translate(-140.000000, -7559.000000)" fill="#ffffff">
+                        <g id="icons" transform="translate(56.000000, 160.000000)">
+                            <path
+                                d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399"
+                                id="github-[#142]">
+                            </path>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </svg>
+    </a>
+    <span class="ext-menu-toggle">&#9776;</span>
+</nav>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const menuToggle = document.querySelector(".ext-menu-toggle");
+        const navLinks = document.querySelector(".ext-nav-links");
+        const nav = document.querySelector(".ext-navigation");
+        const navigationHandler = document.getElementById("library-handler");
+        const navigationItemsContainer =
+            document.getElementById("ext-dropdown-items");
+        let lastScrollY = window.scrollY;
+
+        function setAppropriateHeight() {
+            if (window.innerWidth <= 768) {
+                const viewportHeight = window.innerHeight;
+                const navHeight = nav.offsetHeight;
+                navLinks.style.maxHeight = `${viewportHeight - navHeight}px`;
+                navLinks.style.overflowY = "auto";
+            } else {
+                navLinks.style.maxHeight = "";
+                navLinks.style.overflowY = "";
+            }
+        }
+
+        // Toggle main menu for mobile
+        menuToggle.addEventListener("click", () => {
+            navLinks.classList.toggle("show");
+            if (navLinks.classList.contains("show")) {
+                setAppropriateHeight();
+                // Ensure the dropdown is hidden when menu is first opened
+                navigationItemsContainer.style.display = "none";
+                navigationItemsContainer.classList.remove("show");
+            }
+        });
+
+        // Close menus if clicked outside
+        document.addEventListener("click", (event) => {
+            if (
+                !navLinks.contains(event.target) &&
+                !menuToggle.contains(event.target)
+            ) {
+                navLinks.classList.remove("show");
+                navigationItemsContainer.classList.remove("show");
+                navigationHandler.classList.remove("open");
+            }
+        });
+
+        // Hide navigation bar on scroll down in mobile view
+        window.addEventListener("scroll", () => {
+            if (window.innerWidth <= 768) {
+                nav.classList.toggle("hide", window.scrollY > lastScrollY);
+                lastScrollY = window.scrollY;
+            }
+        });
+
+        // Library API script
+        navigationHandler.addEventListener("click", (event) => {
+            event.preventDefault(); // Prevent default action of the link
+            if (navigationItemsContainer.classList.contains("show")) {
+                navigationItemsContainer.classList.remove("show");
+                navigationHandler.classList.remove("open");
+                setTimeout(() => {
+                    navigationItemsContainer.style.display = "none";
+                }, 500); // Match the timeout to the CSS transition duration
+            } else {
+                navigationItemsContainer.style.display = "grid";
+                navigationHandler.classList.add("open");
+                setTimeout(() => {
+                    navigationItemsContainer.classList.add("show");
+                }, 10); // Delay to ensure the display change takes effect before adding class
+            }
+            setAppropriateHeight(); // Recalculate height when dropdown changes
+        });
+
+        // Handle window resize
+        window.addEventListener("resize", setAppropriateHeight);
+
+        // Initial setup
+        setAppropriateHeight();
+    });
+</script>
+<!-- NAVBAR END -->
+
+<div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">AdvancedHMC</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">AdvancedHMC.jl</a></li><li><a class="tocitem" href="../get_started/">Get Started</a></li><li><a class="tocitem" href="../autodiff/">Automatic Differentiation Backends</a></li><li class="is-active"><a class="tocitem" href>Detailed API</a><ul class="internal"><li><a class="tocitem" href="#The-sample-functions"><span>The <code>sample</code> functions</span></a></li><li><a class="tocitem" href="#Full-documentation-of-APIs-in-AdvancedHMC.jl"><span>Full documentation of APIs in AdvancedHMC.jl</span></a></li></ul></li><li><a class="tocitem" href="../interfaces/">Interfaces</a></li><li><a class="tocitem" href="../news/">News</a></li><li><a class="tocitem" href="../references/">References</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Detailed API</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Detailed API</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/TuringLang/AdvancedHMC.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/main/docs/src/api.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Detailed-API-for-AdvancedHMC.jl"><a class="docs-heading-anchor" href="#Detailed-API-for-AdvancedHMC.jl">Detailed API for AdvancedHMC.jl</a><a id="Detailed-API-for-AdvancedHMC.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Detailed-API-for-AdvancedHMC.jl" title="Permalink"></a></h1><p>An important design goal of AdvancedHMC.jl is modularity; we would like to support algorithmic research on HMC. This modularity means that different HMC variants can be easily constructed by composing various components, such as preconditioning metric (i.e., mass matrix), leapfrog integrators, trajectories (static or dynamic), adaption schemes, etc. In this section, we will explain the detailed usage of different modules in AdancedHMC.jl to provide a comprehensive udnerstanding of how AdvancedHMC.jl can achieve both modularity and efficiency. The section highlights the key components of AdvancedHMC.jl, with a complete documentation provided at the end.</p><h3 id="hamiltonian_mm"><a class="docs-heading-anchor" href="#hamiltonian_mm">Hamiltonian mass matrix (<code>metric</code>)</a><a id="hamiltonian_mm-1"></a><a class="docs-heading-anchor-permalink" href="#hamiltonian_mm" title="Permalink"></a></h3><ul><li>Unit metric: <code>UnitEuclideanMetric(dim)</code></li><li>Diagonal metric: <code>DiagEuclideanMetric(dim)</code></li><li>Dense metric: <code>DenseEuclideanMetric(dim)</code></li></ul><p>where <code>dim</code> is the dimensionality of the sampling space.</p><h3 id="integrator"><a class="docs-heading-anchor" href="#integrator">Integrator (<code>integrator</code>)</a><a id="integrator-1"></a><a class="docs-heading-anchor-permalink" href="#integrator" title="Permalink"></a></h3><ul><li>Ordinary leapfrog integrator: <code>Leapfrog(ϵ)</code></li><li>Jittered leapfrog integrator with jitter rate <code>n</code>: <code>JitteredLeapfrog(ϵ, n)</code></li><li>Tempered leapfrog integrator with tempering rate <code>a</code>: <code>TemperedLeapfrog(ϵ, a)</code></li></ul><p>where <code>ϵ</code> is the step size of leapfrog integration.</p><h3 id="kernel"><a class="docs-heading-anchor" href="#kernel">Kernel (<code>kernel</code>)</a><a id="kernel-1"></a><a class="docs-heading-anchor-permalink" href="#kernel" title="Permalink"></a></h3><ul><li>Static HMC with a fixed number of steps (<code>n_steps</code>) from <a href="../references/#neal2011mcmc">Neal [1]</a>: <code>HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(integrator)))</code></li><li>HMC with a fixed total trajectory length (<code>trajectory_length</code>) from <a href="../references/#neal2011mcmc">Neal [1]</a>: <code>HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(trajectory_length)))</code></li><li>Original NUTS with slice sampling from <a href="../references/#hoffman2014no">Hoffman <em>et al.</em> [2]</a>: <code>HMCKernel(Trajectory{SliceTS}(integrator, ClassicNoUTurn()))</code></li><li>Generalised NUTS with slice sampling from <a href="../references/#betancourt2017conceptual">Betancourt [3]</a>: <code>HMCKernel(Trajectory{SliceTS}(integrator, GeneralisedNoUTurn()))</code></li><li>Original NUTS with multinomial sampling from <a href="../references/#betancourt2017conceptual">Betancourt [3]</a>: <code>HMCKernel(Trajectory{MultinomialTS}(integrator, ClassicNoUTurn()))</code></li><li>Generalised NUTS with multinomial sampling from <a href="../references/#betancourt2017conceptual">Betancourt [3]</a>: <code>HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))</code></li></ul><h3 id="Adaptor-(adaptor)"><a class="docs-heading-anchor" href="#Adaptor-(adaptor)">Adaptor (<code>adaptor</code>)</a><a id="Adaptor-(adaptor)-1"></a><a class="docs-heading-anchor-permalink" href="#Adaptor-(adaptor)" title="Permalink"></a></h3><ul><li><p>Adapt the mass matrix <code>metric</code> of the Hamiltonian dynamics: <code>mma = MassMatrixAdaptor(metric)</code></p><ul><li>This is lowered to <code>UnitMassMatrix</code>, <code>WelfordVar</code> or <code>WelfordCov</code> based on the type of the mass matrix <code>metric</code></li></ul></li><li><p>Adapt the step size of the leapfrog integrator <code>integrator</code>: <code>ssa = StepSizeAdaptor(δ, integrator)</code></p><ul><li>It uses Nesterov&#39;s dual averaging with <code>δ</code> as the target acceptance rate.</li></ul></li><li><p>Combine the two above <em>naively</em>: <code>NaiveHMCAdaptor(mma, ssa)</code></p></li><li><p>Combine the first two using Stan&#39;s windowed adaptation: <code>StanHMCAdaptor(mma, ssa)</code></p></li></ul><h2 id="The-sample-functions"><a class="docs-heading-anchor" href="#The-sample-functions">The <code>sample</code> functions</a><a id="The-sample-functions-1"></a><a class="docs-heading-anchor-permalink" href="#The-sample-functions" title="Permalink"></a></h2><pre><code class="language-julia hljs">sample(
+    rng::Union{AbstractRNG,AbstractVector{&lt;:AbstractRNG}},
+    h::Hamiltonian,
+    κ::HMCKernel,
+    θ::AbstractVector{&lt;:AbstractFloat},
+    n_samples::Int;
+    adaptor::AbstractAdaptor=NoAdaptation(),
+    n_adapts::Int=min(div(n_samples, 10), 1_000),
+    drop_warmup=false,
+    verbose::Bool=true,
+    progress::Bool=false,
+)</code></pre><p>Draw <code>n_samples</code> samples using the kernel <code>κ</code> under the Hamiltonian system <code>h</code></p><ul><li><p>The randomness is controlled by <code>rng</code>.</p><ul><li>If <code>rng</code> is not provided, the default random number generator (<code>Random.default_rng()</code>) will be used.</li></ul></li><li><p>The initial point is given by <code>θ</code>.</p></li><li><p>The adaptor is set by <code>adaptor</code>, for which the default is no adaptation.</p><ul><li>It will perform <code>n_adapts</code> steps of adaptation, for which the default is <code>1_000</code> or 10% of <code>n_samples</code>, whichever is lower.</li></ul></li><li><p><code>drop_warmup</code> specifies whether to drop samples.</p></li><li><p><code>verbose</code> controls the verbosity.</p></li><li><p><code>progress</code> controls whether to show the progress meter or not.</p></li></ul><p>Note that the function signature of the <code>sample</code> function exported by <code>AdvancedHMC.jl</code> differs from the <a href="https://turinglang.org/dev/docs/using-turing/guide#modelling-syntax-explained"><code>sample</code></a> function used by <code>Turing.jl</code>. We refer to the documentation of <code>Turing.jl</code> for more details on the latter.</p><h2 id="Full-documentation-of-APIs-in-AdvancedHMC.jl"><a class="docs-heading-anchor" href="#Full-documentation-of-APIs-in-AdvancedHMC.jl">Full documentation of APIs in AdvancedHMC.jl</a><a id="Full-documentation-of-APIs-in-AdvancedHMC.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Full-documentation-of-APIs-in-AdvancedHMC.jl" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.AbstractIntegrator-api" href="#AdvancedHMC.AbstractIntegrator-api"><code>AdvancedHMC.AbstractIntegrator</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">abstract type AbstractIntegrator</code></pre><p>Represents an integrator used to simulate the Hamiltonian system.</p><p><strong>Implementation</strong></p><p>A <code>AbstractIntegrator</code> is expected to have the following implementations:</p><ul><li><code>stat</code>(@ref)</li><li><code>nom_step_size</code>(@ref)</li><li><code>step_size</code>(@ref)</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/integrator.jl#L10">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.AbstractMCMCKernel-api" href="#AdvancedHMC.AbstractMCMCKernel-api"><code>AdvancedHMC.AbstractMCMCKernel</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">abstract type AbstractMCMCKernel</code></pre><p>Abstract type for HMC kernels. </p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L28">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.AbstractMetric-api" href="#AdvancedHMC.AbstractMetric-api"><code>AdvancedHMC.AbstractMetric</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">abstract type AbstractMetric</code></pre><p>Abstract type for preconditioning metrics. </p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/metric.jl#L1">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.AbstractTerminationCriterion-api" href="#AdvancedHMC.AbstractTerminationCriterion-api"><code>AdvancedHMC.AbstractTerminationCriterion</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">abstract type AbstractTerminationCriterion</code></pre><p>Abstract type for termination criteria for Hamiltonian trajectories, e.g. no-U-turn and fixed number of leapfrog integration steps. </p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L34">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.AbstractTrajectorySampler-api" href="#AdvancedHMC.AbstractTrajectorySampler-api"><code>AdvancedHMC.AbstractTrajectorySampler</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><p>How to sample a phase-point from the simulated trajectory.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L86">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.BinaryTree-api" href="#AdvancedHMC.BinaryTree-api"><code>AdvancedHMC.BinaryTree</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><p>A full binary tree trajectory with only necessary leaves and information stored.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L498-L500">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.ClassicNoUTurn-api" href="#AdvancedHMC.ClassicNoUTurn-api"><code>AdvancedHMC.ClassicNoUTurn</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct ClassicNoUTurn{F&lt;:AbstractFloat} &lt;: AdvancedHMC.DynamicTerminationCriterion</code></pre><p>Classic No-U-Turn criterion as described in Eq. (9) in [1].</p><p>Informally, this will terminate the trajectory expansion if continuing the simulation either forwards or backwards in time will decrease the distance between the left-most and right-most positions.</p><p><strong>Fields</strong></p><ul><li><p><code>max_depth::Int64</code></p></li><li><p><code>Δ_max::AbstractFloat</code></p></li></ul><p><strong>References</strong></p><ol><li>Hoffman, M. D., &amp; Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623. (<a href="http://arxiv.org/abs/1111.4246">arXiv</a>)</li></ol></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L386">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.DynamicTerminationCriterion-api" href="#AdvancedHMC.DynamicTerminationCriterion-api"><code>AdvancedHMC.DynamicTerminationCriterion</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">abstract type DynamicTerminationCriterion &lt;: AdvancedHMC.AbstractTerminationCriterion</code></pre><p>Abstract type for dynamic Hamiltonian trajectory termination criteria. </p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L46">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.EndPointTS-api" href="#AdvancedHMC.EndPointTS-api"><code>AdvancedHMC.EndPointTS</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><p>Samples the end-point of the trajectory.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L89">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.FixedIntegrationTime-api" href="#AdvancedHMC.FixedIntegrationTime-api"><code>AdvancedHMC.FixedIntegrationTime</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct FixedIntegrationTime{F&lt;:AbstractFloat} &lt;: AdvancedHMC.StaticTerminationCriterion</code></pre><p>Standard HMC implementation with a fixed integration time.</p><p><strong>Fields</strong></p><ul><li><code>λ::AbstractFloat</code>: Total length of the trajectory, i.e. take <code>floor(λ / integrator_step_size)</code> number of leapfrog steps.</li></ul><p><strong>References</strong></p><ol><li>Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. (<a href="https://arxiv.org/pdf/1206.1901">arXiv</a>) </li></ol></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L67">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.FixedNSteps-api" href="#AdvancedHMC.FixedNSteps-api"><code>AdvancedHMC.FixedNSteps</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct FixedNSteps &lt;: AdvancedHMC.StaticTerminationCriterion</code></pre><p>Static HMC with a fixed number of leapfrog steps.</p><p><strong>Fields</strong></p><ul><li><code>L::Int64</code>: Number of steps to simulate, i.e. length of trajectory will be <code>L + 1</code>.</li></ul><p><strong>References</strong></p><ol><li>Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. (<a href="https://arxiv.org/pdf/1206.1901">arXiv</a>)</li></ol></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L52">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.FullMomentumRefreshment-api" href="#AdvancedHMC.FullMomentumRefreshment-api"><code>AdvancedHMC.FullMomentumRefreshment</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><p>Completly resample new momentum.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/hamiltonian.jl#L184">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.GeneralisedNoUTurn-api" href="#AdvancedHMC.GeneralisedNoUTurn-api"><code>AdvancedHMC.GeneralisedNoUTurn</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct GeneralisedNoUTurn{F&lt;:AbstractFloat} &lt;: AdvancedHMC.DynamicTerminationCriterion</code></pre><p>Generalised No-U-Turn criterion as described in Section A.4.2 in [1].</p><p><strong>Fields</strong></p><ul><li><p><code>max_depth::Int64</code></p></li><li><p><code>Δ_max::AbstractFloat</code></p></li></ul><p><strong>References</strong></p><ol><li>Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. <a href="https://arxiv.org/abs/1701.02434">arXiv preprint arXiv:1701.02434</a>.</li></ol></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L405">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.GeneralizedLeapfrog-api" href="#AdvancedHMC.GeneralizedLeapfrog-api"><code>AdvancedHMC.GeneralizedLeapfrog</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct GeneralizedLeapfrog{T&lt;:(Union{AbstractVector{var&quot;#s20&quot;}, var&quot;#s20&quot;} where var&quot;#s20&quot;&lt;:AbstractFloat)} &lt;: AdvancedHMC.AbstractLeapfrog{T&lt;:(Union{AbstractVector{var&quot;#s20&quot;}, var&quot;#s20&quot;} where var&quot;#s20&quot;&lt;:AbstractFloat)}</code></pre><p>Generalized leapfrog integrator with fixed step size <code>ϵ</code>.</p><p><strong>Fields</strong></p><ul><li><p><code>ϵ::Union{AbstractVector{var&quot;#s20&quot;}, var&quot;#s20&quot;} where var&quot;#s20&quot;&lt;:AbstractFloat</code>: Step size.</p></li><li><p><code>n::Int64</code></p></li></ul><p><strong>References</strong></p><ol><li>Girolami, Mark, and Ben Calderhead. &quot;Riemann manifold Langevin and Hamiltonian Monte Carlo methods.&quot; Journal of the Royal Statistical Society Series B: Statistical Methodology 73, no. 2 (2011): 123-214.</li></ol></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/riemannian/integrator.jl#L1">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.HMC-api" href="#AdvancedHMC.HMC-api"><code>AdvancedHMC.HMC</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">HMC(ϵ::Real, n_leapfrog::Int)</code></pre><p>Hamiltonian Monte Carlo sampler with static trajectory.</p><p><strong>Fields</strong></p><ul><li><p><code>n_leapfrog</code>: Number of leapfrog steps.</p></li><li><p><code>integrator</code>: Choice of integrator, specified either using a <code>Symbol</code> or <a href="#AdvancedHMC.AbstractIntegrator-api"><code>AbstractIntegrator</code></a></p></li><li><p><code>metric</code>: Choice of initial metric;  <code>Symbol</code> means it is automatically initialised. The metric type will be preserved during automatic initialisation and adaption.</p></li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/constructors.jl#L102-L110">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.HMCDA-api" href="#AdvancedHMC.HMCDA-api"><code>AdvancedHMC.HMCDA</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">HMCDA(δ::Real, λ::Real, integrator = :leapfrog, metric = :diagonal)</code></pre><p>Hamiltonian Monte Carlo sampler with Dual Averaging algorithm.</p><p><strong>Fields</strong></p><ul><li><p><code>δ</code>: Target acceptance rate for dual averaging.</p></li><li><p><code>λ</code>: Target leapfrog length.</p></li><li><p><code>integrator</code>: Choice of integrator, specified either using a <code>Symbol</code> or <a href="#AdvancedHMC.AbstractIntegrator-api"><code>AbstractIntegrator</code></a></p></li><li><p><code>metric</code>: Choice of initial metric;  <code>Symbol</code> means it is automatically initialised. The metric type will be preserved during automatic initialisation and adaption.</p></li></ul><p><strong>Notes</strong></p><p>For more information, please view the following paper (<a href="https://arxiv.org/abs/1111.4246">arXiv link</a>):</p><ul><li>Hoffman, Matthew D., and Andrew Gelman. &quot;The No-U-turn sampler: adaptively setting path lengths in Hamiltonian Monte Carlo.&quot; Journal of Machine Learning Research 15, no. 1 (2014): 1593-1623.</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/constructors.jl#L131-L147">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.HMCProgressCallback-api" href="#AdvancedHMC.HMCProgressCallback-api"><code>AdvancedHMC.HMCProgressCallback</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">HMCProgressCallback</code></pre><p>A callback to be used with AbstractMCMC.jl&#39;s interface, replicating the logging behavior of the non-AbstractMCMC <a href="@ref"><code>sample</code></a>.</p><p><strong>Fields</strong></p><ul><li><p><code>pm</code>: <code>Progress</code> meter from ProgressMeters.jl, or <code>nothing</code>.</p></li><li><p><code>verbose</code>: If <code>pm === nothing</code> and this is <code>true</code> some information will be logged upon completion of adaptation.</p></li><li><p><code>num_divergent_transitions</code>: Number of divergent transitions.</p></li><li><p><code>num_divergent_transitions_during_adaption</code></p></li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/abstractmcmc.jl#L211-L219">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.HMCSampler-api" href="#AdvancedHMC.HMCSampler-api"><code>AdvancedHMC.HMCSampler</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">HMCSampler</code></pre><p>An <code>AbstractMCMC.AbstractSampler</code> for kernels in AdvancedHMC.jl.</p><p><strong>Fields</strong></p><ul><li><p><code>κ</code>: <a href="#AdvancedHMC.AbstractMCMCKernel-api"><code>AbstractMCMCKernel</code></a>.</p></li><li><p><code>metric</code>: Choice of initial metric <a href="#AdvancedHMC.AbstractMetric-api"><code>AbstractMetric</code></a>. The metric type will be preserved during adaption.</p></li><li><p><code>adaptor</code>: <a href="#AdvancedHMC.Adaptation.AbstractAdaptor-api"><code>AdvancedHMC.Adaptation.AbstractAdaptor</code></a>.</p></li></ul><p><strong>Notes</strong></p><p>Note that all the fields have the prefix <code>initial_</code> to indicate that these will not necessarily correspond to the <code>kernel</code>, <code>metric</code>, and <code>adaptor</code> after sampling.</p><p>To access the updated fields, use the resulting <a href="#AdvancedHMC.HMCState-api"><code>HMCState</code></a>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/constructors.jl#L37-L53">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.HMCState-api" href="#AdvancedHMC.HMCState-api"><code>AdvancedHMC.HMCState</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">HMCState</code></pre><p>Represents the state of a <a href="#AdvancedHMC.HMCSampler-api"><code>HMCSampler</code></a>.</p><p><strong>Fields</strong></p><ul><li><p><code>i</code>: Index of current iteration.</p></li><li><p><code>transition</code>: Current <a href="#AdvancedHMC.Transition-api"><code>Transition</code></a>.</p></li><li><p><code>metric</code>: Current <a href="#AdvancedHMC.AbstractMetric-api"><code>AbstractMetric</code></a>, possibly adapted.</p></li><li><p><code>κ</code>: Current <a href="#AdvancedHMC.AbstractMCMCKernel-api"><code>AbstractMCMCKernel</code></a>.</p></li><li><p><code>adaptor</code>: Current <a href="#AdvancedHMC.Adaptation.AbstractAdaptor-api"><code>AbstractAdaptor</code></a>.</p></li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/abstractmcmc.jl#L1-L10">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.JitteredLeapfrog-api" href="#AdvancedHMC.JitteredLeapfrog-api"><code>AdvancedHMC.JitteredLeapfrog</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct JitteredLeapfrog{FT&lt;:AbstractFloat, T&lt;:Union{AbstractArray{FT&lt;:AbstractFloat, 1}, FT&lt;:AbstractFloat}} &lt;: AdvancedHMC.AbstractLeapfrog{T&lt;:Union{AbstractArray{FT&lt;:AbstractFloat, 1}, FT&lt;:AbstractFloat}}</code></pre><p>Leapfrog integrator with randomly &quot;jittered&quot; step size <code>ϵ</code> for every trajectory.</p><p><strong>Fields</strong></p><ul><li><p><code>ϵ0::Union{AbstractVector{FT}, FT} where FT&lt;:AbstractFloat</code>: Nominal (non-jittered) step size.</p></li><li><p><code>jitter::AbstractFloat</code>: The proportion of the nominal step size <code>ϵ0</code> that may be added or subtracted.</p></li><li><p><code>ϵ::Union{AbstractVector{FT}, FT} where FT&lt;:AbstractFloat</code>: Current (jittered) step size.</p></li></ul><p><strong>Description</strong></p><p>This is the same as <code>LeapFrog</code>(@ref) but with a &quot;jittered&quot; step size. This means  that at the beginning of each trajectory we sample a step size <code>ϵ</code> by adding or  subtracting from the nominal/base step size <code>ϵ0</code> some random proportion of <code>ϵ0</code>,  with the proportion specified by <code>jitter</code>, i.e. <code>ϵ = ϵ0 - jitter * ϵ0 * rand()</code>. p Jittering might help alleviate issues related to poor interactions with a fixed step size:</p><ul><li>In regions with high &quot;curvature&quot; the current choice of step size might mean over-shoot  leading to almost all steps being rejected. Randomly sampling the step size at the  beginning of the trajectories can therefore increase the probability of escaping such high-curvature regions.</li><li>Exact periodicity of the simulated trajectories might occur, i.e. you might be so unlucky as to simulate the trajectory forwards in time <code>L ϵ</code> and ending up at the same point (which results in non-ergodicity; see Section 3.2 in [1]). If momentum is refreshed before each trajectory, then this should not happen <em>exactly</em> but it can still be an issue in practice. Randomly choosing the step-size <code>ϵ</code> might help alleviate such problems.</li></ul><p><strong>References</strong></p><ol><li>Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. (<a href="https://arxiv.org/pdf/1206.1901">arXiv</a>)</li></ol></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/integrator.jl#L80">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.Leapfrog-api" href="#AdvancedHMC.Leapfrog-api"><code>AdvancedHMC.Leapfrog</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct Leapfrog{T&lt;:(Union{AbstractVector{var&quot;#s29&quot;}, var&quot;#s29&quot;} where var&quot;#s29&quot;&lt;:AbstractFloat)} &lt;: AdvancedHMC.AbstractLeapfrog{T&lt;:(Union{AbstractVector{var&quot;#s29&quot;}, var&quot;#s29&quot;} where var&quot;#s29&quot;&lt;:AbstractFloat)}</code></pre><p>Leapfrog integrator with fixed step size <code>ϵ</code>.</p><p><strong>Fields</strong></p><ul><li><code>ϵ::Union{AbstractVector{var&quot;#s29&quot;}, var&quot;#s29&quot;} where var&quot;#s29&quot;&lt;:AbstractFloat</code>: Step size.</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/integrator.jl#L62">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.MultinomialTS-Tuple{MultinomialTS, AbstractFloat, AdvancedHMC.PhasePoint}-api" href="#AdvancedHMC.MultinomialTS-Tuple{MultinomialTS, AbstractFloat, AdvancedHMC.PhasePoint}-api"><code>AdvancedHMC.MultinomialTS</code></a> — <span class="docstring-category">Method</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct MultinomialTS{F&lt;:AbstractFloat, P&lt;:AdvancedHMC.PhasePoint} &lt;: AdvancedHMC.AbstractTrajectorySampler</code></pre><p>Multinomial sampler for a trajectory consisting only a leaf node.</p><ul><li>tree weight is the (unnormalised) energy of the leaf.</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L160">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.MultinomialTS-Tuple{Random.AbstractRNG, AdvancedHMC.PhasePoint}-api" href="#AdvancedHMC.MultinomialTS-Tuple{Random.AbstractRNG, AdvancedHMC.PhasePoint}-api"><code>AdvancedHMC.MultinomialTS</code></a> — <span class="docstring-category">Method</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct MultinomialTS{F&lt;:AbstractFloat, P&lt;:AdvancedHMC.PhasePoint} &lt;: AdvancedHMC.AbstractTrajectorySampler</code></pre><p>Multinomial sampler for the starting single leaf tree. (Log) weights for leaf nodes are their (unnormalised) Hamiltonian energies.</p><p>Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/base_nuts.hpp#L226</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L139">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.MultinomialTS-api" href="#AdvancedHMC.MultinomialTS-api"><code>AdvancedHMC.MultinomialTS</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct MultinomialTS{F&lt;:AbstractFloat, P&lt;:AdvancedHMC.PhasePoint} &lt;: AdvancedHMC.AbstractTrajectorySampler</code></pre><p>Multinomial trajectory sampler carried during the building of the tree. It contains the weight of the tree, defined as the total probabilities of the leaves.</p><p><strong>Fields</strong></p><ul><li><p><code>zcand::AdvancedHMC.PhasePoint</code>: Sampled candidate <code>PhasePoint</code>.</p></li><li><p><code>ℓw::AbstractFloat</code>: Total energy for the given tree, i.e. the sum of energies of all leaves.</p></li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L113">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.NUTS-api" href="#AdvancedHMC.NUTS-api"><code>AdvancedHMC.NUTS</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">NUTS(δ::Real; max_depth::Int=10, Δ_max::Real=1000, integrator = :leapfrog, metric = :diagonal)</code></pre><p>No-U-Turn Sampler (NUTS) sampler.</p><p><strong>Fields</strong></p><ul><li><p><code>δ</code>: Target acceptance rate for dual averaging.</p></li><li><p><code>max_depth</code>: Maximum doubling tree depth.</p></li><li><p><code>Δ_max</code>: Maximum divergence during doubling tree.</p></li><li><p><code>integrator</code>: Choice of integrator, specified either using a <code>Symbol</code> or <a href="#AdvancedHMC.AbstractIntegrator-api"><code>AbstractIntegrator</code></a></p></li><li><p><code>metric</code>: Choice of initial metric;  <code>Symbol</code> means it is automatically initialised. The metric type will be preserved during automatic initialisation and adaption.</p></li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/constructors.jl#L69-L77">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.PartialMomentumRefreshment-api" href="#AdvancedHMC.PartialMomentumRefreshment-api"><code>AdvancedHMC.PartialMomentumRefreshment</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct PartialMomentumRefreshment{F&lt;:AbstractFloat} &lt;: AdvancedHMC.AbstractMomentumRefreshment</code></pre><p>Partial momentum refreshment with refresh rate <code>α</code>.</p><p><strong>Fields</strong></p><ul><li><code>α::AbstractFloat</code></li></ul><p>See equation (5.19) [1]</p><pre><code class="nohighlight hljs">r&#39; = α⋅r + sqrt(1-α²)⋅G</code></pre><p>where r is the momentum and G is a Gaussian random variable.</p><p><strong>References</strong></p><ol><li>Neal, Radford M. &quot;MCMC using Hamiltonian dynamics.&quot; Handbook of markov chain monte carlo 2.11 (2011): 2.</li></ol></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/hamiltonian.jl#L196">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.SliceTS-Tuple{Random.AbstractRNG, AdvancedHMC.PhasePoint}-api" href="#AdvancedHMC.SliceTS-Tuple{Random.AbstractRNG, AdvancedHMC.PhasePoint}-api"><code>AdvancedHMC.SliceTS</code></a> — <span class="docstring-category">Method</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct SliceTS{F&lt;:AbstractFloat, P&lt;:AdvancedHMC.PhasePoint} &lt;: AdvancedHMC.AbstractTrajectorySampler</code></pre><p>Slice sampler for the starting single leaf tree. Slice variable is initialized.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L130">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.SliceTS-Tuple{SliceTS, AbstractFloat, AdvancedHMC.PhasePoint}-api" href="#AdvancedHMC.SliceTS-Tuple{SliceTS, AbstractFloat, AdvancedHMC.PhasePoint}-api"><code>AdvancedHMC.SliceTS</code></a> — <span class="docstring-category">Method</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct SliceTS{F&lt;:AbstractFloat, P&lt;:AdvancedHMC.PhasePoint} &lt;: AdvancedHMC.AbstractTrajectorySampler</code></pre><p>Create a slice sampler for a single leaf tree:</p><ul><li>the slice variable is copied from the passed-in sampler <code>s</code> and</li><li>the number of acceptable candicates is computed by comparing the slice variable against the current energy.</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L149">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.SliceTS-api" href="#AdvancedHMC.SliceTS-api"><code>AdvancedHMC.SliceTS</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct SliceTS{F&lt;:AbstractFloat, P&lt;:AdvancedHMC.PhasePoint} &lt;: AdvancedHMC.AbstractTrajectorySampler</code></pre><p>Trajectory slice sampler carried during the building of the tree. It contains the slice variable and the number of acceptable condidates in the tree.</p><p><strong>Fields</strong></p><ul><li><p><code>zcand::AdvancedHMC.PhasePoint</code>: Sampled candidate <code>PhasePoint</code>.</p></li><li><p><code>ℓu::AbstractFloat</code>: Slice variable in log-space.</p></li><li><p><code>n::Int64</code>: Number of acceptable candidates, i.e. those with probability larger than slice variable <code>u</code>.</p></li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L92">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.StaticTerminationCriterion-api" href="#AdvancedHMC.StaticTerminationCriterion-api"><code>AdvancedHMC.StaticTerminationCriterion</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">abstract type StaticTerminationCriterion &lt;: AdvancedHMC.AbstractTerminationCriterion</code></pre><p>Abstract type for a fixed number of leapfrog integration steps.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L40">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.StrictGeneralisedNoUTurn-api" href="#AdvancedHMC.StrictGeneralisedNoUTurn-api"><code>AdvancedHMC.StrictGeneralisedNoUTurn</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct StrictGeneralisedNoUTurn{F&lt;:AbstractFloat} &lt;: AdvancedHMC.DynamicTerminationCriterion</code></pre><p>Generalised No-U-Turn criterion as described in Section A.4.2 in [1] with  added U-turn check as described in [2].</p><p><strong>Fields</strong></p><ul><li><p><code>max_depth::Int64</code></p></li><li><p><code>Δ_max::AbstractFloat</code></p></li></ul><p><strong>References</strong></p><ol><li>Betancourt, M. (2017). A Conceptual Introduction to Hamiltonian Monte Carlo. <a href="https://arxiv.org/abs/1701.02434">arXiv preprint arXiv:1701.02434</a>.</li><li><a href="https://github.com/stan-dev/stan/pull/2800">https://github.com/stan-dev/stan/pull/2800</a></li></ol></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L420">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.TemperedLeapfrog-api" href="#AdvancedHMC.TemperedLeapfrog-api"><code>AdvancedHMC.TemperedLeapfrog</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct TemperedLeapfrog{FT&lt;:AbstractFloat, T&lt;:Union{AbstractArray{FT&lt;:AbstractFloat, 1}, FT&lt;:AbstractFloat}} &lt;: AdvancedHMC.AbstractLeapfrog{T&lt;:Union{AbstractArray{FT&lt;:AbstractFloat, 1}, FT&lt;:AbstractFloat}}</code></pre><p>Tempered leapfrog integrator with fixed step size <code>ϵ</code> and &quot;temperature&quot; <code>α</code>.</p><p><strong>Fields</strong></p><ul><li><p><code>ϵ::Union{AbstractVector{FT}, FT} where FT&lt;:AbstractFloat</code>: Step size.</p></li><li><p><code>α::AbstractFloat</code>: Temperature parameter.</p></li></ul><p><strong>Description</strong></p><p>Tempering can potentially allow greater exploration of the posterior, e.g.  in a multi-modal posterior jumps between the modes can be more likely to occur.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/integrator.jl#L153">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.Termination-Union{Tuple{F}, Tuple{MultinomialTS, Trajectory, F, F}} where F&lt;:AbstractFloat-api" href="#AdvancedHMC.Termination-Union{Tuple{F}, Tuple{MultinomialTS, Trajectory, F, F}} where F&lt;:AbstractFloat-api"><code>AdvancedHMC.Termination</code></a> — <span class="docstring-category">Method</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">Termination(s, nt, H0, H′)
+</code></pre><p>Check termination of a Hamiltonian trajectory.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L487">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.Termination-Union{Tuple{F}, Tuple{SliceTS, Trajectory, F, F}} where F&lt;:AbstractFloat-api" href="#AdvancedHMC.Termination-Union{Tuple{F}, Tuple{SliceTS, Trajectory, F, F}} where F&lt;:AbstractFloat-api"><code>AdvancedHMC.Termination</code></a> — <span class="docstring-category">Method</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">Termination(s, nt, H0, H′)
+</code></pre><p>Check termination of a Hamiltonian trajectory.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L478">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.Termination-api" href="#AdvancedHMC.Termination-api"><code>AdvancedHMC.Termination</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">Termination</code></pre><p>Termination reasons</p><ul><li><code>dynamic</code>: due to stoping criteria</li><li><code>numerical</code>: due to large energy deviation from starting (possibly numerical errors)</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L458-L464">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.Trajectory-api" href="#AdvancedHMC.Trajectory-api"><code>AdvancedHMC.Trajectory</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct Trajectory{TS&lt;:AdvancedHMC.AbstractTrajectorySampler, I&lt;:AdvancedHMC.AbstractIntegrator, TC&lt;:AdvancedHMC.AbstractTerminationCriterion}</code></pre><p>Numerically simulated Hamiltonian trajectories.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L200">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.Transition-api" href="#AdvancedHMC.Transition-api"><code>AdvancedHMC.Transition</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">struct Transition{P&lt;:AdvancedHMC.PhasePoint, NT&lt;:NamedTuple}</code></pre><p>A transition that contains the phase point and other statistics of the transition.</p><p><strong>Fields</strong></p><ul><li><p><code>z::AdvancedHMC.PhasePoint</code>: Phase-point for the transition.</p></li><li><p><code>stat::NamedTuple</code>: Statistics related to the transition, e.g. energy.</p></li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/trajectory.jl#L10">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.Adaptation.AbstractAdaptor-api" href="#AdvancedHMC.Adaptation.AbstractAdaptor-api"><code>AdvancedHMC.Adaptation.AbstractAdaptor</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">abstract type AbstractAdaptor</code></pre><p>Abstract type for HMC adaptors. </p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/adaptation/Adaptation.jl#L10">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="AdvancedHMC.Adaptation.NesterovDualAveraging-api" href="#AdvancedHMC.Adaptation.NesterovDualAveraging-api"><code>AdvancedHMC.Adaptation.NesterovDualAveraging</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><p>An implementation of the Nesterov dual averaging algorithm to tune step size.</p><p>References</p><p>Hoffman, M. D., &amp; Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623. Nesterov, Y. (2009). Primal-dual subgradient methods for convex problems. Mathematical programming, 120(1), 221-259.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/6422cafcc9d2381f61d9aa9b33af10646bff643d/src/adaptation/stepsize.jl#L79-L86">source</a></section></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../autodiff/">« Automatic Differentiation Backends</a><a class="docs-footer-nextpage" href="../interfaces/">Interfaces »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.10.1 on <span class="colophon-date" title="Thursday 24 April 2025 09:44">Thursday 24 April 2025</span>. Using Julia version 1.11.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
