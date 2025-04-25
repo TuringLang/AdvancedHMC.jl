@@ -1,0 +1,28 @@
+env:
+  # SECRET_CODECOV_TOKEN can be added here if needed for coverage reporting
+
+steps:
+  - label: "Julia v{{matrix.version}}, {{matrix.label}}"
+    plugins:
+      - JuliaCI/julia#v1:
+          version: "{{matrix.version}}"
+      # - JuliaCI/julia-coverage#v1:
+      #     dirs:
+      #       - src
+      #       - ext
+    command: julia --eval='println(pwd()); println(readdir()); include("test/CUDA/cuda.jl")'
+    agents:
+      queue: "juliagpu"
+      cuda: "*"
+    if: build.message !~ /\[skip tests\]/
+    timeout_in_minutes: 60
+    env:
+      LABEL: "{{matrix.label}}"
+      TEST_TYPE: ext
+    matrix:
+      setup:
+        version:
+          - "1"
+          - "1.10"
+        label:
+          - "cuda"
