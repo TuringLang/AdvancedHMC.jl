@@ -444,6 +444,7 @@ end
 TurnStatistic() = TurnStatistic(undef)
 
 TurnStatistic(::ClassicNoUTurn, ::PhasePoint) = TurnStatistic()
+TurnStatistic(::ClassicNoUTurn, ::Vector{<:PhasePoint}) = TurnStatistic()
 function TurnStatistic(::Union{GeneralisedNoUTurn,StrictGeneralisedNoUTurn}, z::PhasePoint)
     return TurnStatistic(z.r)
 end
@@ -776,7 +777,7 @@ function find_good_stepsize(
         ϵ′ = ratio_too_high ? d * ϵ : invd * ϵ
         _, H′ = A(h, z, ϵ)
         ΔH = H - H′
-        @debug "Crossing step" direction H′ ϵ α = min(1, exp(ΔH))
+        @debug "Crossing step" H′ ϵ α = min(1, exp(ΔH))
         # stop if there is no crossing; otherwise, continue to half or double stepsize. 
         if xor(ratio_too_high, ΔH > log_a_cross)
             break

@@ -218,7 +218,7 @@ function step(
     res = if FullTraj
         Vector{P}(undef, n_steps)
     else
-        z
+        Vector{P}(undef, 1)
     end
 
     (; θ, r) = z
@@ -242,7 +242,7 @@ function step(
         if FullTraj
             res[i] = z
         else
-            res = z
+            res[1] = z
         end
         if !isfinite(z)
             # Remove undef
@@ -252,5 +252,6 @@ function step(
             break
         end
     end
-    return res
+    FullTraj && return res
+    return first(res)
 end

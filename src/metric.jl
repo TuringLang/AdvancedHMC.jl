@@ -80,7 +80,7 @@ end
 function DenseEuclideanMetric(
     M⁻¹::Union{AbstractMatrix{T},AbstractArray{T,3}}
 ) where {T<:AbstractFloat}
-    _temp = Vector{T}(undef, Base.front(size(M⁻¹)))
+    _temp = Vector{T}(undef, first(size(M⁻¹)))
     return DenseEuclideanMetric(M⁻¹, cholesky(Symmetric(M⁻¹)).U, _temp)
 end
 DenseEuclideanMetric(::Type{T}, D::Int) where {T} = DenseEuclideanMetric(Matrix{T}(I, D, D))
