@@ -252,6 +252,9 @@ function step(
             break
         end
     end
-    FullTraj && return res
-    return first(res)
+    return if FullTraj
+        res
+    else
+        first(res)
+    end
 end

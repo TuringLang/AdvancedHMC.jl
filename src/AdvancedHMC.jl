@@ -172,7 +172,11 @@ function Hamiltonian(metric::AbstractMetric, ℓπ, kind::Union{Symbol,Val,Modul
             ),
         )
     end
-    _kind = ifelse((kind isa Val) || (kind isa Symbol), kind, Symbol(kind))
+    _kind = if kind isa Val || kind isa Symbol
+        kind
+    else
+        Symbol(kind)
+    end
     ℓ = LogDensityProblemsAD.ADgradient(_kind, ℓπ; kwargs...)
     return Hamiltonian(metric, ℓ)
 end
