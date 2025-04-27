@@ -2,7 +2,7 @@ module AdvancedHMC
 
 using Statistics: mean, var, middle
 using LinearAlgebra:
-    Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
+    Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, diagm, cholesky, UniformScaling, logdet, tr
 using StatsFuns: logaddexp, logsumexp, loghalf
 using Random: Random, AbstractRNG
 using ProgressMeter: ProgressMeter
@@ -19,7 +19,11 @@ using LogDensityProblemsAD: LogDensityProblemsAD
 
 using AbstractMCMC: AbstractMCMC, LogDensityModel
 
+using VecTargets: VecTargets
+
 import StatsBase: sample
+
+using ForwardDiff: ForwardDiff
 
 const DEFAULT_FLOAT_TYPE = typeof(float(0))
 
@@ -40,7 +44,7 @@ struct GaussianKinetic <: AbstractKinetic end
 export GaussianKinetic
 
 include("metric.jl")
-export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
+export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric, DenseRiemannianMetric
 
 include("hamiltonian.jl")
 export Hamiltonian
@@ -49,6 +53,11 @@ include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 include("riemannian/integrator.jl")
 export GeneralizedLeapfrog
+
+include("riemannian/metric.jl")
+export IdentityMap, SoftAbsMap, DenseRiemannianMetric
+
+include("riemannian/hamiltonian.jl")
 
 include("trajectory.jl")
 export Trajectory,
