@@ -93,11 +93,11 @@ function ∂H∂θ_cache(
         -(∂ℓπ∂θ - 1 / 2 * diag(term_1_cached * ∂H∂θ) + 1 / 2 * diag(term_2 * ∂H∂θ))
     else
         -mapreduce(vcat, 1:d) do i
-        ∂H∂θᵢ = ∂H∂θ[:, :, i]
-        # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
-        # NOTE Some further optimization can be done here: cache the 1st product all together
-        ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
-    end
+            ∂H∂θᵢ = ∂H∂θ[:, :, i]
+            # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
+            # NOTE Some further optimization can be done here: cache the 1st product all together
+            ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
+        end
     end
 
     dv = DualValue(ℓπ, g)
