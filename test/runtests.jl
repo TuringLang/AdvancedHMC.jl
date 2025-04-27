@@ -19,7 +19,7 @@ include("common.jl")
 if GROUP == "All" || GROUP == "AdvancedHMC"
     using ReTest
 
-    include("aqua.jl")
+    include("quality.jl")
     include("metric.jl")
     include("hamiltonian.jl")
     include("integrator.jl")

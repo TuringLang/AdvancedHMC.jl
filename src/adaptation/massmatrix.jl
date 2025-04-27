@@ -171,8 +171,6 @@ end
 
 NaiveCov{T}(sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveCov(Vector{Vector{T}}())
 
-NaiveCov(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...) = NaiveCov{Float64}(sz; kwargs...)
-
 Base.push!(nc::NaiveCov, s::AbstractVector) = push!(nc.S, s)
 
 reset!(nc::NaiveCov{T}) where {T} = resize!(nc.S, 0)
