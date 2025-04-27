@@ -2,7 +2,18 @@ module AdvancedHMC
 
 using Statistics: mean, var, middle
 using LinearAlgebra:
-    Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, diagm, cholesky, UniformScaling, logdet, tr
+    Symmetric,
+    UpperTriangular,
+    mul!,
+    ldiv!,
+    dot,
+    I,
+    diag,
+    diagm,
+    cholesky,
+    UniformScaling,
+    logdet,
+    tr
 using StatsFuns: logaddexp, logsumexp, loghalf
 using Random: Random, AbstractRNG
 using ProgressMeter: ProgressMeter

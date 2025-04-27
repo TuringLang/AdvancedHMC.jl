@@ -44,7 +44,7 @@ function DenseRiemannianMetric(size, G, ∂G∂θ, map=IdentityMap())
 end
 
 # Convenient constructor
-function DenseRiemannianMetric(size, ℓπ, initial_θ, λ, map = IdentityMap())
+function DenseRiemannianMetric(size, ℓπ, initial_θ, λ, map=IdentityMap())
     _Hfunc = VecTargets.gen_hess(x -> -ℓπ(x), initial_θ) # x -> (value, gradient, hessian)
     Hfunc = x -> copy.(_Hfunc(x)) # _Hfunc do in-place computation, copy to avoid bug
 
@@ -96,7 +96,9 @@ end
 
 Base.size(e::DenseRiemannianMetric) = e.size
 Base.size(e::DenseRiemannianMetric, dim::Int) = e.size[dim]
-Base.show(io::IO, drm::DenseRiemannianMetric) = print(io, "DenseRiemannianMetric$(drm.size) with $(drm.map) metric")
+function Base.show(io::IO, drm::DenseRiemannianMetric)
+    return print(io, "DenseRiemannianMetric$(drm.size) with $(drm.map) metric")
+end
 
 function rand_momentum(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},

@@ -1,6 +1,8 @@
 #! Eq (14) of Girolami & Calderhead (2011)
 function ∂H∂r(
-    h::Hamiltonian{<:DenseRiemannianMetric,<:GaussianKinetic}, θ::AbstractVecOrMat, r::AbstractVecOrMat
+    h::Hamiltonian{<:DenseRiemannianMetric,<:GaussianKinetic},
+    θ::AbstractVecOrMat,
+    r::AbstractVecOrMat,
 )
     H = h.metric.G(θ)
     G = h.metric.map(H)
@@ -87,15 +89,16 @@ function ∂H∂θ_cache(
     d = length(∂ℓπ∂θ)
     D = diagm((Q' * r) ./ softabsλ)
     term_2_cached = Q * D * J * D * Q'
-    g =
-        isdiag ?
-        -(∂ℓπ∂θ - 1 / 2 * diag(term_1_cached * ∂H∂θ) + 1 / 2 * diag(term_2 * ∂H∂θ)) :
+    g = if isdiag
+        -(∂ℓπ∂θ - 1 / 2 * diag(term_1_cached * ∂H∂θ) + 1 / 2 * diag(term_2 * ∂H∂θ))
+    else
         -mapreduce(vcat, 1:d) do i
-            ∂H∂θᵢ = ∂H∂θ[:, :, i]
-            # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
-            # NOTE Some further optimization can be done here: cache the 1st product all together
-            ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
-        end
+        ∂H∂θᵢ = ∂H∂θ[:, :, i]
+        # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
+        # NOTE Some further optimization can be done here: cache the 1st product all together
+        ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
+    end
+    end
 
     dv = DualValue(ℓπ, g)
     return return_cache ? (dv, (; ℓπ, ∂ℓπ∂θ, ∂H∂θ, Q, softabsλ, J, term_1_cached)) : dv

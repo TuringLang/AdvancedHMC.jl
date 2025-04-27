@@ -25,9 +25,7 @@ using LinearAlgebra
     # Run the sampler to draw samples from the specified Gaussian, where
     #   - `samples` will store the samples
     #   - `stats` will store diagnostic statistics for each sample
-    samples, stats = sample(
-        rng, hamiltonian, kernel, initial_θ, n_samples; progress=true
-    )
+    samples, stats = sample(rng, hamiltonian, kernel, initial_θ, n_samples; progress=true)
     @test length(samples) == n_samples
     @test length(stats) == n_samples
 end
@@ -55,9 +53,7 @@ end
     # Run the sampler to draw samples from the specified Gaussian, where
     #   - `samples` will store the samples
     #   - `stats` will store diagnostic statistics for each sample
-    samples, stats = sample(
-        rng, hamiltonian, kernel, initial_θ, n_samples; progress=true
-    )
+    samples, stats = sample(rng, hamiltonian, kernel, initial_θ, n_samples; progress=true)
     @test length(samples) == n_samples
     @test length(stats) == n_samples
 end
