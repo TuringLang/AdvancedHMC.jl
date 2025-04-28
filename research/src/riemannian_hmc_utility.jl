@@ -1,8 +1,8 @@
-using Random, LinearAlgebra, ReverseDiff, ForwardDiff, VecTargets
+using Random, LinearAlgebra, ReverseDiff, ForwardDiff, MCMCLogDensityProblems
 
 # Fisher information metric
 function gen_∂G∂θ_rev(Vfunc, x; f=identity)
-    _Hfunc = VecTargets.gen_hess(Vfunc, ReverseDiff.track.(x))
+    _Hfunc = MCMCLogDensityProblems.gen_hess(Vfunc, ReverseDiff.track.(x))
     Hfunc = x -> _Hfunc(x)[3]
     # QUES What's the best output format of this function?
     return x -> ReverseDiff.jacobian(x -> f(Hfunc(x)), x) # default output shape [∂H∂x₁; ∂H∂x₂; ...]
@@ -37,7 +37,7 @@ end
 
 function prepare_sample_target(hps, θ₀, ℓπ)
     Vfunc = x -> -ℓπ(x) # potential energy is the negative log-probability
-    _Hfunc = VecTargets.gen_hess(Vfunc, θ₀) # x -> (value, gradient, hessian)
+    _Hfunc = MCMCLogDensityProblems.gen_hess(Vfunc, θ₀) # x -> (value, gradient, hessian)
     Hfunc = x -> copy.(_Hfunc(x)) # _Hfunc do in-place computation, copy to avoid bug
 
     fstabilize = H -> H + hps.λ * I
@@ -70,8 +70,8 @@ function prepare_sample(hps; rng=MersenneTwister(1110))
 
     θ₀ = rand(rng, dim(target))
 
-    ℓπ = VecTargets.gen_logpdf(target)
-    ∂ℓπ∂θ = VecTargets.gen_logpdf_grad(target, θ₀)
+    ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
+    ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, θ₀)
 
     _, _, Gfunc, ∂G∂θfunc = prepare_sample_target(hps, θ₀, ℓπ)
 

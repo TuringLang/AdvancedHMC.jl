@@ -19,8 +19,8 @@ using AdvancedHMC: neg_energy, energy
 
         θ₀ = rand(rng, dim(target))
 
-        ℓπ = VecTargets.gen_logpdf(target)
-        ∂ℓπ∂θ = VecTargets.gen_logpdf_grad(target, θ₀)
+        ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
+        ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, θ₀)
 
         Vfunc, Hfunc, Gfunc, ∂G∂θfunc = prepare_sample_target(hps, θ₀, ℓπ)
 
