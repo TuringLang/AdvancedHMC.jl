@@ -1,6 +1,7 @@
 using ReTest, AdvancedHMC
 using AdvancedHMC: GaussianKinetic, DualValue, PhasePoint
 using LinearAlgebra: dot, diagm
+using ComponentArrays
 
 @testset "Hamiltonian" begin
     f = x -> dot(x, x)
@@ -39,6 +40,14 @@ end
 
         @test z1.ℓπ.value == z2.ℓπ.value
         @test z1.ℓκ.value == z2.ℓκ.value
+
+        # Test gradient length mismatch of neg potential and kinetic energy in PhasePoint
+        @test_throws ArgumentError PhasePoint(
+            [T(Inf)],
+            [T(Inf)],
+            DualValue(zero(T), [zero(T)]),
+            DualValue(zero(T), zeros(T, 2)),
+        )
     end
 end
 
@@ -65,6 +74,38 @@ end
             h = Hamiltonian(DenseEuclideanMetric(M⁻¹), ℓπ, ∂ℓπ∂θ)
             @test -AdvancedHMC.neg_energy(h, r_init, θ_init) ≈ r_init' * M⁻¹ * r_init / 2
             @test AdvancedHMC.∂H∂r(h, r_init) == M⁻¹ * r_init
+        end
+    end
+end
+
+@testset "Energy with ComponentArrays" begin
+    n_tests = 10
+    for T in [Float32, Float64]
+        for _ in 1:n_tests
+            θ_init = ComponentArray(; a=randn(T, D), b=randn(T, D))
+            r_init = ComponentArray(; a=randn(T, D), b=randn(T, D))
+
+            h = Hamiltonian(UnitEuclideanMetric(T, 2 * D), ℓπ, ∂ℓπ∂θ)
+            @test -AdvancedHMC.neg_energy(h, r_init, θ_init) == sum(abs2, r_init) / 2
+            @test AdvancedHMC.∂H∂r(h, r_init) == r_init
+            @test typeof(AdvancedHMC.∂H∂r(h, r_init)) == typeof(r_init)
+
+            M⁻¹ = ComponentArray(;
+                a=ones(T, D) + abs.(randn(T, D)), b=ones(T, D) + abs.(randn(T, D))
+            )
+            h = Hamiltonian(DiagEuclideanMetric(M⁻¹), ℓπ, ∂ℓπ∂θ)
+            @test -AdvancedHMC.neg_energy(h, r_init, θ_init) ≈
+                r_init' * diagm(0 => M⁻¹) * r_init / 2
+            @test AdvancedHMC.∂H∂r(h, r_init) == M⁻¹ .* r_init
+            @test typeof(AdvancedHMC.∂H∂r(h, r_init)) == typeof(r_init)
+
+            m = randn(T, 2 * D, 2 * D)
+            ax = getaxes(r_init)[1]
+            M⁻¹ = ComponentArray(m' * m, ax, ax)
+            h = Hamiltonian(DenseEuclideanMetric(M⁻¹), ℓπ, ∂ℓπ∂θ)
+            @test -AdvancedHMC.neg_energy(h, r_init, θ_init) ≈ r_init' * M⁻¹ * r_init / 2
+            @test all(AdvancedHMC.∂H∂r(h, r_init) .== M⁻¹ * r_init)
+            @test typeof(AdvancedHMC.∂H∂r(h, r_init)) == typeof(r_init)
         end
     end
 end
