@@ -43,57 +43,6 @@ function DenseRiemannianMetric(size, G, ∂G∂θ, map=IdentityMap())
     return DenseRiemannianMetric(size, G, ∂G∂θ, map, _temp)
 end
 
-# Convenient constructor
-function DenseRiemannianMetric(size, ℓπ, initial_θ, λ, map=IdentityMap())
-    _Hfunc = VecTargets.gen_hess(x -> -ℓπ(x), initial_θ) # x -> (value, gradient, hessian)
-    Hfunc = x -> copy.(_Hfunc(x)) # _Hfunc do in-place computation, copy to avoid bug
-
-    fstabilize = H -> H + λ * I
-    Gfunc = x -> begin
-        H = fstabilize(Hfunc(x)[3])
-        all(isfinite, H) ? H : diagm(ones(length(x)))
-    end
-    _∂G∂θfunc = gen_∂G∂θ_fwd(x -> -ℓπ(x), initial_θ; f=fstabilize)
-    ∂G∂θfunc = x -> reshape_∂G∂θ(_∂G∂θfunc(x))
-
-    _temp = Vector{Float64}(undef, first(size))
-
-    return DenseRiemannianMetric(size, Gfunc, ∂G∂θfunc, map, _temp)
-end
-
-function gen_hess_fwd(func, x::AbstractVector)
-    function hess(x::AbstractVector)
-        return nothing, nothing, ForwardDiff.hessian(func, x)
-    end
-    return hess
-end
-
-#= possible integrate DI for AD-independent fisher information metric
-function gen_∂G∂θ_rev(Vfunc, x; f=identity)
-    _Hfunc = VecTargets.gen_hess(Vfunc, ReverseDiff.track.(x))
-    Hfunc = x -> _Hfunc(x)[3]
-    # QUES What's the best output format of this function?
-    return x -> ReverseDiff.jacobian(x -> f(Hfunc(x)), x) # default output shape [∂H∂x₁; ∂H∂x₂; ...]
-end
-=#
-
-# Fisher information metric
-function gen_∂G∂θ_fwd(Vfunc, x; f=identity)
-    _Hfunc = gen_hess_fwd(Vfunc, x)
-    Hfunc = x -> _Hfunc(x)[3]
-    # QUES What's the best output format of this function?
-    cfg = ForwardDiff.JacobianConfig(Hfunc, x)
-    d = length(x)
-    out = zeros(eltype(x), d^2, d)
-    return x -> ForwardDiff.jacobian!(out, Hfunc, x, cfg)
-    return out # default output shape [∂H∂x₁; ∂H∂x₂; ...]
-end
-
-function reshape_∂G∂θ(H)
-    d = size(H, 2)
-    return cat((H[((i - 1) * d + 1):(i * d), :] for i in 1:d)...; dims=3)
-end
-
 Base.size(e::DenseRiemannianMetric) = e.size
 Base.size(e::DenseRiemannianMetric, dim::Int) = e.size[dim]
 function Base.show(io::IO, drm::DenseRiemannianMetric)

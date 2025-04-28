@@ -30,11 +30,7 @@ using LogDensityProblemsAD: LogDensityProblemsAD
 
 using AbstractMCMC: AbstractMCMC, LogDensityModel
 
-using VecTargets: VecTargets
-
 import StatsBase: sample
-
-using ForwardDiff: ForwardDiff
 
 const DEFAULT_FLOAT_TYPE = typeof(float(0))
 
