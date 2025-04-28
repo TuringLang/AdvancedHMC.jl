@@ -13,7 +13,8 @@ using LinearAlgebra:
     cholesky,
     UniformScaling,
     logdet,
-    tr
+    tr,
+    eigen
 using StatsFuns: logaddexp, logsumexp, loghalf
 using Random: Random, AbstractRNG
 using ProgressMeter: ProgressMeter
