@@ -2,12 +2,13 @@ using Pkg
 Pkg.activate(@__DIR__)
 Pkg.develop(; path=joinpath(@__DIR__, "..", ".."))
 
-include(joinpath(@__DIR__, "..", "common.jl"))
-
 using Test
 using AdvancedHMC
 using AdvancedHMC: DualValue, PhasePoint
 using CUDA
+using LogDensityProblems
+
+include(joinpath(@__DIR__, "..", "common.jl"))
 
 @testset "AdvancedHMC GPU" begin
     n_chains = 1000
