@@ -746,12 +746,24 @@ function A(h, z, ϵ)
     return z′, H′
 end
 
-"Find a good initial leap-frog step-size via heuristic search."
+"""
+    find_good_stepsize(h::Hamiltonian, θ::AbstractVector; initial_step_size = 1//10, max_n_iters::Int=100)
+    find_good_stepsize(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector; initial_step_size = 1//10, max_n_iters::Int=100)
+
+Find a good initial leap-frog step-size via heuristic search.
+
+ - `initial_step_size`: Custom initial step size, default as 1//10
+ - `max_n_iters`: Maximum number of iteration for searching a good step-size, default as 100
+"""
 function find_good_stepsize(
-    rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=100
+    rng::AbstractRNG,
+    h::Hamiltonian,
+    θ::AbstractVector{T};
+    initial_step_size=1//10,
+    max_n_iters::Int=100,
 ) where {T<:Real}
     # Initialize searching parameters
-    ϵ′ = ϵ = T(1//10)
+    ϵ′ = ϵ = T(initial_step_size)
     # minimal, crossing, maximal log accept ratio
     log_a_min = 2 * T(loghalf)
     log_a_cross = T(loghalf)
@@ -815,9 +827,18 @@ function find_good_stepsize(
 end
 
 function find_good_stepsize(
-    h::Hamiltonian, θ::AbstractVector{<:AbstractFloat}; max_n_iters::Int=100
+    h::Hamiltonian,
+    θ::AbstractVector{<:AbstractFloat};
+    initial_step_size=1//10,
+    max_n_iters::Int=100,
 )
-    return find_good_stepsize(Random.default_rng(), h, θ; max_n_iters=max_n_iters)
+    return find_good_stepsize(
+        Random.default_rng(),
+        h,
+        θ;
+        initial_step_size=initial_step_size,
+        max_n_iters=max_n_iters,
+    )
 end
 
 "Perform MH acceptance based on energy, i.e. negative log probability."
