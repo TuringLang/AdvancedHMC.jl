@@ -41,7 +41,8 @@ function sample_init(
     # Ensure h.metric has the same dim as θ.
     h = resize(h, θ)
     # Initial transition
-    t = Transition(phasepoint(rng, θ, h), NamedTuple())
+    refresh_r = rand_momentum(rng, h.metric, h.kinetic, θ) # Momentum refreshment
+    t = Transition(phasepoint(h, θ, refresh_r), NamedTuple())
     return h, t
 end
 
@@ -54,7 +55,7 @@ function transition(
     (; refreshment, τ) = κ
     @set! τ.integrator = jitter(rng, τ.integrator)
     z = refresh(rng, refreshment, h, z)
-    return transition(rng, τ, h, z)
+    return transition(rng, h, τ, z)
 end
 
 function Adaptation.adapt!(

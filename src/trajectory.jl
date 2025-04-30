@@ -244,10 +244,10 @@ $(SIGNATURES)
 
 Make a MCMC transition from phase point `z` using the trajectory `τ` under Hamiltonian `h`.
 
-NOTE: This is a RNG-implicit fallback function for `transition(Random.default_rng(), τ, h, z)`
+NOTE: This is a RNG-implicit fallback function for `transition(Random.default_rng(), h, τ, z)`
 """
-function transition(τ::Trajectory, h::Hamiltonian, z::PhasePoint)
-    return transition(Random.default_rng(), τ, h, z)
+function transition(h::Hamiltonian, τ::Trajectory, z::PhasePoint)
+    return transition(Random.default_rng(), h, τ, z)
 end
 
 ###
@@ -256,8 +256,8 @@ end
 
 function transition(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
-    τ::Trajectory{TS,I,TC},
     h::Hamiltonian,
+    τ::Trajectory{TS,I,TC},
     z::PhasePoint,
 ) where {TS<:AbstractTrajectorySampler,I,TC<:StaticTerminationCriterion}
     H0 = energy(z)
@@ -665,7 +665,7 @@ function build_tree(
 end
 
 function transition(
-    rng::AbstractRNG, τ::Trajectory{TS,I,TC}, h::Hamiltonian, z0::PhasePoint
+    rng::AbstractRNG, h::Hamiltonian, τ::Trajectory{TS,I,TC}, z0::PhasePoint
 ) where {
     TS<:AbstractTrajectorySampler,I<:AbstractIntegrator,TC<:DynamicTerminationCriterion
 }
