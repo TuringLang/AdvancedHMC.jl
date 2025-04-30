@@ -1,5 +1,5 @@
 using AdvancedHMC
-using Test
+using ReTest
 using Aqua: Aqua
 using JET
 using ForwardDiff
