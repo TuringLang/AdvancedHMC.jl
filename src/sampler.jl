@@ -40,8 +40,8 @@ function sample_init(
 )
     # Ensure h.metric has the same dim as θ.
     h = resize(h, θ)
-    # Initial transition
     refresh_r = rand_momentum(rng, h.metric, h.kinetic, θ) # Momentum refreshment
+    # Initial transition
     t = Transition(phasepoint(h, θ, refresh_r), NamedTuple())
     return h, t
 end
