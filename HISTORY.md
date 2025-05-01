@@ -1,5 +1,9 @@
 # AdvancedHMC Changelog
 
+## 0.8.0
+
+  - To make an MCMC transtion from phasepoint `z` using trajectory `τ`(or HMCKernel `κ`) under Hamiltonian `h`, use `transition(h, τ, z)` or `transition(rng, h, τ, z)`(if using HMCKernel, use `transition(h, κ, z)` or `transition(rng, h, κ, z)`).
+
 ## v0.7.1
 
   - README has been simplified, many docs transfered to docs: https://turinglang.org/AdvancedHMC.jl/dev/.

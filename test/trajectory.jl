@@ -129,11 +129,11 @@ end
         for τ_test in [τ, τ_with_jittered_lf], seed in [1234, 5678, 90]
             rng = MersenneTwister(seed)
             z = AdvancedHMC.phasepoint(h, θ_init, r_init)
-            z1′ = AdvancedHMC.transition(rng, τ_test, h, z).z
+            z1′ = AdvancedHMC.transition(rng, h, τ_test, z).z
 
             rng = MersenneTwister(seed)
             z = AdvancedHMC.phasepoint(h, θ_init, r_init)
-            z2′ = AdvancedHMC.transition(rng, τ_test, h, z).z
+            z2′ = AdvancedHMC.transition(rng, h, τ_test, z).z
 
             @test z1′.θ == z2′.θ
             @test z1′.r == z2′.r
