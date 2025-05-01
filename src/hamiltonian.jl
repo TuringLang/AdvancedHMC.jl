@@ -167,6 +167,18 @@ end
 
 energy(args...) = -neg_energy(args...)
 
+####
+#### Momentum refreshment
+####
+
+function phasepoint(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    θ::AbstractVecOrMat{T},
+    h::Hamiltonian,
+) where {T<:Real}
+    return phasepoint(h, θ, rand_momentum(rng, h.metric, h.kinetic, θ))
+end
+
 abstract type AbstractMomentumRefreshment end
 
 "Completly resample new momentum."
