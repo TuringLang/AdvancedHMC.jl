@@ -112,9 +112,8 @@ using Statistics: mean
 
         LogDensityProblems.logdensity(::NegU, x) = -dot(x, x) / 2
         LogDensityProblems.dimension(d::NegU) = d.dim
-        LogDensityProblems.capabilities(::Type{NegU}) = LogDensityProblems.LogDensityOrder{
-            0
-        }()
+        LogDensityProblems.capabilities(::Type{NegU}) =
+            LogDensityProblems.LogDensityOrder{0}()
 
         negU = NegU(1)
 
