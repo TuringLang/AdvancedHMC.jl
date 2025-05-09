@@ -10,6 +10,7 @@ using ReTest, Random, AdvancedHMC
             UnitEuclideanMetric((D, n_chains)),
             DiagEuclideanMetric((D, n_chains)),
             # DenseEuclideanMetric((D, n_chains)) # not supported ATM
+            # RankUpdateEuclideanMetric((D, n_chains)) # not supported ATM
         ]
             r = AdvancedHMC.rand_momentum(rng, metric, GaussianKinetic(), θ)
             all_same = true
@@ -25,8 +26,12 @@ using ReTest, Random, AdvancedHMC
         rng = MersenneTwister(1)
         θ = randn(rng, D)
         ℓπ(θ) = 1
-        for metric in
-            [UnitEuclideanMetric(1), DiagEuclideanMetric(1), DenseEuclideanMetric(1)]
+        for metric in [
+            UnitEuclideanMetric(1),
+            DiagEuclideanMetric(1),
+            DenseEuclideanMetric(1),
+            RankUpdateEuclideanMetric(1),
+        ]
             h = Hamiltonian(metric, ℓπ, ℓπ)
             h = AdvancedHMC.resize(h, θ)
             @test size(h.metric) == size(θ)

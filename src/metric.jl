@@ -98,6 +98,68 @@ function Base.show(io::IO, dem::DenseEuclideanMetric)
     return print(io, "DenseEuclideanMetric(diag=$(_string_M⁻¹(dem.M⁻¹)))")
 end
 
+"""
+    RankUpdateEuclideanMetric{T,M} <: AbstractMetric
+
+A Gaussian Euclidean metric whose inverse is constructed by rank-updates.
+
+# Constructors
+
+    RankUpdateEuclideanMetric(n::Int)
+
+Construct a Gaussian Euclidean metric of size `(n, n)` with inverse of `M⁻¹`.
+
+# Example
+
+```julia
+julia> RankUpdateEuclideanMetric(3)
+RankUpdateEuclideanMetric(diag=[1.0, 1.0, 1.0])
+```
+"""
+struct RankUpdateEuclideanMetric{T,AM<:AbstractVecOrMat{T},AB,AD,F} <: AbstractMetric
+    # Diagnal of the inverse of the mass matrix
+    M⁻¹::AM
+    B::AB
+    D::AD
+    factorization::F
+end
+
+function woodbury_factorize(A, B, D)
+    cholA = cholesky(A isa Diagonal ? A : Symmetric(A))
+    U = cholA.U
+    Q, R = qr(U' \ B)
+    V = cholesky(Symmetric(muladd(R, D * R', I))).U
+    return (U=U, Q=Q, V=V)
+end
+
+function RankUpdateEuclideanMetric(n::Int)
+    M⁻¹ = Diagonal(ones(n))
+    B = zeros(n, 0)
+    D = zeros(0, 0)
+    factorization = woodbury_factorize(M⁻¹, B, D)
+    return RankUpdateEuclideanMetric(M⁻¹, B, D, factorization)
+end
+function RankUpdateEuclideanMetric(::Type{T}, n::Int) where {T}
+    M⁻¹ = Diagonal(ones(T, n))
+    B = Matrix{T}(undef, n, 0)
+    D = Matrix{T}(undef, 0, 0)
+    factorization = woodbury_factorize(M⁻¹, B, D)
+    return RankUpdateEuclideanMetric(M⁻¹, B, D, factorization)
+end
+function RankUpdateEuclideanMetric(::Type{T}, sz::Tuple{Int}) where {T}
+    return RankUpdateEuclideanMetric(T, first(sz))
+end
+RankUpdateEuclideanMetric(sz::Tuple{Int}) = RankUpdateEuclideanMetric(Float64, sz)
+
+AdvancedHMC.renew(::RankUpdateEuclideanMetric, M⁻¹) = RankUpdateEuclideanMetric(M⁻¹)
+
+Base.size(metric::RankUpdateEuclideanMetric, dim...) = size(metric.M⁻¹, dim...)
+
+function Base.show(io::IO, metric::RankUpdateEuclideanMetric)
+    print(io, "RankUpdateEuclideanMetric(diag=$(diag(metric.M⁻¹)))")
+    return nothing
+end
+
 # `rand` functions for `metric` types.
 
 function rand_momentum(
@@ -129,5 +191,21 @@ function rand_momentum(
 ) where {T}
     r = _randn(rng, T, size(metric)...)
     ldiv!(metric.cholM⁻¹, r)
+    return r
+end
+
+function rand_momentum(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    metric::RankUpdateEuclideanMetric{T},
+    kinetic::GaussianKinetic,
+    ::AbstractVecOrMat,
+) where {T}
+    M⁻¹ = metric.M⁻¹
+    r = _randn(rng, T, size(M⁻¹.diag)...)
+    F = metric.factorization
+    k = min(size(F.U, 1), size(F.V, 1))
+    @views ldiv!(F.V, r isa AbstractVector ? r[1:k] : r[1:k, :])
+    lmul!(F.Q, r)
+    ldiv!(F.U, r)
     return r
 end
