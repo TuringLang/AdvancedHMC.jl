@@ -153,7 +153,7 @@ RankUpdateEuclideanMetric(sz::Tuple{Int}) = RankUpdateEuclideanMetric(Float64, s
 
 AdvancedHMC.renew(::RankUpdateEuclideanMetric, M⁻¹) = RankUpdateEuclideanMetric(M⁻¹)
 
-Base.size(metric::RankUpdateEuclideanMetric, dim...) = size(metric.M⁻¹, dim...)
+Base.size(metric::RankUpdateEuclideanMetric, dim...) = size(metric.M⁻¹.diag, dim...)
 
 function Base.show(io::IO, metric::RankUpdateEuclideanMetric)
     print(io, "RankUpdateEuclideanMetric(diag=$(diag(metric.M⁻¹)))")
