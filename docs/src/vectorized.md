@@ -1,12 +1,12 @@
 # Vectorized HMC Sampling
 
-In this section, we explain how to easily employ vectorized Hamiltonian Monte Carlo with AdvancedHMC.jl. Let's continue with the previous example in [getting-started](@ref get_started), we want to sample a multivariate Gaussian (10-dimensional) with multiple chains, we can simply utilize the vectorized initial parameters, leapfrod integrator, and metric. Here, the vectorized log density problems come from [MCMCLogDensityProblems.jl](https://github.com/chalk-lab/MCMCLogDensityProblems.jl)  which is a library of common vectorized log density target distributions.
+In this section, we explain how to easily employ vectorized Hamiltonian Monte Carlo with AdvancedHMC.jl. Let's continue with the previous example in [getting-started](@ref get_started), we want to sample a multivariate Gaussian (10-dimensional) with multiple chains, we can simply specify the number of chains in initial parameters, leapfrog integrator, and metric to tell AdvanceHMC.jl how many chains we want to sample. Here, the vectorized multivariate Gaussian log density problem come from [MCMCLogDensityProblems.jl](https://github.com/chalk-lab/MCMCLogDensityProblems.jl) which is a library of common log density target distributions designed for vectorized sampling.
 
 ```julia
 using AdvancedHMC
 using MCMCLogDensityProblems
 
-D = 5
+D = 10
 target = HighDimGaussian(D)
 ℓπ(x) = logpdf(target, x)
 ∂ℓπ∂θ(x) = logpdf_grad(target, x)
@@ -25,4 +25,4 @@ samples, stats = sample(h, HMCKernel(τ), θ_init, n_samples; verbose=false)
 
 !!! note
     
-    `NUTS` sampler doesn't support vectorized sampling for now.
+    Vectorized sampling only support static HMC, which means samplers like `NUTS` should not be used for vectorized sampling for now.
