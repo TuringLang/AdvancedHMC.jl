@@ -61,6 +61,18 @@ function ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::A
     return M⁻¹ * r
 end
 
+function ∂H∂r(
+    h::Hamiltonian{<:RankUpdateEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat
+)
+    (; M⁻¹) = h.metric
+    axes_M⁻¹ = __axes(M⁻¹)
+    axes_r = __axes(r)
+    (first(axes_M⁻¹) !== first(axes_r)) && throw(
+        ArgumentError("AxesMismatch: M⁻¹ has axes $(axes_M⁻¹) but r has axes $(axes_r)")
+    )
+    return M⁻¹ * r
+end
+
 # TODO (kai) make the order of θ and r consistent with neg_energy
 # TODO (kai) add stricter types to block hamiltonian.jl#L37 from working on unknown metric/kinetic
 # The gradient of a position-dependent Hamiltonian system depends on both θ and r. 
@@ -163,6 +175,13 @@ function neg_energy(
 ) where {T<:AbstractVecOrMat}
     mul!(h.metric._temp, h.metric.M⁻¹, r)
     return -dot(r, h.metric._temp) / 2
+end
+
+function neg_energy(
+    h::Hamiltonian{<:RankUpdateEuclideanMetric,<:GaussianKinetic}, r::T, θ::T
+) where {T<:AbstractVecOrMat}
+    M⁻¹ = h.metric.M⁻¹
+    return -r' * M⁻¹ * r / 2
 end
 
 energy(args...) = -neg_energy(args...)
