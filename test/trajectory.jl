@@ -257,35 +257,46 @@ end
                 traj_r = hcat(map(z -> z.r, traj_z)...)
                 rho = cumsum(traj_r; dims=2)
 
-                ts_hand_isturn_fwd = hand_isturn.(
-                    Ref(traj_z[1]), traj_z, [rho[:, i] for i in 1:length(traj_z)], Ref(1)
-                )
-                ts_ahmc_isturn_fwd = ahmc_isturn.(
-                    Ref(h),
-                    Ref(traj_z[1]),
-                    traj_z,
-                    [rho[:, i] for i in 1:length(traj_z)],
-                    Ref(1),
-                )
+                ts_hand_isturn_fwd =
+                    hand_isturn.(
+                        Ref(traj_z[1]),
+                        traj_z,
+                        [rho[:, i] for i in 1:length(traj_z)],
+                        Ref(1),
+                    )
+                ts_ahmc_isturn_fwd =
+                    ahmc_isturn.(
+                        Ref(h),
+                        Ref(traj_z[1]),
+                        traj_z,
+                        [rho[:, i] for i in 1:length(traj_z)],
+                        Ref(1),
+                    )
 
-                ts_hand_isturn_generalised_fwd = hand_isturn_generalised.(
-                    Ref(traj_z[1]), traj_z, [rho[:, i] for i in 1:length(traj_z)], Ref(1)
-                )
-                ts_ahmc_isturn_generalised_fwd = ahmc_isturn_generalised.(
-                    Ref(h),
-                    Ref(traj_z[1]),
-                    traj_z,
-                    [rho[:, i] for i in 1:length(traj_z)],
-                    Ref(1),
-                )
+                ts_hand_isturn_generalised_fwd =
+                    hand_isturn_generalised.(
+                        Ref(traj_z[1]),
+                        traj_z,
+                        [rho[:, i] for i in 1:length(traj_z)],
+                        Ref(1),
+                    )
+                ts_ahmc_isturn_generalised_fwd =
+                    ahmc_isturn_generalised.(
+                        Ref(h),
+                        Ref(traj_z[1]),
+                        traj_z,
+                        [rho[:, i] for i in 1:length(traj_z)],
+                        Ref(1),
+                    )
 
-                ts_ahmc_isturn_strictgeneralised_fwd = ahmc_isturn_strictgeneralised.(
-                    Ref(h),
-                    Ref(traj_z[1]),
-                    traj_z,
-                    [rho[:, i] for i in 1:length(traj_z)],
-                    Ref(1),
-                )
+                ts_ahmc_isturn_strictgeneralised_fwd =
+                    ahmc_isturn_strictgeneralised.(
+                        Ref(h),
+                        Ref(traj_z[1]),
+                        traj_z,
+                        [rho[:, i] for i in 1:length(traj_z)],
+                        Ref(1),
+                    )
 
                 check_subtree_u_turns.(
                     Ref(h), Ref(traj_z[1]), traj_z, [rho[:, i] for i in 1:length(traj_z)]

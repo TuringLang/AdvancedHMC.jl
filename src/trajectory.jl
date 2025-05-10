@@ -134,7 +134,7 @@ Slice sampler for the starting single leaf tree.
 Slice variable is initialized.
 """
 function SliceTS(rng::AbstractRNG, z0::PhasePoint)
-    SliceTS(z0, neg_energy(z0) - Random.randexp(rng), 1)
+    return SliceTS(z0, neg_energy(z0) - Random.randexp(rng), 1)
 end
 
 """
