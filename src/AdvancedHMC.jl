@@ -21,6 +21,8 @@ using AbstractMCMC: AbstractMCMC, LogDensityModel
 
 import StatsBase: sample
 
+using AdaptiveRejectionSampling: RejectionSampler, run_sampler!
+
 const DEFAULT_FLOAT_TYPE = typeof(float(0))
 
 include("utilities.jl")
@@ -62,6 +64,11 @@ export Trajectory,
     SliceTS,
     MultinomialTS,
     find_good_stepsize
+
+include("relativistic/hamiltonian.jl")
+export RelativisticKinetic, DimensionwiseRelativisticKinetic
+
+include("relativistic/metric.jl")
 
 # Useful defaults
 
