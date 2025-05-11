@@ -4,6 +4,7 @@ version = "0.8.0"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
+AdaptiveRejectionSampling = "c75e803d-635f-53bd-ab7d-544e482d8c75"
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -33,6 +34,7 @@ AdvancedHMCOrdinaryDiffEqExt = "OrdinaryDiffEq"
 [compat]
 ADTypes = "1"
 AbstractMCMC = "5.6"
+AdaptiveRejectionSampling = "0.2.1"
 ArgCheck = "1, 2"
 ComponentArrays = "0.15"
 CUDA = "3, 4, 5"
