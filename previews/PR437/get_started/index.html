@@ -35,6 +35,8 @@
         --item-color: rgb(165, 165, 165);
         --primary-bg: #073c44;
         --hover-color: #8faad2;
+        --deprecated-bg: #ff4d4d;
+        --deprecated-text: white;
     }
 
     .ext-navigation {
@@ -132,6 +134,8 @@
 
     .ext-dropdown ul li {
         text-align: left;
+        display: flex;
+        align-items: center;
     }
 
     .navbar-sub-item {
@@ -153,6 +157,16 @@
     .ext-dropdown-item-heading {
         color: var(--heading-color);
         text-align: center;
+    }
+
+    .deprecated-badge {
+        background-color: var(--deprecated-bg);
+        color: var(--deprecated-text);
+        font-size: 0.75rem;
+        padding: 0.125rem 0.375rem;
+        border-radius: 3px;
+        margin-left: 0.5rem;
+        line-height: 1;
     }
 
     /* Responsive styling */
@@ -212,6 +226,7 @@
 
         .ext-dropdown ul li {
             text-align: center;
+            /* justify-content: center; */
         }
 
         .ext-dropdown ul a li {
@@ -329,7 +344,8 @@
                 </ul>
                 <ul>
                     <li class="ext-dropdown-item-heading ext-navbar-item-single">
-                        <a href="https://turinglang.org/TuringBenchmarking.jl/">TuringBenchmarking</a>
+                        <a href="https://turinglang.org/Deprecated/TuringBenchmarking/">TuringBenchmarking</a>
+                        <span class="deprecated-badge">Deprecated</span>
                     </li>
                 </ul>
             </div>
@@ -457,6 +473,7 @@
     });
 </script>
 <!-- NAVBAR END -->
+
 
 <div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">AdvancedHMC</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">AdvancedHMC.jl</a></li><li class="is-active"><a class="tocitem" href>Get Started</a><ul class="internal"><li><a class="tocitem" href="#Parallel-Sampling"><span>Parallel Sampling</span></a></li><li><a class="tocitem" href="#Using-the-AbstractMCMC-Interface"><span>Using the <code>AbstractMCMC</code> Interface</span></a></li><li><a class="tocitem" href="#Convenience-Constructors"><span>Convenience Constructors</span></a></li><li><a class="tocitem" href="#GPU-Sampling-with-CUDA"><span>GPU Sampling with CUDA</span></a></li><li><a class="tocitem" href="#Footnotes"><span>Footnotes</span></a></li></ul></li><li><a class="tocitem" href="../autodiff/">Automatic Differentiation Backends</a></li><li><a class="tocitem" href="../api/">Detailed API</a></li><li><a class="tocitem" href="../interfaces/">Interfaces</a></li><li><a class="tocitem" href="../news/">News</a></li><li><a class="tocitem" href="../references/">References</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Get Started</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Get Started</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/TuringLang/AdvancedHMC.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/TuringLang/AdvancedHMC.jl/blob/main/docs/src/get_started.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Sampling-from-a-multivariate-Gaussian-using-NUTS"><a class="docs-heading-anchor" href="#Sampling-from-a-multivariate-Gaussian-using-NUTS">Sampling from a multivariate Gaussian using NUTS</a><a id="Sampling-from-a-multivariate-Gaussian-using-NUTS-1"></a><a class="docs-heading-anchor-permalink" href="#Sampling-from-a-multivariate-Gaussian-using-NUTS" title="Permalink"></a></h1><p>In this section, we demonstrate a minimal example of sampling from a multivariate Gaussian (10-dimensional) using the No U-Turn Sampler (NUTS). Below we describe the major components of the Hamiltonian system which are essential to sample using this approach:</p><ul><li><p><strong>Metric</strong>: In many sampling problems the sample space is associated with a metric that allows us to measure the distance between any two points, and other similar quantities. In the example in this section, we use a special metric called the <strong>Euclidean Metric</strong>, represented with a <code>D × D</code> matrix from which we can compute distances.<sup class="footnote-reference"><a id="citeref-1" href="#footnote-1">[1]</a></sup></p></li><li><p><strong>Leapfrog integration</strong>: Leapfrog integration is a second-order numerical method for integrating differential equations (In this case they are equations of motion for the relative position of one particle with respect to the other). The order of this integration signifies its rate of convergence. Any algorithm with a finite time step size will have numerical errors, and the order is related to this error. For a second-order algorithm, this error scales as the second power of the time step, hence the name. High-order integrators are usually complex to code and have a limited region of convergence; thus they do not allow arbitrarily large time steps. A second-order integrator is suitable for our purpose. Hence we opt for the leapfrog integrator. It is called <code>leapfrog</code> due to the ways this algorithm is written, where the positions and velocities of particles &quot;leap over&quot; each other.<sup class="footnote-reference"><a id="citeref-2" href="#footnote-2">[2]</a></sup></p></li><li><p><strong>Kernel for trajectories (static or dynamic)</strong>: Different kernels, which may be static or dynamic, can be used. At each iteration of any variant of the HMC algorithm, there are two main steps - the first step changes the momentum and the second step may change both the position and the momentum of a particle.<sup class="footnote-reference"><a id="citeref-3" href="#footnote-3">[3]</a></sup></p></li></ul><pre><code class="language-julia hljs">using AdvancedHMC, ForwardDiff
 using LogDensityProblems
