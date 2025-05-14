@@ -33,8 +33,12 @@ renew(ue::UnitEuclideanMetric, M⁻¹) = UnitEuclideanMetric(M⁻¹, ue.size)
 Base.eltype(::UnitEuclideanMetric{T}) where {T} = T
 Base.size(e::UnitEuclideanMetric) = e.size
 Base.size(e::UnitEuclideanMetric, dim::Int) = e.size[dim]
-function Base.show(io::IO, uem::UnitEuclideanMetric)
-    return print(io, "UnitEuclideanMetric($(_string_M⁻¹(ones(uem.size))))")
+function Base.show(io::IO, ::MIME"text/plain", uem::UnitEuclideanMetric{T}) where {T}
+    return print(
+        io,
+        "UnitEuclideanMetric{$T} with size $(size(uem)) mass matrix:\n",
+        _string_M⁻¹(ones(uem.size)),
+    )
 end
 
 struct DiagEuclideanMetric{T,A<:AbstractVecOrMat{T}} <: AbstractMetric
@@ -58,8 +62,12 @@ renew(ue::DiagEuclideanMetric, M⁻¹) = DiagEuclideanMetric(M⁻¹)
 
 Base.eltype(::DiagEuclideanMetric{T}) where {T} = T
 Base.size(e::DiagEuclideanMetric, dim...) = size(e.M⁻¹, dim...)
-function Base.show(io::IO, dem::DiagEuclideanMetric)
-    return print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
+function Base.show(io::IO, ::MIME"text/plain", dem::DiagEuclideanMetric{T}) where {T}
+    return print(
+        io,
+        "DiagEuclideanMetric{$T} with size $(size(dem)) mass matrix:\n",
+        (_string_M⁻¹(dem.M⁻¹)),
+    )
 end
 
 struct DenseEuclideanMetric{
@@ -94,8 +102,12 @@ renew(ue::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
 
 Base.eltype(::DenseEuclideanMetric{T}) where {T} = T
 Base.size(e::DenseEuclideanMetric, dim...) = size(e._temp, dim...)
-function Base.show(io::IO, dem::DenseEuclideanMetric)
-    return print(io, "DenseEuclideanMetric(diag=$(_string_M⁻¹(dem.M⁻¹)))")
+function Base.show(io::IO, dem::DenseEuclideanMetric{T}) where {T}
+    return print(
+        io,
+        "DenseEuclideanMetric{$T} with size $(size(dem)) mass matrix:\n",
+        (_string_M⁻¹(dem.M⁻¹)),
+    )
 end
 
 # `rand` functions for `metric` types.
