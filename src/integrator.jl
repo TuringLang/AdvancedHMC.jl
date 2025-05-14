@@ -72,7 +72,9 @@ struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     "Step size."
     ϵ::T
 end
-Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)))")
+function Base.show(io::IO, mime::MIME"text/plain", l::Leapfrog)
+    return print(io, "Leapfrog with step size ϵ=$(round.(l.ϵ; sigdigits=3))")
+end
 integrator_eltype(i::AbstractLeapfrog{T}) where {T<:AbstractFloat} = T
 
 ### Jittering
@@ -118,10 +120,10 @@ end
 
 JitteredLeapfrog(ϵ0, jitter) = JitteredLeapfrog(ϵ0, jitter, ϵ0)
 
-function Base.show(io::IO, l::JitteredLeapfrog)
+function Base.show(io::IO, mime::MIME"text/plain", l::JitteredLeapfrog)
     return print(
         io,
-        "JitteredLeapfrog(ϵ0=$(round.(l.ϵ0; sigdigits=3)), jitter=$(round.(l.jitter; sigdigits=3)), ϵ=$(round.(l.ϵ; sigdigits=3)))",
+        "JitteredLeapfrog with step size $(round.(l.ϵ0; sigdigits=3)), jitter $(round.(l.jitter; sigdigits=3)), jittered step size $(round.(l.ϵ; sigdigits=3))",
     )
 end
 
@@ -171,9 +173,10 @@ struct TemperedLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: Abstrac
     α::FT
 end
 
-function Base.show(io::IO, l::TemperedLeapfrog)
+function Base.show(io::IO, mime::MIME"text/plain", l::TemperedLeapfrog)
     return print(
-        io, "TemperedLeapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)), α=$(round.(l.α; sigdigits=3)))"
+        io,
+        "TemperedLeapfrog with step size ϵ=$(round.(l.ϵ; sigdigits=3)) and temperature parameter α=$(round.(l.α; sigdigits=3))",
     )
 end
 

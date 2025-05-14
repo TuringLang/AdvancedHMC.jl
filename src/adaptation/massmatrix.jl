@@ -23,7 +23,9 @@ end
 
 struct UnitMassMatrix{T<:AbstractFloat} <: MassMatrixAdaptor end
 
-Base.show(io::IO, ::UnitMassMatrix) = print(io, "UnitMassMatrix")
+function Base.show(io::IO, mime::MIME"text/plain", ::UnitMassMatrix{T}) where {T}
+    return print(io, "UnitMassMatrix{$T} adaptor")
+end
 
 UnitMassMatrix() = UnitMassMatrix{Float64}()
 
@@ -91,7 +93,9 @@ mutable struct WelfordVar{T<:AbstractFloat,E<:AbstractVecOrMat{T},V<:AbstractVec
     end
 end
 
-Base.show(io::IO, ::WelfordVar) = print(io, "WelfordVar")
+function Base.show(io::IO, mime::MIME"text/plain", ::WelfordVar{T}) where {T}
+    return print(io, "WelfordVar{$T} adaptor")
+end
 
 function WelfordVar{T}(
     sz::Union{Tuple{Int},Tuple{Int,Int}}; n_min::Int=10, var=ones(T, sz)
@@ -190,7 +194,9 @@ mutable struct WelfordCov{F<:AbstractFloat,C<:AbstractMatrix{F}} <: DenseMatrixE
     cov::C
 end
 
-Base.show(io::IO, ::WelfordCov) = print(io, "WelfordCov")
+function Base.show(io::IO, mime::MIME"text/plain", ::WelfordCov{T}) where {T}
+    return print(io, "WelfordCov{$T} adaptor")
+end
 
 function WelfordCov{T}(
     sz::Tuple{Int}; n_min::Int=10, cov=LinearAlgebra.diagm(0 => ones(T, first(sz)))
