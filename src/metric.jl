@@ -66,7 +66,7 @@ function Base.show(io::IO, ::MIME"text/plain", dem::DiagEuclideanMetric{T}) wher
     return print(
         io,
         "DiagEuclideanMetric{$T} with size $(size(dem)) mass matrix:\n",
-        (_string_M⁻¹(dem.M⁻¹)),
+        _string_M⁻¹(dem.M⁻¹),
     )
 end
 
@@ -106,7 +106,7 @@ function Base.show(io::IO, dem::DenseEuclideanMetric{T}) where {T}
     return print(
         io,
         "DenseEuclideanMetric{$T} with size $(size(dem)) mass matrix:\n",
-        (_string_M⁻¹(dem.M⁻¹)),
+        _string_M⁻¹(dem.M⁻¹),
     )
 end
 

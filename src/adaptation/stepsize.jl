@@ -84,8 +84,8 @@ getϵ(fss::FixedStepSize) = fss.ϵ
 struct ManualSSAdaptor{T<:AbstractScalarOrVec{<:AbstractFloat}} <: StepSizeAdaptor
     state::MSSState{T}
 end
-function Base.show(io::IO, mime::MIME"text/plain", a::ManualSSAdaptor)
-    return print(io, "ManualSSAdaptor()")
+function Base.show(io::IO, mime::MIME"text/plain", a::ManualSSAdaptor{T}) where {T}
+    return print(io, "ManualSSAdaptor{$T} with step size of $(a.state.ϵ)")
 end
 
 function ManualSSAdaptor(initϵ::T) where {T<:AbstractScalarOrVec{<:AbstractFloat}}
@@ -107,7 +107,7 @@ Nesterov, Y. (2009). Primal-dual subgradient methods for convex problems. Mathem
 struct NesterovDualAveraging{T<:AbstractFloat,S<:AbstractScalarOrVec{T}} <: StepSizeAdaptor
     "Adaption scaling"
     γ::T
-    "effective starting iteration"
+    "Effective starting iteration"
     t_0::T
     "Adaption shrinkage"
     κ::T
@@ -115,20 +115,24 @@ struct NesterovDualAveraging{T<:AbstractFloat,S<:AbstractScalarOrVec{T}} <: Step
     δ::T
     state::DAState{S}
 end
-function Base.show(io::IO, mime::MIME"text/plain", a::NesterovDualAveraging)
+function Base.show(io::IO, mime::MIME"text/plain", a::NesterovDualAveraging{T}) where {T}
     return print(
         io,
-        "NesterovDualAveraging{$T}(γ=",
+        "NesterovDualAveraging{$T} with\n",
+        "Scaling γ=",
         a.γ,
-        ", t_0=",
+        "\n",
+        "Starting iter t_0=",
         a.t_0,
-        ", κ=",
+        "\n",
+        "Shrinkage κ=",
         a.κ,
-        ", δ=",
+        "\n",
+        "Target statistic δ=",
         a.δ,
-        ", state.ϵ=",
+        "\n",
+        "Curret ϵ=",
         getϵ(a),
-        ")",
     )
 end
 
