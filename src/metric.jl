@@ -99,15 +99,22 @@ function Base.show(io::IO, dem::DenseEuclideanMetric)
 end
 
 """
-    RankUpdateEuclideanMetric{T,M} <: AbstractMetric
+    RankUpdateEuclideanMetric{T,AM,AB,AD,F} <: AbstractMetric
 
 A Gaussian Euclidean metric whose inverse is constructed by rank-updates.
+
+# Fields
+
+$(TYPEDFIELDS)
 
 # Constructors
 
     RankUpdateEuclideanMetric(n::Int)
+    RankUpdateEuclideanMetric(M⁻¹, B, D)
 
-Construct a Gaussian Euclidean metric of size `(n, n)` with inverse of `M⁻¹`.
+ - Construct a Gaussian Euclidean metric of size `(n, n)` with `M⁻¹` being diagonal matrix.
+ - Construct a Gaussian Euclidean metric of `M⁻¹`, where `M⁻¹` should be a full rank positive definite matrix,
+    and `B` `D` must be chose so that the Woodbury matrix `W = M⁻¹ + B D B^\\mathrm{T}` is positive definite.
 
 # Example
 
@@ -115,9 +122,13 @@ Construct a Gaussian Euclidean metric of size `(n, n)` with inverse of `M⁻¹`.
 julia> RankUpdateEuclideanMetric(3)
 RankUpdateEuclideanMetric(diag=[1.0, 1.0, 1.0])
 ```
+
+# References
+
+ - Ben Bales, Arya Pourzanjani, Aki Vehtari, Linda Petzold, Selecting the Metric in Hamiltonian Monte Carlo, 2019
 """
 struct RankUpdateEuclideanMetric{T,AM<:AbstractVecOrMat{T},AB,AD,F} <: AbstractMetric
-    # Diagnal of the inverse of the mass matrix
+    "Diagnal of the inverse of the mass matrix"
     M⁻¹::AM
     B::AB
     D::AD
@@ -146,18 +157,23 @@ function RankUpdateEuclideanMetric(::Type{T}, n::Int) where {T}
     factorization = woodbury_factorize(M⁻¹, B, D)
     return RankUpdateEuclideanMetric(M⁻¹, B, D, factorization)
 end
+
+function RankUpdateEuclideanMetric(M⁻¹, B, D)
+    factorization = woodbury_factorize(M⁻¹, B, D)
+    return RankUpdateEuclideanMetric(M⁻¹, B, D, factorization)
+end
+
 function RankUpdateEuclideanMetric(::Type{T}, sz::Tuple{Int}) where {T}
     return RankUpdateEuclideanMetric(T, first(sz))
 end
 RankUpdateEuclideanMetric(sz::Tuple{Int}) = RankUpdateEuclideanMetric(Float64, sz)
 
-AdvancedHMC.renew(::RankUpdateEuclideanMetric, M⁻¹) = RankUpdateEuclideanMetric(M⁻¹)
+renew(::RankUpdateEuclideanMetric, (M⁻¹, B, D)) = RankUpdateEuclideanMetric(M⁻¹, B, D)
 
 Base.size(metric::RankUpdateEuclideanMetric, dim...) = size(metric.M⁻¹.diag, dim...)
 
-function Base.show(io::IO, metric::RankUpdateEuclideanMetric)
-    print(io, "RankUpdateEuclideanMetric(diag=$(diag(metric.M⁻¹)))")
-    return nothing
+function Base.show(io::IO, ::MIME"text/plain", metric::RankUpdateEuclideanMetric)
+    return print(io, "RankUpdateEuclideanMetric(diag=$(diag(metric.M⁻¹)))")
 end
 
 # `rand` functions for `metric` types.
