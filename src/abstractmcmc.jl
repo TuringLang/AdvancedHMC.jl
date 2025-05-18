@@ -205,17 +205,23 @@ function AbstractMCMC.step(
     return Transition(t.z, tstat), newstate
 end
 
-struct SGHMCState{T<:AbstractVector{<:Real}}
+struct SGHMCState{
+    TTrans<:Transition,
+    TMetric<:AbstractMetric,
+    TKernel<:AbstractMCMCKernel,
+    TAdapt<:Adaptation.AbstractAdaptor,
+    T<:AbstractVector{<:Real},
+}
     "Index of current iteration."
-    i
+    i::Int
     "Current [`Transition`](@ref)."
-    transition
+    transition::TTrans
     "Current [`AbstractMetric`](@ref), possibly adapted."
-    metric
+    metric::TMetric
     "Current [`AbstractMCMCKernel`](@ref)."
-    κ
+    κ::TKernel
     "Current [`AbstractAdaptor`](@ref)."
-    adaptor
+    adaptor::TAdapt
     velocity::T
 end
 getadaptor(state::SGHMCState) = state.adaptor
@@ -252,7 +258,7 @@ function AbstractMCMC.step(
     # Get an initial sample.
     h, t = AdvancedHMC.sample_init(rng, hamiltonian, initial_params)
 
-    state = SGHMCState(0, t, metric, κ, adaptor, initial_params, zero(initial_params))
+    state = SGHMCState(0, t, metric, κ, adaptor, initial_params)
 
     return AbstractMCMC.step(rng, model, spl, state; kwargs...)
 end
@@ -265,6 +271,14 @@ function AbstractMCMC.step(
     n_adapts::Int=0,
     kwargs...,
 )
+    if haskey(kwargs, :nadapts)
+        throw(
+            ArgumentError(
+                "keyword argument `nadapts` is unsupported. Please use `n_adapts` to specify the number of adaptation steps.",
+            ),
+        )
+    end
+
     i = state.i + 1
     t_old = state.transition
     adaptor = state.adaptor
@@ -289,13 +303,13 @@ function AbstractMCMC.step(
     α = spl.momentum_decay
     newv = (1 - α) .* v .+ η .* grad .+ sqrt(2 * η * α) .* randn(rng, eltype(v), length(v))
 
+    # Make new transition.
+    t = transition(rng, h, κ, t_old.z)
+
     # Adapt h and spl.
     tstat = stat(t)
     h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, θ, tstat.acceptance_rate)
     tstat = merge(tstat, (is_adapt=isadapted,))
-
-    # Make new transition.
-    t = transition(rng, h, κ, t_old.z)
 
     # Compute next sample and state.
     sample = Transition(t.z, tstat)
