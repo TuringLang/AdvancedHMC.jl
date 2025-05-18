@@ -244,10 +244,10 @@ $(SIGNATURES)
 
 Make a MCMC transition from phase point `z` using the trajectory `τ` under Hamiltonian `h`.
 
-NOTE: This is a RNG-implicit fallback function for `transition(Random.default_rng(), τ, h, z)`
+NOTE: This is a RNG-implicit fallback function for `transition(Random.default_rng(), h, τ, z)`
 """
-function transition(τ::Trajectory, h::Hamiltonian, z::PhasePoint)
-    return transition(Random.default_rng(), τ, h, z)
+function transition(h::Hamiltonian, τ::Trajectory, z::PhasePoint)
+    return transition(Random.default_rng(), h, τ, z)
 end
 
 ###
@@ -256,8 +256,8 @@ end
 
 function transition(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
-    τ::Trajectory{TS,I,TC},
     h::Hamiltonian,
+    τ::Trajectory{TS,I,TC},
     z::PhasePoint,
 ) where {TS<:AbstractTrajectorySampler,I,TC<:StaticTerminationCriterion}
     H0 = energy(z)
@@ -665,7 +665,7 @@ function build_tree(
 end
 
 function transition(
-    rng::AbstractRNG, τ::Trajectory{TS,I,TC}, h::Hamiltonian, z0::PhasePoint
+    rng::AbstractRNG, h::Hamiltonian, τ::Trajectory{TS,I,TC}, z0::PhasePoint
 ) where {
     TS<:AbstractTrajectorySampler,I<:AbstractIntegrator,TC<:DynamicTerminationCriterion
 }
@@ -746,12 +746,24 @@ function A(h, z, ϵ)
     return z′, H′
 end
 
-"Find a good initial leap-frog step-size via heuristic search."
+"""
+    find_good_stepsize(h::Hamiltonian, θ::AbstractVector; initial_step_size = 1//10, max_n_iters::Int=100)
+    find_good_stepsize(rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector; initial_step_size = 1//10, max_n_iters::Int=100)
+
+Find a good initial leap-frog step-size via heuristic search.
+
+ - `initial_step_size`: Custom initial step size, default as 1//10
+ - `max_n_iters`: Maximum number of iteration for searching a good step-size, default as 100
+"""
 function find_good_stepsize(
-    rng::AbstractRNG, h::Hamiltonian, θ::AbstractVector{T}; max_n_iters::Int=100
+    rng::AbstractRNG,
+    h::Hamiltonian,
+    θ::AbstractVector{T};
+    initial_step_size=1//10,
+    max_n_iters::Int=100,
 ) where {T<:Real}
     # Initialize searching parameters
-    ϵ′ = ϵ = T(1//10)
+    ϵ′ = ϵ = T(initial_step_size)
     # minimal, crossing, maximal log accept ratio
     log_a_min = 2 * T(loghalf)
     log_a_cross = T(loghalf)
@@ -815,9 +827,18 @@ function find_good_stepsize(
 end
 
 function find_good_stepsize(
-    h::Hamiltonian, θ::AbstractVector{<:AbstractFloat}; max_n_iters::Int=100
+    h::Hamiltonian,
+    θ::AbstractVector{<:AbstractFloat};
+    initial_step_size=1//10,
+    max_n_iters::Int=100,
 )
-    return find_good_stepsize(Random.default_rng(), h, θ; max_n_iters=max_n_iters)
+    return find_good_stepsize(
+        Random.default_rng(),
+        h,
+        θ;
+        initial_step_size=initial_step_size,
+        max_n_iters=max_n_iters,
+    )
 end
 
 "Perform MH acceptance based on energy, i.e. negative log probability."

@@ -54,7 +54,7 @@ function transition(
     (; refreshment, τ) = κ
     @set! τ.integrator = jitter(rng, τ.integrator)
     z = refresh(rng, refreshment, h, z)
-    return transition(rng, τ, h, z)
+    return transition(rng, h, τ, z)
 end
 
 function Adaptation.adapt!(
