@@ -1,6 +1,8 @@
 ### Mutable states
 """
-    Dual Averaging state
+$(TYPEDEF)
+
+Dual Averaging state
 
 Mutable state for storing the current iteration of the dual averaging algorithm.
 
@@ -93,6 +95,8 @@ function ManualSSAdaptor(initϵ::T) where {T<:AbstractScalarOrVec{<:AbstractFloa
 end
 
 """
+$(TYPEDEF)
+
 An implementation of the Nesterov dual averaging algorithm to tune step size.
 
 # Fields

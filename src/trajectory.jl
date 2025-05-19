@@ -492,12 +492,6 @@ Check termination of a Hamiltonian trajectory.
 function Termination(s::SliceTS, nt::Trajectory, H0::F, H′::F) where {F<:AbstractFloat}
     return Termination(false, !(s.ℓu < nt.termination_criterion.Δ_max + -H′))
 end
-
-"""
-$(SIGNATURES)
-
-Check termination of a Hamiltonian trajectory.
-"""
 function Termination(
     s::MultinomialTS, nt::Trajectory, H0::F, H′::F
 ) where {F<:AbstractFloat}

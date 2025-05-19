@@ -102,7 +102,7 @@ renew(ue::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
 
 Base.eltype(::DenseEuclideanMetric{T}) where {T} = T
 Base.size(e::DenseEuclideanMetric, dim...) = size(e._temp, dim...)
-function Base.show(io::IO, dem::DenseEuclideanMetric{T}) where {T}
+function Base.show(io::IO, ::MIME"text/plain", dem::DenseEuclideanMetric{T}) where {T}
     return print(
         io,
         "DenseEuclideanMetric{$T} with size $(size(dem)) mass matrix:\n",
