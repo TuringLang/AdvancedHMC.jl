@@ -298,10 +298,10 @@ function AbstractMCMC.step(
     # Update latent variables and velocity according to
     # equation (15) of Chen et al. (2014)
     v = state.velocity
-    θ .+= v
     η = spl.learning_rate
     α = spl.momentum_decay
     newv = (1 - α) .* v .+ η .* grad .+ sqrt(2 * η * α) .* randn(rng, eltype(v), length(v))
+    θ .+= newv
 
     # Make new transition.
     t = transition(rng, h, κ, t_old.z)
