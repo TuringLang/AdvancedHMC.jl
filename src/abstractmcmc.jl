@@ -292,7 +292,7 @@ function AbstractMCMC.step(
     logdensity_and_gradient = Base.Fix1(
         LogDensityProblems.logdensity_and_gradient, model.logdensity
     )
-    θ = t_old.z.θ
+    θ = copy(t_old.z.θ)
     grad = last(logdensity_and_gradient(θ))
 
     # Update latent variables and velocity according to
@@ -304,7 +304,8 @@ function AbstractMCMC.step(
     θ .+= newv
 
     # Make new transition.
-    t = transition(rng, h, κ, t_old.z)
+    z = phasepoint(h, θ, v)
+    t = transition(rng, h, κ, z)
 
     # Adapt h and spl.
     tstat = stat(t)
