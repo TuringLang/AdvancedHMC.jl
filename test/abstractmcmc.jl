@@ -10,6 +10,7 @@ using Statistics: mean
     nuts = NUTS(0.8)
     hmc = HMC(100; integrator=Leapfrog(0.05))
     hmcda = HMCDA(0.8, 0.1)
+    sgld = SGLD(PolynomialStepsize(0.25), 100)
 
     integrator = Leapfrog(1e-3)
     κ = AdvancedHMC.make_kernel(nuts, integrator)
@@ -106,6 +107,29 @@ using Statistics: mean
         t.z.θ .= invlink_gdemo(t.z.θ)
     end
     m_est_hmc = mean(samples_hmc) do t
+        t.z.θ
+    end
+
+    @test m_est_hmc ≈ [49 / 24, 7 / 6] atol = RNDATOL
+
+    samples_sgld = AbstractMCMC.sample(
+        rng,
+        model,
+        hmc,
+        n_adapts + n_samples;
+        n_adapts=n_adapts,
+        initial_params=θ_init,
+        progress=false,
+        verbose=false,
+    )
+
+    # Transform back to original space.
+    # NOTE: We're not correcting for the `logabsdetjac` here since, but
+    # we're only interested in the mean it doesn't matter.
+    for t in samples_sgld
+        t.z.θ .= invlink_gdemo(t.z.θ)
+    end
+    m_est_hmc = mean(samples_sgld) do t
         t.z.θ
     end
 
