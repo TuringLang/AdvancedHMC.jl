@@ -258,7 +258,7 @@ function AbstractMCMC.step(
     # Get an initial sample.
     h, t = AdvancedHMC.sample_init(rng, hamiltonian, initial_params)
 
-    state = SGLDState(0, t, metric, κ, adaptor, initial_params, 1)
+    state = SGLDState(0, t, metric, κ, adaptor, 1)
 
     return AbstractMCMC.step(rng, model, spl, state; kwargs...)
 end
