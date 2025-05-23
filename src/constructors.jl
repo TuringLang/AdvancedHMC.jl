@@ -163,3 +163,48 @@ function HMCDA(δ, λ; integrator=:leapfrog, metric=:diagonal)
 end
 
 sampler_eltype(::HMCDA{T}) where {T} = T
+
+########### Static Hamiltonian Monte Carlo ###########
+
+#############
+### SGHMC ###
+#############
+"""
+    SGHMC(learning_rate::Real, momentun_decay::Real, integrator = :leapfrog, metric = :diagonal)
+
+Stochastic Gradient Hamiltonian Monte Carlo sampler
+
+# Fields
+
+$(FIELDS)
+
+# Notes
+
+For more information, please view the following paper ([arXiv link](https://arxiv.org/abs/1402.4102)):
+
+- Chen, Tianqi, Emily Fox, and Carlos Guestrin. "Stochastic gradient hamiltonian monte carlo." International conference on machine learning. PMLR, 2014.
+"""
+struct SGHMC{T<:Real,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <:
+       AbstractHMCSampler
+    "Learning rate for the gradient descent."
+    learning_rate::T
+    "Momentum decay rate."
+    momentum_decay::T
+    "Number of leapfrog steps."
+    n_leapfrog::Int
+    "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
+    integrator::I
+    "Choice of initial metric;  `Symbol` means it is automatically initialised. The metric type will be preserved during automatic initialisation and adaption."
+    metric::M
+end
+
+function SGHMC(
+    learning_rate, momentum_decay, n_leapfrog; integrator=:leapfrog, metric=:diagonal
+)
+    T = determine_sampler_eltype(
+        learning_rate, momentum_decay, n_leapfrog, integrator, metric
+    )
+    return SGHMC(T(learning_rate), T(momentum_decay), n_leapfrog, integrator, metric)
+end
+
+sampler_eltype(::SGHMC{T}) where {T} = T
