@@ -210,7 +210,6 @@ struct SGLDState{
     TMetric<:AbstractMetric,
     TKernel<:AbstractMCMCKernel,
     TAdapt<:Adaptation.AbstractAdaptor,
-    T<:AbstractVector{<:Real},
 }
     "Index of current iteration."
     i::Int
