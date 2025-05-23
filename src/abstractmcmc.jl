@@ -222,7 +222,6 @@ struct SGLDState{
     κ::TKernel
     "Current [`AbstractAdaptor`](@ref)."
     adaptor::TAdapt
-    step::Int
 end
 getadaptor(state::SGLDState) = state.adaptor
 getmetric(state::SGLDState) = state.metric
@@ -258,7 +257,7 @@ function AbstractMCMC.step(
     # Get an initial sample.
     h, t = AdvancedHMC.sample_init(rng, hamiltonian, initial_params)
 
-    state = SGLDState(0, t, metric, κ, adaptor, 1)
+    state = SGLDState(0, t, metric, κ, adaptor)
 
     return AbstractMCMC.step(rng, model, spl, state; kwargs...)
 end
@@ -284,7 +283,6 @@ function AbstractMCMC.step(
     adaptor = state.adaptor
     κ = state.κ
     metric = state.metric
-    step = state.step
 
     # Reconstruct hamiltonian.
     h = Hamiltonian(metric, model)
@@ -296,7 +294,7 @@ function AbstractMCMC.step(
     θ = t_old.z.θ
     grad = last(logdensity_and_gradient(θ))
 
-    stepsize = spl.stepsize(step)
+    stepsize = spl.stepsize(i)
     θ .+= (stepsize / 2) .* grad .+ sqrt(stepsize) .* randn(rng, eltype(θ), length(θ))
 
     # Make new transition.
@@ -309,7 +307,7 @@ function AbstractMCMC.step(
 
     # Compute next sample and state.
     sample = Transition(t.z, tstat)
-    newstate = SGLDState(i, t, h.metric, κ, adaptor, state.step + 1)
+    newstate = SGLDState(i, t, h.metric, κ, adaptor)
 
     return sample, newstate
 end
