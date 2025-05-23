@@ -170,7 +170,7 @@ sampler_eltype(::HMCDA{T}) where {T} = T
 ### SGLD ###
 #############
 """
-    SGLD(learning_rate::Real, momentun_decay::Real, integrator = :leapfrog, metric = :diagonal)
+    SGLD(step_size::S, n_leapfrog::Int, integrator = :leapfrog, metric = :diagonal)
 
 Stochastic gradient Langevin dynamics (SGLD) sampler.
 
@@ -185,7 +185,7 @@ For more information, please view the following paper:
 """
 struct SGLD{S,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <:
        AbstractHMCSampler
-    "Learning rate for the gradient descent."
+    "Polynomial step size function."
     stepsize::S
     "Number of leapfrog steps."
     n_leapfrog::Int

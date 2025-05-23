@@ -125,7 +125,7 @@ include("sampler.jl")
 export sample
 
 include("constructors.jl")
-export HMCSampler, HMC, NUTS, HMCDA, SDLG
+export HMCSampler, HMC, NUTS, HMCDA, SGLD
 
 include("abstractmcmc.jl")
 
