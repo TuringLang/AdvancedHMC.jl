@@ -183,9 +183,8 @@ $(FIELDS)
 For more information, please view the following paper:
  - Max Welling & Yee Whye Teh (2011). Bayesian Learning via Stochastic Gradient Langevin Dynamics. In: Proceedings of the 28th International Conference on Machine Learning (pp. 681–688).
 """
-struct SGLD{
-    T<:Real,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric},S
-} <: AbstractHMCSampler
+struct SGLD{S,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <:
+       AbstractHMCSampler
     "Learning rate for the gradient descent."
     stepsize::S
     "Number of leapfrog steps."
@@ -197,7 +196,5 @@ struct SGLD{
 end
 
 function SGLD(stepsize, n_leapfrog; integrator=:leapfrog, metric=:diagonal)
-    return SGLD{T}(stepsize, n_leapfrog, integrator, metric)
+    return SGLD(stepsize, n_leapfrog, integrator, metric)
 end
-
-sampler_eltype(::SGLD{T}) where {T} = T
