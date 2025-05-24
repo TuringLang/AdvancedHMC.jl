@@ -101,3 +101,36 @@ function randcat(
     C = cumsum(P; dims=1)
     return max.(vec(count(C .< u'; dims=1)) .+ 1, 1)  # prevent numerical issue for Float32
 end
+
+struct PolynomialStepsize{T<:Real}
+    "Constant scale factor of the step size."
+    a::T
+    "Constant offset of the step size."
+    b::T
+    "Decay rate of step size in (0.5, 1]."
+    γ::T
+
+    function PolynomialStepsize{T}(a::T, b::T, γ::T) where {T}
+        0.5 < γ ≤ 1 || error("the decay rate `γ` has to be in (0.5, 1]")
+        return new{T}(a, b, γ)
+    end
+end
+
+"""
+    PolynomialStepsize(a[, b=0, γ=0.55])
+
+Create a polynomially decaying stepsize function.
+
+At iteration `t`, the step size is
+```math
+a (b + t)^{-γ}.
+```
+"""
+function PolynomialStepsize(a::T, b::T, γ::T) where {T<:Real}
+    return PolynomialStepsize{T}(a, b, γ)
+end
+function PolynomialStepsize(a::Real, b::Real=0, γ::Real=0.55)
+    return PolynomialStepsize(promote(a, b, γ)...)
+end
+
+(f::PolynomialStepsize)(t::Int) = f.a / (t + f.b)^f.γ
