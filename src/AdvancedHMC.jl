@@ -24,7 +24,7 @@ import StatsBase: sample
 const DEFAULT_FLOAT_TYPE = typeof(float(0))
 
 include("utilities.jl")
-
+export PolynomialStepsize
 # Notations
 # ℓπ: log density of the target distribution
 # θ: position variables / model parameters

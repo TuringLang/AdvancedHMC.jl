@@ -123,7 +123,7 @@ Create a polynomially decaying stepsize function.
 
 At iteration `t`, the step size is
 ```math
-a (b + t)^{-γ}.
+a / (b + t)^{-γ}.
 ```
 """
 function PolynomialStepsize(a::T, b::T, γ::T) where {T<:Real}
