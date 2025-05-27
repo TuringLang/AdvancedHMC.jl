@@ -220,7 +220,7 @@ function Trajectory{TS}(integrator::I, termination_criterion::TC) where {TS,I,TC
     return Trajectory{TS,I,TC}(integrator, termination_criterion)
 end
 
-ConstructionBase.constructorof(::Type{<:Trajectory{TS}}) where {TS} = Trajectory{TS}
+ConstructionBase.constructorof(::Type{<:Trajectory}) = Trajectory
 
 function Base.show(io::IO, mime::MIME"text/plain", τ::Trajectory{TS}) where {TS}
     return print(
