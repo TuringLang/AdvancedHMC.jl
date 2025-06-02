@@ -115,7 +115,7 @@ using Statistics: mean
     samples_sgld = AbstractMCMC.sample(
         rng,
         model,
-        hmc,
+        sgld,
         n_adapts + n_samples;
         n_adapts=n_adapts,
         initial_params=θ_init,
@@ -129,11 +129,11 @@ using Statistics: mean
     for t in samples_sgld
         t.z.θ .= invlink_gdemo(t.z.θ)
     end
-    m_est_hmc = mean(samples_sgld) do t
+    m_est_sgld = mean(samples_sgld) do t
         t.z.θ
     end
 
-    @test m_est_hmc ≈ [49 / 24, 7 / 6] atol = RNDATOL
+    @test m_est_sgld ≈ [49 / 24, 7 / 6] atol = RNDATOL
 
     samples_custom = AbstractMCMC.sample(
         rng,

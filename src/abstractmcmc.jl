@@ -290,14 +290,15 @@ function AbstractMCMC.step(
     logdensity_and_gradient = Base.Fix1(
         LogDensityProblems.logdensity_and_gradient, model.logdensity
     )
-    θ = t_old.z.θ
+    θ = copy(t_old.z.θ)
     grad = last(logdensity_and_gradient(θ))
 
     stepsize = spl.stepsize(i)
     θ .+= (stepsize / 2) .* grad .+ sqrt(stepsize) .* randn(rng, eltype(θ), length(θ))
 
     # Make new transition.
-    t = transition(rng, h, κ, t_old.z)
+    z = phasepoint(h, θ, t_old.z.r)
+    t = transition(rng, h, κ, z)
 
     # Adapt h and spl.
     tstat = stat(t)

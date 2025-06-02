@@ -115,6 +115,7 @@ struct PolynomialStepsize{T<:Real}
         return new{T}(a, b, γ)
     end
 end
+Base.eltype(p::PolynomialStepsize{T}) where {T} = T
 
 """
     PolynomialStepsize(a[, b=0, γ=0.55])

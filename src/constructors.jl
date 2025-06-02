@@ -198,3 +198,5 @@ end
 function SGLD(stepsize, n_leapfrog; integrator=:leapfrog, metric=:diagonal)
     return SGLD(stepsize, n_leapfrog, integrator, metric)
 end
+
+sampler_eltype(sampler::SGLD) = eltype(sampler.stepsize)
