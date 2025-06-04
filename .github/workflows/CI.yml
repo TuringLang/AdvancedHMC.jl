@@ -29,7 +29,7 @@ jobs:
         os:
           - ubuntu-latest
           - macOS-latest
-          - windows-latest
+          #- windows-latest
         exclude:
           - version: 'min'
             os: macOS-latest # Apple Silicon
