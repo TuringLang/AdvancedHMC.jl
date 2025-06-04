@@ -19,7 +19,7 @@ jobs:
       actions: write
       contents: read
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.version == 'pre' }}
+    continue-on-error: ${{ matrix.version == 'pre' || matrix.version == 'min' }}
     strategy:
       matrix:
         version:
