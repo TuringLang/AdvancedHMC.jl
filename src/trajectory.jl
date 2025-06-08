@@ -484,12 +484,7 @@ end
 
 function Base.show(io::IO, mime::MIME"text/plain", d::Termination)
     return print(
-        io,
-        "Termination reasons of (dynamic=",
-        d.dynamic,
-        ", numerical=",
-        d.numerical,
-        ")",
+        io, "Termination reasons of (dynamic=", d.dynamic, ", numerical=", d.numerical, ")"
     )
 end
 function Base.:*(d1::Termination, d2::Termination)

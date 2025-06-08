@@ -50,14 +50,7 @@ function initialize!(
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", state::StanHMCAdaptorState)
-    print(
-        io,
-        "window(",
-        state.window_start,
-        ", ",
-        state.window_end,
-        "), window_splits(",
-    )
+    print(io, "window(", state.window_start, ", ", state.window_end, "), window_splits(")
     join(io, state.window_splits, ", ")
     return print(io, ")")
 end
