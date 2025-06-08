@@ -218,10 +218,8 @@ function step(
     ϵ = fwd ? step_size(lf) : -step_size(lf)
     ϵ = ϵ'
 
-    res = if FullTraj
-        Vector{P}(undef, n_steps)
-    else
-        Vector{P}(undef, 1)
+    if FullTraj
+        res = Vector{P}(undef, n_steps)
     end
 
     (; θ, r) = z
@@ -244,13 +242,11 @@ function step(
         # Update result
         if FullTraj
             res[i] = z
-        else
-            res[1] = z
         end
         if !isfinite(z)
             # Remove undef
             if FullTraj
-                res = res[isassigned.(Ref(res), 1:n_steps)]
+                resize!(res, i)
             end
             break
         end
@@ -258,6 +254,6 @@ function step(
     return if FullTraj
         res
     else
-        first(res)
+        z
     end
 end
