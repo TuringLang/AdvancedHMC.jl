@@ -18,7 +18,7 @@ struct GeneralizedLeapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractL
     n::Int
 end
 function Base.show(io::IO, l::GeneralizedLeapfrog)
-    return print(io, "GeneralizedLeapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)), n=$(l.n))")
+    return print(io, "GeneralizedLeapfrog(ϵ=", round.(l.ϵ; sigdigits=3), ", n=", l.n, ")")
 end
 
 # fallback to ignore return_cache & cache kwargs for other ∂H∂θ

@@ -111,7 +111,10 @@ end
 function Base.show(io::IO, mime::MIME"text/plain", s::SliceTS)
     return print(
         io,
-        "SliceTS with slice variable ℓu=$(s.ℓu) and number of acceptable candiadtes n=$(s.n)",
+        "SliceTS with slice variable ℓu=",
+        s.ℓu,
+        " and number of acceptable candiadtes n=",
+        s.n,
     )
 end
 
@@ -225,7 +228,12 @@ ConstructionBase.constructorof(::Type{<:Trajectory{TS}}) where {TS} = Trajectory
 function Base.show(io::IO, mime::MIME"text/plain", τ::Trajectory{TS}) where {TS}
     return print(
         io,
-        "Trajectory{$TS} with $(τ.integrator) and termination criterion $(τ.termination_criterion)",
+        "Trajectory{",
+        TS,
+        "} with ",
+        τ.integrator,
+        " and termination criterion ",
+        τ.termination_criterion,
     )
 end
 
@@ -476,7 +484,12 @@ end
 
 function Base.show(io::IO, mime::MIME"text/plain", d::Termination)
     return print(
-        io, "Termination reasons of (dynamic=$(d.dynamic), numerical=$(d.numerical))"
+        io,
+        "Termination reasons of (dynamic=",
+        d.dynamic,
+        ", numerical=",
+        d.numerical,
+        ")",
     )
 end
 function Base.:*(d1::Termination, d2::Termination)
