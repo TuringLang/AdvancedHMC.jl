@@ -24,7 +24,7 @@ end
 struct UnitMassMatrix{T<:AbstractFloat} <: MassMatrixAdaptor end
 
 function Base.show(io::IO, mime::MIME"text/plain", ::UnitMassMatrix{T}) where {T}
-    return print(io, "UnitMassMatrix{$T} adaptor")
+    return print(io, "UnitMassMatrix{", T, "} adaptor")
 end
 
 UnitMassMatrix() = UnitMassMatrix{Float64}()
@@ -94,7 +94,7 @@ mutable struct WelfordVar{T<:AbstractFloat,E<:AbstractVecOrMat{T},V<:AbstractVec
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", ::WelfordVar{T}) where {T}
-    return print(io, "WelfordVar{$T} adaptor")
+    return print(io, "WelfordVar{", T, "} adaptor")
 end
 
 function WelfordVar{T}(
@@ -195,7 +195,7 @@ mutable struct WelfordCov{F<:AbstractFloat,C<:AbstractMatrix{F}} <: DenseMatrixE
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", ::WelfordCov{T}) where {T}
-    return print(io, "WelfordCov{$T} adaptor")
+    return print(io, "WelfordCov{", T, "} adaptor")
 end
 
 function WelfordCov{T}(
