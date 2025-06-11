@@ -32,6 +32,7 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
     include("abstractmcmc.jl")
     include("mcmcchains.jl")
     include("constructors.jl")
+    include("relativistic.jl")
 
     Comonicon.@main function runtests(patterns...; dry::Bool=false)
         return retest(patterns...; dry=dry, verbose=Inf)
