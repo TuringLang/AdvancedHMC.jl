@@ -87,7 +87,7 @@ struct ManualSSAdaptor{T<:AbstractScalarOrVec{<:AbstractFloat}} <: StepSizeAdapt
     state::MSSState{T}
 end
 function Base.show(io::IO, mime::MIME"text/plain", a::ManualSSAdaptor{T}) where {T}
-    return print(io, "ManualSSAdaptor{$T} with step size of $(a.state.ϵ)")
+    return print(io, "ManualSSAdaptor{", T, "} with step size of ", a.state.ϵ)
 end
 
 function ManualSSAdaptor(initϵ::T) where {T<:AbstractScalarOrVec{<:AbstractFloat}}
@@ -122,7 +122,9 @@ end
 function Base.show(io::IO, mime::MIME"text/plain", a::NesterovDualAveraging{T}) where {T}
     return print(
         io,
-        "NesterovDualAveraging{$T} with\n",
+        "NesterovDualAveraging{",
+        T,
+        "} with\n",
         "Scaling γ=",
         a.γ,
         "\n",

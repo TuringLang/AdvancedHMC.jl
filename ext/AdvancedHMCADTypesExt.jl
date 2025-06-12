@@ -1,15 +1,17 @@
 module AdvancedHMCADTypesExt
 
-using AdvancedHMC:
-    AbstractMetric, LogDensityModel, Hamiltonian, LogDensityProblems, LogDensityProblemsAD
+using AdvancedHMC: AdvancedHMC, AbstractMetric, Hamiltonian, LogDensityModel
+using AdvancedHMC: LogDensityProblems, LogDensityProblemsAD
 using ADTypes: AbstractADType
 
-function Hamiltonian(
+function AdvancedHMC.Hamiltonian(
     metric::AbstractMetric, ℓπ::LogDensityModel, kind::AbstractADType; kwargs...
 )
     return Hamiltonian(metric, ℓπ.logdensity, kind; kwargs...)
 end
-function Hamiltonian(metric::AbstractMetric, ℓπ, kind::AbstractADType; kwargs...)
+function AdvancedHMC.Hamiltonian(
+    metric::AbstractMetric, ℓπ, kind::AbstractADType; kwargs...
+)
     if LogDensityProblems.capabilities(ℓπ) === nothing
         throw(
             ArgumentError(
