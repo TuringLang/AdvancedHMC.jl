@@ -36,7 +36,11 @@ Base.size(e::UnitEuclideanMetric, dim::Int) = e.size[dim]
 function Base.show(io::IO, ::MIME"text/plain", uem::UnitEuclideanMetric{T}) where {T}
     return print(
         io,
-        "UnitEuclideanMetric{$T} with size $(size(uem)) mass matrix:\n",
+        "UnitEuclideanMetric{",
+        T,
+        "} with size ",
+        size(uem),
+        " mass matrix:\n",
         _string_M⁻¹(ones(uem.size)),
     )
 end
@@ -65,7 +69,11 @@ Base.size(e::DiagEuclideanMetric, dim...) = size(e.M⁻¹, dim...)
 function Base.show(io::IO, ::MIME"text/plain", dem::DiagEuclideanMetric{T}) where {T}
     return print(
         io,
-        "DiagEuclideanMetric{$T} with size $(size(dem)) mass matrix:\n",
+        "DiagEuclideanMetric{",
+        T,
+        "} with size ",
+        size(dem),
+        " mass matrix:\n",
         _string_M⁻¹(dem.M⁻¹),
     )
 end
@@ -105,7 +113,11 @@ Base.size(e::DenseEuclideanMetric, dim...) = size(e._temp, dim...)
 function Base.show(io::IO, ::MIME"text/plain", dem::DenseEuclideanMetric{T}) where {T}
     return print(
         io,
-        "DenseEuclideanMetric{$T} with size $(size(dem)) mass matrix:\n",
+        "DenseEuclideanMetric{",
+        T,
+        "} with size ",
+        size(dem),
+        " mass matrix:\n",
         _string_M⁻¹(dem.M⁻¹),
     )
 end
