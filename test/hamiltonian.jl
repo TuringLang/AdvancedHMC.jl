@@ -60,19 +60,19 @@ end
             r_init = randn(T, D)
 
             h = Hamiltonian(UnitEuclideanMetric(T, D), ℓπ, ∂ℓπ∂θ)
-            @test -AdvancedHMC.neg_energy(h, r_init, θ_init) == sum(abs2, r_init) / 2
+            @test -AdvancedHMC.neg_energy(h, θ_init, r_init) == sum(abs2, r_init) / 2
             @test AdvancedHMC.∂H∂r(h, r_init) == r_init
 
             M⁻¹ = ones(T, D) + abs.(randn(T, D))
             h = Hamiltonian(DiagEuclideanMetric(M⁻¹), ℓπ, ∂ℓπ∂θ)
-            @test -AdvancedHMC.neg_energy(h, r_init, θ_init) ≈
+            @test -AdvancedHMC.neg_energy(h, θ_init, r_init) ≈
                 r_init' * diagm(0 => M⁻¹) * r_init / 2
             @test AdvancedHMC.∂H∂r(h, r_init) == M⁻¹ .* r_init
 
             m = randn(T, D, D)
             M⁻¹ = m' * m
             h = Hamiltonian(DenseEuclideanMetric(M⁻¹), ℓπ, ∂ℓπ∂θ)
-            @test -AdvancedHMC.neg_energy(h, r_init, θ_init) ≈ r_init' * M⁻¹ * r_init / 2
+            @test -AdvancedHMC.neg_energy(h, θ_init, r_init) ≈ r_init' * M⁻¹ * r_init / 2
             @test AdvancedHMC.∂H∂r(h, r_init) == M⁻¹ * r_init
         end
     end
@@ -86,7 +86,7 @@ end
             r_init = ComponentArray(; a=randn(T, D), b=randn(T, D))
 
             h = Hamiltonian(UnitEuclideanMetric(T, 2 * D), ℓπ, ∂ℓπ∂θ)
-            @test -AdvancedHMC.neg_energy(h, r_init, θ_init) == sum(abs2, r_init) / 2
+            @test -AdvancedHMC.neg_energy(h, θ_init, r_init) == sum(abs2, r_init) / 2
             @test AdvancedHMC.∂H∂r(h, r_init) == r_init
             @test typeof(AdvancedHMC.∂H∂r(h, r_init)) == typeof(r_init)
 
@@ -94,7 +94,7 @@ end
                 a=ones(T, D) + abs.(randn(T, D)), b=ones(T, D) + abs.(randn(T, D))
             )
             h = Hamiltonian(DiagEuclideanMetric(M⁻¹), ℓπ, ∂ℓπ∂θ)
-            @test -AdvancedHMC.neg_energy(h, r_init, θ_init) ≈
+            @test -AdvancedHMC.neg_energy(h, θ_init, r_init) ≈
                 r_init' * diagm(0 => M⁻¹) * r_init / 2
             @test AdvancedHMC.∂H∂r(h, r_init) == M⁻¹ .* r_init
             @test typeof(AdvancedHMC.∂H∂r(h, r_init)) == typeof(r_init)
@@ -103,7 +103,7 @@ end
             ax = getaxes(r_init)[1]
             M⁻¹ = ComponentArray(m' * m, ax, ax)
             h = Hamiltonian(DenseEuclideanMetric(M⁻¹), ℓπ, ∂ℓπ∂θ)
-            @test -AdvancedHMC.neg_energy(h, r_init, θ_init) ≈ r_init' * M⁻¹ * r_init / 2
+            @test -AdvancedHMC.neg_energy(h, θ_init, r_init) ≈ r_init' * M⁻¹ * r_init / 2
             @test all(AdvancedHMC.∂H∂r(h, r_init) .== M⁻¹ * r_init)
             @test typeof(AdvancedHMC.∂H∂r(h, r_init)) == typeof(r_init)
         end

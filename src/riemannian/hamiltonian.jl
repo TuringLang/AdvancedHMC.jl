@@ -72,9 +72,9 @@ function step(
         end
         #! Eq (17) of Girolami & Calderhead (2011)
         θ_full = copy(θ_init)
-        term_1 = ∂H∂r(h, θ_init, r_half) # unchanged across the loop
+        term_1 = ∂H∂r(h, θ_init, r_half).gradient # unchanged across the loop
         for j in 1:(lf.n)
-            θ_full = θ_init + ϵ / 2 * (term_1 + ∂H∂r(h, θ_full, r_half))
+            θ_full = θ_init + ϵ / 2 * (term_1 + ∂H∂r(h, θ_full, r_half).gradient)
             # println("θ_full :", θ_full)
         end
         #! Eq (18) of Girolami & Calderhead (2011)
@@ -103,7 +103,6 @@ function step(
     return res
 end
 
-# TODO Make the order of θ and r consistent with neg_energy
 ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat, r::AbstractVecOrMat) = ∂H∂θ(h, θ)
 ∂H∂r(h::Hamiltonian, θ::AbstractVecOrMat, r::AbstractVecOrMat) = ∂H∂r(h, r)
 
@@ -227,11 +226,7 @@ using LinearAlgebra: logabsdet, tr
 # QUES Do we want to change everything to position dependent by default?
 # Add θ to ∂H∂r for DenseRiemannianMetric
 function phasepoint(
-    h::Hamiltonian{<:DenseRiemannianMetric},
-    θ::T,
-    r::T;
-    ℓπ=∂H∂θ(h, θ),
-    ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, θ, r)),
+    h::Hamiltonian{<:DenseRiemannianMetric}, θ::T, r::T; ℓπ=∂H∂θ(h, θ), ℓκ=∂H∂r(h, θ, r)
 ) where {T<:AbstractVecOrMat}
     return PhasePoint(θ, r, ℓπ, ℓκ)
 end
@@ -239,7 +234,7 @@ end
 # Negative kinetic energy
 #! Eq (13) of Girolami & Calderhead (2011)
 function neg_energy(
-    h::Hamiltonian{<:DenseRiemannianMetric}, r::T, θ::T
+    h::Hamiltonian{<:DenseRiemannianMetric}, θ::T, r::T
 ) where {T<:AbstractVecOrMat}
     G = h.metric.map(h.metric.G(θ))
     D = size(G, 1)
@@ -347,12 +342,6 @@ function ∂H∂r(
     h::Hamiltonian{<:DenseRiemannianMetric}, θ::AbstractVecOrMat, r::AbstractVecOrMat
 )
     H = h.metric.G(θ)
-    # if !all(isfinite, H)
-    #     println("θ: ", θ)
-    #     println("H: ", H)
-    # end
     G = h.metric.map(H)
-    # return inv(G) * r
-    # println("G \ r: ", G \ r)
-    return G \ r # NOTE it's actually pretty weird that ∂H∂θ returns DualValue but ∂H∂r doesn't
+    return DualValue(neg_energy(h, θ, r), G \ r)
 end
