@@ -727,7 +727,7 @@ function transition(
         (
             n_steps=tree.nα,
             is_accept=true,
-            acceptance_rate=(tree.sum_α / tree.nα),
+            acceptance_rate=tree.sum_α / tree.nα,
             log_density=zcand.ℓπ.value,
             hamiltonian_energy=H,
             hamiltonian_energy_error=H - H0,
