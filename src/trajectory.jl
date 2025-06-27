@@ -141,9 +141,8 @@ $(TYPEDEF)
 Slice sampler for the starting single leaf tree.
 Slice variable is initialized.
 """
-function SliceTS(rng::AbstractRNG, z0::PhasePoint)
+SliceTS(rng::AbstractRNG, z0::PhasePoint) =
     SliceTS(z0, neg_energy(z0) - Random.randexp(rng), 1)
-end
 
 """
 $(TYPEDEF)
@@ -293,7 +292,7 @@ function transition(
             hamiltonian_energy=H,
             hamiltonian_energy_error=H - H0,
             # check numerical error in proposed phase point. 
-            numerical_error=(!all(isfinite, H′)),
+            numerical_error=!all(isfinite, H′),
         ),
         stat(τ.integrator),
     )

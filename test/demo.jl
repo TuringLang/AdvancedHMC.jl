@@ -10,9 +10,8 @@ using LinearAlgebra, ADTypes
 
     LogDensityProblems.logdensity(p::DemoProblem, θ) = logpdf(MvNormal(zeros(p.dim), I), θ)
     LogDensityProblems.dimension(p::DemoProblem) = p.dim
-    LogDensityProblems.capabilities(::Type{DemoProblem}) = LogDensityProblems.LogDensityOrder{
-        0
-    }()
+    LogDensityProblems.capabilities(::Type{DemoProblem}) =
+        LogDensityProblems.LogDensityOrder{0}()
 
     # Choose parameter dimensionality and initial parameter value
     D = 10
@@ -67,9 +66,8 @@ end
         return -((1 - p.μ) / p.σ)^2
     end
     LogDensityProblems.dimension(::DemoProblemComponentArrays) = 2
-    LogDensityProblems.capabilities(::Type{DemoProblemComponentArrays}) = LogDensityProblems.LogDensityOrder{
-        0
-    }()
+    LogDensityProblems.capabilities(::Type{DemoProblemComponentArrays}) =
+        LogDensityProblems.LogDensityOrder{0}()
 
     ℓπ = DemoProblemComponentArrays()
 

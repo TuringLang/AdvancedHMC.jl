@@ -117,7 +117,7 @@ function sample(
     drop_warmup=false,
     verbose::Bool=true,
     progress::Bool=false,
-    (pm_next!)::Function=(pm_next!),
+    (pm_next!)::Function=pm_next!,
 )
     return sample(
         Random.default_rng(),
@@ -130,7 +130,7 @@ function sample(
         drop_warmup=drop_warmup,
         verbose=verbose,
         progress=progress,
-        (pm_next!)=(pm_next!),
+        (pm_next!)=pm_next!,
     )
 end
 
@@ -168,7 +168,7 @@ function sample(
     drop_warmup=false,
     verbose::Bool=true,
     progress::Bool=false,
-    (pm_next!)::Function=(pm_next!),
+    (pm_next!)::Function=pm_next!,
 ) where {T<:AbstractVecOrMat{<:AbstractFloat}}
     @assert !(drop_warmup && (adaptor isa Adaptation.NoAdaptation)) "Cannot drop warmup samples if there is no adaptation phase."
     # Prepare containers to store sampling results
