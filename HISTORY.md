@@ -2,7 +2,7 @@
 
 ## 0.9.0
 
-  - To compute the negative energy of a Hamiltonian `h` with parameter `θ` and momentum `r`, use `neg_energy(h, θ, r)` instead of `neg_energy(h, r, θ)`, which is now consistent with the common usage like `phasepoint(h, θ, r)`.
+  - The parameter ordering for `neg_energy` has changed to improve consistency. Use `neg_energy(h, θ, r)` instead of `neg_energy(h, r, θ)`, to compute the negative energy of a Hamiltonian `h` for parameter `θ` and momentum `r`, This is now consistent with the rest of the AHMC interface, like `phasepoint(h, θ, r)`.
 
 ## 0.8.0
 
