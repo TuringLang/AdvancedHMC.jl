@@ -8,6 +8,7 @@ This modularity means that different HMC variants can be easily constructed by c
   - Unit metric: `UnitEuclideanMetric(dim)`
   - Diagonal metric: `DiagEuclideanMetric(dim)`
   - Dense metric: `DenseEuclideanMetric(dim)`
+  - Rank update metric: `RankUpdateEuclideanMetric(dim)`
 
 where `dim` is the dimensionality of the sampling space.
 
