@@ -1,5 +1,9 @@
 # AdvancedHMC Changelog
 
+## 0.9.0
+
+  - Stochastic gradient based methods `SGHMC` and `SGLD` are supported in AdvancedHMC.jl, please note there are similar methods with the same name in Turing.jl, so when using the two packages together, please specify the package exporting the method.
+
 ## 0.8.0
 
   - To make an MCMC transtion from phasepoint `z` using trajectory `τ`(or HMCKernel `κ`) under Hamiltonian `h`, use `transition(h, τ, z)` or `transition(rng, h, τ, z)`(if using HMCKernel, use `transition(h, κ, z)` or `transition(rng, h, κ, z)`).

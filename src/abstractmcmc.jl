@@ -205,6 +205,120 @@ function AbstractMCMC.step(
     return Transition(t.z, tstat), newstate
 end
 
+struct SGHMCState{
+    TTrans<:Transition,
+    TMetric<:AbstractMetric,
+    TKernel<:AbstractMCMCKernel,
+    TAdapt<:Adaptation.AbstractAdaptor,
+    T<:AbstractVector{<:Real},
+}
+    "Index of current iteration."
+    i::Int
+    "Current [`Transition`](@ref)."
+    transition::TTrans
+    "Current [`AbstractMetric`](@ref), possibly adapted."
+    metric::TMetric
+    "Current [`AbstractMCMCKernel`](@ref)."
+    κ::TKernel
+    "Current [`AbstractAdaptor`](@ref)."
+    adaptor::TAdapt
+    velocity::T
+end
+getadaptor(state::SGHMCState) = state.adaptor
+getmetric(state::SGHMCState) = state.metric
+getintegrator(state::SGHMCState) = state.κ.τ.integrator
+
+function AbstractMCMC.step(
+    rng::Random.AbstractRNG,
+    model::AbstractMCMC.LogDensityModel,
+    spl::SGHMC;
+    initial_params=nothing,
+    kwargs...,
+)
+    # Unpack model
+    logdensity = model.logdensity
+
+    # Define metric
+    metric = make_metric(spl, logdensity)
+
+    # Construct the hamiltonian using the initial metric
+    hamiltonian = Hamiltonian(metric, model)
+
+    # Compute initial sample and state.
+    initial_params = make_initial_params(rng, spl, logdensity, initial_params)
+    ϵ = make_step_size(rng, spl, hamiltonian, initial_params)
+    integrator = make_integrator(spl, ϵ)
+
+    # Make kernel
+    κ = make_kernel(spl, integrator)
+
+    # Make adaptor
+    adaptor = make_adaptor(spl, metric, integrator)
+
+    # Get an initial sample.
+    h, t = AdvancedHMC.sample_init(rng, hamiltonian, initial_params)
+
+    state = SGHMCState(0, t, metric, κ, adaptor, initial_params)
+
+    return AbstractMCMC.step(rng, model, spl, state; kwargs...)
+end
+
+function AbstractMCMC.step(
+    rng::AbstractRNG,
+    model::AbstractMCMC.LogDensityModel,
+    spl::SGHMC,
+    state::SGHMCState;
+    n_adapts::Int=0,
+    kwargs...,
+)
+    if haskey(kwargs, :nadapts)
+        throw(
+            ArgumentError(
+                "keyword argument `nadapts` is unsupported. Please use `n_adapts` to specify the number of adaptation steps.",
+            ),
+        )
+    end
+
+    i = state.i + 1
+    t_old = state.transition
+    adaptor = state.adaptor
+    κ = state.κ
+    metric = state.metric
+
+    # Reconstruct hamiltonian.
+    h = Hamiltonian(metric, model)
+
+    # Compute gradient of log density.
+    logdensity_and_gradient = Base.Fix1(
+        LogDensityProblems.logdensity_and_gradient, model.logdensity
+    )
+    θ = copy(t_old.z.θ)
+    grad = last(logdensity_and_gradient(θ))
+
+    # Update latent variables and velocity according to
+    # equation (15) of Chen et al. (2014)
+    v = state.velocity
+    η = spl.learning_rate
+    α = spl.momentum_decay
+    newv = (1 - α) .* v .+ η .* grad .+ sqrt(2 * η * α) .* randn(rng, eltype(v), length(v))
+    θ .+= newv
+
+    # Make new transition.
+    z = phasepoint(h, θ, v)
+    t = transition(rng, h, κ, z)
+
+    # Adapt h and spl.
+    tstat = stat(t)
+    h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, θ, tstat.acceptance_rate)
+    tstat = merge(tstat, (is_adapt=isadapted,))
+
+    # Compute next sample and state.
+    sample = Transition(t.z, tstat)
+    newstate = SGHMCState(i, t, h.metric, κ, adaptor, newv)
+
+    return sample, newstate
+end
+
 ################
 ### Callback ###
 ################
@@ -392,6 +506,10 @@ function make_adaptor(spl::HMC, metric::AbstractMetric, integrator::AbstractInte
     return NoAdaptation()
 end
 
+function make_adaptor(spl::SGHMC, metric::AbstractMetric, integrator::AbstractIntegrator)
+    return NoAdaptation()
+end
+
 function make_adaptor(
     spl::HMCSampler, metric::AbstractMetric, integrator::AbstractIntegrator
 )
@@ -416,4 +534,8 @@ end
 
 function make_kernel(spl::HMCSampler, integrator::AbstractIntegrator)
     return spl.κ
+end
+
+function make_kernel(spl::SGHMC, integrator::AbstractIntegrator)
+    return HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(spl.n_leapfrog)))
 end
