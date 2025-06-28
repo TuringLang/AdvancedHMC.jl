@@ -1,5 +1,9 @@
 # AdvancedHMC Changelog
 
+## 0.9.0
+
+  - To compute the negative energy of a Hamiltonian `h` with parameter `θ` and momentum `r`, use `neg_energy(h, θ, r)` instead of `neg_energy(h, r, θ)`, which is now consistent with the common usage like `phasepoint(h, θ, r)`.
+
 ## 0.8.0
 
   - To make an MCMC transtion from phasepoint `z` using trajectory `τ`(or HMCKernel `κ`) under Hamiltonian `h`, use `transition(h, τ, z)` or `transition(rng, h, τ, z)`(if using HMCKernel, use `transition(h, κ, z)` or `transition(rng, h, κ, z)`).

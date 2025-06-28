@@ -74,7 +74,8 @@ function step(
         θ_full = copy(θ_init)
         term_1 = ∂H∂r(h, θ_init, r_half).gradient # unchanged across the loop
         for j in 1:(lf.n)
-            θ_full = θ_init + ϵ / 2 * (term_1 + ∂H∂r(h, θ_full, r_half).gradient)
+            grad_r = ∂H∂r(h, θ_full, r_half).gradient
+            θ_full = θ_init + ϵ / 2 * (term_1 + grad_r)
             # println("θ_full :", θ_full)
         end
         #! Eq (18) of Girolami & Calderhead (2011)
