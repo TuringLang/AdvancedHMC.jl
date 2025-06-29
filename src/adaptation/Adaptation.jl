@@ -37,8 +37,8 @@ struct NaiveHMCAdaptor{M<:MassMatrixAdaptor,Tssa<:StepSizeAdaptor} <: AbstractAd
     pc::M
     ssa::Tssa
 end
-function Base.show(io::IO, a::NaiveHMCAdaptor)
-    return print(io, "NaiveHMCAdaptor(pc=$(a.pc), ssa=$(a.ssa))")
+function Base.show(io::IO, ::MIME"text/plain", a::NaiveHMCAdaptor)
+    return print(io, "NaiveHMCAdaptor(pc=", a.pc, ", ssa=", a.ssa, ")")
 end
 
 getM⁻¹(ca::NaiveHMCAdaptor) = getM⁻¹(ca.pc)

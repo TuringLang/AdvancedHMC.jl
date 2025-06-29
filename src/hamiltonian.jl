@@ -4,8 +4,14 @@ struct Hamiltonian{M<:AbstractMetric,K<:AbstractKinetic,Tlogπ,T∂logπ∂θ}
     ℓπ::Tlogπ
     ∂ℓπ∂θ::T∂logπ∂θ
 end
-function Base.show(io::IO, h::Hamiltonian)
-    return print(io, "Hamiltonian(metric=$(h.metric), kinetic=$(h.kinetic))")
+function Base.show(io::IO, mime::MIME"text/plain", h::Hamiltonian)
+    return print(
+        io,
+        "Hamiltonian with ",
+        nameof(typeof(h.metric)),
+        " and ",
+        nameof(typeof(h.kinetic)),
+    )
 end
 
 # By default we use Gaussian kinetic energy; also to ensure backward compatibility at the time this was introduced
