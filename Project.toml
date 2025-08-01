@@ -1,6 +1,6 @@
 name = "AdvancedHMC"
 uuid = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
-version = "0.8.0"
+version = "0.8.1"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
@@ -48,7 +48,7 @@ Setfield = "0.7, 0.8, 1"
 Statistics = "1.6"
 StatsBase = "0.31, 0.32, 0.33, 0.34"
 StatsFuns = "0.8, 0.9, 1"
-julia = "1.10"
+julia = "1.10.2"
 
 [extras]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
