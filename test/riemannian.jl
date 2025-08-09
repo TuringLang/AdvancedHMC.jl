@@ -1,28 +1,63 @@
-using ReTest, AdvancedHMC
-
-include("../src/riemannian_hmc.jl")
-include("../src/riemannian_hmc_utility.jl")
-
+using ReTest, Random
+using AdvancedHMC, ForwardDiff, AbstractMCMC
+using LinearAlgebra
+using MCMCLogDensityProblems
 using FiniteDiff:
     finite_difference_gradient, finite_difference_hessian, finite_difference_jacobian
-using Distributions: MvNormal
-using AdvancedHMC: neg_energy, energy
+using AdvancedHMC: neg_energy, energy, ∂H∂θ, ∂H∂r
 
-# Taken from https://github.com/JuliaDiff/FiniteDiff.jl/blob/master/test/finitedifftests.jl
-δ(a, b) = maximum(abs.(a - b))
+# Fisher information metric
+function gen_∂G∂θ_fwd(Vfunc, x; f=identity)
+    _Hfunc = gen_hess_fwd(Vfunc, x)
+    Hfunc = x -> _Hfunc(x)[3]
+    # QUES What's the best output format of this function?
+    cfg = ForwardDiff.JacobianConfig(Hfunc, x)
+    d = length(x)
+    out = zeros(eltype(x), d^2, d)
+    return x -> ForwardDiff.jacobian!(out, Hfunc, x, cfg)
+    return out # default output shape [∂H∂x₁; ∂H∂x₂; ...]
+end
 
-@testset "Riemannian" begin
-    hps = (; λ=1e-2, α=20.0, ϵ=0.1, n=6, L=8)
+function gen_hess_fwd(func, x::AbstractVector)
+    function hess(x::AbstractVector)
+        return nothing, nothing, ForwardDiff.hessian(func, x)
+    end
+    return hess
+end
 
+function reshape_∂G∂θ(H)
+    d = size(H, 2)
+    return cat((H[((i - 1) * d + 1):(i * d), :] for i in 1:d)...; dims=3)
+end
+
+function prepare_sample(ℓπ, initial_θ, λ)
+    Vfunc = x -> -ℓπ(x)
+    _Hfunc = MCMCLogDensityProblems.gen_hess(Vfunc, initial_θ) # x -> (value, gradient, hessian)
+    Hfunc = x -> copy.(_Hfunc(x)) # _Hfunc do in-place computation, copy to avoid bug
+
+    fstabilize = H -> H + λ * I
+    Gfunc = x -> begin
+        H = fstabilize(Hfunc(x)[3])
+        all(isfinite, H) ? H : diagm(ones(length(x)))
+    end
+    _∂G∂θfunc = gen_∂G∂θ_fwd(x -> -ℓπ(x), initial_θ; f=fstabilize)
+    ∂G∂θfunc = x -> reshape_∂G∂θ(_∂G∂θfunc(x))
+
+    return Vfunc, Hfunc, Gfunc, ∂G∂θfunc
+end
+
+@testset "Constructors tests" begin
+    δ(a, b) = maximum(abs.(a - b))
     @testset "$(nameof(typeof(target)))" for target in [HighDimGaussian(2), Funnel()]
         rng = MersenneTwister(1110)
+        λ = 1e-2
 
         θ₀ = rand(rng, dim(target))
 
         ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
         ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, θ₀)
 
-        Vfunc, Hfunc, Gfunc, ∂G∂θfunc = prepare_sample_target(hps, θ₀, ℓπ)
+        Vfunc, Hfunc, Gfunc, ∂G∂θfunc = prepare_sample(ℓπ, θ₀, λ)
 
         D = dim(target) # ==2 for this test
         x = zeros(D) # randn(rng, D)
@@ -36,7 +71,7 @@ using AdvancedHMC: neg_energy, energy
         end
 
         @testset "$(nameof(typeof(hessmap)))" for hessmap in
-                                                  [IdentityMap(), SoftAbsMap(hps.α)]
+                                                  [IdentityMap(), SoftAbsMap(20.0)]
             metric = DenseRiemannianMetric((D,), Gfunc, ∂G∂θfunc, hessmap)
             kinetic = GaussianKinetic()
             hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
@@ -66,4 +101,63 @@ using AdvancedHMC: neg_energy, energy
             end
         end
     end
+end
+
+@testset "Multi variate Normal with Riemannian HMC" begin
+    # Set the number of samples to draw and warmup iterations
+    n_samples = 2_000
+    rng = MersenneTwister(1110)
+    initial_θ = rand(rng, D)
+    λ = 1e-2
+    _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
+    # Define a Hamiltonian system
+    metric = DenseRiemannianMetric((D,), G, ∂G∂θ)
+    kinetic = GaussianKinetic()
+    hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
+
+    # Define a leapfrog solver, with the initial step size chosen heuristically
+    initial_ϵ = 0.01
+    integrator = GeneralizedLeapfrog(initial_ϵ, 6)
+
+    # Define an HMC sampler with the following components
+    #   - multinomial sampling scheme,
+    #   - generalised No-U-Turn criteria, and
+    kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(8)))
+
+    # Run the sampler to draw samples from the specified Gaussian, where
+    #   - `samples` will store the samples
+    #   - `stats` will store diagnostic statistics for each sample
+    samples, stats = sample(rng, hamiltonian, kernel, initial_θ, n_samples; progress=true)
+    @test length(samples) == n_samples
+    @test length(stats) == n_samples
+end
+
+@testset "Multi variate Normal with Riemannian HMC softabs metric" begin
+    # Set the number of samples to draw and warmup iterations
+    n_samples = 2_000
+    rng = MersenneTwister(1110)
+    initial_θ = rand(rng, D)
+    λ = 1e-2
+    _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
+
+    # Define a Hamiltonian system
+    metric = DenseRiemannianMetric((D,), G, ∂G∂θ, λSoftAbsMap(20.0))
+    kinetic = GaussianKinetic()
+    hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
+
+    # Define a leapfrog solver, with the initial step size chosen heuristically
+    initial_ϵ = 0.01
+    integrator = GeneralizedLeapfrog(initial_ϵ, 6)
+
+    # Define an HMC sampler with the following components
+    #   - multinomial sampling scheme,
+    #   - generalised No-U-Turn criteria, and
+    kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(8)))
+
+    # Run the sampler to draw samples from the specified Gaussian, where
+    #   - `samples` will store the samples
+    #   - `stats` will store diagnostic statistics for each sample
+    samples, stats = sample(rng, hamiltonian, kernel, initial_θ, n_samples; progress=true)
+    @test length(samples) == n_samples
+    @test length(stats) == n_samples
 end
