@@ -111,6 +111,9 @@ using Statistics: mean, var, cov
         println("  number of chains:              ", n_chains_list)
         println("  elapsed time [s] (vectorized): ", round.(time_mat; sigdigits=2))
         println("  elapsed time [s] (separate):   ", round.(time_separate; sigdigits=2))
-        println("  ratio of elapsed time:         ", round.(time_separate ./ time_mat; sigdigits=2))
+        println(
+            "  ratio of elapsed time:         ",
+            round.(time_separate ./ time_mat; sigdigits=2),
+        )
     end
 end
