@@ -1,4 +1,4 @@
-using ReTest, AdvancedHMC, LinearAlgebra, UnicodePlots, Random
+using ReTest, AdvancedHMC, LinearAlgebra, Random
 using Statistics: mean, var, cov
 
 @testset "sample (vectorized)" begin
@@ -95,7 +95,7 @@ using Statistics: mean, var, cov
         end
 
         # Time for multiple runs of single chain
-        time_seperate = Vector{Float64}(undef, n_chains_max)
+        time_separate = Vector{Float64}(undef, n_chains_max)
 
         for (i, n_chains) in enumerate(n_chains_list)
             t = @elapsed for j in 1:n_chains
@@ -104,22 +104,13 @@ using Statistics: mean, var, cov
                     h, κ, θ_init_list[i][:, j], n_samples; verbose=false
                 )
             end
-            time_seperate[i] = t
+            time_separate[i] = t
         end
 
-        # Make plot
-        fig = lineplot(
-            collect(1:n_chains_max),
-            time_mat;
-            title="Scalabiliry of multiple chains",
-            name="vectorization",
-            xlabel="Num of chains",
-            ylabel="Time (s)",
-        )
-        lineplot!(fig, collect(n_chains_list), time_seperate; color=:blue, name="seperate")
-        println()
-        show(fig)
-        println()
-        println()
+        println("\nVectorized vs separate sampling")
+        println("  number of chains:              ", n_chains_list)
+        println("  elapsed time [s] (vectorized): ", round.(time_mat; sigdigits=2))
+        println("  elapsed time [s] (separate):   ", round.(time_separate; sigdigits=2))
+        println("  ratio of elapsed time:         ", round.(time_separate ./ time_mat; sigdigits=2))
     end
 end
