@@ -61,6 +61,7 @@ end
         :UnitEuclideanMetric => UnitEuclideanMetric(D),
         :DiagEuclideanMetric => DiagEuclideanMetric(D),
         :DenseEuclideanMetric => DenseEuclideanMetric(D),
+        :RankUpdateEuclideanMetric => RankUpdateEuclideanMetric(D),
     )
         h = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
         @testset "$lfsym" for (lfsym, lf) in Dict(
@@ -101,6 +102,11 @@ end
                         h, HMCKernel(τ), θ_init, n_samples; verbose=false, progress=PROGRESS
                     )
                     @test mean(samples) ≈ zeros(D) atol = RNDATOL
+                end
+
+                if metricsym == :RankUpdateEuclideanMetric
+                    # Skip tests with `RankUpdateEuclideanMetric` for `MassMatrixAdaptor`
+                    continue
                 end
 
                 @testset "$adaptorsym" for (adaptorsym, adaptor) in Dict(
