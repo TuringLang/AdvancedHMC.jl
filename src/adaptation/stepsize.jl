@@ -77,7 +77,7 @@ getϵ(ss::StepSizeAdaptor) = ss.state.ϵ
 struct FixedStepSize{T<:AbstractScalarOrVec{<:AbstractFloat}} <: StepSizeAdaptor
     ϵ::T
 end
-function Base.show(io::IO, mime::MIME"text/plain", a::FixedStepSize)
+function Base.show(io::IO, a::FixedStepSize)
     return print(io, "FixedStepSize adaptor with step size ", a.ϵ)
 end
 
@@ -86,7 +86,7 @@ getϵ(fss::FixedStepSize) = fss.ϵ
 struct ManualSSAdaptor{T<:AbstractScalarOrVec{<:AbstractFloat}} <: StepSizeAdaptor
     state::MSSState{T}
 end
-function Base.show(io::IO, mime::MIME"text/plain", a::ManualSSAdaptor{T}) where {T}
+function Base.show(io::IO, a::ManualSSAdaptor{T}) where {T}
     return print(io, "ManualSSAdaptor{", T, "} with step size of ", a.state.ϵ)
 end
 
@@ -118,6 +118,23 @@ struct NesterovDualAveraging{T<:AbstractFloat,S<:AbstractScalarOrVec{T}} <: Step
     "Target value of statistic"
     δ::T
     state::DAState{S}
+end
+
+function Base.show(io::IO, a::NesterovDualAveraging)
+    print(
+        io,
+        "NesterovDualAveraging(",
+        a.γ,
+        ", ",
+        a.t_0,
+        ", ",
+        a.κ,
+        ", ",
+        a.δ,
+        ", ",
+        a.state.ϵ,
+        ")",
+    )
 end
 function Base.show(io::IO, mime::MIME"text/plain", a::NesterovDualAveraging{T}) where {T}
     return print(
