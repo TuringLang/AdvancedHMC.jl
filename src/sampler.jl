@@ -94,7 +94,7 @@ end
 Progress meter update with all trajectory stats, iteration number and metric shown.
 """
 function pm_next!(pm, stat::NamedTuple)
-    ProgressMeter.next!(pm; showvalues=map(tuple, values(stat), keys(stat)))
+    ProgressMeter.next!(pm; showvalues=map(tuple, keys(stat), values(stat)))
     return nothing
 end
 
