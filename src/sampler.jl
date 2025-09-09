@@ -93,7 +93,7 @@ end
 """
 Progress meter update with all trajectory stats, iteration number and metric shown.
 """
-function pm_next!(pm, stat::NamedTuple)
+function pm_next!(pm::ProgressMeter.Progress, stat::NamedTuple)
     ProgressMeter.next!(pm; showvalues=map(tuple, values(stat), keys(stat)))
     return nothing
 end
@@ -101,7 +101,7 @@ end
 """
 Simple progress meter update without any show values.
 """
-simple_pm_next!(pm, stat::NamedTuple) = ProgressMeter.next!(pm)
+simple_pm_next!(pm::ProgressMeter.Progress, ::NamedTuple) = ProgressMeter.next!(pm)
 
 ##
 ## Sampling functions
