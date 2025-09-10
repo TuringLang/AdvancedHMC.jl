@@ -73,7 +73,7 @@ struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     ϵ::T
 end
 function Base.show(io::IO, l::Leapfrog)
-    return print(io, "Leapfrog with step size ϵ=", round.(l.ϵ; sigdigits=3), ")")
+    return print(io, "Leapfrog with step size ϵ=", round.(l.ϵ; sigdigits=3))
 end
 integrator_eltype(i::AbstractLeapfrog{T}) where {T<:AbstractFloat} = T
 
