@@ -1,5 +1,9 @@
 # AdvancedHMC Changelog
 
+## 0.8.2
+
+When sampling using the AbstractMCMC interface, the first step no longer takes an actual sampling step but rather returns the initial values used.
+
 ## 0.8.0
 
   - To make an MCMC transtion from phasepoint `z` using trajectory `τ`(or HMCKernel `κ`) under Hamiltonian `h`, use `transition(h, τ, z)` or `transition(rng, h, τ, z)`(if using HMCKernel, use `transition(h, κ, z)` or `transition(rng, h, κ, z)`).
