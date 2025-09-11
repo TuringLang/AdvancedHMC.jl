@@ -49,7 +49,7 @@ function initialize!(
     return nothing
 end
 
-function Base.show(io::IO, mime::MIME"text/plain", state::StanHMCAdaptorState)
+function Base.show(io::IO, state::StanHMCAdaptorState)
     print(io, "window(", state.window_start, ", ", state.window_end, "), window_splits(")
     join(io, state.window_splits, ", ")
     return print(io, ")")
@@ -65,6 +65,23 @@ struct StanHMCAdaptor{M<:MassMatrixAdaptor,Tssa<:StepSizeAdaptor} <: AbstractAda
     term_buffer::Int
     window_size::Int
     state::StanHMCAdaptorState
+end
+
+function Base.show(io::IO, a::StanHMCAdaptor)
+    return print(
+        io,
+        "StanHMCAdaptor(",
+        a.pc,
+        ", ",
+        a.ssa,
+        "; init_buffer=",
+        a.init_buffer,
+        ", term_buffer=",
+        a.term_buffer,
+        ", window_size=",
+        a.window_size,
+        ")",
+    )
 end
 function Base.show(io::IO, mime::MIME"text/plain", a::StanHMCAdaptor)
     return print(
