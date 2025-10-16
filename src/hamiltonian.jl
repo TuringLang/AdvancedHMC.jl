@@ -101,7 +101,7 @@ function Base.similar(z::PhasePoint{<:AbstractVecOrMat{T}}) where {T<:AbstractFl
 end
 
 function phasepoint(
-    h::Hamiltonian, θ::T, r::T; ℓπ=∂H∂θ(h, θ), ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, r))
+    h::Hamiltonian, θ::T, r::T; ℓπ=∂H∂θ(h, θ), ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, θ, r))
 ) where {T<:AbstractVecOrMat}
     return PhasePoint(θ, r, ℓπ, ℓκ)
 end
@@ -115,7 +115,7 @@ function phasepoint(
     _r::T2;
     r=safe_rsimilar(θ, _r),
     ℓπ=∂H∂θ(h, θ),
-    ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, r)),
+    ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, θ, r)),
 ) where {T1<:AbstractVecOrMat,T2<:AbstractVecOrMat}
     return PhasePoint(θ, r, ℓπ, ℓκ)
 end

@@ -47,8 +47,12 @@ export Hamiltonian
 
 include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
+
+include("riemannian/metric.jl")
+export AbstractRiemannianMetric, DenseRiemannianMetric, IdentityMap, SoftAbsMap
 include("riemannian/integrator.jl")
 export GeneralizedLeapfrog
+include("riemannian/hamiltonian.jl")
 
 include("trajectory.jl")
 export Trajectory,
