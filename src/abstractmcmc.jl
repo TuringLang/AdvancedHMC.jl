@@ -33,6 +33,7 @@ getintegrator(state::HMCState) = state.κ.τ.integrator
 function AbstractMCMC.getparams(state::HMCState)
     return state.transition.z.θ
 end
+AbstractMCMC.getstats(state::AdvancedHMC.HMCState) = state.transition.stat
 
 function AbstractMCMC.setparams!!(
     model::AbstractMCMC.LogDensityModel, state::HMCState, params
