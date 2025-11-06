@@ -134,6 +134,84 @@ function Base.show(io::IO, ::MIME"text/plain", dem::DenseEuclideanMetric{T}) whe
     )
 end
 
+"""
+    RankUpdateEuclideanMetric{T,AM,AB,AD,F} <: AbstractMetric
+
+A Gaussian Euclidean metric whose inverse is constructed by rank-updates.
+
+# Fields
+
+$(TYPEDFIELDS)
+
+# Constructors
+
+    RankUpdateEuclideanMetric(n::Int)
+    RankUpdateEuclideanMetric(M⁻¹, B, D)
+
+ - Construct a Gaussian Euclidean metric of size `(n, n)` with `M⁻¹` being diagonal matrix.
+ - Construct a Gaussian Euclidean metric of `M⁻¹`, where `M⁻¹` should be a full rank positive definite matrix,
+    and `B` `D` must be chose so that the Woodbury matrix `W = M⁻¹ + B D B^\\mathrm{T}` is positive definite.
+
+# Example
+
+```julia
+julia> RankUpdateEuclideanMetric(3)
+RankUpdateEuclideanMetric(diag=[1.0, 1.0, 1.0])
+```
+
+# References
+
+ - Ben Bales, Arya Pourzanjani, Aki Vehtari, Linda Petzold, Selecting the Metric in Hamiltonian Monte Carlo, 2019
+"""
+struct RankUpdateEuclideanMetric{T,AM<:AbstractVecOrMat{T},AB,AD,F} <: AbstractMetric
+    "Diagnal of the inverse of the mass matrix"
+    M⁻¹::AM
+    B::AB
+    D::AD
+    factorization::F
+end
+
+function woodbury_factorize(A, B, D)
+    cholA = cholesky(A isa Diagonal ? A : Symmetric(A))
+    U = cholA.U
+    Q, R = qr(U' \ B)
+    V = cholesky(Symmetric(muladd(R, D * R', I))).U
+    return (U=U, Q=Q, V=V)
+end
+
+function RankUpdateEuclideanMetric(n::Int)
+    M⁻¹ = Diagonal(ones(n))
+    B = zeros(n, 0)
+    D = zeros(0, 0)
+    factorization = woodbury_factorize(M⁻¹, B, D)
+    return RankUpdateEuclideanMetric(M⁻¹, B, D, factorization)
+end
+function RankUpdateEuclideanMetric(::Type{T}, n::Int) where {T}
+    M⁻¹ = Diagonal(ones(T, n))
+    B = Matrix{T}(undef, n, 0)
+    D = Matrix{T}(undef, 0, 0)
+    factorization = woodbury_factorize(M⁻¹, B, D)
+    return RankUpdateEuclideanMetric(M⁻¹, B, D, factorization)
+end
+
+function RankUpdateEuclideanMetric(M⁻¹, B, D)
+    factorization = woodbury_factorize(M⁻¹, B, D)
+    return RankUpdateEuclideanMetric(M⁻¹, B, D, factorization)
+end
+
+function RankUpdateEuclideanMetric(::Type{T}, sz::Tuple{Int}) where {T}
+    return RankUpdateEuclideanMetric(T, first(sz))
+end
+RankUpdateEuclideanMetric(sz::Tuple{Int}) = RankUpdateEuclideanMetric(Float64, sz)
+
+renew(::RankUpdateEuclideanMetric, (M⁻¹, B, D)) = RankUpdateEuclideanMetric(M⁻¹, B, D)
+
+Base.size(metric::RankUpdateEuclideanMetric, dim...) = size(metric.M⁻¹.diag, dim...)
+
+function Base.show(io::IO, ::MIME"text/plain", metric::RankUpdateEuclideanMetric)
+    return print(io, "RankUpdateEuclideanMetric(diag=$(diag(metric.M⁻¹)))")
+end
+
 # `rand` functions for `metric` types.
 
 function rand_momentum(
@@ -165,5 +243,21 @@ function rand_momentum(
 ) where {T}
     r = _randn(rng, T, size(metric)...)
     ldiv!(metric.cholM⁻¹, r)
+    return r
+end
+
+function rand_momentum(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    metric::RankUpdateEuclideanMetric{T},
+    kinetic::GaussianKinetic,
+    ::AbstractVecOrMat,
+) where {T}
+    M⁻¹ = metric.M⁻¹
+    r = _randn(rng, T, size(M⁻¹.diag)...)
+    F = metric.factorization
+    k = min(size(F.U, 1), size(F.V, 1))
+    @views ldiv!(F.V, r isa AbstractVector ? r[1:k] : r[1:k, :])
+    lmul!(F.Q, r)
+    ldiv!(F.U, r)
     return r
 end
