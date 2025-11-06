@@ -1,6 +1,6 @@
 import AdvancedHMC: refresh, phasepoint, neg_energy, ∂H∂θ, ∂H∂r
 using AdvancedHMC: FullMomentumRefreshment, PartialMomentumRefreshment, DualValue, PhasePoint
-using LinearAlgebra: logabsdet, tr, diagm
+using LinearAlgebra: logabsdet, tr, diagm, logdet
 
 # Specialized phasepoint for Riemannian metrics that need θ for momentum gradient
 function phasepoint(

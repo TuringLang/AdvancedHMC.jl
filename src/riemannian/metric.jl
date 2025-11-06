@@ -59,8 +59,7 @@ function rand_momentum(
     θ::AbstractVecOrMat,
 ) where {T}
     r = _randn(rng, T, size(metric)...)
-    G⁻¹ = inv(metric.map(metric.G(θ)))
-    chol = cholesky(Symmetric(G⁻¹))
-    ldiv!(chol.U, r)
+    chol = cholesky(Symmetric(metric.map(metric.G(θ))))
+    r = chol.L * r
     return r
 end
