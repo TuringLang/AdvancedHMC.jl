@@ -1,5 +1,6 @@
 using AdvancedHMC: AbstractMetric
 using LinearAlgebra: eigen, cholesky, Symmetric
+import Base: eltype
 
 # _randn is defined in utilities.jl which is included before this file
 
@@ -51,6 +52,10 @@ end
 Base.size(e::DenseRiemannianMetric) = e.size
 Base.size(e::DenseRiemannianMetric, dim::Int) = e.size[dim]
 Base.show(io::IO, dem::DenseRiemannianMetric) = print(io, "DenseRiemannianMetric(...)")
+
+function eltype(m::DenseRiemannianMetric)
+    return eltype(m._temp)
+end
 
 function rand_momentum(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
