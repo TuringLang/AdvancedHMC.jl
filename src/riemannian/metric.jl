@@ -53,9 +53,11 @@ Base.size(e::DenseRiemannianMetric) = e.size
 Base.size(e::DenseRiemannianMetric, dim::Int) = e.size[dim]
 Base.show(io::IO, dem::DenseRiemannianMetric) = print(io, "DenseRiemannianMetric(...)")
 
-function eltype(m::DenseRiemannianMetric)
-    return eltype(m._temp)
-end
+#function eltype(m::DenseRiemannianMetric)
+#    return eltype(m._temp)
+#end
+
+eltype(::DenseRiemannianMetric{T}) where {T} = T
 
 function rand_momentum(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
