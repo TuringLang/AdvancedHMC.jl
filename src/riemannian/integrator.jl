@@ -1,5 +1,4 @@
 import AdvancedHMC: ∂H∂θ, ∂H∂r, DualValue, PhasePoint, phasepoint, step
-import LinearAlgebra: norm
 using AdvancedHMC: TYPEDEF, TYPEDFIELDS, AbstractScalarOrVec, AbstractLeapfrog, step_size
 
 """
@@ -57,7 +56,6 @@ function step(
         z
     end
 
-    diverged = false
     for i in 1:n_steps
         θ_init, r_init = z.θ, z.r
         # Tempering
@@ -77,54 +75,11 @@ function step(
             end
             r_half = r_init - ϵ / 2 * gradient
         end
-
-        retval, cache = ∂H∂θ_cache(h, θ_init, r_half; return_cache=true)
-        (; value, gradient) = retval
-
-        r_diff = r_half - (r_init - ϵ / 2 * gradient)
-        if (norm(r_diff) > 1e-1) || any(isnan, r_half) || !isfinite(sum(r_half))
-            diverged = true
-            
-            # Reset to last valid values
-            r_half = r_init
-            θ_full = θ_init
-
-            # Recompute valid logprob/gradient for consistency
-            retval, cache = ∂H∂θ_cache(h, θ_init, r_init; return_cache=true)
-            (; value, gradient) = retval
-
-            z = phasepoint(h, θ_init, r_init; ℓπ=DualValue(value, gradient))
-
-            # If full trajectory, truncate so no undef elements remain
-            if FullTraj
-                res = res[1:(i-1)]
-                push!(res, z)
-            else
-                res = z
-            end
-
-            break
-        end
         # eq (17) of Girolami & Calderhead (2011)
         θ_full = θ_init
         term_1 = ∂H∂r(h, θ_init, r_half) # unchanged across the loop
         for j in 1:(lf.n)
             θ_full = θ_init + ϵ / 2 * (term_1 + ∂H∂r(h, θ_full, r_half))
-        end
-        θ_diff = norm(θ_full - (θ_init + ϵ / 2 * (term_1 + ∂H∂r(h, θ_full, r_half))))
-        if !isfinite(sum(θ_full)) || θ_diff > 1e-1 || any(isnan, θ_full)
-            diverged = true
-            θ_full = θ_init
-            r_full = r_init
-
-            z = phasepoint(h, θ_init, r_init; ℓπ=DualValue(value, gradient))
-            if FullTraj
-                res = res[1:(i-1)]
-                push!(res, z)
-            else
-                res = z
-            end
-            break
         end
         # eq (18) of Girolami & Calderhead (2011)
         (; value, gradient) = ∂H∂θ(h, θ_full, r_half)
@@ -139,12 +94,6 @@ function step(
         else
             res = z
         end
-
-        if any(!isfinite, z.θ) || any(!isfinite, z.r)
-            diverged = true
-            z = phasepoint(h, θ_init, r_init; ℓπ=z.ℓπ)
-        end
-
         if !isfinite(z)
             # Remove undef
             if FullTraj
@@ -153,5 +102,5 @@ function step(
             break
         end
     end
-    return res, diverged
+    return res
 end

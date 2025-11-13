@@ -260,8 +260,8 @@ function step(
         end
     end
     return if FullTraj
-        res, false
+        res
     else
-        z, false
+        z
     end
 end

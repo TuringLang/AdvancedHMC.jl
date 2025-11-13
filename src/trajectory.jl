@@ -334,12 +334,9 @@ end
 ### Use end-point from the trajectory as a proposal and apply MH correction
 
 function sample_phasepoint(rng, τ::Trajectory{EndPointTS}, h, z)
-    z′, diverged = step(τ.integrator, h, z, nsteps(τ))
+    z′ = step(τ.integrator, h, z, nsteps(τ))
     is_accept, α = mh_accept_ratio(rng, energy(z), energy(z′))
-    if diverged
-        α = zero(α)
-    end
-    return z′, (is_accept && !diverged), α
+    return z′, is_accept, α
 end
 
 ### Multinomial sampling from trajectory
@@ -374,9 +371,9 @@ function sample_phasepoint(rng, τ::Trajectory{MultinomialTS}, h, z)
     # TODO: Deal with vectorized-mode generically.
     #       Currently the direction of multiple chains are always coupled
     n_steps_fwd = rand_coupled(rng, 0:n_steps)
-    zs_fwd, diverged_fwd = step(τ.integrator, h, z, n_steps_fwd; fwd=true, full_trajectory=Val(true))
+    zs_fwd = step(τ.integrator, h, z, n_steps_fwd; fwd=true, full_trajectory=Val(true))
     n_steps_bwd = n_steps - n_steps_fwd
-    zs_bwd, diverged_bwd = step(τ.integrator, h, z, n_steps_bwd; fwd=false, full_trajectory=Val(true))
+    zs_bwd = step(τ.integrator, h, z, n_steps_bwd; fwd=false, full_trajectory=Val(true))
     zs = vcat(reverse(zs_bwd)..., z, zs_fwd...)
     ℓweights = -energy.(zs)
     if eltype(ℓweights) <: AbstractVector
@@ -389,10 +386,7 @@ function sample_phasepoint(rng, τ::Trajectory{MultinomialTS}, h, z)
     ΔH = Hs .- energy(z)
     α = exp.(min.(0, -ΔH))  # this is a matrix for vectorized mode and a vector otherwise
     α = typeof(α) <: AbstractVector ? mean(α) : vec(mean(α; dims=2))
-    if (diverged_bwd || diverged_fwd)
-        α = zero(α)
-    end
-    return z′, !(diverged_bwd || diverged_fwd), α
+    return z′, true, α
 end
 
 ###
@@ -643,13 +637,10 @@ function build_tree(
 }
     if j == 0
         # Base case - take one leapfrog step in the direction v.
-        z′, diverged = step(nt.integrator, h, z, v)
+        z′ = step(nt.integrator, h, z, v)
         H′ = energy(z′)
         ΔH = H′ - H0
         α′ = exp(min(0, -ΔH))
-        if diverged
-            α′ = zero(α′)
-        end
         sampler′ = TS(sampler, H0, z′)
         return BinaryTree(z′, z′, TurnStatistic(nt.termination_criterion, z′), α′, 1, ΔH),
         sampler′,
@@ -760,11 +751,8 @@ A single Hamiltonian integration step.
 NOTE: this function is intended to be used in `find_good_stepsize` only.
 """
 function A(h, z, ϵ)
-    z′, diverged = step(Leapfrog(ϵ), h, z)
+    z′ = step(Leapfrog(ϵ), h, z)
     H′ = energy(z′)
-    if diverged
-        H′ *= 100000.0 # penalize diverged proposals
-    end
     return z′, H′
 end
 
