@@ -1,4 +1,4 @@
-# Sampling from a multivariate Gaussian using NUTS
+# [Sampling from a multivariate Gaussian using NUTS](@id get_started)
 
 In this section, we demonstrate a minimal example of sampling from a multivariate Gaussian (10-dimensional) using the No U-Turn Sampler (NUTS). Below we describe the major components of the Hamiltonian system which are essential to sample using this approach:
 
