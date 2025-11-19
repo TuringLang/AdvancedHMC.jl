@@ -75,13 +75,13 @@ function Adaptation.adapt!(
     adaptor::AbstractAdaptor,
     i::Int,
     n_adapts::Int,
-    θ::AbstractVecOrMat{<:AbstractFloat},
+    z::PhasePoint,
     α::AbstractScalarOrVec{<:AbstractFloat},
 )
     isadapted = false
     if i <= n_adapts
         i == 1 && Adaptation.initialize!(adaptor, n_adapts)
-        adapt!(adaptor, θ, α)
+        adapt!(adaptor, z, α)
         i == n_adapts && finalize!(adaptor)
         h = update(h, adaptor)
         κ = update(κ, adaptor)

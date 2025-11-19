@@ -9,15 +9,17 @@ finalize!(::MassMatrixAdaptor) = nothing
 
 function adapt!(
     adaptor::MassMatrixAdaptor,
-    θ::AbstractVecOrMat{<:AbstractFloat},
+    z::PhasePoint,
     α::AbstractScalarOrVec{<:AbstractFloat},
     is_update::Bool=true,
 )
-    resize_adaptor!(adaptor, size(θ))
-    push!(adaptor, θ)
+    resize_adaptor!(adaptor, size(z.θ))
+    push!(adaptor, z)
     is_update && update!(adaptor)
     return nothing
 end
+
+Base.push!(a::MassMatrixAdaptor, z::PhasePoint) = push!(a, z.θ)
 
 ## Unit mass matrix adaptor
 
@@ -151,6 +153,65 @@ function get_estimation(wv::WelfordVar{T}) where {T<:AbstractFloat}
     @assert n >= 2 "Cannot estimate variance with only one sample"
     n, ϵ = T(n), T(1e-3)
     return n / ((n + 5) * (n - 1)) * M .+ ϵ * (5 / (n + 5))
+end
+
+## Nutpie-style mass matrix estimator (using positions and gradients)
+
+mutable struct NutpieVar{T<:AbstractFloat,E<:AbstractVecOrMat{T},V<:AbstractVecOrMat{T}} <: DiagMatrixEstimator{T}
+    position_estimator::WelfordVar{T,E,V}
+    gradient_estimator::WelfordVar{T,E,V}
+    n::Int
+    n_min::Int
+    var::V
+    function NutpieVar(n::Int, n_min::Int, μ::E, M::E, δ::E, var::V) where {E,V}
+        return new{eltype(E),E,V}(
+            WelfordVar(n, n_min, copy(μ), copy(M), copy(δ), copy(var)), 
+            WelfordVar(n, n_min, copy(μ), copy(M), copy(δ), copy(var)),
+            n, n_min, var
+        )
+    end
+end
+
+function Base.show(io::IO, ::NutpieVar{T}) where {T}
+    return print(io, "NutpieVar{", T, "} adaptor")
+end
+
+function NutpieVar{T}(
+    sz::Union{Tuple{Int},Tuple{Int,Int}}; n_min::Int=10, var=ones(T, sz)
+) where {T<:AbstractFloat}
+    return NutpieVar(0, n_min, zeros(T, sz), zeros(T, sz), zeros(T, sz), var)
+end
+
+function NutpieVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...)
+    return NutpieVar{Float64}(sz; kwargs...)
+end
+
+function resize_adaptor!(nv::NutpieVar{T}, size_θ::Tuple{Int,Int}) where {T<:AbstractFloat}
+    resize_adaptor!(nv.position_estimator, size_θ)
+    resize_adaptor!(nv.gradient_estimator, size_θ)
+end
+
+function resize_adaptor!(nv::NutpieVar{T}, size_θ::Tuple{Int}) where {T<:AbstractFloat}
+    resize_adaptor!(nv.position_estimator, size_θ)
+    resize_adaptor!(nv.gradient_estimator, size_θ)
+end
+
+function reset!(nv::NutpieVar{T}) where {T<:AbstractFloat}
+    nv.n = 0
+    reset!(nv.position_estimator)
+    reset!(nv.gradient_estimator)
+end
+
+function Base.push!(nv::NutpieVar, z::PhasePoint)
+    nv.n += 1
+    push!(nv.position_estimator, z.θ)
+    push!(nv.gradient_estimator, z.ℓπ.gradient)
+    return nothing
+end
+
+# https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
+function get_estimation(nv::NutpieVar{T}) where {T<:AbstractFloat}
+    return sqrt.(get_estimation(nv.position_estimator) ./ get_estimation(nv.gradient_estimator))
 end
 
 ## Dense mass matrix adaptor

@@ -4,7 +4,7 @@ export Adaptation
 using LinearAlgebra: LinearAlgebra
 using Statistics: Statistics
 
-using ..AdvancedHMC: AbstractScalarOrVec
+using ..AdvancedHMC: AbstractScalarOrVec, PhasePoint
 using DocStringExtensions
 
 """
