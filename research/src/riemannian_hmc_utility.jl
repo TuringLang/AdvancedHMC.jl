@@ -2,47 +2,70 @@ using Random, LinearAlgebra, ReverseDiff, ForwardDiff, MCMCLogDensityProblems
 
 # Fisher information metric
 function gen_∂G∂θ_rev(Vfunc, x; f=identity)
-    _Hfunc = MCMCLogDensityProblems.gen_hess(Vfunc, ReverseDiff.track.(x))
-    Hfunc = x -> _Hfunc(x)[3]
+    Hfunc = gen_hess_fwd(Vfunc, ReverseDiff.track.(x))
+    
     # QUES What's the best output format of this function?
     return x -> ReverseDiff.jacobian(x -> f(Hfunc(x)), x) # default output shape [∂H∂x₁; ∂H∂x₂; ...]
 end
 
 # TODO Refactor this using https://juliadiff.org/ForwardDiff.jl/stable/user/api/#Preallocating/Configuring-Work-Buffers
-function gen_hess_fwd(func, x::AbstractVector)
+function gen_hess_fwd_precompute_cfg(func, x::AbstractVector)
+    cfg = ForwardDiff.HessianConfig(func, x)
+    H = Matrix{eltype(x)}(undef, length(x), length(x))
+
     function hess(x::AbstractVector)
-        return nothing, nothing, ForwardDiff.hessian(func, x)
+        ForwardDiff.hessian!(H, func, x, cfg)
+        return H
+    end
+    return hess
+end
+
+function gen_hess_fwd(func, x::AbstractVector)
+    cfg = nothing
+    H = nothing
+    
+    function hess(x::AbstractVector)
+        if cfg === nothing
+            cfg = ForwardDiff.HessianConfig(func, x)
+            H = Matrix{eltype(x)}(undef, length(x), length(x))
+        end
+        ForwardDiff.hessian!(H, func, x, cfg)
+        return H
     end
     return hess
 end
 
 function gen_∂G∂θ_fwd(Vfunc, x; f=identity)
-    _Hfunc = gen_hess_fwd(Vfunc, x)
-    Hfunc = x -> _Hfunc(x)[3]
-    # QUES What's the best output format of this function?
+    Hfunc = gen_hess_fwd(Vfunc, x)
+
     cfg = ForwardDiff.JacobianConfig(Hfunc, x)
     d = length(x)
     out = zeros(eltype(x), d^2, d)
-    return x -> ForwardDiff.jacobian!(out, Hfunc, x, cfg)
-    return out # default output shape [∂H∂x₁; ∂H∂x₂; ...]
+
+    function ∂G∂θ_fwd(y)
+        ForwardDiff.jacobian!(out, Hfunc, y, cfg)
+        return out
+    end
+    return ∂G∂θ_fwd
 end
-# 1.764 ms 
-# fwd -> 5.338 μs 
-# cfg -> 3.651 μs
 
 function reshape_∂G∂θ(H)
     d = size(H, 2)
-    return cat((H[((i - 1) * d + 1):(i * d), :] for i in 1:d)...; dims=3)
+    return reshape(H, d, d, :)
 end
 
 function prepare_sample_target(hps, θ₀, ℓπ)
     Vfunc = x -> -ℓπ(x) # potential energy is the negative log-probability
-    _Hfunc = MCMCLogDensityProblems.gen_hess(Vfunc, θ₀) # x -> (value, gradient, hessian)
-    Hfunc = x -> copy.(_Hfunc(x)) # _Hfunc do in-place computation, copy to avoid bug
+    Hfunc = gen_hess_fwd_precompute_cfg(Vfunc, θ₀) # x -> (value, gradient, hessian)
 
-    fstabilize = H -> H + hps.λ * I
+    fstabilize = H -> begin
+        @inbounds for i in 1:size(H,1)
+            H[i,i] += hps.λ
+        end
+        H
+    end
     Gfunc = x -> begin
-        H = fstabilize(Hfunc(x)[3])
+        H = fstabilize(Hfunc(x))
         all(isfinite, H) ? H : diagm(ones(length(x)))
     end
     _∂G∂θfunc = gen_∂G∂θ_fwd(Vfunc, θ₀; f=fstabilize) # size==(4, 2)

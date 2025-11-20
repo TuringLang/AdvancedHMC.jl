@@ -67,6 +67,9 @@ export Trajectory,
     MultinomialTS,
     find_good_stepsize
 
+include("../research/src/riemannian_hmc_utility.jl")
+export prepare_sample_target
+
 # Useful defaults
 
 @deprecate find_good_eps find_good_stepsize
