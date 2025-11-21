@@ -7,7 +7,7 @@ abstract type AbstractMetric end
 
 _string_M⁻¹(mat::AbstractMatrix, n_chars::Int=32) = _string_M⁻¹(diag(mat), n_chars)
 function _string_M⁻¹(vec::AbstractVector, n_chars::Int=32)
-    s_vec = string(vec)
+    s_vec = repr(vec; context=(:compact => true))
     l = length(s_vec)
     s_dots = " ...]"
     n_diag_chars = n_chars - length(s_dots)
@@ -33,6 +33,10 @@ renew(ue::UnitEuclideanMetric, M⁻¹) = UnitEuclideanMetric(M⁻¹, ue.size)
 Base.eltype(::UnitEuclideanMetric{T}) where {T} = T
 Base.size(e::UnitEuclideanMetric) = e.size
 Base.size(e::UnitEuclideanMetric, dim::Int) = e.size[dim]
+
+function Base.show(io::IO, uem::UnitEuclideanMetric{T}) where {T}
+    print(io, "UnitEuclideanMetric(", T, ", ", uem.size, ")")
+end
 function Base.show(io::IO, ::MIME"text/plain", uem::UnitEuclideanMetric{T}) where {T}
     return print(
         io,
@@ -66,6 +70,10 @@ renew(ue::DiagEuclideanMetric, M⁻¹) = DiagEuclideanMetric(M⁻¹)
 
 Base.eltype(::DiagEuclideanMetric{T}) where {T} = T
 Base.size(e::DiagEuclideanMetric, dim...) = size(e.M⁻¹, dim...)
+
+function Base.show(io::IO, dem::DiagEuclideanMetric)
+    print(io, "DiagEuclideanMetric(", _string_M⁻¹(dem.M⁻¹), ")")
+end
 function Base.show(io::IO, ::MIME"text/plain", dem::DiagEuclideanMetric{T}) where {T}
     return print(
         io,
@@ -110,6 +118,10 @@ renew(ue::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
 
 Base.eltype(::DenseEuclideanMetric{T}) where {T} = T
 Base.size(e::DenseEuclideanMetric, dim...) = size(e._temp, dim...)
+
+function Base.show(io::IO, dem::DenseEuclideanMetric)
+    print(io, "DenseEuclideanMetric(", _string_M⁻¹(dem.M⁻¹), ")")
+end
 function Base.show(io::IO, ::MIME"text/plain", dem::DenseEuclideanMetric{T}) where {T}
     return print(
         io,

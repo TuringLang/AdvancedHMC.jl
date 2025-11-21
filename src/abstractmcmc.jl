@@ -33,6 +33,7 @@ getintegrator(state::HMCState) = state.κ.τ.integrator
 function AbstractMCMC.getparams(state::HMCState)
     return state.transition.z.θ
 end
+AbstractMCMC.getstats(state::AdvancedHMC.HMCState) = state.transition.stat
 
 function AbstractMCMC.setparams!!(
     model::AbstractMCMC.LogDensityModel, state::HMCState, params
@@ -55,8 +56,8 @@ function AbstractMCMC.sample(
     sampler::AbstractHMCSampler,
     N::Integer;
     n_adapts::Int=min(div(N, 10), 1_000),
-    progress=true,
-    verbose=false,
+    progress::Bool=true,
+    verbose::Bool=false,
     callback=nothing,
     kwargs...,
 )
@@ -94,8 +95,8 @@ function AbstractMCMC.sample(
     N::Integer,
     nchains::Integer;
     n_adapts::Int=min(div(N, 10), 1_000),
-    progress=true,
-    verbose=false,
+    progress::Bool=true,
+    verbose::Bool=false,
     callback=nothing,
     kwargs...,
 )
@@ -217,7 +218,7 @@ logging behavior of the non-AbstractMCMC [`sample`](@ref).
 # Fields
 $(FIELDS)
 """
-struct HMCProgressCallback{P}
+struct HMCProgressCallback{P<:Union{ProgressMeter.Progress,Nothing}}
     "`Progress` meter from ProgressMeters.jl, or `nothing`."
     pm::P
     "If `pm === nothing` and this is `true` some information will be logged upon completion of adaptation."
@@ -227,12 +228,21 @@ struct HMCProgressCallback{P}
     num_divergent_transitions_during_adaption::Base.RefValue{Int}
 end
 
-function HMCProgressCallback(n_samples; progress=true, verbose=false)
+function HMCProgressCallback(n_samples::Integer; progress::Bool=true, verbose::Bool=false)
     pm = progress ? ProgressMeter.Progress(n_samples; desc="Sampling", barlen=31) : nothing
     return HMCProgressCallback(pm, verbose, Ref(0), Ref(0))
 end
 
-function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; n_adapts::Int=0, kwargs...)
+function (cb::HMCProgressCallback)(
+    rng::AbstractRNG,
+    model::AbstractMCMC.LogDensityModel,
+    spl::AbstractHMCSampler,
+    t::Transition,
+    state::HMCState,
+    i::Int;
+    n_adapts::Int=0,
+    kwargs...,
+)
     verbose = cb.verbose
     pm = cb.pm
 
@@ -260,16 +270,18 @@ function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; n_adapts::Int=0
         # Do include current iteration and mass matrix
         pm_next!(
             pm,
-            (
-                iterations=i,
-                ratio_divergent_transitions=round(
-                    percentage_divergent_transitions; digits=2
+            merge(
+                (;
+                    iterations=i,
+                    ratio_divergent_transitions=round(
+                        percentage_divergent_transitions; digits=2
+                    ),
+                    ratio_divergent_transitions_during_adaption=round(
+                        percentage_divergent_transitions_during_adaption; digits=2
+                    ),
+                    mass_matrix=metric,
                 ),
-                ratio_divergent_transitions_during_adaption=round(
-                    percentage_divergent_transitions_during_adaption; digits=2
-                ),
-                tstat...,
-                mass_matrix=metric,
+                tstat,
             ),
         )
         # Report finish of adapation

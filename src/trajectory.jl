@@ -108,7 +108,7 @@ struct SliceTS{F<:AbstractFloat,P<:PhasePoint} <: AbstractTrajectorySampler
     n::Int
 end
 
-function Base.show(io::IO, mime::MIME"text/plain", s::SliceTS)
+function Base.show(io::IO, s::SliceTS)
     return print(
         io,
         "SliceTS with slice variable ℓu=",
@@ -225,7 +225,7 @@ end
 
 ConstructionBase.constructorof(::Type{<:Trajectory{TS}}) where {TS} = Trajectory{TS}
 
-function Base.show(io::IO, mime::MIME"text/plain", τ::Trajectory{TS}) where {TS}
+function Base.show(io::IO, τ::Trajectory{TS}) where {TS}
     return print(
         io,
         "Trajectory{",
@@ -482,7 +482,7 @@ struct Termination
     numerical::Bool
 end
 
-function Base.show(io::IO, mime::MIME"text/plain", d::Termination)
+function Base.show(io::IO, d::Termination)
     return print(
         io, "Termination reasons of (dynamic=", d.dynamic, ", numerical=", d.numerical, ")"
     )

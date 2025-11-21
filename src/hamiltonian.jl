@@ -4,7 +4,7 @@ struct Hamiltonian{M<:AbstractMetric,K<:AbstractKinetic,Tlogπ,T∂logπ∂θ}
     ℓπ::Tlogπ
     ∂ℓπ∂θ::T∂logπ∂θ
 end
-function Base.show(io::IO, mime::MIME"text/plain", h::Hamiltonian)
+function Base.show(io::IO, h::Hamiltonian)
     return print(
         io,
         "Hamiltonian with ",

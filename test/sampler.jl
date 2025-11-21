@@ -1,11 +1,10 @@
 # Allow pass --progress when running this script individually to turn on progress meter
 const PROGRESS = length(ARGS) > 0 && ARGS[1] == "--progress" ? true : false
 
-using ReTest, AdvancedHMC, LinearAlgebra, Random, Plots
+using ReTest, AdvancedHMC, LinearAlgebra, Random
 using AdvancedHMC: StaticTerminationCriterion, DynamicTerminationCriterion
 using Setfield
 using Statistics: mean, var, cov
-unicodeplots()
 
 function test_stats(
     ::Trajectory{TS,I,TC}, stats, n_adapts

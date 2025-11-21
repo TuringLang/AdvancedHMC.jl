@@ -72,8 +72,8 @@ struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     "Step size."
     ϵ::T
 end
-function Base.show(io::IO, mime::MIME"text/plain", l::Leapfrog)
-    return print(io, "Leapfrog with step size ϵ=", round.(l.ϵ; sigdigits=3), ")")
+function Base.show(io::IO, l::Leapfrog)
+    return print(io, "Leapfrog with step size ϵ=", round.(l.ϵ; sigdigits=3))
 end
 integrator_eltype(i::AbstractLeapfrog{T}) where {T<:AbstractFloat} = T
 
@@ -120,7 +120,7 @@ end
 
 JitteredLeapfrog(ϵ0, jitter) = JitteredLeapfrog(ϵ0, jitter, ϵ0)
 
-function Base.show(io::IO, mime::MIME"text/plain", l::JitteredLeapfrog)
+function Base.show(io::IO, l::JitteredLeapfrog)
     return print(
         io,
         "JitteredLeapfrog with step size ",
@@ -178,7 +178,7 @@ struct TemperedLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: Abstrac
     α::FT
 end
 
-function Base.show(io::IO, mime::MIME"text/plain", l::TemperedLeapfrog)
+function Base.show(io::IO, l::TemperedLeapfrog)
     return print(
         io,
         "TemperedLeapfrog with step size ϵ=",
