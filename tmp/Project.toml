@@ -1,6 +1,0 @@
-[deps]
-AdvancedHMC = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
-MCMCDiagnosticTools = "be115224-59cd-429b-ad48-344e309966f0"
-PosteriorDB = "1c4bc282-d2f5-44f9-b6d1-8c4424a23ad4"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-StanLogDensityProblems = "a545de4d-8dba-46db-9d34-4e41d3f07807"
