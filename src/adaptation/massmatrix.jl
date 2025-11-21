@@ -60,6 +60,15 @@ function adapt!(
     return nothing
 end
 
+function adapt!(
+    ::UnitMassMatrix,
+    ::PhasePoint,
+    ::AbstractScalarOrVec{<:AbstractFloat},
+    is_update::Bool=true,
+)
+    return nothing
+end
+
 ## Diagonal mass matrix adaptor
 
 abstract type DiagMatrixEstimator{T} <: MassMatrixAdaptor end

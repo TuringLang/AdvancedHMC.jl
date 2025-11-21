@@ -104,7 +104,7 @@ preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) = cond(sqrt(Dia
             LinearAlgebra.diagm(0 => ones(length(θ)))
 
         # Making sure "all" MassMatrixAdaptors support getting a PhasePoint instead of a Vector
-        # AdvancedHMC.adapt!(pc1, z, 1.0) - this does not work - should it?
+        AdvancedHMC.adapt!(pc1, z, 1.0)
         AdvancedHMC.adapt!(pc2, z, 1.0)
         AdvancedHMC.adapt!(pc2_nutpie, z, 1.0)
         AdvancedHMC.adapt!(pc3, z, 1.0)
@@ -201,7 +201,6 @@ preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) = cond(sqrt(Dia
                 # find the best preconditioner for the target.
                 # As these are statistical algorithms, superiority is not always guaranteed, hence this way of testing.  
                 res_nutpie = runnuts_nutpie(ℓπ, DiagEuclideanMetric(D))
-                # @test res.adaptor.pc.var ≈ diag(Σ) rtol = 0.2
                 n_nutpie_superior += preconditioned_cond(res_nutpie.adaptor.pc, Σ) < preconditioned_cond(res.adaptor.pc, Σ)
 
                 res = runnuts(ℓπ, DenseEuclideanMetric(D))
