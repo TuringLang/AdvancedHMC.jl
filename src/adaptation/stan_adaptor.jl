@@ -136,6 +136,31 @@ is_window_end(a::StanHMCAdaptor) = a.state.i in a.state.window_splits
 
 function adapt!(
     tp::StanHMCAdaptor,
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::AbstractScalarOrVec{<:AbstractFloat},
+)
+    tp.state.i += 1
+
+    adapt!(tp.ssa, θ, α)
+
+    resize_adaptor!(tp.pc, size(θ)) # Resize pre-conditioner if necessary.
+
+    # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/adapt_diag_e_nuts.hpp
+    if is_in_window(tp)
+        # We accumlate stats from θ online and only trigger the update of M⁻¹ in the end of window.
+        is_update_M⁻¹ = is_window_end(tp)
+        adapt!(tp.pc, θ, α, is_update_M⁻¹)
+    end
+
+    if is_window_end(tp)
+        reset!(tp.ssa)
+        reset!(tp.pc)
+    end
+end
+
+
+function adapt!(
+    tp::StanHMCAdaptor,
     z::PhasePoint,
     α::AbstractScalarOrVec{<:AbstractFloat},
 )

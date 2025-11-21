@@ -9,6 +9,18 @@ finalize!(::MassMatrixAdaptor) = nothing
 
 function adapt!(
     adaptor::MassMatrixAdaptor,
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::AbstractScalarOrVec{<:AbstractFloat},
+    is_update::Bool=true,
+)
+    resize_adaptor!(adaptor, size(θ))
+    push!(adaptor, θ)
+    is_update && update!(adaptor)
+    return nothing
+end
+
+function adapt!(
+    adaptor::MassMatrixAdaptor,
     z::PhasePoint,
     α::AbstractScalarOrVec{<:AbstractFloat},
     is_update::Bool=true,
@@ -155,7 +167,7 @@ function get_estimation(wv::WelfordVar{T}) where {T<:AbstractFloat}
     return n / ((n + 5) * (n - 1)) * M .+ ϵ * (5 / (n + 5))
 end
 
-## Nutpie-style mass matrix estimator (using positions and gradients)
+## Nutpie-style diagonal mass matrix estimator (using positions and gradients)
 
 mutable struct NutpieVar{T<:AbstractFloat,E<:AbstractVecOrMat{T},V<:AbstractVecOrMat{T}} <: DiagMatrixEstimator{T}
     position_estimator::WelfordVar{T,E,V}
@@ -177,7 +189,7 @@ function Base.show(io::IO, ::NutpieVar{T}) where {T}
 end
 
 function NutpieVar{T}(
-    sz::Union{Tuple{Int},Tuple{Int,Int}}; n_min::Int=10, var=ones(T, sz)
+    sz::Union{Tuple{Int},Tuple{Int,Int}}=(2,); n_min::Int=10, var=ones(T, sz)
 ) where {T<:AbstractFloat}
     return NutpieVar(0, n_min, zeros(T, sz), zeros(T, sz), zeros(T, sz), var)
 end
@@ -187,13 +199,22 @@ function NutpieVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...)
 end
 
 function resize_adaptor!(nv::NutpieVar{T}, size_θ::Tuple{Int,Int}) where {T<:AbstractFloat}
-    resize_adaptor!(nv.position_estimator, size_θ)
-    resize_adaptor!(nv.gradient_estimator, size_θ)
+    if size_θ != size(nv.var)
+        @assert nv.n == 0 "Cannot resize a var estimator when it contains samples."
+        resize_adaptor!(nv.position_estimator, size_θ)
+        resize_adaptor!(nv.gradient_estimator, size_θ)
+        nv.var = ones(T, size_θ)
+    end
 end
 
 function resize_adaptor!(nv::NutpieVar{T}, size_θ::Tuple{Int}) where {T<:AbstractFloat}
-    resize_adaptor!(nv.position_estimator, size_θ)
-    resize_adaptor!(nv.gradient_estimator, size_θ)
+    length_θ = first(size_θ)
+    if length_θ != size(nv.var, 1)
+        @assert nv.n == 0 "Cannot resize a var estimator when it contains samples."
+        resize_adaptor!(nv.position_estimator, size_θ)
+        resize_adaptor!(nv.gradient_estimator, size_θ)
+        fill!(resize!(nv.var, length_θ), T(1))
+    end
 end
 
 function reset!(nv::NutpieVar{T}) where {T<:AbstractFloat}
@@ -209,7 +230,7 @@ function Base.push!(nv::NutpieVar, z::PhasePoint)
     return nothing
 end
 
-# https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/var_adaptation.hpp
+# Ref: TODO
 function get_estimation(nv::NutpieVar{T}) where {T<:AbstractFloat}
     return sqrt.(get_estimation(nv.position_estimator) ./ get_estimation(nv.gradient_estimator))
 end

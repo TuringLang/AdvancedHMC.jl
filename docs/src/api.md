@@ -33,6 +33,10 @@ where `ϵ` is the step size of leapfrog integration.
   - Adapt the mass matrix `metric` of the Hamiltonian dynamics: `mma = MassMatrixAdaptor(metric)`
     
       + This is lowered to `UnitMassMatrix`, `WelfordVar` or `WelfordCov` based on the type of the mass matrix `metric`
+      + There is an experimental way to improve the *diagonal* mass matrix adaptation using gradient information (similar to [nutpie](https://github.com/pymc-devs/nutpie)), 
+      currently to be initialized for a `metric` of type `DiagEuclideanMetric`
+      via `mma = AdvancedHMC.Adaptation.NutpieVar(size(metric); var=copy(metric.M⁻¹))` 
+      until a new interface is introduced to specify the method of adaptation.
 
   - Adapt the step size of the leapfrog integrator `integrator`: `ssa = StepSizeAdaptor(δ, integrator)`
     

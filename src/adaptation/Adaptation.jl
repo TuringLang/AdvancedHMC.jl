@@ -54,6 +54,11 @@ function adapt!(
     adapt!(nca.pc, θ, α)
     return nothing
 end
+adapt!(
+    nca::NaiveHMCAdaptor,
+    z::PhasePoint,
+    α::AbstractScalarOrVec{<:AbstractFloat},
+) = adapt!(nca, z.θ, α)
 function reset!(aca::NaiveHMCAdaptor)
     reset!(aca.ssa)
     reset!(aca.pc)

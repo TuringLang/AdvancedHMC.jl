@@ -74,6 +74,27 @@ function Adaptation.adapt!(
     κ::AbstractMCMCKernel,
     adaptor::AbstractAdaptor,
     i::Int,
+    n_adapts::Int,    
+    θ::AbstractVecOrMat{<:AbstractFloat},
+    α::AbstractScalarOrVec{<:AbstractFloat},
+)
+    isadapted = false
+    if i <= n_adapts
+        i == 1 && Adaptation.initialize!(adaptor, n_adapts)
+        adapt!(adaptor, θ, α)
+        i == n_adapts && finalize!(adaptor)
+        h = update(h, adaptor)
+        κ = update(κ, adaptor)
+        isadapted = true
+    end
+    return h, κ, isadapted
+end
+
+function Adaptation.adapt!(
+    h::Hamiltonian,
+    κ::AbstractMCMCKernel,
+    adaptor::AbstractAdaptor,
+    i::Int,
     n_adapts::Int,
     z::PhasePoint,
     α::AbstractScalarOrVec{<:AbstractFloat},
@@ -185,7 +206,7 @@ function sample(
         t = transition(rng, h, κ, t.z)
         # Adapt h and κ; what mutable is the adaptor
         tstat = stat(t)
-        h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
+        h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z, tstat.acceptance_rate)
         if isadapted
             num_divergent_transitions_during_adaption += tstat.numerical_error
         else
