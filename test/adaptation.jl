@@ -138,7 +138,7 @@ preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) = cond(sqrt(Dia
             AdvancedHMC.adapt!(a, θ, 1.0)
         end
         @test AdvancedHMC.Adaptation.getM⁻¹(adaptor2) == ones(length(θ))
-        @test AdvancedHMC.Adaptation.getM⁻¹(adaptor2a) == ones(length(θ))
+        @test AdvancedHMC.Adaptation.getM⁻¹(adaptor2_nutpie) == ones(length(θ))
         @test AdvancedHMC.Adaptation.getM⁻¹(adaptor3) ==
             LinearAlgebra.diagm(0 => ones(length(θ)))
 
