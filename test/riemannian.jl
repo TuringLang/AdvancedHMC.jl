@@ -141,7 +141,7 @@ end
     _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
 
     # Define a Hamiltonian system
-    metric = DenseRiemannianMetric((D,), G, ∂G∂θ, λSoftAbsMap(20.0))
+    metric = DenseRiemannianMetric((D,), G, ∂G∂θ, SoftAbsMap(20.0))
     kinetic = GaussianKinetic()
     hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
 
