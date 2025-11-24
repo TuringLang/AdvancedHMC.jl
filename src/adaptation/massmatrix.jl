@@ -176,7 +176,7 @@ function get_estimation(wv::WelfordVar{T}) where {T<:AbstractFloat}
     return n / ((n + 5) * (n - 1)) * M .+ ϵ * (5 / (n + 5))
 end
 
-## Nutpie-style diagonal mass matrix estimator (using positions and gradients)
+## Nutpie-style diagonal mass matrix estimator (using positions and gradients) - not exported yet due to https://github.com/TuringLang/AdvancedHMC.jl/issues/475
 
 mutable struct NutpieVar{T<:AbstractFloat,E<:AbstractVecOrMat{T},V<:AbstractVecOrMat{T}} <: DiagMatrixEstimator{T}
     position_estimator::WelfordVar{T,E,V}
@@ -186,7 +186,7 @@ mutable struct NutpieVar{T<:AbstractFloat,E<:AbstractVecOrMat{T},V<:AbstractVecO
     var::V
     function NutpieVar(n::Int, n_min::Int, μ::E, M::E, δ::E, var::V) where {E,V}
         return new{eltype(E),E,V}(
-            WelfordVar(n, n_min, copy(μ), copy(M), copy(δ), copy(var)), 
+            WelfordVar(n, n_min, copy(μ), copy(M), copy(δ), copy(var)),
             WelfordVar(n, n_min, copy(μ), copy(M), copy(δ), copy(var)),
             n, n_min, var
         )
