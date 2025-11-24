@@ -226,7 +226,7 @@ function resize_adaptor!(nv::NutpieVar{T}, size_θ::Tuple{Int}) where {T<:Abstra
     end
 end
 
-function reset!(nv::NutpieVar{T}) where {T<:AbstractFloat}
+function reset!(nv::NutpieVar)
     nv.n = 0
     reset!(nv.position_estimator)
     reset!(nv.gradient_estimator)
@@ -239,8 +239,8 @@ function Base.push!(nv::NutpieVar, z::PhasePoint)
     return nothing
 end
 
-# Ref: TODO
-function get_estimation(nv::NutpieVar{T}) where {T<:AbstractFloat}
+# Ref: https://github.com/pymc-devs/nutpie
+function get_estimation(nv::NutpieVar)
     return sqrt.(get_estimation(nv.position_estimator) ./ get_estimation(nv.gradient_estimator))
 end
 

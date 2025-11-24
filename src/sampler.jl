@@ -74,7 +74,7 @@ function Adaptation.adapt!(
     κ::AbstractMCMCKernel,
     adaptor::AbstractAdaptor,
     i::Int,
-    n_adapts::Int,    
+    n_adapts::Int,
     θ::AbstractVecOrMat{<:AbstractFloat},
     α::AbstractScalarOrVec{<:AbstractFloat},
 )
