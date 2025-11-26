@@ -9,29 +9,17 @@ finalize!(::MassMatrixAdaptor) = nothing
 
 function adapt!(
     adaptor::MassMatrixAdaptor,
-    θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat},
+    z_or_theta::PositionOrPhasePoint,
+    ::AbstractScalarOrVec{<:AbstractFloat},
     is_update::Bool=true,
 )
-    resize_adaptor!(adaptor, size(θ))
-    push!(adaptor, θ)
+    resize_adaptor!(adaptor, size(get_position(z_or_theta)))
+    push!(adaptor, z_or_theta)
     is_update && update!(adaptor)
     return nothing
 end
 
-function adapt!(
-    adaptor::MassMatrixAdaptor,
-    z::PhasePoint,
-    α::AbstractScalarOrVec{<:AbstractFloat},
-    is_update::Bool=true,
-)
-    resize_adaptor!(adaptor, size(z.θ))
-    push!(adaptor, z)
-    is_update && update!(adaptor)
-    return nothing
-end
-
-Base.push!(a::MassMatrixAdaptor, z::PhasePoint) = push!(a, z.θ)
+Base.push!(a::MassMatrixAdaptor, z_or_theta::PositionOrPhasePoint) = push!(a, get_position(z_or_theta))
 
 ## Unit mass matrix adaptor
 
@@ -53,16 +41,7 @@ getM⁻¹(::UnitMassMatrix{T}) where {T} = LinearAlgebra.UniformScaling{T}(one(T
 
 function adapt!(
     ::UnitMassMatrix,
-    ::AbstractVecOrMat{<:AbstractFloat},
-    ::AbstractScalarOrVec{<:AbstractFloat},
-    is_update::Bool=true,
-)
-    return nothing
-end
-
-function adapt!(
-    ::UnitMassMatrix,
-    ::PhasePoint,
+    ::PositionOrPhasePoint,
     ::AbstractScalarOrVec{<:AbstractFloat},
     is_update::Bool=true,
 )
@@ -70,7 +49,6 @@ function adapt!(
 end
 
 ## Diagonal mass matrix adaptor
-
 abstract type DiagMatrixEstimator{T} <: MassMatrixAdaptor end
 
 getM⁻¹(ve::DiagMatrixEstimator) = ve.var
@@ -93,7 +71,7 @@ NaiveVar{T}(sz::Tuple{Int,Int}) where {T<:AbstractFloat} = NaiveVar(Vector{Matri
 
 NaiveVar(sz::Union{Tuple{Int},Tuple{Int,Int}}) = NaiveVar{Float64}(sz)
 
-Base.push!(nv::NaiveVar, s::AbstractVecOrMat) = push!(nv.S, s)
+Base.push!(nv::NaiveVar, s::AbstractVecOrMat{<:AbstractFloat}) = push!(nv.S, s)
 
 reset!(nv::NaiveVar) = resize!(nv.S, 0)
 
@@ -158,7 +136,7 @@ function reset!(wv::WelfordVar{T}) where {T<:AbstractFloat}
     return nothing
 end
 
-function Base.push!(wv::WelfordVar, s::AbstractVecOrMat{T}) where {T}
+function Base.push!(wv::WelfordVar, s::AbstractVecOrMat{T}) where {T<:AbstractFloat}
     wv.n += 1
     (; δ, μ, M, n) = wv
     n = T(n)
@@ -176,8 +154,13 @@ function get_estimation(wv::WelfordVar{T}) where {T<:AbstractFloat}
     return n / ((n + 5) * (n - 1)) * M .+ ϵ * (5 / (n + 5))
 end
 
-## Nutpie-style diagonal mass matrix estimator (using positions and gradients) - not exported yet due to https://github.com/TuringLang/AdvancedHMC.jl/issues/475
+"""
+Nutpie-style diagonal mass matrix estimator (using positions and gradients) - not exported yet due to https://github.com/TuringLang/AdvancedHMC.jl/issues/475
 
+Expected to converge faster and to a better mass matrix than WelfordVar.
+
+Can be initialized via NutpieVar(sz) where sz is either a `Tuple{Int}` or a `Tuple{Int,Int}`.
+"""
 mutable struct NutpieVar{T<:AbstractFloat,E<:AbstractVecOrMat{T},V<:AbstractVecOrMat{T}} <: DiagMatrixEstimator{T}
     position_estimator::WelfordVar{T,E,V}
     gradient_estimator::WelfordVar{T,E,V}
@@ -232,6 +215,8 @@ function reset!(nv::NutpieVar)
     reset!(nv.gradient_estimator)
 end
 
+Base.push!(::NutpieVar, x::AbstractVecOrMat{<:AbstractFloat}) = error("`NutpieVar` adaptation requires position and gradient information!")
+
 function Base.push!(nv::NutpieVar, z::PhasePoint)
     nv.n += 1
     push!(nv.position_estimator, z.θ)
@@ -266,7 +251,7 @@ end
 
 NaiveCov{T}(sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveCov(Vector{Vector{T}}())
 
-Base.push!(nc::NaiveCov, s::AbstractVector) = push!(nc.S, s)
+Base.push!(nc::NaiveCov, s::AbstractVector{<:AbstractFloat}) = push!(nc.S, s)
 
 reset!(nc::NaiveCov{T}) where {T} = resize!(nc.S, 0)
 
@@ -316,7 +301,7 @@ function reset!(wc::WelfordCov{T}) where {T<:AbstractFloat}
     return nothing
 end
 
-function Base.push!(wc::WelfordCov, s::AbstractVector{T}) where {T}
+function Base.push!(wc::WelfordCov, s::AbstractVector{T}) where {T<:AbstractFloat}
     wc.n += 1
     (; δ, μ, n, M) = wc
     n = T(n)

@@ -34,15 +34,23 @@ function runnuts_nutpie(ℓπ, metric::DiagEuclideanMetric; n_samples=10_000)
     κ = AdvancedHMC.make_kernel(nuts, integrator)
     # Constructing like this until we've settled on a different interface
     adaptor = AdvancedHMC.StanHMCAdaptor(
-        AdvancedHMC.Adaptation.NutpieVar(size(metric); var=copy(metric.M⁻¹)), 
+        AdvancedHMC.Adaptation.NutpieVar(size(metric); var=copy(metric.M⁻¹)),
         AdvancedHMC.StepSizeAdaptor(nuts.δ, integrator)
     )
     samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose=false)
     return (samples=samples, stats=stats, adaptor=adaptor)
 end
+"""
+Computes the condition number of a covariance matrix `cov::AbstractMatrix` after preconditioning with the (diagonal) mass matrix estimated in `a::DiagMatrixEstimator`.
+
+This is a simple but serviceable proxy for eventual sampling efficiency, but see also https://arxiv.org/abs/1905.09813 for a more involved estimate.
+
+(A lower number generally means that the estimated mass matrix is better).
+"""
 preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) = cond(sqrt(Diagonal(a.var)) \ cov / sqrt(Diagonal(a.var)))
 
 @testset "Adaptation" begin
+    Random.seed!(1)
     # Check that the estimated variance is approximately correct.
     @testset "Online v.s. naive v.s. true var/cov estimation" begin
         D = 10
@@ -159,9 +167,8 @@ preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) = cond(sqrt(Dia
     @testset "Adapted mass v.s. true variance" begin
         D = 10
         n_tests = 5
-        @testset "DiagEuclideanMetric" begin
+        @testset "'Diagonal' MvNormal target" begin
             for _ in 1:n_tests
-                Random.seed!(1)
 
                 # Random variance
                 σ² = 1 .+ abs.(randn(D))
@@ -183,7 +190,7 @@ preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) = cond(sqrt(Dia
             end
         end
 
-        @testset "DenseEuclideanMetric" begin
+        @testset "'Dense' MvNormal target" begin
             n_nutpie_superior = 0
             for _ in 1:n_tests
                 # Random covariance
@@ -197,16 +204,16 @@ preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) = cond(sqrt(Dia
                 @test res.adaptor.pc.var ≈ diag(Σ) rtol = 0.2
 
                 # For this target, Nutpie will NOT converge towards the true variances, even after infinite draws.
-                # HOWEVER, it will asymptotically (but also generally more quickly than Stan) 
+                # HOWEVER, it will asymptotically (but also generally more quickly than Stan)
                 # find the best preconditioner for the target.
-                # As these are statistical algorithms, superiority is not always guaranteed, hence this way of testing.  
+                # As these are statistical algorithms, superiority is not always guaranteed, hence this way of testing.
                 res_nutpie = runnuts_nutpie(ℓπ, DiagEuclideanMetric(D))
                 n_nutpie_superior += preconditioned_cond(res_nutpie.adaptor.pc, Σ) < preconditioned_cond(res.adaptor.pc, Σ)
 
                 res = runnuts(ℓπ, DenseEuclideanMetric(D))
                 @test res.adaptor.pc.cov ≈ Σ rtol = 0.25
             end
-            @test n_nutpie_superior > n_tests / 2
+            @test n_nutpie_superior > 1 + n_tests / 2
         end
     end
 
