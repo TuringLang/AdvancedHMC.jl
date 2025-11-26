@@ -155,17 +155,28 @@ function get_estimation(wv::WelfordVar{T}) where {T<:AbstractFloat}
 end
 
 """
+    NutpieVar
+
 Nutpie-style diagonal mass matrix estimator (using positions and gradients) - not exported yet due to https://github.com/TuringLang/AdvancedHMC.jl/issues/475
 
-Expected to converge faster and to a better mass matrix than WelfordVar.
+Expected to converge faster and to a better mass matrix than [`WelfordVar`](@ref), for which it is a drop-in replacement.
 
-Can be initialized via NutpieVar(sz) where sz is either a `Tuple{Int}` or a `Tuple{Int,Int}`.
+Can be initialized via `NutpieVar(sz)` where `sz` is either a `Tuple{Int}` or a `Tuple{Int,Int}`.
+
+# Fields
+
+$(FIELDS)
 """
 mutable struct NutpieVar{T<:AbstractFloat,E<:AbstractVecOrMat{T},V<:AbstractVecOrMat{T}} <: DiagMatrixEstimator{T}
+    "Online variance estimator of the posterior positions."
     position_estimator::WelfordVar{T,E,V}
+    "Online variance estimator of the posterior gradients."
     gradient_estimator::WelfordVar{T,E,V}
+    "The number of observations collected so far."
     n::Int
+    "The minimal number of observations after which the estimate of the variances can be updated."
     n_min::Int
+    "The estimated variances - initialized to ones, updated after calling [`update!`](@ref) if `n > n_min`."
     var::V
     function NutpieVar(n::Int, n_min::Int, μ::E, M::E, δ::E, var::V) where {E,V}
         return new{eltype(E),E,V}(
@@ -225,9 +236,7 @@ function Base.push!(nv::NutpieVar, z::PhasePoint)
 end
 
 # Ref: https://github.com/pymc-devs/nutpie
-function get_estimation(nv::NutpieVar)
-    return sqrt.(get_estimation(nv.position_estimator) ./ get_estimation(nv.gradient_estimator))
-end
+get_estimation(nv::NutpieVar) =  sqrt.(get_estimation(nv.position_estimator) ./ get_estimation(nv.gradient_estimator))
 
 ## Dense mass matrix adaptor
 
