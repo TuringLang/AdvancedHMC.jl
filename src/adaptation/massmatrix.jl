@@ -236,7 +236,7 @@ function Base.push!(nv::NutpieVar, z::PhasePoint)
 end
 
 # Ref: https://github.com/pymc-devs/nutpie
-get_estimation(nv::NutpieVar) =  sqrt.(get_estimation(nv.position_estimator) ./ get_estimation(nv.gradient_estimator))
+get_estimation(nv::NutpieVar) = sqrt.(get_estimation(nv.position_estimator) ./ get_estimation(nv.gradient_estimator))
 
 ## Dense mass matrix adaptor
 
