@@ -1,6 +1,8 @@
 using ReTest, LinearAlgebra, Distributions, AdvancedHMC, Random, ForwardDiff
+using AdvancedHMC:
+    PhasePoint, DualValue
 using AdvancedHMC.Adaptation:
-    WelfordVar, NaiveVar, WelfordCov, NaiveCov, get_estimation, get_estimation, reset!
+    DiagMatrixEstimator, WelfordVar, NutpieVar, NaiveVar, WelfordCov, NaiveCov, get_estimation, get_estimation, reset!
 
 function runnuts(ℓπ, metric; n_samples=10_000)
     D = size(metric, 1)
@@ -18,7 +20,37 @@ function runnuts(ℓπ, metric; n_samples=10_000)
     return (samples=samples, stats=stats, adaptor=adaptor)
 end
 
+# Temporary function until we've settled on a different interface
+function runnuts_nutpie(ℓπ, metric::DiagEuclideanMetric; n_samples=10_000)
+    D = size(metric, 1)
+    n_adapts = 5_000
+    θ_init = rand(D)
+    rng = MersenneTwister(0)
+
+    nuts = NUTS(0.8)
+    h = Hamiltonian(metric, ℓπ, ForwardDiff)
+    step_size = AdvancedHMC.make_step_size(rng, nuts, h, θ_init)
+    integrator = AdvancedHMC.make_integrator(nuts, step_size)
+    κ = AdvancedHMC.make_kernel(nuts, integrator)
+    # Constructing like this until we've settled on a different interface
+    adaptor = AdvancedHMC.StanHMCAdaptor(
+        AdvancedHMC.Adaptation.NutpieVar(size(metric); var=copy(metric.M⁻¹)),
+        AdvancedHMC.StepSizeAdaptor(nuts.δ, integrator)
+    )
+    samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose=false)
+    return (samples=samples, stats=stats, adaptor=adaptor)
+end
+"""
+Computes the condition number of a covariance matrix `cov::AbstractMatrix` after preconditioning with the (diagonal) mass matrix estimated in `a::DiagMatrixEstimator`.
+
+This is a simple but serviceable proxy for eventual sampling efficiency, but see also https://arxiv.org/abs/1905.09813 for a more involved estimate.
+
+(A lower number generally means that the estimated mass matrix is better).
+"""
+preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) = cond(sqrt(Diagonal(a.var)) \ cov / sqrt(Diagonal(a.var)))
+
 @testset "Adaptation" begin
+    Random.seed!(1)
     # Check that the estimated variance is approximately correct.
     @testset "Online v.s. naive v.s. true var/cov estimation" begin
         D = 10
@@ -60,15 +92,32 @@ end
 
     @testset "MassMatrixAdaptor constructors" begin
         θ = [0.0, 0.0, 0.0, 0.0]
+        z = PhasePoint(
+            θ, θ, DualValue(0., θ), DualValue(0., θ)
+        )
         pc1 = MassMatrixAdaptor(UnitEuclideanMetric) # default dim = 2
         pc2 = MassMatrixAdaptor(DiagEuclideanMetric)
+        # Constructing like this until we've settled on a different interface
+        pc2_nutpie = NutpieVar{Float64}((2, ))
         pc3 = MassMatrixAdaptor(DenseEuclideanMetric)
 
-        # Var adaptor dimention should be increased to length(θ) from 2
+        # Var adaptor dimension should be increased to length(θ) from 2
         AdvancedHMC.adapt!(pc1, θ, 1.0)
         AdvancedHMC.adapt!(pc2, θ, 1.0)
+        AdvancedHMC.adapt!(pc2_nutpie, z, 1.0)
         AdvancedHMC.adapt!(pc3, θ, 1.0)
         @test AdvancedHMC.Adaptation.getM⁻¹(pc2) == ones(length(θ))
+        @test AdvancedHMC.Adaptation.getM⁻¹(pc2_nutpie) == ones(length(θ))
+        @test AdvancedHMC.Adaptation.getM⁻¹(pc3) ==
+            LinearAlgebra.diagm(0 => ones(length(θ)))
+
+        # Making sure "all" MassMatrixAdaptors support getting a PhasePoint instead of a Vector
+        AdvancedHMC.adapt!(pc1, z, 1.0)
+        AdvancedHMC.adapt!(pc2, z, 1.0)
+        AdvancedHMC.adapt!(pc2_nutpie, z, 1.0)
+        AdvancedHMC.adapt!(pc3, z, 1.0)
+        @test AdvancedHMC.Adaptation.getM⁻¹(pc2) == ones(length(θ))
+        @test AdvancedHMC.Adaptation.getM⁻¹(pc2_nutpie) == ones(length(θ))
         @test AdvancedHMC.Adaptation.getM⁻¹(pc3) ==
             LinearAlgebra.diagm(0 => ones(length(θ)))
     end
@@ -82,10 +131,14 @@ end
         adaptor2 = StanHMCAdaptor(
             MassMatrixAdaptor(DiagEuclideanMetric), NesterovDualAveraging(0.8, 0.5)
         )
+        # Constructing like this until we've settled on a different interface
+        adaptor2_nutpie = StanHMCAdaptor(
+            NutpieVar{Float64}((2, )), NesterovDualAveraging(0.8, 0.5)
+        )
         adaptor3 = StanHMCAdaptor(
             MassMatrixAdaptor(DenseEuclideanMetric), NesterovDualAveraging(0.8, 0.5)
         )
-        for a in [adaptor1, adaptor2, adaptor3]
+        for a in [adaptor1, adaptor2, adaptor2_nutpie, adaptor3]
             AdvancedHMC.initialize!(a, 1_000)
             @test a.state.window_start == 76
             @test a.state.window_end == 950
@@ -93,6 +146,7 @@ end
             AdvancedHMC.adapt!(a, θ, 1.0)
         end
         @test AdvancedHMC.Adaptation.getM⁻¹(adaptor2) == ones(length(θ))
+        @test AdvancedHMC.Adaptation.getM⁻¹(adaptor2_nutpie) == ones(length(θ))
         @test AdvancedHMC.Adaptation.getM⁻¹(adaptor3) ==
             LinearAlgebra.diagm(0 => ones(length(θ)))
 
@@ -112,26 +166,32 @@ end
 
     @testset "Adapted mass v.s. true variance" begin
         D = 10
-        n_tests = 5
-        @testset "DiagEuclideanMetric" begin
+        n_tests = 10
+        @testset "'Diagonal' MvNormal target" begin
             for _ in 1:n_tests
-                Random.seed!(1)
 
                 # Random variance
                 σ² = 1 .+ abs.(randn(D))
+                Σ = Diagonal(σ²)
 
                 # Diagonal Gaussian
-                ℓπ = LogDensityDistribution(MvNormal(Diagonal(σ²)))
+                ℓπ = LogDensityDistribution(MvNormal(Σ))
 
                 res = runnuts(ℓπ, DiagEuclideanMetric(D))
                 @test res.adaptor.pc.var ≈ σ² rtol = 0.2
+
+                # For this target, Nutpie (without regularization) will arrive at the true variances after two draws.
+                res_nutpie = runnuts_nutpie(ℓπ, DiagEuclideanMetric(D))
+                @test res.adaptor.pc.var ≈ σ² rtol = 0.2
+                @test preconditioned_cond(res_nutpie.adaptor.pc, Σ) < preconditioned_cond(res.adaptor.pc, Σ)
 
                 res = runnuts(ℓπ, DenseEuclideanMetric(D))
                 @test res.adaptor.pc.cov ≈ Diagonal(σ²) rtol = 0.25
             end
         end
 
-        @testset "DenseEuclideanMetric" begin
+        @testset "'Dense' MvNormal target" begin
+            n_nutpie_superior = 0
             for _ in 1:n_tests
                 # Random covariance
                 m = randn(D, D)
@@ -143,9 +203,17 @@ end
                 res = runnuts(ℓπ, DiagEuclideanMetric(D))
                 @test res.adaptor.pc.var ≈ diag(Σ) rtol = 0.2
 
+                # For this target, Nutpie will NOT converge towards the true variances, even after infinite draws.
+                # HOWEVER, it will asymptotically (but also generally more quickly than Stan)
+                # find the best preconditioner for the target.
+                # As these are statistical algorithms, superiority is not always guaranteed, hence this way of testing.
+                res_nutpie = runnuts_nutpie(ℓπ, DiagEuclideanMetric(D))
+                n_nutpie_superior += preconditioned_cond(res_nutpie.adaptor.pc, Σ) < preconditioned_cond(res.adaptor.pc, Σ)
+
                 res = runnuts(ℓπ, DenseEuclideanMetric(D))
                 @test res.adaptor.pc.cov ≈ Σ rtol = 0.25
             end
+            @test n_nutpie_superior > 1 + n_tests / 2
         end
     end
 
@@ -154,6 +222,10 @@ end
 
         mass_init = fill(0.5, D)
         res = runnuts(ℓπ, DiagEuclideanMetric(mass_init); n_samples=1)
+        @test res.adaptor.pc.var == mass_init
+
+        mass_init = fill(0.5, D)
+        res = runnuts_nutpie(ℓπ, DiagEuclideanMetric(mass_init); n_samples=1)
         @test res.adaptor.pc.var == mass_init
 
         mass_init = diagm(0 => fill(0.5, D))

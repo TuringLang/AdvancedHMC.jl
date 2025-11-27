@@ -9,15 +9,17 @@ finalize!(::MassMatrixAdaptor) = nothing
 
 function adapt!(
     adaptor::MassMatrixAdaptor,
-    θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat},
+    z_or_theta::PositionOrPhasePoint,
+    ::AbstractScalarOrVec{<:AbstractFloat},
     is_update::Bool=true,
 )
-    resize_adaptor!(adaptor, size(θ))
-    push!(adaptor, θ)
+    resize_adaptor!(adaptor, size(get_position(z_or_theta)))
+    push!(adaptor, z_or_theta)
     is_update && update!(adaptor)
     return nothing
 end
+
+Base.push!(a::MassMatrixAdaptor, z_or_theta::PositionOrPhasePoint) = push!(a, get_position(z_or_theta))
 
 ## Unit mass matrix adaptor
 
@@ -39,7 +41,7 @@ getM⁻¹(::UnitMassMatrix{T}) where {T} = LinearAlgebra.UniformScaling{T}(one(T
 
 function adapt!(
     ::UnitMassMatrix,
-    ::AbstractVecOrMat{<:AbstractFloat},
+    ::PositionOrPhasePoint,
     ::AbstractScalarOrVec{<:AbstractFloat},
     is_update::Bool=true,
 )
@@ -47,7 +49,6 @@ function adapt!(
 end
 
 ## Diagonal mass matrix adaptor
-
 abstract type DiagMatrixEstimator{T} <: MassMatrixAdaptor end
 
 getM⁻¹(ve::DiagMatrixEstimator) = ve.var
@@ -70,7 +71,7 @@ NaiveVar{T}(sz::Tuple{Int,Int}) where {T<:AbstractFloat} = NaiveVar(Vector{Matri
 
 NaiveVar(sz::Union{Tuple{Int},Tuple{Int,Int}}) = NaiveVar{Float64}(sz)
 
-Base.push!(nv::NaiveVar, s::AbstractVecOrMat) = push!(nv.S, s)
+Base.push!(nv::NaiveVar, s::AbstractVecOrMat{<:AbstractFloat}) = push!(nv.S, s)
 
 reset!(nv::NaiveVar) = resize!(nv.S, 0)
 
@@ -135,7 +136,7 @@ function reset!(wv::WelfordVar{T}) where {T<:AbstractFloat}
     return nothing
 end
 
-function Base.push!(wv::WelfordVar, s::AbstractVecOrMat{T}) where {T}
+function Base.push!(wv::WelfordVar, s::AbstractVecOrMat{T}) where {T<:AbstractFloat}
     wv.n += 1
     (; δ, μ, M, n) = wv
     n = T(n)
@@ -152,6 +153,90 @@ function get_estimation(wv::WelfordVar{T}) where {T<:AbstractFloat}
     n, ϵ = T(n), T(1e-3)
     return n / ((n + 5) * (n - 1)) * M .+ ϵ * (5 / (n + 5))
 end
+
+"""
+    NutpieVar
+
+Nutpie-style diagonal mass matrix estimator (using positions and gradients).
+
+Expected to converge faster and to a better mass matrix than [`WelfordVar`](@ref), for which it is a drop-in replacement.
+
+Can be initialized via `NutpieVar(sz)` where `sz` is either a `Tuple{Int}` or a `Tuple{Int,Int}`.
+
+# Fields
+
+$(FIELDS)
+"""
+mutable struct NutpieVar{T<:AbstractFloat,E<:AbstractVecOrMat{T},V<:AbstractVecOrMat{T}} <: DiagMatrixEstimator{T}
+    "Online variance estimator of the posterior positions."
+    position_estimator::WelfordVar{T,E,V}
+    "Online variance estimator of the posterior gradients."
+    gradient_estimator::WelfordVar{T,E,V}
+    "The number of observations collected so far."
+    n::Int
+    "The minimal number of observations after which the estimate of the variances can be updated."
+    n_min::Int
+    "The estimated variances - initialized to ones, updated after calling [`update!`](@ref) if `n > n_min`."
+    var::V
+    function NutpieVar(n::Int, n_min::Int, μ::E, M::E, δ::E, var::V) where {E,V}
+        return new{eltype(E),E,V}(
+            WelfordVar(n, n_min, copy(μ), copy(M), copy(δ), copy(var)),
+            WelfordVar(n, n_min, copy(μ), copy(M), copy(δ), copy(var)),
+            n, n_min, var
+        )
+    end
+end
+
+function Base.show(io::IO, ::NutpieVar{T}) where {T}
+    return print(io, "NutpieVar{", T, "} adaptor")
+end
+
+function NutpieVar{T}(
+    sz::Union{Tuple{Int},Tuple{Int,Int}}=(2,); n_min::Int=10, var=ones(T, sz)
+) where {T<:AbstractFloat}
+    return NutpieVar(0, n_min, zeros(T, sz), zeros(T, sz), zeros(T, sz), var)
+end
+
+function NutpieVar(sz::Union{Tuple{Int},Tuple{Int,Int}}; kwargs...)
+    return NutpieVar{Float64}(sz; kwargs...)
+end
+
+function resize_adaptor!(nv::NutpieVar{T}, size_θ::Tuple{Int,Int}) where {T<:AbstractFloat}
+    if size_θ != size(nv.var)
+        @assert nv.n == 0 "Cannot resize a var estimator when it contains samples."
+        resize_adaptor!(nv.position_estimator, size_θ)
+        resize_adaptor!(nv.gradient_estimator, size_θ)
+        nv.var = ones(T, size_θ)
+    end
+end
+
+function resize_adaptor!(nv::NutpieVar{T}, size_θ::Tuple{Int}) where {T<:AbstractFloat}
+    length_θ = first(size_θ)
+    if length_θ != size(nv.var, 1)
+        @assert nv.n == 0 "Cannot resize a var estimator when it contains samples."
+        resize_adaptor!(nv.position_estimator, size_θ)
+        resize_adaptor!(nv.gradient_estimator, size_θ)
+        fill!(resize!(nv.var, length_θ), T(1))
+    end
+end
+
+function reset!(nv::NutpieVar)
+    nv.n = 0
+    reset!(nv.position_estimator)
+    reset!(nv.gradient_estimator)
+end
+
+Base.push!(::NutpieVar, x::AbstractVecOrMat{<:AbstractFloat}) = error("`NutpieVar` adaptation requires position and gradient information!")
+
+function Base.push!(nv::NutpieVar, z::PhasePoint)
+    nv.n += 1
+    push!(nv.position_estimator, z.θ)
+    push!(nv.gradient_estimator, z.ℓπ.gradient)
+    return nothing
+end
+
+# Ref: https://github.com/pymc-devs/nutpie
+get_estimation(nv::NutpieVar) = sqrt.(get_estimation(nv.position_estimator) ./ get_estimation(nv.gradient_estimator))
 
 ## Dense mass matrix adaptor
 
@@ -175,7 +260,7 @@ end
 
 NaiveCov{T}(sz::Tuple{Int}) where {T<:AbstractFloat} = NaiveCov(Vector{Vector{T}}())
 
-Base.push!(nc::NaiveCov, s::AbstractVector) = push!(nc.S, s)
+Base.push!(nc::NaiveCov, s::AbstractVector{<:AbstractFloat}) = push!(nc.S, s)
 
 reset!(nc::NaiveCov{T}) where {T} = resize!(nc.S, 0)
 
@@ -225,7 +310,7 @@ function reset!(wc::WelfordCov{T}) where {T<:AbstractFloat}
     return nothing
 end
 
-function Base.push!(wc::WelfordCov, s::AbstractVector{T}) where {T}
+function Base.push!(wc::WelfordCov, s::AbstractVector{T}) where {T<:AbstractFloat}
     wc.n += 1
     (; δ, μ, n, M) = wc
     n = T(n)
