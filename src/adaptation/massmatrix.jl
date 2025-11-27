@@ -157,7 +157,7 @@ end
 """
     NutpieVar
 
-Nutpie-style diagonal mass matrix estimator (using positions and gradients) - not exported yet due to https://github.com/TuringLang/AdvancedHMC.jl/issues/475
+Nutpie-style diagonal mass matrix estimator (using positions and gradients).
 
 Expected to converge faster and to a better mass matrix than [`WelfordVar`](@ref), for which it is a drop-in replacement.
 
