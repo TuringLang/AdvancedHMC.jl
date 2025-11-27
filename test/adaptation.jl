@@ -166,7 +166,7 @@ preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) = cond(sqrt(Dia
 
     @testset "Adapted mass v.s. true variance" begin
         D = 10
-        n_tests = 5
+        n_tests = 10
         @testset "'Diagonal' MvNormal target" begin
             for _ in 1:n_tests
 
