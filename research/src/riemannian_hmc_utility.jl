@@ -36,16 +36,20 @@ function gen_hess_fwd(func, x::AbstractVector)
 end
 
 function gen_∂G∂θ_fwd(Vfunc, x; f=identity)
-    Hfunc = gen_hess_fwd(Vfunc, x)
+    chunk = ForwardDiff.Chunk(x)
+    tag = ForwardDiff.Tag(Vfunc, eltype(x))
+    jac_cfg = ForwardDiff.JacobianConfig(Vfunc, x, chunk, tag)
+    hess_cfg = ForwardDiff.HessianConfig(Vfunc, jac_cfg.duals, chunk, tag)
 
-    cfg = ForwardDiff.JacobianConfig(Hfunc, x)
     d = length(x)
     out = zeros(eltype(x), d^2, d)
 
     function ∂G∂θ_fwd(y)
-        ForwardDiff.jacobian!(out, Hfunc, y, cfg)
+        hess = z -> ForwardDiff.hessian(Vfunc, z, hess_cfg, Val{false}())
+        ForwardDiff.jacobian!(out, hess, y, jac_cfg, Val{false}())
         return out
     end
+    
     return ∂G∂θ_fwd
 end
 
