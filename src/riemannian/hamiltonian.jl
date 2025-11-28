@@ -129,7 +129,7 @@ function ∂H∂θ_cache(
 
         G, Q, λ, softabsλ = softabs(H, h.metric.map.α)
 
-        R = diagm(1 ./ softabsλ)
+        R = Diagonal(1 ./ softabsλ)
 
         # softabsΛ = diagm(softabsλ)
         # M = inv(softabsΛ) * Q' * r
@@ -137,30 +137,67 @@ function ∂H∂θ_cache(
 
         J = make_J(λ, h.metric.map.α)
 
+        tmp1 = similar(H)
+        tmp2 = similar(H)
+        tmp3 = similar(H)
+        tmp4 = similar(softabsλ)
+
         #! Based on the two equations from the right column of Page 3 of Betancourt (2012)
-        term_1_cached = Q * (R .* J) * Q'
-    else
-        ℓπ, ∂ℓπ∂θ, ∂H∂θ, Q, softabsλ, J, term_1_cached = cache
-    end
-    d = length(∂ℓπ∂θ)
-    D = diagm((Q' * r) ./ softabsλ)
-    term_2_cached = Q * D * J * D * Q'
-    g =
-        -mapreduce(vcat, 1:d) do i
+        tmp1 = R .* J
+        # tmp2 = Q * tmp1
+        mul!(tmp2, Q, tmp1)
+
+        # tmp1 = tmp2 * Q'
+        mul!(tmp1, tmp2, Q')
+
+        term_1_cached = tmp1
+
+        # Cache first part of the equation
+        term_1_prod = similar(∂ℓπ∂θ)
+        @inbounds for i in 1:length(∂ℓπ∂θ)
             ∂H∂θᵢ = ∂H∂θ[:, :, i]
-            # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
-            # NOTE Some further optimization can be done here: cache the 1st product all together
-            ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
+            term_1_prod[i] = ∂ℓπ∂θ[i] - 1/2 * tr(term_1_cached * ∂H∂θᵢ)
         end
 
+    else
+        ℓπ, ∂ℓπ∂θ, ∂H∂θ, Q, softabsλ, J, term_1_prod, tmp1, tmp2, tmp3, tmp4 = cache
+    end
+    d = length(∂ℓπ∂θ)
+    mul!(tmp4, Q', r)
+    D = Diagonal(tmp4 ./ softabsλ)
+
+    # tmp1 = D * J
+    mul!(tmp1, D, J)
+    # tmp2 = tmp1 * D
+    mul!(tmp2, tmp1, D)
+    # tmp1 = Q * tmp2
+    mul!(tmp1, Q, tmp2)
+    # tmp2 = tmp1 * Q'
+    mul!(tmp2, tmp1, Q')
+    term_2_cached = tmp2
+
+    # g =
+    #     -mapreduce(vcat, 1:d) do i
+    #         ∂H∂θᵢ = ∂H∂θ[:, :, i]
+    #         # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
+    #         # NOTE Some further optimization can be done here: cache the 1st product all together
+    #         ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
+    #     end
+    g = similar(∂ℓπ∂θ)
+    @inbounds for i in 1:d
+        ∂H∂θᵢ = ∂H∂θ[:, :, i]
+        g[i] = term_1_prod[i] + 1/2 * tr(term_2_cached * ∂H∂θᵢ)
+    end
+    g .*= -1
+
     dv = DualValue(ℓπ, g)
-    return return_cache ? (dv, (; ℓπ, ∂ℓπ∂θ, ∂H∂θ, Q, softabsλ, J, term_1_cached)) : dv
+    return return_cache ? (dv, (; ℓπ, ∂ℓπ∂θ, ∂H∂θ, Q, softabsλ, J, term_1_prod, tmp1, tmp2, tmp3, tmp4)) : dv
 end
 
 #! Eq (14) of Girolami & Calderhead (2011)
 function ∂H∂r(
-    h::Hamiltonian{<:DenseRiemannianMetric}, θ::AbstractVecOrMat, r::AbstractVecOrMat
-)
+    h::Hamiltonian{<:DenseRiemannianMetric}, θ::AbstractVecOrMat{T}, r::AbstractVecOrMat{T}
+) where {T}
     H = h.metric.G(θ)
     # if !all(isfinite, H)
     #     println("θ: ", θ)
