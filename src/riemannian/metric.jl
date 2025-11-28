@@ -18,8 +18,9 @@ end
 
 # TODO Register softabs with ReverseDiff
 #! The definition of SoftAbs from Page 3 of Betancourt (2012)
-function softabs(X, α=20.0)
-    F = eigen(X) # ReverseDiff cannot diff through `eigen`
+function softabs(X::AbstractMatrix{T}, α=20.0) where {T<:Real}
+    # Enforce symmetry for type stability
+    F = eigen(Symmetric(X)) # ReverseDiff cannot diff through `eigen`
     Q = hcat(F.vectors)
     λ = F.values
     softabsλ = λ .* coth.(α * λ)
