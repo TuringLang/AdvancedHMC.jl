@@ -24,11 +24,47 @@ function Base.show(io::IO, l::GeneralizedLeapfrog)
     return print(io, "GeneralizedLeapfrog(ϵ=", round.(l.ϵ; sigdigits=3), ", n=", l.n, ")")
 end
 
-# fallback to ignore return_cache & cache kwargs for other ∂H∂θ
-function ∂H∂θ_cache(h, θ, r; return_cache=false, cache=nothing)
-    dv = ∂H∂θ(h, θ, r)
-    return return_cache ? (dv, nothing) : dv
+abstract type AbstractImplicitMidpoint{T} <: AbstractIntegrator end
+
+step_size(lf::AbstractImplicitMidpoint) = lf.ϵ
+jitter(::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, lf::AbstractImplicitMidpoint) = lf
+function temper(
+    lf::AbstractImplicitMidpoint, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int
+)
+    return r
 end
+stat(lf::AbstractImplicitMidpoint) = (step_size=step_size(lf), nom_step_size=nom_step_size(lf))
+update_nom_step_size(lf::AbstractImplicitMidpoint, ϵ) = @set lf.ϵ = ϵ
+
+"""
+$(TYPEDEF)
+
+Implicit midpoint integrator with fixed step size `ϵ`.
+
+# Fields
+
+$(TYPEDFIELDS)
+
+
+## References 
+
+1. James A. Brofos, Roy R. Lederman. "Evaluating the Implicit Midpoint
+Integrator for Riemannian Manifold Hamiltonian Monte Carlo"
+"""
+struct ImplicitMidpoint{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
+    "Step size."
+    ϵ::T
+    n::Int
+end
+function Base.show(io::IO, l::ImplicitMidpoint)
+    return print(io, "ImplicitMidpoint(ϵ=", round.(l.ϵ; sigdigits=3), ", n=", l.n, ")")
+end
+
+# fallback to ignore return_cache & cache kwargs for other ∂H∂θ
+# function ∂H∂θ_cache(h, θ, r; return_cache=false, cache=nothing)
+#     dv = ∂H∂θ(h, θ, r)
+#     return return_cache ? (dv, nothing) : dv
+# end
 
 # TODO(Kai) make sure vectorization works
 # TODO(Kai) check if tempering is valid
@@ -102,5 +138,65 @@ function step(
             break
         end
     end
+    return res
+end
+
+function step(
+    lf::ImplicitMidpoint{T},
+    h::Hamiltonian,
+    z::P,
+    n_steps::Int=1;
+    fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
+    full_trajectory::Val{FullTraj}=Val(false),
+) where {T<:AbstractScalarOrVec{<:AbstractFloat},TP,P<:PhasePoint{TP},FullTraj}
+    n_steps = abs(n_steps)  # to support `n_steps < 0` cases
+
+    ϵ = fwd ? step_size(lf) : -step_size(lf)
+    ϵ = ϵ'
+
+    if !(T <: AbstractFloat) || !(TP <: AbstractVector)
+        @warn "Vectorization is not tested for ImplicitMidpoint."
+    end
+
+    res = if FullTraj
+        Vector{P}(undef, n_steps)
+    else
+        z
+    end
+
+    for i in 1:n_steps
+        θ_init, r_init = z.θ, z.r
+
+
+        θ_full = θ_init
+        r_full = r_init
+        for j in 1:(lf.n)
+            θ_bar = (θ_full + θ_init) / 2
+            r_bar = (r_full + r_init) / 2
+
+            dHdr = ∂H∂r(h, θ_bar, r_bar)
+            (; value, gradient) = ∂H∂θ(h, θ_bar, r_bar)
+
+            θ_full = θ_init + ϵ * dHdr
+            r_full = r_init - ϵ * gradient
+        end
+
+        (; value, gradient) = ∂H∂θ(h, θ_full, r_full)
+        z = phasepoint(h, θ_full, r_full; ℓπ=DualValue(value, gradient))
+
+                if FullTraj
+            res[i] = z
+        else
+            res = z
+        end
+        if !isfinite(z)
+            # Remove undef
+            if FullTraj
+                res = res[isassigned.(Ref(res), 1:n_steps)]
+            end
+            break
+        end
+    end
+
     return res
 end
