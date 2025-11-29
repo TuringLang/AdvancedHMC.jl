@@ -45,7 +45,7 @@ function gen_∂G∂θ_fwd(Vfunc, x; f=identity)
     out = zeros(eltype(x), d^2, d)
 
     function ∂G∂θ_fwd(y)
-        hess = z -> ForwardDiff.hessian(Vfunc, z, hess_cfg, Val{false}())
+        hess = z -> Symmetric(ForwardDiff.hessian(Vfunc, z, hess_cfg, Val{false}()))
         ForwardDiff.jacobian!(out, hess, y, jac_cfg, Val{false}())
         return out
     end
