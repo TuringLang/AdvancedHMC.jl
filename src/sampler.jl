@@ -60,11 +60,11 @@ end
 function Adaptation.adapt!(
     h::Hamiltonian,
     κ::AbstractMCMCKernel,
-    adaptor::Adaptation.NoAdaptation,
-    i::Int,
-    n_adapts::Int,
-    θ::AbstractVecOrMat{<:AbstractFloat},
-    α::AbstractScalarOrVec{<:AbstractFloat},
+    ::Adaptation.NoAdaptation,
+    ::Int,
+    ::Int,
+    ::PositionOrPhasePoint,
+    ::AbstractScalarOrVec{<:AbstractFloat},
 )
     return h, κ, false
 end
@@ -75,19 +75,18 @@ function Adaptation.adapt!(
     adaptor::AbstractAdaptor,
     i::Int,
     n_adapts::Int,
-    θ::AbstractVecOrMat{<:AbstractFloat},
+    z_or_theta::PositionOrPhasePoint,
     α::AbstractScalarOrVec{<:AbstractFloat},
 )
-    isadapted = false
-    if i <= n_adapts
+    adapt = i <= n_adapts
+    if adapt
         i == 1 && Adaptation.initialize!(adaptor, n_adapts)
-        adapt!(adaptor, θ, α)
+        adapt!(adaptor, z_or_theta, α)
         i == n_adapts && finalize!(adaptor)
         h = update(h, adaptor)
         κ = update(κ, adaptor)
-        isadapted = true
     end
-    return h, κ, isadapted
+    return h, κ, adapt
 end
 
 """
@@ -148,7 +147,7 @@ end
         progress::Bool=false
     )
 Sample `n_samples` samples using the proposal `κ` under Hamiltonian `h`.
-- The randomness is controlled by `rng`. 
+- The randomness is controlled by `rng`.
     - If `rng` is not provided, the default random number generator (`Random.default_rng()`) will be used.
 - The initial point is given by `θ`.
 - The adaptor is set by `adaptor`, for which the default is no adaptation.
@@ -185,7 +184,7 @@ function sample(
         t = transition(rng, h, κ, t.z)
         # Adapt h and κ; what mutable is the adaptor
         tstat = stat(t)
-        h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
+        h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z, tstat.acceptance_rate)
         if isadapted
             num_divergent_transitions_during_adaption += tstat.numerical_error
         else
