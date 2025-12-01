@@ -88,7 +88,7 @@ export find_good_eps
 include("adaptation/Adaptation.jl")
 using .Adaptation
 import .Adaptation:
-    StepSizeAdaptor, MassMatrixAdaptor, StanHMCAdaptor, NesterovDualAveraging, NoAdaptation
+    StepSizeAdaptor, MassMatrixAdaptor, StanHMCAdaptor, NesterovDualAveraging, NoAdaptation, PositionOrPhasePoint
 
 # Helpers for initializing adaptors via AHMC structs
 
@@ -130,6 +130,7 @@ export StepSizeAdaptor,
     MassMatrixAdaptor,
     UnitMassMatrix,
     WelfordVar,
+    NutpieVar,
     WelfordCov,
     NaiveHMCAdaptor,
     StanHMCAdaptor,
