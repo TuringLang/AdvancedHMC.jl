@@ -65,7 +65,7 @@ end
 
 # Position gradient with Riemannian correction terms
 function ∂H∂θ(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}},
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap},<:GaussianKinetic},
     θ::AbstractVecOrMat{T},
     r::AbstractVecOrMat{T},
 ) where {T}
@@ -107,7 +107,7 @@ function make_J(λ::AbstractVector{T}, α::T) where {T<:AbstractFloat}
 end
 
 function ∂H∂θ(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap}},
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap},<:GaussianKinetic},
     θ::AbstractVecOrMat{T},
     r::AbstractVecOrMat{T},
 ) where {T}
@@ -115,7 +115,7 @@ function ∂H∂θ(
 end
 
 function ∂H∂θ_cache(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap}},
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap},<:GaussianKinetic},
     θ::AbstractVecOrMat{T},
     r::AbstractVecOrMat{T};
     return_cache=false,
