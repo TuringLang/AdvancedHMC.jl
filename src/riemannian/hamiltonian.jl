@@ -1,5 +1,6 @@
 import AdvancedHMC: refresh, phasepoint, neg_energy, ∂H∂θ, ∂H∂r
-using AdvancedHMC: FullMomentumRefreshment, PartialMomentumRefreshment, DualValue, PhasePoint
+using AdvancedHMC:
+    FullMomentumRefreshment, PartialMomentumRefreshment, DualValue, PhasePoint
 using LinearAlgebra: logabsdet, tr, diagm, logdet
 
 # Specialized phasepoint for Riemannian metrics that need θ for momentum gradient
@@ -65,7 +66,7 @@ end
 
 # Position gradient with Riemannian correction terms
 function ∂H∂θ(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}},
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap},<:GaussianKinetic},
     θ::AbstractVecOrMat{T},
     r::AbstractVecOrMat{T},
 ) where {T}
@@ -107,7 +108,7 @@ function make_J(λ::AbstractVector{T}, α::T) where {T<:AbstractFloat}
 end
 
 function ∂H∂θ(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap}},
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap},<:GaussianKinetic},
     θ::AbstractVecOrMat{T},
     r::AbstractVecOrMat{T},
 ) where {T}
@@ -115,7 +116,7 @@ function ∂H∂θ(
 end
 
 function ∂H∂θ_cache(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap}},
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap},<:GaussianKinetic},
     θ::AbstractVecOrMat{T},
     r::AbstractVecOrMat{T};
     return_cache=false,
@@ -191,7 +192,11 @@ function ∂H∂θ_cache(
     g .*= -1
 
     dv = DualValue(ℓπ, g)
-    return return_cache ? (dv, (; ℓπ, ∂ℓπ∂θ, ∂H∂θ, Q, softabsλ, J, term_1_prod, tmp1, tmp2, tmp3, tmp4)) : dv
+    return if return_cache
+        (dv, (; ℓπ, ∂ℓπ∂θ, ∂H∂θ, Q, softabsλ, J, term_1_prod, tmp1, tmp2, tmp3, tmp4))
+    else
+        dv
+    end
 end
 
 #! Eq (14) of Girolami & Calderhead (2011)

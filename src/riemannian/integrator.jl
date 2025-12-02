@@ -27,13 +27,22 @@ end
 abstract type AbstractImplicitMidpoint{T} <: AbstractIntegrator end
 
 step_size(lf::AbstractImplicitMidpoint) = lf.ϵ
-jitter(::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, lf::AbstractImplicitMidpoint) = lf
+function jitter(
+    ::Union{AbstractRNG,AbstractVector{<:AbstractRNG}}, lf::AbstractImplicitMidpoint
+)
+    lf
+end
 function temper(
-    lf::AbstractImplicitMidpoint, r, ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}}, ::Int
+    lf::AbstractImplicitMidpoint,
+    r,
+    ::NamedTuple{(:i, :is_half),<:Tuple{Integer,Bool}},
+    ::Int,
 )
     return r
 end
-stat(lf::AbstractImplicitMidpoint) = (step_size=step_size(lf), nom_step_size=nom_step_size(lf))
+function stat(lf::AbstractImplicitMidpoint)
+    (step_size=step_size(lf), nom_step_size=nom_step_size(lf))
+end
 update_nom_step_size(lf::AbstractImplicitMidpoint, ϵ) = @set lf.ϵ = ϵ
 
 """
@@ -167,7 +176,6 @@ function step(
     for i in 1:n_steps
         θ_init, r_init = z.θ, z.r
 
-
         θ_full = θ_init
         r_full = r_init
         for j in 1:(lf.n)
@@ -184,7 +192,7 @@ function step(
         (; value, gradient) = ∂H∂θ(h, θ_full, r_full)
         z = phasepoint(h, θ_full, r_full; ℓπ=DualValue(value, gradient))
 
-                if FullTraj
+        if FullTraj
             res[i] = z
         else
             res = z

@@ -3,7 +3,7 @@ using Random, LinearAlgebra, ReverseDiff, ForwardDiff, MCMCLogDensityProblems
 # Fisher information metric
 function gen_∂G∂θ_rev(Vfunc, x; f=identity)
     Hfunc = gen_hess_fwd(Vfunc, ReverseDiff.track.(x))
-    
+
     # QUES What's the best output format of this function?
     return x -> ReverseDiff.jacobian(x -> f(Hfunc(x)), x) # default output shape [∂H∂x₁; ∂H∂x₂; ...]
 end
@@ -23,7 +23,7 @@ end
 function gen_hess_fwd(func, x::AbstractVector)
     cfg = nothing
     H = nothing
-    
+
     function hess(x::AbstractVector)
         if cfg === nothing
             cfg = ForwardDiff.HessianConfig(func, x)
@@ -49,7 +49,7 @@ function gen_∂G∂θ_fwd(Vfunc, x; f=identity)
         ForwardDiff.jacobian!(out, hess, y, jac_cfg, Val{false}())
         return out
     end
-    
+
     return ∂G∂θ_fwd
 end
 
@@ -63,8 +63,8 @@ function prepare_sample_target(hps, θ₀, ℓπ)
     Hfunc = gen_hess_fwd_precompute_cfg(Vfunc, θ₀) # x -> (value, gradient, hessian)
 
     fstabilize = H -> begin
-        @inbounds for i in 1:size(H,1)
-            H[i,i] += hps.λ
+        @inbounds for i in 1:size(H, 1)
+            H[i, i] += hps.λ
         end
         H
     end
