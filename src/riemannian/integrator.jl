@@ -107,7 +107,7 @@ function step(
         #r = temper(lf, r, (i=i, is_half=true), n_steps)
         # eq (16) of Girolami & Calderhead (2011)
         r_half = r_init
-        local cache
+        local cache = nothing
         for j in 1:(lf.n)
             # Reuse cache for the first iteration
             if j == 1

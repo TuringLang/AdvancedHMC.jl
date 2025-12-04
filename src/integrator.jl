@@ -226,6 +226,7 @@ function step(
     ϵ = fwd ? step_size(lf) : -step_size(lf)
     ϵ = ϵ'
 
+    res = nothing
     if FullTraj === true
         res = Vector{P}(undef, n_steps)
     end
