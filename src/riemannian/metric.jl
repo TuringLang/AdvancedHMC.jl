@@ -45,7 +45,7 @@ struct DenseRiemannianMetric{
 end
 
 # TODO Make dense mass matrix support matrix-mode parallel
-function DenseRiemannianMetric(size, G, ∂G∂θ, map=IdentityMap()) where {T<:AbstractFloat}
+function DenseRiemannianMetric(size, G, ∂G∂θ, map=IdentityMap())
     _temp = Vector{Float64}(undef, size[1])
     return DenseRiemannianMetric(size, G, ∂G∂θ, map, _temp)
 end
