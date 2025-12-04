@@ -27,6 +27,15 @@ function softabs(X::AbstractMatrix{T}, α=20.0) where {T<:Real}
     return Q * diagm(softabsλ) * Q', Q, λ, softabsλ
 end
 
+function softabs_decomp(X::AbstractMatrix{T}, α=20.0) where {T<:Real}
+    # Enforce symmetry for type stability
+    F = eigen(Symmetric(X)) # ReverseDiff cannot diff through `eigen`
+    Q = hcat(F.vectors)
+    λ = F.values
+    softabsλ = λ .* coth.(α * λ)
+    return Q, softabsλ
+end
+
 (map::SoftAbsMap)(x) = softabs(x, map.α)[1]
 
 struct DenseRiemannianMetric{
@@ -69,5 +78,17 @@ function rand_momentum(
     r = _randn(rng, T, size(metric)...)
     chol = cholesky(Symmetric(metric.map(metric.G(θ))))
     r = chol.L * r
+    return r
+end
+
+function rand_momentum(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    metric::DenseRiemannianMetric{T,<:SoftAbsMap},
+    kinetic,
+    θ::AbstractVecOrMat,
+) where {T}
+    r = _randn(rng, T, size(metric)...)
+    Q, softabsλ = softabs_decomp(metric.G(θ), metric.map.α)
+    r = Q * Diagonal(sqrt.(softabsλ)) * r
     return r
 end
