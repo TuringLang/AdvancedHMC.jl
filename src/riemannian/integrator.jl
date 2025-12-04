@@ -95,7 +95,7 @@ function step(
         @warn "Vectorization is not tested for GeneralizedLeapfrog."
     end
 
-    res = if full_trajectory
+    res = if FullTraj
         Vector{P}(undef, n_steps)
     else
         z
@@ -134,14 +134,14 @@ function step(
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ_full, r_full; ℓπ=DualValue(value, gradient))
         # Update result
-        if full_trajectory
+        if FullTraj
             res[i] = z
         else
             res = z
         end
         if !isfinite(z)
             # Remove undef
-            if full_trajectory
+            if FullTraj
                 res = res[isassigned.(Ref(res), 1:n_steps)]
             end
             break
@@ -167,7 +167,7 @@ function step(
         @warn "Vectorization is not tested for ImplicitMidpoint."
     end
 
-    res = if full_trajectory
+    res = if FullTraj
         Vector{P}(undef, n_steps)
     else
         z
@@ -192,14 +192,14 @@ function step(
         (; value, gradient) = ∂H∂θ(h, θ_full, r_full)
         z = phasepoint(h, θ_full, r_full; ℓπ=DualValue(value, gradient))
 
-        if full_trajectory
+        if FullTraj
             res[i] = z
         else
             res = z
         end
         if !isfinite(z)
             # Remove undef
-            if full_trajectory
+            if FullTraj
                 res = res[isassigned.(Ref(res), 1:n_steps)]
             end
             break

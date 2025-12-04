@@ -226,10 +226,9 @@ function step(
     ϵ = fwd ? step_size(lf) : -step_size(lf)
     ϵ = ϵ'
 
-    res = if full_trajectory
-        Vector{P}(undef, n_steps)
-    else
-        z
+    res = nothing
+    if FullTraj
+        res = Vector{P}(undef, n_steps)
     end
 
     (; θ, r) = z
@@ -250,18 +249,16 @@ function step(
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
         # Update result
-        if full_trajectory
+        if FullTraj
             res[i] = z
-        else
-            res = z
         end
         if !isfinite(z)
             # Remove undef
-            if full_trajectory
+            if FullTraj
                 resize!(res, i)
             end
             break
         end
     end
-    return res
+    return FullTraj === true ? res : z
 end
