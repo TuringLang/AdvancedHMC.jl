@@ -226,9 +226,10 @@ function step(
     ϵ = fwd ? step_size(lf) : -step_size(lf)
     ϵ = ϵ'
 
-    res = nothing
-    if FullTraj === true
-        res = Vector{P}(undef, n_steps)
+    res = if FullTraj === true
+        Vector{P}(undef, n_steps)
+    else
+        z
     end
 
     (; θ, r) = z
@@ -251,6 +252,8 @@ function step(
         # Update result
         if FullTraj === true
             res[i] = z
+        else
+            res = z
         end
         if !isfinite(z)
             # Remove undef
@@ -260,9 +263,5 @@ function step(
             break
         end
     end
-    return if FullTraj === true
-        res
-    else
-        z
-    end
+    return res
 end
