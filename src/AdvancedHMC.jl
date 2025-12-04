@@ -66,11 +66,6 @@ include("riemannian/integrator.jl")
 export GeneralizedLeapfrog, ImplicitMidpoint
 include("riemannian/hamiltonian.jl")
 
-include("riemannian/metric.jl")
-export IdentityMap, SoftAbsMap, DenseRiemannianMetric
-
-include("riemannian/hamiltonian.jl")
-
 include("trajectory.jl")
 export Trajectory,
     HMCKernel,
