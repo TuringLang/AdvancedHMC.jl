@@ -7,7 +7,7 @@ using LinearAlgebra: logabsdet, tr, diagm, logdet
 function phasepoint(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     θ::AbstractVecOrMat{T},
-    h::Hamiltonian,
+    h::Hamiltonian{<:DenseRiemannianMetric},
 ) where {T<:Real}
     return phasepoint(h, θ, rand_momentum(rng, h.metric, h.kinetic, θ))
 end
@@ -16,7 +16,7 @@ end
 function refresh(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     ::FullMomentumRefreshment,
-    h::Hamiltonian,
+    h::Hamiltonian{<:DenseRiemannianMetric},
     z::PhasePoint,
 )
     return phasepoint(h, z.θ, rand_momentum(rng, h.metric, h.kinetic, z.θ))
@@ -26,7 +26,7 @@ end
 function refresh(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     ref::PartialMomentumRefreshment,
-    h::Hamiltonian,
+    h::Hamiltonian{<:DenseRiemannianMetric},
     z::PhasePoint,
 )
     return phasepoint(
