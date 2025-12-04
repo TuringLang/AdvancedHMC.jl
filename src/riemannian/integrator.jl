@@ -80,7 +80,7 @@ end
 # TODO(Kai) abstract out the 3 main steps and merge with `step` in `integrator.jl` 
 function step(
     lf::GeneralizedLeapfrog{T},
-    h::Hamiltonian,
+    h::Hamiltonian{<:DenseRiemannianMetric},
     z::P,
     n_steps::Int=1;
     fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
@@ -95,7 +95,7 @@ function step(
         @warn "Vectorization is not tested for GeneralizedLeapfrog."
     end
 
-    res = if FullTraj
+    res = if FullTraj === true
         Vector{P}(undef, n_steps)
     else
         z
@@ -134,14 +134,14 @@ function step(
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ_full, r_full; ℓπ=DualValue(value, gradient))
         # Update result
-        if FullTraj
+        if FullTraj === true
             res[i] = z
         else
             res = z
         end
         if !isfinite(z)
             # Remove undef
-            if FullTraj
+            if FullTraj === true
                 res = res[isassigned.(Ref(res), 1:n_steps)]
             end
             break
@@ -152,7 +152,7 @@ end
 
 function step(
     lf::ImplicitMidpoint{T},
-    h::Hamiltonian,
+    h::Hamiltonian{<:DenseRiemannianMetric},
     z::P,
     n_steps::Int=1;
     fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
@@ -167,7 +167,7 @@ function step(
         @warn "Vectorization is not tested for ImplicitMidpoint."
     end
 
-    res = if FullTraj
+    res = if FullTraj === true
         Vector{P}(undef, n_steps)
     else
         z
@@ -192,14 +192,14 @@ function step(
         (; value, gradient) = ∂H∂θ(h, θ_full, r_full)
         z = phasepoint(h, θ_full, r_full; ℓπ=DualValue(value, gradient))
 
-        if FullTraj
+        if FullTraj === true
             res[i] = z
         else
             res = z
         end
         if !isfinite(z)
             # Remove undef
-            if FullTraj
+            if FullTraj === true
                 res = res[isassigned.(Ref(res), 1:n_steps)]
             end
             break

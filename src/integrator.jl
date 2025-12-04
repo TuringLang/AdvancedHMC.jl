@@ -226,7 +226,7 @@ function step(
     ϵ = fwd ? step_size(lf) : -step_size(lf)
     ϵ = ϵ'
 
-    if FullTraj
+    if FullTraj === true
         res = Vector{P}(undef, n_steps)
     end
 
@@ -248,18 +248,18 @@ function step(
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
         # Update result
-        if FullTraj
+        if FullTraj === true
             res[i] = z
         end
         if !isfinite(z)
             # Remove undef
-            if FullTraj
+            if FullTraj === true
                 resize!(res, i)
             end
             break
         end
     end
-    return if FullTraj
+    return if FullTraj === true
         res
     else
         z

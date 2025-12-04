@@ -175,7 +175,7 @@ function ∂H∂θ_cache(
     mul!(tmp1, Q, tmp2)
     # tmp2 = tmp1 * Q'
     mul!(tmp2, tmp1, Q')
-    term_2_cached = tmp2
+    # term_2_cached = tmp2
 
     # g =
     #     -mapreduce(vcat, 1:d) do i
@@ -187,7 +187,7 @@ function ∂H∂θ_cache(
     g = similar(∂ℓπ∂θ)
     @inbounds for i in 1:d
         ∂H∂θᵢ = ∂H∂θ[:, :, i]
-        g[i] = term_1_prod[i] + 1/2 * tr(term_2_cached * ∂H∂θᵢ)
+        g[i] = term_1_prod[i] + 1/2 * tr(tmp2 * ∂H∂θᵢ)
     end
     g .*= -1
 
