@@ -174,7 +174,7 @@ end
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
 # Note: This function is not merged with `adapt!` to empahsize the fact that
 #       step size adaptation is not dependent on `θ`.
-# Note 2: `da.state` and `α` support vectorised HMC but should do so together. 
+# Note 2: `da.state` and `α` support vectorised HMC but should do so together.
 function adapt_stepsize!(
     da::NesterovDualAveraging{T}, α::AbstractScalarOrVec{T}
 ) where {T<:AbstractFloat}
@@ -211,7 +211,7 @@ end
 
 function adapt!(
     da::NesterovDualAveraging,
-    θ::AbstractVecOrMat{<:AbstractFloat},
+    ::PositionOrPhasePoint,
     α::AbstractScalarOrVec{<:AbstractFloat},
 )
     adapt_stepsize!(da, α)

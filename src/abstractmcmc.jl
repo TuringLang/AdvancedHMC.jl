@@ -196,7 +196,7 @@ function AbstractMCMC.step(
 
     # Adapt h and spl.
     tstat = stat(t)
-    h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z.θ, tstat.acceptance_rate)
+    h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, t.z, tstat.acceptance_rate)
     tstat = merge(tstat, (is_adapt=isadapted,))
 
     # Compute next transition and state.

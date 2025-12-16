@@ -8,7 +8,7 @@ Generalized leapfrog integrator with fixed step size `ϵ`.
 $(TYPEDFIELDS)
 
 
-## References 
+## References
 
 1. Girolami, Mark, and Ben Calderhead. "Riemann manifold Langevin and Hamiltonian Monte Carlo methods." Journal of the Royal Statistical Society Series B: Statistical Methodology 73, no. 2 (2011): 123-214.
 """
@@ -29,7 +29,7 @@ end
 
 # TODO(Kai) make sure vectorization works
 # TODO(Kai) check if tempering is valid
-# TODO(Kai) abstract out the 3 main steps and merge with `step` in `integrator.jl` 
+# TODO(Kai) abstract out the 3 main steps and merge with `step` in `integrator.jl`
 function step(
     lf::GeneralizedLeapfrog{T},
     h::Hamiltonian,
@@ -59,7 +59,7 @@ function step(
         #r = temper(lf, r, (i=i, is_half=true), n_steps)
         # eq (16) of Girolami & Calderhead (2011)
         r_half = r_init
-        local cache
+        local cache = nothing
         for j in 1:(lf.n)
             # Reuse cache for the first iteration
             if j == 1
