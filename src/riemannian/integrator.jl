@@ -80,7 +80,7 @@ end
 # TODO(Kai) abstract out the 3 main steps and merge with `step` in `integrator.jl`
 function step(
     lf::GeneralizedLeapfrog{T},
-    h::Hamiltonian{<:DenseRiemannianMetric},
+    h::Hamiltonian{<:AbstractRiemannianMetric},
     z::P,
     n_steps::Int=1;
     fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0
@@ -152,7 +152,7 @@ end
 
 function step(
     lf::ImplicitMidpoint{T},
-    h::Hamiltonian{<:DenseRiemannianMetric},
+    h::Hamiltonian{<:AbstractRiemannianMetric},
     z::P,
     n_steps::Int=1;
     fwd::Bool=n_steps > 0,  # simulate hamiltonian backward when n_steps < 0

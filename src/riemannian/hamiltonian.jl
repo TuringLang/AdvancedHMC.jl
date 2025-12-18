@@ -7,7 +7,7 @@ using LinearAlgebra: logabsdet, tr, diagm, logdet, Diagonal
 function phasepoint(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     θ::AbstractVecOrMat{T},
-    h::Hamiltonian{<:DenseRiemannianMetric},
+    h::Hamiltonian{<:AbstractRiemannianMetric},
 ) where {T<:Real}
     return phasepoint(h, θ, rand_momentum(rng, h.metric, h.kinetic, θ))
 end
@@ -16,7 +16,7 @@ end
 function refresh(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     ::FullMomentumRefreshment,
-    h::Hamiltonian{<:DenseRiemannianMetric},
+    h::Hamiltonian{<:AbstractRiemannianMetric},
     z::PhasePoint,
 )
     return phasepoint(h, z.θ, rand_momentum(rng, h.metric, h.kinetic, z.θ))
@@ -26,7 +26,7 @@ end
 function refresh(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     ref::PartialMomentumRefreshment,
-    h::Hamiltonian{<:DenseRiemannianMetric},
+    h::Hamiltonian{<:AbstractRiemannianMetric},
     z::PhasePoint,
 )
     return phasepoint(
@@ -42,7 +42,7 @@ end
 
 # Specialized phasepoint for DenseRiemannianMetric that passes θ to ∂H∂r
 function phasepoint(
-    h::Hamiltonian{<:DenseRiemannianMetric},
+    h::Hamiltonian{<:AbstractRiemannianMetric},
     θ::T,
     r::T;
     ℓπ=∂H∂θ(h, θ),
@@ -201,7 +201,7 @@ end
 
 #! Eq (14) of Girolami & Calderhead (2011)
 function ∂H∂r(
-    h::Hamiltonian{<:DenseRiemannianMetric}, θ::AbstractVecOrMat{T}, r::AbstractVecOrMat{T}
+    h::Hamiltonian{<:AbstractRiemannianMetric}, θ::AbstractVecOrMat{T}, r::AbstractVecOrMat{T}
 ) where {T}
     H = h.metric.G(θ)
     # if !all(isfinite, H)
