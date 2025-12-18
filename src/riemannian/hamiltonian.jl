@@ -1,41 +1,64 @@
 #! Eq (14) of Girolami & Calderhead (2011)
+"The gradient of the Hamiltonian with respect to the momentum."
 function ∂H∂r(
     h::Hamiltonian{<:DenseRiemannianMetric,<:GaussianKinetic},
-    θ::AbstractVecOrMat,
-    r::AbstractVecOrMat,
+    θ::AbstractVector,
+    r::AbstractVector,
 )
     H = h.metric.G(θ)
     G = h.metric.map(H)
-    return G \ r # NOTE it's actually pretty weird that ∂H∂θ returns DualValue but ∂H∂r doesn't
+    return G \ r
 end
+
+"""
+Computes `tr(A*B)` for square n x n matrices `A` and `B` in O(n^2) without computing `A*B`, which would be O(n^3).
+
+Doesn't actually check that A and B are both n x n matrices.
+"""
+tr_product(A::AbstractMatrix, B::AbstractMatrix) = sum(Base.broadcasted(*, A', B))
+"Computes `tr(A*v*v')`, i.e. dot(v,A,v)."
+tr_product(A::AbstractMatrix, v::AbstractVector) = sum(Base.broadcasted(*, v, A, v'))
+
 
 function ∂H∂θ(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap},<:GaussianKinetic},
-    θ::AbstractVecOrMat{T},
-    r::AbstractVecOrMat{T},
-) where {T}
-    ℓπ, ∂ℓπ∂θ = h.∂ℓπ∂θ(θ)
-    G = h.metric.map(h.metric.G(θ))
-    invG = inv(G)
-    ∂G∂θ = h.metric.∂G∂θ(θ)
-    d = length(∂ℓπ∂θ)
-    return DualValue(
-        ℓπ,
-        #! Eq (15) of Girolami & Calderhead (2011)
-        -mapreduce(vcat, 1:d) do i
-            ∂G∂θᵢ = ∂G∂θ[:, :, i]
-            ∂ℓπ∂θ[i] - 1 / 2 * tr(invG * ∂G∂θᵢ) + 1 / 2 * r' * invG * ∂G∂θᵢ * invG * r
-            # Gr = G \ r
-            # ∂ℓπ∂θ[i] - 1 / 2 * tr(G \ ∂G∂θᵢ) + 1 / 2 * Gr' * ∂G∂θᵢ * Gr
-            # 1 / 2 * tr(invG * ∂G∂θᵢ)
-            # 1 / 2 * r' * invG * ∂G∂θᵢ * invG * r
-        end,
-    )
+    h::Hamiltonian{<:AbstractRiemannianMetric,<:GaussianKinetic},
+    θ::AbstractVector,
+    r::AbstractVector,
+)
+    return first(∂H∂θ_cache(h, θ, r))
 end
+"""
 
-# Ref: https://www.wolframalpha.com/input?i=derivative+of+x+*+coth%28a+*+x%29
-#! Based on middle of the right column of Page 3 of Betancourt (2012) "Note that whenλi=λj, such as for the diagonal elementsor degenerate eigenvalues, this becomes the derivative"
-dsoftabsdλ(α, λ) = coth(α * λ) + λ * α * -csch(λ * α)^2
+"""
+@views function ∂H∂θ_cache(
+    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap},<:GaussianKinetic},
+    θ::AbstractVector{T},
+    r::AbstractVector{T};
+    cache=nothing
+) where {T}
+    cache = @something cache begin 
+        log_density, log_density_gradient = h.∂ℓπ∂θ(θ)
+        # h.metric.map is the IdentityMap
+        metric = h.metric.G(θ)
+        # The metric is inverted to be able to compute `tr_product(inv_metric, ...)` efficiently -
+        # but this may still be a bad idea!
+        inv_metric = inv(metric)
+        metric_sensitivities = h.metric.∂G∂θ(θ)
+        rv1 = map(eachindex(log_density_gradient)) do i 
+            -log_density_gradient[i] + .5 * tr_product(inv_metric, metric_sensitivities[:, :, i])
+        end
+        (;log_density, inv_metric, metric_sensitivities, rv1)
+    end
+    # (;log_density, inv_metric_r, metric_sensitivities, rv1) = cache
+    inv_metric_r = cache.inv_metric * r
+    return DualValue(
+        cache.log_density,
+        #! Eq (15) of Girolami & Calderhead (2011)
+        cache.rv1 .- Base.broadcasted(eachindex(cache.rv1)) do i 
+            .5 * tr_product(cache.metric_sensitivities[:, :, i], inv_metric_r)
+        end
+    ), cache
+end
 
 #! J as defined in middle of the right column of Page 3 of Betancourt (2012)
 function make_J(λ::AbstractVector{T}, α::T) where {T<:AbstractFloat}
@@ -43,7 +66,9 @@ function make_J(λ::AbstractVector{T}, α::T) where {T<:AbstractFloat}
     J = Matrix{T}(undef, d, d)
     for i in 1:d, j in 1:d
         J[i, j] = if (λ[i] == λ[j])
-            dsoftabsdλ(α, λ[i])
+            # Ref: https://www.wolframalpha.com/input?i=derivative+of+x+*+coth%28a+*+x%29
+            #! Based on middle of the right column of Page 3 of Betancourt (2012) "Note that whenλi=λj, such as for the diagonal elementsor degenerate eigenvalues, this becomes the derivative"
+            coth(α * λ[i]) + λ[i] * α * -csch(λ[i] * α)^2
         else
             ((λ[i] * coth(α * λ[i]) - λ[j] * coth(α * λ[j])) / (λ[i] - λ[j]))
         end
@@ -51,54 +76,37 @@ function make_J(λ::AbstractVector{T}, α::T) where {T<:AbstractFloat}
     return J
 end
 
-function ∂H∂θ(
+@views function ∂H∂θ_cache(
     h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap},<:GaussianKinetic},
-    θ::AbstractVecOrMat{T},
-    r::AbstractVecOrMat{T},
-) where {T}
-    return ∂H∂θ_cache(h, θ, r)
-end
-function ∂H∂θ_cache(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap},<:GaussianKinetic},
-    θ::AbstractVecOrMat{T},
-    r::AbstractVecOrMat{T};
-    return_cache=false,
+    θ::AbstractVector{T},
+    r::AbstractVector{T};
     cache=nothing,
 ) where {T}
-    # Terms that only dependent on θ can be cached in θ-unchanged loops
-    if isnothing(cache)
-        ℓπ, ∂ℓπ∂θ = h.∂ℓπ∂θ(θ)
-        H = h.metric.G(θ)
-        ∂H∂θ = h.metric.∂G∂θ(θ)
-
-        G, Q, λ, softabsλ = softabs(H, h.metric.map.α)
-
-        R = diagm(1 ./ softabsλ)
-
-        # softabsΛ = diagm(softabsλ)
-        # M = inv(softabsΛ) * Q' * r
-        # M = R * Q' * r # equiv to above but avoid inv
-
+    cache = @something cache begin 
+        log_density, log_density_gradient = h.∂ℓπ∂θ(θ)
+        premetric = h.metric.G(θ)
+        premetric_sensitivities = h.metric.∂G∂θ(θ)
+        metric, Q, λ, softabsλ = softabs(premetric, h.metric.map.α)
         J = make_J(λ, h.metric.map.α)
 
         #! Based on the two equations from the right column of Page 3 of Betancourt (2012)
-        term_1_cached = Q * (R .* J) * Q'
-    else
-        ℓπ, ∂ℓπ∂θ, ∂H∂θ, Q, softabsλ, J, term_1_cached = cache
-    end
-    d = length(∂ℓπ∂θ)
-    D = diagm((Q' * r) ./ softabsλ)
-    term_2_cached = Q * D * J * D * Q'
-    g =
-        -mapreduce(vcat, 1:d) do i
-            ∂H∂θᵢ = ∂H∂θ[:, :, i]
-            # ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * M' * (J .* (Q' * ∂H∂θᵢ * Q)) * M # (v1)
-            # NOTE Some further optimization can be done here: cache the 1st product all together
-            ∂ℓπ∂θ[i] - 1 / 2 * tr(term_1_cached * ∂H∂θᵢ) + 1 / 2 * tr(term_2_cached * ∂H∂θᵢ) # (v2) cache friendly
-        end
+        tmpv = diag(J) ./ softabsλ
+        tmpm = Q * Diagonal(tmpv) * Q'
 
-    dv = DualValue(ℓπ, g)
-    return return_cache ? (dv, (; ℓπ, ∂ℓπ∂θ, ∂H∂θ, Q, softabsλ, J, term_1_cached)) : dv
+        rv1 = map(eachindex(log_density_gradient)) do i 
+            -log_density_gradient[i] + .5 * tr_product(tmpm, premetric_sensitivities[:, :, i])
+        end
+        (;log_density, Q, softabsλ, tmpv, tmpm, rv1)
+    end
+    cache.tmpv .= (cache.Q' * r) ./ cache.softabsλ
+    cache.tmpm .= Q * (J .* cache.tmpv .* cache.tmpv') * Q'
+
+    return DualValue(
+        cache.log_density,
+        cache.rv1 .- Base.broadcasted(eachindex(cache.rv1)) do i 
+            .5 * tr_product(cache.tmpm, cache.premetric_sensitivities[:, :, i])
+        end
+    ), cache
 end
 
 # QUES Do we want to change everything to position dependent by default?

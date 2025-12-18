@@ -8,9 +8,17 @@ This modularity means that different HMC variants can be easily constructed by c
   - Unit metric: `UnitEuclideanMetric(dim)`
   - Diagonal metric: `DiagEuclideanMetric(dim)`
   - Dense metric: `DenseEuclideanMetric(dim)`
-  - Dense Riemannian metric: `DenseRiemannianMetric(size, G, ∂G∂θ)`
 
-where `dim` is the dimensionality of the sampling space.
+where `dim` is the dimension of the sampling space.
+
+Furthermore, there is now an experimental dense Riemannian metric implementation, specifiable as `DenseRiemannianMetric(dim, premetric, premetric_sensitivities, metric_map=IdentityMap())`, with
+
+  - `dim`: again the dimension of the sampling space,
+  - `premetric`: a function which, for a given posterior position `pos`, computes either 
+     a) a symmetric, **positive definite** matrix acting as the position dependent Riemannian metric (if `metric_map = IdentityMap()`), or
+     b) a symmetric, **not necessarily positive definite** matrix acting as the position dependent Riemannian metric after being passed through the `metric_map` argument, which will have to ensure that its return value *is* positive definite (like `metric_map = SoftAbsMap(alpha)`),
+  - `premetric_sensitivities`: a function which, again for a given posterior position `pos`, computes the sensitivities with respect to this position of the **`premetric`** function,
+  - `metric_map=IdentityMap()`: a function which takes in `premetric(pos)` and returns a symmetric positive definite matrix. Provided options are `IdentityMap()` or `SoftAbsMap(alpha)`, with the `SoftAbsMap` type allowing to work directly with the `premetric` returning the Hessian of the log density function, which generally is not guaranteed to be positive definite..
 
 ### [Integrator (`integrator`)](@id integrator)
 
