@@ -15,16 +15,12 @@ $(TYPEDFIELDS)
 struct GeneralizedLeapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     "Step size."
     ϵ::T
+    "Number of fixed-point iterations for implicit steps."
     n::Int
 end
+
 function Base.show(io::IO, l::GeneralizedLeapfrog)
     return print(io, "GeneralizedLeapfrog(ϵ=", round.(l.ϵ; sigdigits=3), ", n=", l.n, ")")
-end
-
-# fallback to ignore return_cache & cache kwargs for other ∂H∂θ
-function ∂H∂θ_cache(h, θ, r; return_cache=false, cache=nothing)
-    dv = ∂H∂θ(h, θ, r)
-    return return_cache ? (dv, nothing) : dv
 end
 
 # TODO(Kai) make sure vectorization works
@@ -55,42 +51,43 @@ function step(
 
     for i in 1:n_steps
         θ_init, r_init = z.θ, z.r
-        # Tempering
-        #r = temper(lf, r, (i=i, is_half=true), n_steps)
-        # eq (16) of Girolami & Calderhead (2011)
+
+        # Eq (16) of Girolami & Calderhead (2011) - implicit momentum half-step
         r_half = r_init
         local cache = nothing
         for j in 1:(lf.n)
-            # Reuse cache for the first iteration
             if j == 1
+                # First iteration: use cached values from phase point
                 (; value, gradient) = z.ℓπ
-            elseif j == 2 # cache intermediate values that depends on θ only (which are unchanged)
-                retval, cache = ∂H∂θ_cache(h, θ_init, r_half; return_cache=true)
+            else
+                # Subsequent iterations: build/reuse cache for θ-dependent computations
+                retval, cache = ∂H∂θ_cache(h, θ_init, r_half; cache=cache)
                 (; value, gradient) = retval
-            else # reuse cache
-                (; value, gradient) = ∂H∂θ_cache(h, θ_init, r_half; cache=cache)
             end
             r_half = r_init - ϵ / 2 * gradient
         end
-        # eq (17) of Girolami & Calderhead (2011)
+
+        # Eq (17) of Girolami & Calderhead (2011) - implicit position step
         θ_full = θ_init
-        term_1 = ∂H∂r(h, θ_init, r_half) # unchanged across the loop
+        term_1 = ∂H∂r(h, θ_init, r_half)  # unchanged across the loop
         for j in 1:(lf.n)
             θ_full = θ_init + ϵ / 2 * (term_1 + ∂H∂r(h, θ_full, r_half))
         end
-        # eq (18) of Girolami & Calderhead (2011)
+
+        # Eq (18) of Girolami & Calderhead (2011) - explicit momentum half-step
         (; value, gradient) = ∂H∂θ(h, θ_full, r_half)
         r_full = r_half - ϵ / 2 * gradient
-        # Tempering
-        #r = temper(lf, r, (i=i, is_half=false), n_steps)
+
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ_full, r_full; ℓπ=DualValue(value, gradient))
+
         # Update result
         if FullTraj
             res[i] = z
         else
             res = z
         end
+
         if !isfinite(z)
             # Remove undef
             if FullTraj

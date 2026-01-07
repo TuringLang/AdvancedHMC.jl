@@ -1,134 +1,235 @@
-#! Eq (14) of Girolami & Calderhead (2011)
-"The gradient of the Hamiltonian with respect to the momentum."
-function ∂H∂r(
-    h::Hamiltonian{<:DenseRiemannianMetric,<:GaussianKinetic},
-    θ::AbstractVector,
-    r::AbstractVector,
-)
-    H = h.metric.G(θ)
-    G = h.metric.map(H)
-    return G \ r
+"""
+    tr_product(A, B)
+
+Compute `tr(A * B)` for square matrices in O(n²) without forming the product.
+Uses the identity: tr(A * B) = sum(A' .* B)
+"""
+tr_product(A::AbstractMatrix, B::AbstractMatrix) = sum(Base.broadcasted(*, A', B))
+
+"""
+    tr_product(A, v)
+
+Compute `tr(A * v * v')` = v' * A * v efficiently.
+"""
+tr_product(A::AbstractMatrix, v::AbstractVector) = dot(v, A * v)
+
+####
+#### Gradient cache for θ-dependent computations
+####
+
+"""
+    RiemannianGradCache{T, TG, TP}
+
+Cache for θ-dependent computations in Riemannian HMC gradient calculation.
+This allows reusing expensive eigendecomposition/factorization across fixed-point iterations.
+
+# Fields
+- `G_eval`: Evaluated metric (SoftAbsEval or matrix)
+- `∂P∂θ`: Pre-metric sensitivities, shape (d, d, d)
+- `ℓπ`: Log density value at θ
+- `∂ℓπ∂θ`: Log density gradient at θ
+- `logdet_terms`: Precomputed 0.5 * tr(M_logdet * ∂P∂θ[:,:,i]) for each i
+"""
+struct RiemannianGradCache{T,TG,TP}
+    G_eval::TG
+    ∂P∂θ::TP
+    ℓπ::T
+    ∂ℓπ∂θ::Vector{T}
+    logdet_terms::Vector{T}
 end
 
 """
-Computes `tr(A*B)` for square n x n matrices `A` and `B` in O(n^2) without computing `A*B`, which would be O(n^3).
+    build_grad_cache(h::Hamiltonian{<:AbstractRiemannianMetric}, θ)
 
-Doesn't actually check that A and B are both n x n matrices.
+Build cache for gradient computation at position θ.
+Computes all θ-dependent quantities that can be reused across r values.
 """
-tr_product(A::AbstractMatrix, B::AbstractMatrix) = sum(Base.broadcasted(*, A', B))
-"Computes `tr(A*v*v')`, i.e. dot(v,A,v)."
-tr_product(A::AbstractMatrix, v::AbstractVector) = sum(Base.broadcasted(*, v, A, v'))
+function build_grad_cache(
+    h::Hamiltonian{<:AbstractRiemannianMetric}, θ::AbstractVector{T}
+) where {T}
+    # Evaluate log density and gradient
+    ℓπ, ∂ℓπ∂θ = h.∂ℓπ∂θ(θ)
 
+    # Evaluate metric and sensitivities
+    G_eval = metric_eval(h.metric, θ)
+    ∂P∂θ = metric_sensitivity(h.metric, θ)
 
+    # Get logdet gradient matrix and precompute logdet gradient terms
+    M_logdet = logdet_grad_matrix(G_eval)
+    d = size(∂P∂θ, 3)
+    logdet_terms = Vector{T}(undef, d)
+    @inbounds for i in 1:d
+        ∂Pᵢ = @view ∂P∂θ[:, :, i]
+        logdet_terms[i] = T(0.5) * tr_product(M_logdet, ∂Pᵢ)
+    end
+
+    return RiemannianGradCache(G_eval, ∂P∂θ, ℓπ, ∂ℓπ∂θ, logdet_terms)
+end
+
+"""
+    ∂H∂θ_from_cache(cache::RiemannianGradCache, r)
+
+Compute Hamiltonian gradient ∂H/∂θ using cached θ-dependent values.
+Only performs r-dependent computation (kinetic gradient matrix and trace products).
+"""
+function ∂H∂θ_from_cache(cache::RiemannianGradCache{T}, r::AbstractVector) where {T}
+    # Compute kinetic gradient matrix (r-dependent)
+    M_kinetic = kinetic_grad_matrix(cache.G_eval, r)
+
+    # Compute full gradient
+    d = length(cache.∂ℓπ∂θ)
+    grad = Vector{T}(undef, d)
+
+    @inbounds for i in 1:d
+        ∂Pᵢ = @view cache.∂P∂θ[:, :, i]
+        # ∂H/∂θᵢ = -∂ℓπ/∂θᵢ + 0.5*tr(M_logdet*∂P/∂θᵢ) - 0.5*tr(M_kinetic*∂P/∂θᵢ)
+        kinetic_term = T(0.5) * tr_product(M_kinetic, ∂Pᵢ)
+        grad[i] = -cache.∂ℓπ∂θ[i] + cache.logdet_terms[i] - kinetic_term
+    end
+
+    return DualValue(cache.ℓπ, grad)
+end
+
+####
+#### Main gradient interface
+####
+
+"""
+    ∂H∂θ(h::Hamiltonian{<:AbstractRiemannianMetric}, θ, r)
+
+Compute the gradient of the Hamiltonian with respect to position θ.
+Returns a DualValue containing (log_density, gradient).
+
+Ref: Eq (15) of Girolami & Calderhead (2011)
+"""
 function ∂H∂θ(
     h::Hamiltonian{<:AbstractRiemannianMetric,<:GaussianKinetic},
     θ::AbstractVector,
     r::AbstractVector,
 )
-    return first(∂H∂θ_cache(h, θ, r))
+    cache = build_grad_cache(h, θ)
+    return ∂H∂θ_from_cache(cache, r)
 end
+
 """
+    ∂H∂θ_cache(h, θ, r; cache=nothing)
 
+Compute ∂H/∂θ with optional caching for fixed-point iterations.
+Returns (DualValue, cache) tuple.
+
+When cache is provided, reuses θ-dependent computations (eigendecomposition,
+logdet gradient terms) and only recomputes r-dependent terms.
 """
-@views function ∂H∂θ_cache(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap},<:GaussianKinetic},
-    θ::AbstractVector{T},
-    r::AbstractVector{T};
-    cache=nothing
-) where {T}
-    cache = @something cache begin 
-        log_density, log_density_gradient = h.∂ℓπ∂θ(θ)
-        # h.metric.map is the IdentityMap
-        metric = h.metric.G(θ)
-        # The metric is inverted to be able to compute `tr_product(inv_metric, ...)` efficiently -
-        # but this may still be a bad idea!
-        inv_metric = inv(metric)
-        metric_sensitivities = h.metric.∂G∂θ(θ)
-        rv1 = map(eachindex(log_density_gradient)) do i 
-            -log_density_gradient[i] + .5 * tr_product(inv_metric, metric_sensitivities[:, :, i])
-        end
-        (;log_density, inv_metric, metric_sensitivities, rv1)
-    end
-    # (;log_density, inv_metric_r, metric_sensitivities, rv1) = cache
-    inv_metric_r = cache.inv_metric * r
-    return DualValue(
-        cache.log_density,
-        #! Eq (15) of Girolami & Calderhead (2011)
-        cache.rv1 .- Base.broadcasted(eachindex(cache.rv1)) do i 
-            .5 * tr_product(cache.metric_sensitivities[:, :, i], inv_metric_r)
-        end
-    ), cache
-end
-
-#! J as defined in middle of the right column of Page 3 of Betancourt (2012)
-function make_J(λ::AbstractVector{T}, α::T) where {T<:AbstractFloat}
-    d = length(λ)
-    J = Matrix{T}(undef, d, d)
-    for i in 1:d, j in 1:d
-        J[i, j] = if (λ[i] == λ[j])
-            # Ref: https://www.wolframalpha.com/input?i=derivative+of+x+*+coth%28a+*+x%29
-            #! Based on middle of the right column of Page 3 of Betancourt (2012) "Note that whenλi=λj, such as for the diagonal elementsor degenerate eigenvalues, this becomes the derivative"
-            coth(α * λ[i]) + λ[i] * α * -csch(λ[i] * α)^2
-        else
-            ((λ[i] * coth(α * λ[i]) - λ[j] * coth(α * λ[j])) / (λ[i] - λ[j]))
-        end
-    end
-    return J
-end
-
-@views function ∂H∂θ_cache(
-    h::Hamiltonian{<:DenseRiemannianMetric{T,<:SoftAbsMap},<:GaussianKinetic},
-    θ::AbstractVector{T},
-    r::AbstractVector{T};
+function ∂H∂θ_cache(
+    h::Hamiltonian{<:AbstractRiemannianMetric,<:GaussianKinetic},
+    θ::AbstractVector,
+    r::AbstractVector;
     cache=nothing,
-) where {T}
-    cache = @something cache begin 
-        log_density, log_density_gradient = h.∂ℓπ∂θ(θ)
-        premetric = h.metric.G(θ)
-        premetric_sensitivities = h.metric.∂G∂θ(θ)
-        metric, Q, λ, softabsλ = softabs(premetric, h.metric.map.α)
-        J = make_J(λ, h.metric.map.α)
-
-        #! Based on the two equations from the right column of Page 3 of Betancourt (2012)
-        tmpv = diag(J) ./ softabsλ
-        tmpm = Q * Diagonal(tmpv) * Q'
-
-        rv1 = map(eachindex(log_density_gradient)) do i 
-            -log_density_gradient[i] + .5 * tr_product(tmpm, premetric_sensitivities[:, :, i])
-        end
-        (;log_density, Q, softabsλ, tmpv, tmpm, rv1)
-    end
-    cache.tmpv .= (cache.Q' * r) ./ cache.softabsλ
-    cache.tmpm .= Q * (J .* cache.tmpv .* cache.tmpv') * Q'
-
-    return DualValue(
-        cache.log_density,
-        cache.rv1 .- Base.broadcasted(eachindex(cache.rv1)) do i 
-            .5 * tr_product(cache.tmpm, cache.premetric_sensitivities[:, :, i])
-        end
-    ), cache
+)
+    cache = @something cache build_grad_cache(h, θ)
+    return ∂H∂θ_from_cache(cache, r), cache
 end
 
-# QUES Do we want to change everything to position dependent by default?
-# Add θ to ∂H∂r for DenseRiemannianMetric
+####
+#### Momentum gradient ∂H/∂r
+####
+
+"""
+    ∂H∂r(h::Hamiltonian{<:AbstractRiemannianMetric}, θ, r; G_eval=nothing)
+
+Compute the gradient of the Hamiltonian with respect to momentum r.
+For Riemannian metrics: ∂H/∂r = G(θ)⁻¹ * r
+
+If `G_eval` is provided, uses it directly instead of recomputing the metric.
+
+Ref: Eq (14) of Girolami & Calderhead (2011)
+"""
+function ∂H∂r(
+    h::Hamiltonian{<:AbstractRiemannianMetric,<:GaussianKinetic},
+    θ::AbstractVector,
+    r::AbstractVector;
+    G_eval=nothing,
+)
+    G = @something G_eval metric_eval(h.metric, θ)
+    return G \ r
+end
+
+# Non-keyword version for backward compatibility with integrator
+function ∂H∂r(
+    h::Hamiltonian{<:AbstractRiemannianMetric,<:GaussianKinetic},
+    θ::AbstractVector,
+    r::AbstractVector,
+)
+    G_eval = metric_eval(h.metric, θ)
+    return G_eval \ r
+end
+
+####
+#### Negative energy (log probability)
+####
+
+"""
+    neg_energy(h::Hamiltonian{<:AbstractRiemannianMetric}, r, θ; G_eval=nothing)
+
+Compute the negative kinetic energy for Riemannian metrics.
+Includes the log-determinant normalization term since G depends on θ.
+
+If `G_eval` is provided, uses it directly instead of recomputing the metric.
+
+K(r, θ) = 0.5 * (D*log(2π) + log|G(θ)| + r'G(θ)⁻¹r)
+neg_energy = -K = -0.5 * (D*log(2π) + log|G(θ)| + r'G(θ)⁻¹r)
+
+Ref: Eq (13) of Girolami & Calderhead (2011)
+"""
+function neg_energy(
+    h::Hamiltonian{<:AbstractRiemannianMetric,<:GaussianKinetic},
+    r::AbstractVector,
+    θ::AbstractVector;
+    G_eval=nothing,
+)
+    G = @something G_eval metric_eval(h.metric, θ)
+    D = length(r)
+
+    # Quadratic form: r' * G⁻¹ * r
+    G_inv_r = G \ r
+    quadform = dot(r, G_inv_r)
+
+    # Log normalization constant (position-dependent)
+    logZ = (D * log(2π) + logdet(G)) / 2
+
+    return -logZ - quadform / 2
+end
+
+# Non-keyword version for backward compatibility
+function neg_energy(
+    h::Hamiltonian{<:AbstractRiemannianMetric,<:GaussianKinetic},
+    r::AbstractVector,
+    θ::AbstractVector,
+)
+    G_eval = metric_eval(h.metric, θ)
+    return neg_energy(h, r, θ; G_eval=G_eval)
+end
+
+####
+#### Phase point construction
+####
+
+"""
+Create a PhasePoint for Riemannian metrics, computing position-dependent kinetic energy.
+Shares the metric evaluation between neg_energy and ∂H∂r to avoid redundant computation.
+"""
 function phasepoint(
-    h::Hamiltonian{<:DenseRiemannianMetric},
+    h::Hamiltonian{<:AbstractRiemannianMetric},
     θ::T,
     r::T;
-    ℓπ=∂H∂θ(h, θ),
-    ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, θ, r)),
+    ℓπ=∂H∂θ(h, θ, r),
+    G_eval=nothing,
+    ℓκ=nothing,
 ) where {T<:AbstractVecOrMat}
+    if isnothing(ℓκ)
+        # Compute G_eval once and share between neg_energy and ∂H∂r
+        G = @something G_eval metric_eval(h.metric, θ)
+        ℓκ = DualValue(neg_energy(h, r, θ; G_eval=G), ∂H∂r(h, θ, r; G_eval=G))
+    end
     return PhasePoint(θ, r, ℓπ, ℓκ)
-end
-
-#! Eq (13) of Girolami & Calderhead (2011)
-function neg_energy(
-    h::Hamiltonian{<:DenseRiemannianMetric,<:GaussianKinetic}, r::T, θ::T
-) where {T<:AbstractVecOrMat}
-    G = h.metric.map(h.metric.G(θ))
-    D = size(G, 1)
-    # Need to consider the normalizing term as it is no longer same for different θs
-    logZ = 1 / 2 * (D * log(2π) + logdet(G)) # it will be user's responsibility to make sure G is SPD and logdet(G) is defined
-    mul!(h.metric._temp, inv(G), r)
-    return -logZ - dot(r, h.metric._temp) / 2
 end
