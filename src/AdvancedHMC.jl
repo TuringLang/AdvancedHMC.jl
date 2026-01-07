@@ -4,6 +4,7 @@ using Statistics: mean, var, middle
 using LinearAlgebra:
     Symmetric,
     UpperTriangular,
+    Diagonal,
     mul!,
     ldiv!,
     dot,
@@ -63,6 +64,8 @@ include("riemannian/integrator.jl")
 export GeneralizedLeapfrog
 
 include("riemannian/metric.jl")
+export RiemannianMetric, SoftAbsRiemannianMetric
+# Deprecated exports (for backward compatibility)
 export IdentityMap, SoftAbsMap, DenseRiemannianMetric
 
 include("riemannian/hamiltonian.jl")
@@ -89,7 +92,12 @@ export find_good_eps
 include("adaptation/Adaptation.jl")
 using .Adaptation
 import .Adaptation:
-    StepSizeAdaptor, MassMatrixAdaptor, StanHMCAdaptor, NesterovDualAveraging, NoAdaptation, PositionOrPhasePoint
+    StepSizeAdaptor,
+    MassMatrixAdaptor,
+    StanHMCAdaptor,
+    NesterovDualAveraging,
+    NoAdaptation,
+    PositionOrPhasePoint
 
 # Helpers for initializing adaptors via AHMC structs
 
