@@ -11,22 +11,45 @@ This modularity means that different HMC variants can be easily constructed by c
 
 where `dim` is the dimension of the sampling space.
 
-Furthermore, there is now an experimental dense Riemannian metric implementation, specifiable as `DenseRiemannianMetric(dim, premetric, premetric_sensitivities, metric_map=IdentityMap())`, with
+Furthermore, there is experimental support for Riemannian Manifold HMC (RMHMC) with position-dependent metrics. Two metric types are provided:
 
-  - `dim`: again the dimension of the sampling space,
-  - `premetric`: a function which, for a given posterior position `pos`, computes either 
-     a) a symmetric, **positive definite** matrix acting as the position dependent Riemannian metric (if `metric_map = IdentityMap()`), or
-     b) a symmetric, **not necessarily positive definite** matrix acting as the position dependent Riemannian metric after being passed through the `metric_map` argument, which will have to ensure that its return value *is* positive definite (like `metric_map = SoftAbsMap(alpha)`),
-  - `premetric_sensitivities`: a function which, again for a given posterior position `pos`, computes the sensitivities with respect to this position of the **`premetric`** function,
-  - `metric_map=IdentityMap()`: a function which takes in `premetric(pos)` and returns a symmetric positive definite matrix. Provided options are `IdentityMap()` or `SoftAbsMap(alpha)`, with the `SoftAbsMap` type allowing to work directly with the `premetric` returning the Hessian of the log density function, which generally is not guaranteed to be positive definite..
+#### `RiemannianMetric`
+
+For user-provided **positive-definite** metrics (e.g., Fisher information matrix):
+
+```julia
+RiemannianMetric(dim, calc_G, calc_∂G∂θ)
+```
+
+  - `dim`: the dimension of the sampling space (as a tuple, e.g., `(d,)`),
+  - `calc_G`: a function `θ -> G` returning the positive-definite metric matrix at position `θ`,
+  - `calc_∂G∂θ`: a function `θ -> ∂G∂θ` returning the Jacobian of `calc_G`, where `∂G∂θ[i,j,k]` is `∂G[i,j]/∂θ[k]`.
+
+#### `SoftAbsRiemannianMetric`
+
+For Hessian-based metrics with SoftAbs regularization, which transforms a symmetric (but not necessarily positive-definite) matrix into a positive-definite one:
+
+```julia
+SoftAbsRiemannianMetric(dim, calc_H, calc_∂H∂θ; α=1000.0)
+```
+
+  - `dim`: the dimension of the sampling space (as a tuple, e.g., `(d,)`),
+  - `calc_H`: a function `θ -> H` returning the Hessian of the negative log density at position `θ`,
+  - `calc_∂H∂θ`: a function `θ -> ∂H∂θ` returning the Jacobian of `calc_H`,
+  - `α`: the SoftAbs regularization parameter (higher values give sharper regularization).
+
+The SoftAbs transformation converts `H` to `G = Q * Diagonal(softabs.(λ, α)) * Q'` where `(λ, Q)` is the eigendecomposition and `softabs(λ, α) = λ * coth(α * λ)`.
+
+Both Riemannian metrics require the `GeneralizedLeapfrog` integrator, which uses implicit fixed-point iterations to handle the position-dependent metric.
 
 ### [Integrator (`integrator`)](@id integrator)
 
   - Ordinary leapfrog integrator: `Leapfrog(ϵ)`
   - Jittered leapfrog integrator with jitter rate `n`: `JitteredLeapfrog(ϵ, n)`
   - Tempered leapfrog integrator with tempering rate `a`: `TemperedLeapfrog(ϵ, a)`
+  - Generalized leapfrog integrator for Riemannian metrics: `GeneralizedLeapfrog(ϵ, n)`
 
-where `ϵ` is the step size of leapfrog integration.
+where `ϵ` is the step size of leapfrog integration and `n` is the number of fixed-point iterations (for `GeneralizedLeapfrog`). The `GeneralizedLeapfrog` integrator is required for Riemannian metrics and uses implicit fixed-point iterations to handle position-dependent metrics.
 
 ### [Kernel (`kernel`)](@id kernel)
 
