@@ -1,5 +1,3 @@
-import LinearAlgebra: logdet
-
 ####
 #### Riemannian Metric Types
 ####
@@ -42,7 +40,7 @@ function Base.:\(G::SoftAbsEval, p::AbstractVector)
     return G.Q * ((G.Q' * p) ./ G.softabsλ)
 end
 
-function logdet(G::SoftAbsEval)
+function LinearAlgebra.logdet(G::SoftAbsEval)
     return sum(log, G.softabsλ)
 end
 
