@@ -17,6 +17,7 @@ using AdvancedHMC:
     SoftAbsEval,
     RiemannianMetric,
     SoftAbsRiemannianMetric
+using Statistics
 
 ####
 #### Test utilities
@@ -339,5 +340,71 @@ end
 
         # Energy should be approximately conserved
         @test abs(H1 - H0) < 0.1
+    end
+end
+
+####
+#### Validation tests
+####
+
+@testset "Validation testing" begin
+    target = HighDimGaussian(2)
+    rng = MersenneTwister(125)
+    λ = 1e-2
+
+    initial_θ = rand(rng, dim(target))
+
+    ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
+    ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, initial_θ)
+
+    _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
+
+    D = dim(target)
+    x = zeros(D)
+    r = randn(rng, D)
+
+    n_samples = 100
+    n_adapts = 50
+
+    mean_tol = 3 / sqrt(n_samples)
+    var_tol = 1.5 * sqrt(2 / (n_samples - 1))
+
+    @testset "RiemannianMetric (PDMat-style)" begin
+        metric = RiemannianMetric((D,), G, ∂G∂θ)
+        kinetic = GaussianKinetic()
+        hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
+
+        initial_ϵ = 0.01
+        integrator = GeneralizedLeapfrog(initial_ϵ, 12)
+        kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+
+        acceptance_rate = 0.7
+        adaptor = StepSizeAdaptor(acceptance_rate, integrator)
+
+        samples, stats = sample(
+            rng, hamiltonian, kernel, initial_θ, n_samples, adaptor, n_adapts; progress=false
+        )
+        @test mean(samples) ≈ zeros(D) atol = mean_tol
+        @test Statistics.var(samples) ≈ ones(D) atol = var_tol
+    end
+
+    @testset "SoftAbsRiemannianMetric" begin
+        # We do not need SoftAbs for Gaussian target, so using small α
+        metric = SoftAbsRiemannianMetric((D,), G, ∂G∂θ, 1.0)
+        kinetic = GaussianKinetic()
+        hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
+
+        initial_ϵ = 0.01
+        integrator = GeneralizedLeapfrog(initial_ϵ, 12)
+        kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+
+        acceptance_rate = 0.7
+        adaptor = StepSizeAdaptor(acceptance_rate, integrator)
+
+        samples, stats = sample(
+            rng, hamiltonian, kernel, initial_θ, n_samples, adaptor, n_adapts; progress=false
+        )
+        @test mean(samples) ≈ zeros(D) atol = mean_tol
+        @test Statistics.var(samples) ≈ ones(D) atol = var_tol
     end
 end
