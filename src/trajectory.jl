@@ -552,7 +552,7 @@ function isterminated(::ClassicNoUTurn, h::Hamiltonian, t::BinaryTree)
     # z0 is starting point and z1 is ending point
     z0, z1 = t.zleft, t.zright
     Δθ = z1.θ - z0.θ
-    s = (dot(Δθ, ∂H∂r(h, -z0.r)) >= 0) || (dot(-Δθ, ∂H∂r(h, z1.r)) >= 0)
+    s = (dot(Δθ, ∂H∂r(h, z0.θ, -z0.r)) >= 0) || (dot(-Δθ, ∂H∂r(h, z1.θ, z1.r)) >= 0)
     return Termination(s, false)
 end
 
@@ -565,7 +565,7 @@ Ref: https://arxiv.org/abs/1701.02434
 """
 function isterminated(::GeneralisedNoUTurn, h::Hamiltonian, t::BinaryTree)
     rho = t.ts.rho
-    s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, t.zright.r))
+    s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.θ, t.zleft.r), ∂H∂r(h, t.zright.θ, t.zright.r))
     return Termination(s, false)
 end
 
@@ -595,7 +595,7 @@ phase point of `tright`, the right subtree.
 """
 function check_left_subtree(h::Hamiltonian, t::T, tleft::T, tright::T) where {T<:BinaryTree}
     rho = tleft.ts.rho + tright.zleft.r
-    s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.r), ∂H∂r(h, tright.zleft.r))
+    s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.θ, t.zleft.r), ∂H∂r(h, tright.zleft.θ, tright.zleft.r))
     return Termination(s, false)
 end
 
@@ -608,7 +608,7 @@ function check_right_subtree(
     h::Hamiltonian, t::T, tleft::T, tright::T
 ) where {T<:BinaryTree}
     rho = tleft.zright.r + tright.ts.rho
-    s = generalised_uturn_criterion(rho, ∂H∂r(h, tleft.zright.r), ∂H∂r(h, t.zright.r))
+    s = generalised_uturn_criterion(rho, ∂H∂r(h, tleft.zright.θ, tleft.zright.r), ∂H∂r(h, t.zright.θ, t.zright.r))
     return Termination(s, false)
 end
 
