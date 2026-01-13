@@ -1,3 +1,5 @@
+import LinearAlgebra
+
 ####
 #### Riemannian Metric Types
 ####

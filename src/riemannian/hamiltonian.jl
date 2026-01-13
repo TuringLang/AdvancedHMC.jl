@@ -154,16 +154,6 @@ function ∂H∂r(
     return G \ r
 end
 
-# Non-keyword version for backward compatibility with integrator
-function ∂H∂r(
-    h::Hamiltonian{<:AbstractRiemannianMetric,<:GaussianKinetic},
-    θ::AbstractVector,
-    r::AbstractVector,
-)
-    G_eval = metric_eval(h.metric, θ)
-    return G_eval \ r
-end
-
 ####
 #### Negative energy (log probability)
 ####
@@ -198,16 +188,6 @@ function neg_energy(
     logZ = (D * log(2π) + logdet(G)) / 2
 
     return -logZ - quadform / 2
-end
-
-# Non-keyword version for backward compatibility
-function neg_energy(
-    h::Hamiltonian{<:AbstractRiemannianMetric,<:GaussianKinetic},
-    r::AbstractVector,
-    θ::AbstractVector,
-)
-    G_eval = metric_eval(h.metric, θ)
-    return neg_energy(h, r, θ; G_eval=G_eval)
 end
 
 ####
