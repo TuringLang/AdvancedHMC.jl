@@ -141,8 +141,9 @@ $(TYPEDEF)
 Slice sampler for the starting single leaf tree.
 Slice variable is initialized.
 """
-SliceTS(rng::AbstractRNG, z0::PhasePoint) =
+function SliceTS(rng::AbstractRNG, z0::PhasePoint)
     SliceTS(z0, neg_energy(z0) - Random.randexp(rng), 1)
+end
 
 """
 $(TYPEDEF)
@@ -565,7 +566,9 @@ Ref: https://arxiv.org/abs/1701.02434
 """
 function isterminated(::GeneralisedNoUTurn, h::Hamiltonian, t::BinaryTree)
     rho = t.ts.rho
-    s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.θ, t.zleft.r), ∂H∂r(h, t.zright.θ, t.zright.r))
+    s = generalised_uturn_criterion(
+        rho, ∂H∂r(h, t.zleft.θ, t.zleft.r), ∂H∂r(h, t.zright.θ, t.zright.r)
+    )
     return Termination(s, false)
 end
 
@@ -595,7 +598,9 @@ phase point of `tright`, the right subtree.
 """
 function check_left_subtree(h::Hamiltonian, t::T, tleft::T, tright::T) where {T<:BinaryTree}
     rho = tleft.ts.rho + tright.zleft.r
-    s = generalised_uturn_criterion(rho, ∂H∂r(h, t.zleft.θ, t.zleft.r), ∂H∂r(h, tright.zleft.θ, tright.zleft.r))
+    s = generalised_uturn_criterion(
+        rho, ∂H∂r(h, t.zleft.θ, t.zleft.r), ∂H∂r(h, tright.zleft.θ, tright.zleft.r)
+    )
     return Termination(s, false)
 end
 
@@ -608,7 +613,9 @@ function check_right_subtree(
     h::Hamiltonian, t::T, tleft::T, tright::T
 ) where {T<:BinaryTree}
     rho = tleft.zright.r + tright.ts.rho
-    s = generalised_uturn_criterion(rho, ∂H∂r(h, tleft.zright.θ, tleft.zright.r), ∂H∂r(h, t.zright.θ, t.zright.r))
+    s = generalised_uturn_criterion(
+        rho, ∂H∂r(h, tleft.zright.θ, tleft.zright.r), ∂H∂r(h, t.zright.θ, t.zright.r)
+    )
     return Termination(s, false)
 end
 

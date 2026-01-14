@@ -382,7 +382,14 @@ end
         adaptor = StepSizeAdaptor(acceptance_rate, integrator)
 
         samples, stats = sample(
-            rng, hamiltonian, kernel, initial_θ, n_samples, adaptor, n_adapts; progress=false
+            rng,
+            hamiltonian,
+            kernel,
+            initial_θ,
+            n_samples,
+            adaptor,
+            n_adapts;
+            progress=false,
         )
         @test mean(samples) ≈ zeros(D) atol = mean_tol
         @test Statistics.var(samples) ≈ ones(D) atol = var_tol
@@ -402,7 +409,14 @@ end
         adaptor = StepSizeAdaptor(acceptance_rate, integrator)
 
         samples, stats = sample(
-            rng, hamiltonian, kernel, initial_θ, n_samples, adaptor, n_adapts; progress=false
+            rng,
+            hamiltonian,
+            kernel,
+            initial_θ,
+            n_samples,
+            adaptor,
+            n_adapts;
+            progress=false,
         )
         @test mean(samples) ≈ zeros(D) atol = mean_tol
         @test Statistics.var(samples) ≈ ones(D) atol = var_tol
