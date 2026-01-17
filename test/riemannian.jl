@@ -347,7 +347,7 @@ end
 #### Validation tests
 ####
 
-@testset "Validation testing" begin
+@testset "Validation testing (Gaussian)" begin
     target = HighDimGaussian(2)
     rng = MersenneTwister(125)
     λ = 1e-2
@@ -360,8 +360,6 @@ end
     _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
 
     D = dim(target)
-    x = zeros(D)
-    r = randn(rng, D)
 
     n_samples = 100
     n_adapts = 50
@@ -375,10 +373,10 @@ end
         hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
 
         initial_ϵ = 0.01
-        integrator = GeneralizedLeapfrog(initial_ϵ, 12)
+        integrator = GeneralizedLeapfrog(initial_ϵ, 15)
         kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
 
-        acceptance_rate = 0.7
+        acceptance_rate = 0.9
         adaptor = StepSizeAdaptor(acceptance_rate, integrator)
 
         samples, stats = sample(
@@ -402,10 +400,10 @@ end
         hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
 
         initial_ϵ = 0.01
-        integrator = GeneralizedLeapfrog(initial_ϵ, 12)
+        integrator = GeneralizedLeapfrog(initial_ϵ, 15)
         kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
 
-        acceptance_rate = 0.7
+        acceptance_rate = 0.9
         adaptor = StepSizeAdaptor(acceptance_rate, integrator)
 
         samples, stats = sample(
@@ -420,5 +418,72 @@ end
         )
         @test mean(samples) ≈ zeros(D) atol = mean_tol
         @test Statistics.var(samples) ≈ ones(D) atol = var_tol
+    end
+end
+
+@testset "Validation testing (Funnel)" begin
+
+    # 1D Wasserstein-1 distance
+    function w1(a::AbstractVector, b::AbstractVector)
+        sa = sort(a)
+        sb = sort(b)
+        return mean(abs.(sa .- sb))
+    end
+
+    target = Funnel()
+    rng = MersenneTwister(234)
+    λ = 1e-2
+
+    initial_θ = rand(rng, dim(target))
+
+    ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
+    ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, initial_θ)
+
+    _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
+
+    D = dim(target)
+
+    n_samples = 1000
+    n_adapts = 500
+
+    # True samples
+    v_true = 3 .* randn(rng, n_samples)
+    X_true = Matrix{Float64}(undef, n_samples, 1)
+    for n in 1:n_samples
+        s = exp(v_true[n] / 2)
+        @inbounds X_true[n, :] .= s .* randn(rng, 1)
+    end
+
+    tol_1 = 10 / sqrt(n_samples)
+    tol_2 = 30 / sqrt(n_samples)
+
+    @testset "SoftAbsRiemannianMetric" begin
+        metric = SoftAbsRiemannianMetric((D,), G, ∂G∂θ, 20.0)
+        kinetic = GaussianKinetic()
+        hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
+
+        initial_ϵ = 0.01
+        integrator = GeneralizedLeapfrog(initial_ϵ, 15)
+        kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+
+        acceptance_rate = 0.9
+        adaptor = StepSizeAdaptor(acceptance_rate, integrator)
+
+        samples, stats = sample(
+            rng,
+            hamiltonian,
+            kernel,
+            initial_θ,
+            n_samples,
+            adaptor,
+            n_adapts;
+            progress=false,
+        )
+
+        θ = reduce(vcat, (permutedims(s) for s in samples))
+        # 1st marginal
+        @test w1(θ[:, 1], v_true) < tol_1
+        # 2nd marginal
+        @test w1(θ[:, 2], X_true[:, 1]) < tol_2
     end
 end
