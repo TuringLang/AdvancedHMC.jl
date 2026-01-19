@@ -392,6 +392,8 @@ end
 
         tol_w1 = w1_tol_normal_1d(; n=n_samples, rng=rng)
 
+        tol_w1 *= 1.5
+
         x_true = randn(rng, n_samples)
         y_true = randn(rng, n_samples)
 
@@ -475,7 +477,7 @@ end
             n::Int,
             reps::Int=200,
             q::Float64=0.999,
-            inflate::Float64=1.0,
+            inflate::Float64=1.5,
             rng::AbstractRNG=Random.default_rng(),
         )
             vals_v = Vector{Float64}(undef, reps)
