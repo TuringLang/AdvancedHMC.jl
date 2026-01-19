@@ -392,9 +392,6 @@ end
 
         tol_w1 = w1_tol_normal_1d(; n=n_samples, rng=rng)
 
-        # Samples are RHMC so we relax the tolerance
-        tol_w1 *= 2.0
-
         x_true = randn(rng, n_samples)
         y_true = randn(rng, n_samples)
 
@@ -478,7 +475,7 @@ end
             n::Int,
             reps::Int=200,
             q::Float64=0.999,
-            inflate::Float64=2.0,
+            inflate::Float64=1.0,
             rng::AbstractRNG=Random.default_rng(),
         )
             vals_v = Vector{Float64}(undef, reps)
