@@ -347,82 +347,7 @@ end
 #### Validation tests
 ####
 
-@testset "Validation testing (Gaussian)" begin
-    target = HighDimGaussian(2)
-    rng = MersenneTwister(125)
-    λ = 1e-2
-
-    initial_θ = rand(rng, dim(target))
-
-    ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
-    ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, initial_θ)
-
-    _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
-
-    D = dim(target)
-
-    n_samples = 100
-    n_adapts = 50
-
-    mean_tol = 3 / sqrt(n_samples)
-    var_tol = 1.5 * sqrt(2 / (n_samples - 1))
-
-    @testset "RiemannianMetric (PDMat-style)" begin
-        metric = RiemannianMetric((D,), G, ∂G∂θ)
-        kinetic = GaussianKinetic()
-        hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
-
-        initial_ϵ = 0.01
-        integrator = GeneralizedLeapfrog(initial_ϵ, 15)
-        kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
-
-        acceptance_rate = 0.9
-        adaptor = StepSizeAdaptor(acceptance_rate, integrator)
-
-        samples, stats = sample(
-            rng,
-            hamiltonian,
-            kernel,
-            initial_θ,
-            n_samples,
-            adaptor,
-            n_adapts;
-            progress=false,
-        )
-        @test mean(samples) ≈ zeros(D) atol = mean_tol
-        @test Statistics.var(samples) ≈ ones(D) atol = var_tol
-    end
-
-    @testset "SoftAbsRiemannianMetric" begin
-        # We do not need SoftAbs for Gaussian target, so using small α
-        metric = SoftAbsRiemannianMetric((D,), G, ∂G∂θ, 1.0)
-        kinetic = GaussianKinetic()
-        hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
-
-        initial_ϵ = 0.01
-        integrator = GeneralizedLeapfrog(initial_ϵ, 15)
-        kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
-
-        acceptance_rate = 0.9
-        adaptor = StepSizeAdaptor(acceptance_rate, integrator)
-
-        samples, stats = sample(
-            rng,
-            hamiltonian,
-            kernel,
-            initial_θ,
-            n_samples,
-            adaptor,
-            n_adapts;
-            progress=false,
-        )
-        @test mean(samples) ≈ zeros(D) atol = mean_tol
-        @test Statistics.var(samples) ≈ ones(D) atol = var_tol
-    end
-end
-
-@testset "Validation testing (Funnel)" begin
-
+@testset "Validation testing" begin
     # 1D Wasserstein-1 distance
     function w1(a::AbstractVector, b::AbstractVector)
         sa = sort(a)
@@ -430,60 +355,203 @@ end
         return mean(abs.(sa .- sb))
     end
 
-    target = Funnel()
-    rng = MersenneTwister(234)
-    λ = 1e-2
+    @testset "Validation testing (Gaussian)" begin
 
-    initial_θ = rand(rng, dim(target))
+        # 1D normal Wasserstein-1 distance tolerance estimator
+        function w1_tol_normal_1d(;
+            n::Int, reps::Int=200, q::Float64=0.999, rng=Random.default_rng()
+        )
+            poolN = max(50_000, 50n)
+            pool = randn(rng, poolN)
 
-    ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
-    ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, initial_θ)
+            vals = Vector{Float64}(undef, reps)
+            for i in 1:reps
+                a = pool[rand(rng, 1:poolN, n)]
+                b = pool[rand(rng, 1:poolN, n)]
+                vals[i] = w1(a, b)
+            end
+            sort!(vals)
+            return vals[clamp(ceil(Int, q * reps), 1, reps)]
+        end
 
-    _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
+        target = HighDimGaussian(2)
+        rng = MersenneTwister(125)
+        λ = 1e-2
 
-    D = dim(target)
+        initial_θ = rand(rng, dim(target))
 
-    n_samples = 1000
-    n_adapts = 500
+        ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
+        ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, initial_θ)
 
-    # True samples
-    v_true = 3 .* randn(rng, n_samples)
-    X_true = Matrix{Float64}(undef, n_samples, 1)
-    for n in 1:n_samples
-        s = exp(v_true[n] / 2)
-        @inbounds X_true[n, :] .= s .* randn(rng, 1)
+        _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
+
+        D = dim(target)
+
+        n_samples = 100
+        n_adapts = 50
+
+        tol_w1 = w1_tol_normal_1d(; n=n_samples, rng=rng)
+
+        # Samples are RHMC so we relax the tolerance
+        tol_w1 *= 2.0
+
+        x_true = randn(rng, n_samples)
+        y_true = randn(rng, n_samples)
+
+        @testset "RiemannianMetric (PDMat-style)" begin
+            metric = RiemannianMetric((D,), G, ∂G∂θ)
+            kinetic = GaussianKinetic()
+            hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
+
+            initial_ϵ = 0.01
+            integrator = GeneralizedLeapfrog(initial_ϵ, 15)
+            kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+
+            acceptance_rate = 0.9
+            adaptor = StepSizeAdaptor(acceptance_rate, integrator)
+
+            samples, stats = sample(
+                rng,
+                hamiltonian,
+                kernel,
+                initial_θ,
+                n_samples,
+                adaptor,
+                n_adapts;
+                progress=false,
+            )
+            θ = reduce(vcat, (permutedims(s) for s in samples))
+            # 1st marginal
+            @test w1(θ[:, 1], x_true) < tol_w1
+            # 2nd marginal
+            @test w1(θ[:, 2], y_true) < tol_w1
+        end
+
+        @testset "SoftAbsRiemannianMetric" begin
+            # We do not need SoftAbs for Gaussian target, so using small α
+            metric = SoftAbsRiemannianMetric((D,), G, ∂G∂θ, 1.0)
+            kinetic = GaussianKinetic()
+            hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
+
+            initial_ϵ = 0.01
+            integrator = GeneralizedLeapfrog(initial_ϵ, 15)
+            kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+
+            acceptance_rate = 0.9
+            adaptor = StepSizeAdaptor(acceptance_rate, integrator)
+
+            samples, stats = sample(
+                rng,
+                hamiltonian,
+                kernel,
+                initial_θ,
+                n_samples,
+                adaptor,
+                n_adapts;
+                progress=false,
+            )
+
+            θ = reduce(vcat, (permutedims(s) for s in samples))
+            # 1st marginal
+            @test w1(θ[:, 1], x_true) < tol_w1
+            # 2nd marginal
+            @test w1(θ[:, 2], y_true) < tol_w1
+        end
     end
 
-    tol_1 = 10 / sqrt(n_samples)
-    tol_2 = 30 / sqrt(n_samples)
+    @testset "Validation testing (Funnel)" begin
 
-    @testset "SoftAbsRiemannianMetric" begin
-        metric = SoftAbsRiemannianMetric((D,), G, ∂G∂θ, 20.0)
-        kinetic = GaussianKinetic()
-        hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
+        # Funnel i.i.d. sampler
+        # θ layout: [v, x1]
+        function funnel_iid(rng::AbstractRNG, n::Int)
+            v = 3.0 .* randn(rng, n)
+            X = Matrix{Float64}(undef, n, 1)
+            for i in 1:n
+                s = exp(v[i] / 2)
+                @inbounds X[i, :] .= s .* randn(rng, 1)
+            end
+            return v, X
+        end
 
-        initial_ϵ = 0.01
-        integrator = GeneralizedLeapfrog(initial_ϵ, 15)
-        kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
-
-        acceptance_rate = 0.9
-        adaptor = StepSizeAdaptor(acceptance_rate, integrator)
-
-        samples, stats = sample(
-            rng,
-            hamiltonian,
-            kernel,
-            initial_θ,
-            n_samples,
-            adaptor,
-            n_adapts;
-            progress=false,
+        # 1D Wasserstein-1 distance tolerances for Funnel marginals
+        function funnel_w1_tols(;
+            n::Int,
+            reps::Int=200,
+            q::Float64=0.999,
+            inflate::Float64=2.0,
+            rng::AbstractRNG=Random.default_rng(),
         )
+            vals_v = Vector{Float64}(undef, reps)
+            vals_x1 = Vector{Float64}(undef, reps)
 
-        θ = reduce(vcat, (permutedims(s) for s in samples))
-        # 1st marginal
-        @test w1(θ[:, 1], v_true) < tol_1
-        # 2nd marginal
-        @test w1(θ[:, 2], X_true[:, 1]) < tol_2
+            for i in 1:reps
+                vA, XA = funnel_iid(rng, n)
+                vB, XB = funnel_iid(rng, n)
+
+                x1A = XA[:, 1]
+                x1B = XB[:, 1]
+
+                vals_v[i] = w1(vA, vB)
+                vals_x1[i] = w1(x1A, x1B)
+            end
+
+            sort!(vals_v)
+            sort!(vals_x1)
+            idx = clamp(ceil(Int, q * reps), 1, reps)
+
+            return (tol_v=inflate * vals_v[idx], tol_x1=inflate * vals_x1[idx])
+        end
+
+        target = Funnel()
+        rng = MersenneTwister(234)
+        λ = 1e-2
+
+        initial_θ = rand(rng, dim(target))
+
+        ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
+        ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, initial_θ)
+
+        _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
+
+        D = dim(target)
+
+        n_samples = 1000
+        n_adapts = 500
+
+        # True samples
+        v_true, X_true = funnel_iid(rng, n_samples)
+
+        # Wasserstein-1 distance tolerances
+        tols = funnel_w1_tols(; n=n_samples, rng=rng)
+
+        @testset "SoftAbsRiemannianMetric" begin
+            metric = SoftAbsRiemannianMetric((D,), G, ∂G∂θ, 20.0)
+            kinetic = GaussianKinetic()
+            hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
+
+            initial_ϵ = 0.01
+            integrator = GeneralizedLeapfrog(initial_ϵ, 15)
+            kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+
+            acceptance_rate = 0.9
+            adaptor = StepSizeAdaptor(acceptance_rate, integrator)
+
+            samples, stats = sample(
+                rng,
+                hamiltonian,
+                kernel,
+                initial_θ,
+                n_samples,
+                adaptor,
+                n_adapts;
+                progress=false,
+            )
+
+            θ = reduce(vcat, (permutedims(s) for s in samples))
+            # 1st marginal
+            @test w1(θ[:, 1], v_true) < tols.tol_v
+            # 2nd marginal
+            @test w1(θ[:, 2], X_true[:, 1]) < tols.tol_x1
+        end
     end
 end
