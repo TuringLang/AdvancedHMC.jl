@@ -33,12 +33,16 @@ trajectory = parallel_scan(transforms, s0)
 module Parallel
 
 using LinearAlgebra
+using Random
 
 # Types
 include("types.jl")
 
 # Parallel scan implementation
 include("scan.jl")
+
+# Jacobian computation utilities
+include("jacobian.jl")
 
 # Export types
 export AbstractParallelMethod, FullDEER, QuasiDEER, StochasticQuasiDEER, BlockQuasiDEER
@@ -58,5 +62,11 @@ export compose, apply
 export parallel_scan, parallel_scan!, sequential_scan
 export make_matrix_transforms, make_diagonal_transforms
 export make_block_transforms, make_leapfrog_transforms
+
+# Export Jacobian utilities
+export jacobian_fd, jacobian_diagonal_full, batch_jacobians, batch_jacobian_diagonals
+export jvp_fd, vjp_fd
+export rademacher_vector, hutchinson_diagonal, batch_hutchinson_diagonals
+export hessian_diagonal, batch_hessian_diagonals
 
 end # module

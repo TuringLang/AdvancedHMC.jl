@@ -16,7 +16,7 @@ This document tracks the implementation of DEER (Doubly Efficient Estimation via
 
 ## Implementation Phases
 
-### Phase 1: Core Infrastructure 🟡
+### Phase 1: Core Infrastructure ✅
 > Foundation components needed by all DEER variants
 
 - [x] **1.1 Parallel Scan Implementation** ✅
@@ -27,11 +27,14 @@ This document tracks the implementation of DEER (Doubly Efficient Estimation via
   - [x] CPU implementation using `Base.accumulate`
   - [ ] GPU implementation (CUDA.jl) - deferred to Phase 6
 
-- [ ] **1.2 Jacobian Computation Utilities**
-  - [ ] Full Jacobian computation using ForwardDiff.jl
-  - [ ] Diagonal extraction from Jacobian
-  - [ ] Stochastic diagonal estimation (Hutchinson's method with Rademacher vectors)
-  - [ ] JVP (Jacobian-vector product) wrapper for AD backends
+- [x] **1.2 Jacobian Computation Utilities** ✅
+  - [x] Full Jacobian computation (finite differences, AD-agnostic interface)
+  - [x] Diagonal extraction from Jacobian
+  - [x] Stochastic diagonal estimation (Hutchinson's method with Rademacher vectors)
+  - [x] JVP (Jacobian-vector product) wrapper
+  - [x] VJP (Vector-Jacobian product) wrapper
+  - [x] Batch versions for computing at multiple points
+  - [x] Hessian diagonal utilities (for leapfrog)
 
 - [x] **1.3 Core Types and Interfaces** ✅
   - [x] `AbstractParallelMethod` with subtypes: `FullDEER`, `QuasiDEER`, `StochasticQuasiDEER`, `BlockQuasiDEER`
@@ -191,14 +194,14 @@ src/
 │   ├── Parallel.jl          # Module definition and exports ✅
 │   ├── types.jl             # Types and settings ✅
 │   ├── scan.jl              # Parallel scan implementations ✅
-│   ├── jacobian.jl          # Jacobian computation utilities (TODO)
+│   ├── jacobian.jl          # Jacobian computation utilities ✅
 │   ├── deer.jl              # Core DEER algorithm (TODO)
 │   ├── mala.jl              # Parallel MALA (TODO)
 │   └── hmc.jl               # Parallel HMC (TODO)
 test/
 ├── parallel/
 │   ├── test_scan.jl         # ✅ 141 tests passing
-│   ├── test_jacobian.jl     # (TODO)
+│   ├── test_jacobian.jl     # ✅ 57 tests passing
 │   ├── test_deer.jl         # (TODO)
 │   ├── test_mala.jl         # (TODO)
 │   └── test_hmc.jl          # (TODO)
@@ -239,6 +242,9 @@ test/
 | 2026-01-20 | 1.1 | Parallel scan implementation | ✅ | All 3 variants (matrix, diagonal, block 2x2) |
 | 2026-01-20 | 1.3 | Core types and interfaces | ✅ | Types for methods, settings, state |
 | 2026-01-20 | 7.1 | Parallel scan unit tests | ✅ | 141 tests passing |
+| 2026-01-20 | 1.2 | Jacobian computation utilities | ✅ | FD-based, Hutchinson estimator, JVP/VJP |
+| 2026-01-20 | 7.1 | Jacobian utility tests | ✅ | 57 tests passing |
+| 2026-01-20 | 1 | **Phase 1 Complete** | ✅ | All core infrastructure done |
 
 ---
 
