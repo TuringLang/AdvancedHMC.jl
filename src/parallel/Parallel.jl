@@ -47,6 +47,9 @@ include("jacobian.jl")
 # Core DEER algorithm
 include("deer.jl")
 
+# Parallel MALA
+include("mala.jl")
+
 # Export types
 export AbstractParallelMethod, FullDEER, QuasiDEER, StochasticQuasiDEER, BlockQuasiDEER
 
@@ -75,5 +78,10 @@ export hessian_diagonal, batch_hessian_diagonals
 # Export DEER algorithm
 export DEERResult
 export deer, deer_with_settings, sequential_mcmc
+
+# Export MALA
+export MALARandomInputs, MALAConfig
+export sample_mala_inputs, mala_proposal, mala_transition
+export parallel_mala, sequential_mala
 
 end # module

@@ -70,21 +70,23 @@ This document tracks the implementation of DEER (Doubly Efficient Estimation via
 
 ---
 
-### Phase 3: MALA Integration ⬜
+### Phase 3: MALA Integration ✅
 > Parallelized Metropolis-Adjusted Langevin Algorithm
 
-- [ ] **3.1 MALA Transition Function**
-  - [ ] Proposal: x̃ = x + ε∇log p(x) + √(2ε)ξ
-  - [ ] Acceptance ratio computation
-  - [ ] Stop-gradient trick for differentiable accept-reject
-  - [ ] Soft gating: g = σ(log α - log u) with straight-through estimator
+- [x] **3.1 MALA Transition Function** ✅
+  - [x] Proposal: x̃ = x + ε∇log p(x) + √(2ε)ξ
+  - [x] Acceptance ratio computation (forward and backward proposal densities)
+  - [x] Stop-gradient trick for differentiable accept-reject
+  - [x] Soft gating with sigmoid and straight-through estimator
 
-- [ ] **3.2 Parallel MALA Sampler**
-  - [ ] Pre-sample all random inputs (ξ for proposals, u for accept-reject)
-  - [ ] Integrate with DEER framework
-  - [ ] Return full chain from parallel computation
+- [x] **3.2 Parallel MALA Sampler** ✅
+  - [x] MALARandomInputs type for pre-sampled (ξ, u) pairs
+  - [x] sample_mala_inputs() for batch sampling
+  - [x] parallel_mala() integrating with DEER framework
+  - [x] sequential_mala() for reference/testing
+  - [x] Convenience API with automatic input sampling
 
-- [ ] **3.3 MALA-specific Optimizations**
+- [ ] **3.3 MALA-specific Optimizations** (deferred)
   - [ ] Preconditioning with Hessian eigendecomposition (optional)
 
 ---
@@ -197,14 +199,14 @@ src/
 │   ├── scan.jl              # Parallel scan implementations ✅
 │   ├── jacobian.jl          # Jacobian computation utilities ✅
 │   ├── deer.jl              # Core DEER algorithm ✅
-│   ├── mala.jl              # Parallel MALA (TODO)
+│   ├── mala.jl              # Parallel MALA ✅
 │   └── hmc.jl               # Parallel HMC (TODO)
 test/
 ├── parallel/
 │   ├── test_scan.jl         # ✅ 141 tests passing
 │   ├── test_jacobian.jl     # ✅ 57 tests passing
 │   ├── test_deer.jl         # ✅ 67 tests passing
-│   ├── test_mala.jl         # (TODO)
+│   ├── test_mala.jl         # ✅ 31 tests passing
 │   └── test_hmc.jl          # (TODO)
 ```
 
@@ -249,6 +251,10 @@ test/
 | 2026-01-20 | 2 | DEER algorithm core | ✅ | Newton iteration, Full/Quasi/Stochastic DEER |
 | 2026-01-20 | 7.1 | DEER algorithm tests | ✅ | 67 tests passing |
 | 2026-01-20 | 2 | **Phase 2 Complete** | ✅ | Core DEER algorithm working |
+| 2026-01-20 | 3 | MALA transition function | ✅ | Proposal, acceptance, soft gating |
+| 2026-01-20 | 3 | Parallel MALA sampler | ✅ | Integrated with DEER framework |
+| 2026-01-20 | 7.1 | MALA tests | ✅ | 31 tests passing |
+| 2026-01-20 | 3 | **Phase 3 Complete** | ✅ | Parallel MALA working |
 
 ---
 
