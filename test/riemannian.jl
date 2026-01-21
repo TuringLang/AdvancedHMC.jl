@@ -24,19 +24,32 @@ using Statistics
 ####
 
 function gen_hess_fwd(func, x::AbstractVector)
+    cfg = ForwardDiff.HessianConfig(func, x)
+    H = Matrix{eltype(x)}(undef, length(x), length(x))
+
     function hess(x::AbstractVector)
-        return nothing, nothing, ForwardDiff.hessian(func, x)
+        ForwardDiff.hessian!(H, func, x, cfg)
+        return H
     end
     return hess
 end
 
 function gen_∂G∂θ_fwd(Vfunc, x; f=identity)
-    _Hfunc = gen_hess_fwd(Vfunc, x)
-    Hfunc = x -> _Hfunc(x)[3]
-    cfg = ForwardDiff.JacobianConfig(Hfunc, x)
+    chunk = ForwardDiff.Chunk(x)
+    tag = ForwardDiff.Tag(Vfunc, eltype(x))
+    jac_cfg = ForwardDiff.JacobianConfig(Vfunc, x, chunk, tag)
+    hess_cfg = ForwardDiff.HessianConfig(Vfunc, jac_cfg.duals, chunk, tag)
+
     d = length(x)
     out = zeros(eltype(x), d^2, d)
-    return x -> ForwardDiff.jacobian!(out, Hfunc, x, cfg)
+
+    function ∂G∂θ_fwd(y)
+        hess = z -> ForwardDiff.hessian(Vfunc, z, hess_cfg, Val{false}())
+        ForwardDiff.jacobian!(out, hess, y, jac_cfg, Val{false}())
+        return out
+    end
+
+    return ∂G∂θ_fwd
 end
 
 function reshape_∂G∂θ(H)
@@ -46,12 +59,12 @@ end
 
 function prepare_sample(ℓπ, initial_θ, λ)
     Vfunc = x -> -ℓπ(x)
-    _Hfunc = MCMCLogDensityProblems.gen_hess(Vfunc, initial_θ)
+    _Hfunc = gen_hess_fwd(Vfunc, initial_θ)
     Hfunc = x -> copy.(_Hfunc(x))
 
     fstabilize = H -> H + λ * I
     Gfunc = x -> begin
-        H = fstabilize(Hfunc(x)[3])
+        H = fstabilize(Hfunc(x))
         all(isfinite, H) ? H : diagm(ones(length(x)))
     end
     _∂G∂θfunc = gen_∂G∂θ_fwd(x -> -ℓπ(x), initial_θ; f=fstabilize)
