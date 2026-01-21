@@ -43,29 +43,30 @@ This document tracks the implementation of DEER (Doubly Efficient Estimation via
 
 ---
 
-### Phase 2: DEER Algorithm Core ⬜
+### Phase 2: DEER Algorithm Core ✅
 > The main Newton iteration loop
 
-- [ ] **2.1 Newton Iteration Framework**
-  - [ ] Main loop structure with convergence checking
-  - [ ] Parallel evaluation of f_t at all timesteps
-  - [ ] Parallel computation of Jacobians (method-dependent)
-  - [ ] Compute inputs u_t = f_t(s_{t-1}) - J_t * s_{t-1}
-  - [ ] Solve linear system via parallel scan
-  - [ ] Convergence criterion (max absolute difference)
+- [x] **2.1 Newton Iteration Framework** ✅
+  - [x] Main loop structure with convergence checking
+  - [x] Parallel evaluation of f_t at all timesteps
+  - [x] Parallel computation of Jacobians (method-dependent)
+  - [x] Compute inputs u_t = f_t(s_{t-1}) - J_t * s_{t-1}
+  - [x] Solve linear system via parallel scan
+  - [x] Convergence criterion (max absolute difference)
+  - [x] DEERResult type with trajectory, convergence info, residual history
 
-- [ ] **2.2 Full DEER Implementation**
-  - [ ] Store and manipulate T × D × D Jacobian matrices
-  - [ ] Full matrix parallel scan
+- [x] **2.2 Full DEER Implementation** ✅
+  - [x] Store and manipulate T × D × D Jacobian matrices
+  - [x] Full matrix parallel scan
 
-- [ ] **2.3 Quasi-DEER Implementation**
-  - [ ] Diagonal Jacobian storage (T × D)
-  - [ ] Elementwise parallel scan
+- [x] **2.3 Quasi-DEER Implementation** ✅
+  - [x] Diagonal Jacobian storage (T × D)
+  - [x] Elementwise parallel scan
 
-- [ ] **2.4 Stochastic Quasi-DEER Implementation**
-  - [ ] Hutchinson estimator with configurable number of samples
-  - [ ] Rademacher vector generation
-  - [ ] JVP-based diagonal estimation
+- [x] **2.4 Stochastic Quasi-DEER Implementation** ✅
+  - [x] Hutchinson estimator with configurable number of samples
+  - [x] Rademacher vector generation (from Phase 1.2)
+  - [x] JVP-based diagonal estimation
 
 ---
 
@@ -195,14 +196,14 @@ src/
 │   ├── types.jl             # Types and settings ✅
 │   ├── scan.jl              # Parallel scan implementations ✅
 │   ├── jacobian.jl          # Jacobian computation utilities ✅
-│   ├── deer.jl              # Core DEER algorithm (TODO)
+│   ├── deer.jl              # Core DEER algorithm ✅
 │   ├── mala.jl              # Parallel MALA (TODO)
 │   └── hmc.jl               # Parallel HMC (TODO)
 test/
 ├── parallel/
 │   ├── test_scan.jl         # ✅ 141 tests passing
 │   ├── test_jacobian.jl     # ✅ 57 tests passing
-│   ├── test_deer.jl         # (TODO)
+│   ├── test_deer.jl         # ✅ 67 tests passing
 │   ├── test_mala.jl         # (TODO)
 │   └── test_hmc.jl          # (TODO)
 ```
@@ -245,6 +246,9 @@ test/
 | 2026-01-20 | 1.2 | Jacobian computation utilities | ✅ | FD-based, Hutchinson estimator, JVP/VJP |
 | 2026-01-20 | 7.1 | Jacobian utility tests | ✅ | 57 tests passing |
 | 2026-01-20 | 1 | **Phase 1 Complete** | ✅ | All core infrastructure done |
+| 2026-01-20 | 2 | DEER algorithm core | ✅ | Newton iteration, Full/Quasi/Stochastic DEER |
+| 2026-01-20 | 7.1 | DEER algorithm tests | ✅ | 67 tests passing |
+| 2026-01-20 | 2 | **Phase 2 Complete** | ✅ | Core DEER algorithm working |
 
 ---
 

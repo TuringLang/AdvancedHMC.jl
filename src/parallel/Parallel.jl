@@ -44,6 +44,9 @@ include("scan.jl")
 # Jacobian computation utilities
 include("jacobian.jl")
 
+# Core DEER algorithm
+include("deer.jl")
+
 # Export types
 export AbstractParallelMethod, FullDEER, QuasiDEER, StochasticQuasiDEER, BlockQuasiDEER
 
@@ -68,5 +71,9 @@ export jacobian_fd, jacobian_diagonal_full, batch_jacobians, batch_jacobian_diag
 export jvp_fd, vjp_fd
 export rademacher_vector, hutchinson_diagonal, batch_hutchinson_diagonals
 export hessian_diagonal, batch_hessian_diagonals
+
+# Export DEER algorithm
+export DEERResult
+export deer, deer_with_settings, sequential_mcmc
 
 end # module
