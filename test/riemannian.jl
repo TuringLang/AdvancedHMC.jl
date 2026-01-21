@@ -545,7 +545,7 @@ end
             integrator = GeneralizedLeapfrog(initial_ϵ, 15)
             kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
 
-            acceptance_rate = 0.9
+            acceptance_rate = 0.7
             adaptor = StepSizeAdaptor(acceptance_rate, integrator)
 
             samples, stats = sample(
