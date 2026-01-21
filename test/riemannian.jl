@@ -197,7 +197,7 @@ end
 
         @testset "Autodiff utilities" begin
             @test δ(finite_difference_gradient(ℓπ, x), ∂ℓπ∂θ(x)[end]) < 1e-4
-            @test δ(finite_difference_hessian(Vfunc, x), Hfunc(x)[end]) < 1e-4
+            @test δ(finite_difference_hessian(Vfunc, x), Hfunc(x)) < 1e-4
             @test δ(reshape_∂G∂θ(finite_difference_jacobian(Gfunc, x)), ∂G∂θfunc(x)) < 1e-4
         end
 
