@@ -490,7 +490,7 @@ end
             n::Int,
             reps::Int=200,
             q::Float64=0.999,
-            inflate::Float64=1.5,
+            inflate::Float64=1.8,
             rng::AbstractRNG=Random.default_rng(),
         )
             vals_v = Vector{Float64}(undef, reps)
@@ -537,12 +537,12 @@ end
         tols = funnel_w1_tols(; n=n_samples, rng=rng)
 
         @testset "SoftAbsRiemannianMetric" begin
-            metric = SoftAbsRiemannianMetric((D,), G, ∂G∂θ, 20.0)
+            metric = SoftAbsRiemannianMetric((D,), G, ∂G∂θ, 40.0)
             kinetic = GaussianKinetic()
             hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
 
             initial_ϵ = 0.01
-            integrator = GeneralizedLeapfrog(initial_ϵ, 15)
+            integrator = GeneralizedLeapfrog(initial_ϵ, 5)
             kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
 
             acceptance_rate = 0.7
