@@ -323,9 +323,157 @@ end
 ####
 #### Block Quasi-DEER for Leapfrog (Phase 4)
 ####
-#### Note: Block Quasi-DEER for leapfrog is more specialized and will be
-#### implemented in Phase 4 when we integrate with HMC.
-####
+
+"""
+    _deer_iteration(f, s0, trajectory, ω, method::BlockQuasiDEER; kwargs...)
+
+Dispatch for Block Quasi-DEER method.
+"""
+function _deer_iteration(
+    f, s0, trajectory, ω, method::BlockQuasiDEER;
+    jacobian_fn, jvp_fn, rng
+)
+    return _deer_iteration_block(
+        f, s0, trajectory, ω;
+        hessian_diag_fn=method.hessian_diag_fn,
+        ε=method.ε,
+        M⁻¹=method.M⁻¹
+    )
+end
+
+"""
+    _deer_iteration_block(f, s0, trajectory, ω; hessian_diag_fn, ε, M⁻¹)
+
+One Newton iteration using 2×2 block-diagonal Jacobian structure for leapfrog.
+
+The state is s = [θ; r] where θ is position and r is momentum.
+The Jacobian has 2×2 block structure per dimension:
+
+    J_d = [ 1           ε*M⁻¹_d        ]
+          [ ε*H_d       1 + ε²*M⁻¹_d*H_d ]
+
+where H_d is the d-th diagonal element of the Hessian of -log p.
+
+Memory: O(T * D)
+Work: O(T * D) for 2×2 block operations in scan
+"""
+function _deer_iteration_block(
+    f,
+    s0::AbstractVector{T},
+    trajectory::AbstractMatrix{T},
+    ω;
+    hessian_diag_fn,
+    ε::T,
+    M⁻¹::AbstractVector{T},
+) where {T}
+    T_len, state_dim = size(trajectory)
+    D = state_dim ÷ 2  # θ and r each have dimension D
+
+    # Allocate arrays
+    f_vals = zeros(T, T_len, state_dim)
+
+    # Store block Jacobian components for each timestep
+    J_a = zeros(T, T_len, D)  # Top-left diagonal
+    J_b = zeros(T, T_len, D)  # Top-right diagonal
+    J_c = zeros(T, T_len, D)  # Bottom-left diagonal
+    J_e = zeros(T, T_len, D)  # Bottom-right diagonal
+    u_x = zeros(T, T_len, D)  # Offset for position
+    u_v = zeros(T, T_len, D)  # Offset for momentum
+
+    # Step 1: Evaluate f and compute block Jacobians at all timesteps
+    for t in 1:T_len
+        s_prev = (t == 1) ? s0 : trajectory[t - 1, :]
+
+        # Evaluate transition function
+        f_vals[t, :] = f(s_prev, ω[t])
+
+        # Extract position from previous state
+        θ_prev = s_prev[1:D]
+
+        # Compute Hessian diagonal at previous position
+        H_diag = hessian_diag_fn(θ_prev)
+
+        # Block Jacobian structure for leapfrog:
+        # J = [ I          ε*M⁻¹        ]
+        #     [ ε*H_diag   I + ε²*M⁻¹*H_diag ]
+        J_a[t, :] .= one(T)
+        J_b[t, :] .= ε .* M⁻¹
+        J_c[t, :] .= ε .* H_diag
+        J_e[t, :] .= one(T) .+ (ε^2) .* M⁻¹ .* H_diag
+    end
+
+    # Step 2: Compute offsets u = f(s_prev) - J * s_prev
+    for t in 1:T_len
+        s_prev = (t == 1) ? s0 : trajectory[t - 1, :]
+        θ_prev = s_prev[1:D]
+        r_prev = s_prev[(D+1):end]
+
+        f_θ = f_vals[t, 1:D]
+        f_r = f_vals[t, (D+1):end]
+
+        # u_x = f_θ - (J_a * θ_prev + J_b * r_prev)
+        # u_v = f_r - (J_c * θ_prev + J_e * r_prev)
+        u_x[t, :] = f_θ .- (J_a[t, :] .* θ_prev .+ J_b[t, :] .* r_prev)
+        u_v[t, :] = f_r .- (J_c[t, :] .* θ_prev .+ J_e[t, :] .* r_prev)
+    end
+
+    # Step 3: Build block transforms and solve via parallel scan
+    transforms = [Block2x2AffineTransform(
+        J_a[t, :], J_b[t, :], J_c[t, :], J_e[t, :],
+        u_x[t, :], u_v[t, :]
+    ) for t in 1:T_len]
+
+    # Initial state split
+    θ0 = s0[1:D]
+    r0 = s0[(D+1):end]
+
+    # Run parallel scan
+    trajectory_θ, trajectory_r = parallel_scan_block(transforms, θ0, r0)
+
+    # Combine into trajectory
+    trajectory_new = zeros(T, T_len, state_dim)
+    trajectory_new[:, 1:D] = trajectory_θ
+    trajectory_new[:, (D+1):end] = trajectory_r
+
+    return trajectory_new
+end
+
+"""
+    parallel_scan_block(transforms, θ0, r0)
+
+Parallel scan for 2×2 block transforms.
+
+Returns (trajectory_θ, trajectory_r) where each is a T_len × D matrix.
+"""
+function parallel_scan_block(
+    transforms::Vector{<:Block2x2AffineTransform{T}},
+    θ0::AbstractVector{T},
+    r0::AbstractVector{T},
+) where {T}
+    T_len = length(transforms)
+    D = length(θ0)
+
+    # Run prefix sum to get cumulative transforms
+    prefix = Vector{Block2x2AffineTransform{T}}(undef, T_len)
+    prefix[1] = transforms[1]
+    for t in 2:T_len
+        prefix[t] = compose(transforms[t], prefix[t-1])
+    end
+
+    # Apply each cumulative transform to initial state
+    trajectory_θ = zeros(T, T_len, D)
+    trajectory_r = zeros(T, T_len, D)
+
+    for t in 1:T_len
+        tr = prefix[t]
+        # Apply: [θ'] = [a b] [θ0] + [u_x]
+        #        [r']   [c e] [r0]   [u_v]
+        trajectory_θ[t, :] = tr.a .* θ0 .+ tr.b .* r0 .+ tr.u_x
+        trajectory_r[t, :] = tr.c .* θ0 .+ tr.e .* r0 .+ tr.u_v
+    end
+
+    return trajectory_θ, trajectory_r
+end
 
 ####
 #### Utility Functions

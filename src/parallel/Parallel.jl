@@ -50,6 +50,9 @@ include("deer.jl")
 # Parallel MALA
 include("mala.jl")
 
+# Parallel HMC
+include("hmc.jl")
+
 # Export types
 export AbstractParallelMethod, FullDEER, QuasiDEER, StochasticQuasiDEER, BlockQuasiDEER
 
@@ -83,5 +86,13 @@ export deer, deer_with_settings, sequential_mcmc
 export MALARandomInputs, MALAConfig
 export sample_mala_inputs, mala_proposal, mala_transition
 export parallel_mala, sequential_mala
+
+# Export HMC
+export HMCRandomInputs, HMCConfig
+export sample_hmc_inputs, hmc_transition, hmc_transition_soft
+export leapfrog_step, leapfrog_full, hmc_proposal
+export parallel_hmc, sequential_hmc
+export parallel_leapfrog, leapfrog_transition
+export hessian_diagonal_fd
 
 end # module

@@ -40,13 +40,31 @@ end
 StochasticQuasiDEER() = StochasticQuasiDEER(1)
 
 """
-    BlockQuasiDEER <: AbstractParallelMethod
+    BlockQuasiDEER{T,V,F} <: AbstractParallelMethod
 
 Block Quasi-DEER for leapfrog integration.
 Keeps 2×2 block structure per dimension to capture position-momentum interactions.
 Converges ~2× faster than diagonal Quasi-DEER for HMC leapfrog.
+
+# Fields
+- `hessian_diag_fn::F`: Function to compute diagonal of Hessian of -log p
+- `ε::T`: Leapfrog step size
+- `M⁻¹::V`: Inverse mass matrix diagonal
 """
-struct BlockQuasiDEER <: AbstractParallelMethod end
+struct BlockQuasiDEER{T<:AbstractFloat,V<:AbstractVector{T},F} <: AbstractParallelMethod
+    hessian_diag_fn::F
+    ε::T
+    M⁻¹::V
+end
+
+"""
+    BlockQuasiDEER(hessian_diag_fn, ε, D)
+
+Construct BlockQuasiDEER with unit mass matrix.
+"""
+function BlockQuasiDEER(hessian_diag_fn, ε::T, D::Int) where {T}
+    return BlockQuasiDEER(hessian_diag_fn, ε, ones(T, D))
+end
 
 ####
 #### Affine Transform Types for Parallel Scan
