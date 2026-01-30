@@ -35,6 +35,42 @@ module Parallel
 using LinearAlgebra
 using Random
 
+# Optional dependencies - only loaded if available
+const HAS_ABSTRACTMCMC = try
+    @eval using AbstractMCMC: AbstractMCMC
+    true
+catch
+    false
+end
+
+const HAS_LOGDENSITYPROBLEMS = try
+    @eval using LogDensityProblems: LogDensityProblems
+    true
+catch
+    false
+end
+
+# Check if we're a submodule of AdvancedHMC
+const IS_SUBMODULE = parentmodule(@__MODULE__) !== Main &&
+                     nameof(parentmodule(@__MODULE__)) === :AdvancedHMC
+
+# Import metric types from parent module if available
+if IS_SUBMODULE
+    import ..AdvancedHMC: AbstractMetric, DiagEuclideanMetric, UnitEuclideanMetric, DenseEuclideanMetric
+else
+    # Define minimal metric type stubs for standalone testing
+    abstract type AbstractMetric end
+    struct DiagEuclideanMetric{T} <: AbstractMetric
+        M⁻¹::Vector{T}
+    end
+    struct UnitEuclideanMetric{T,N} <: AbstractMetric
+        dim::NTuple{N,Int}
+    end
+    struct DenseEuclideanMetric{T} <: AbstractMetric
+        M⁻¹::Matrix{T}
+    end
+end
+
 # Types
 include("types.jl")
 
@@ -52,6 +88,11 @@ include("mala.jl")
 
 # Parallel HMC
 include("hmc.jl")
+
+# AbstractMCMC integration (only if dependencies available)
+if HAS_ABSTRACTMCMC && HAS_LOGDENSITYPROBLEMS
+    include("abstractmcmc.jl")
+end
 
 # Export types
 export AbstractParallelMethod, FullDEER, QuasiDEER, StochasticQuasiDEER, BlockQuasiDEER
@@ -94,5 +135,22 @@ export leapfrog_step, leapfrog_full, hmc_proposal
 export parallel_hmc, sequential_hmc
 export parallel_leapfrog, leapfrog_transition
 export hessian_diagonal_fd
+
+# Export AbstractMCMC integration (only if dependencies available)
+if HAS_ABSTRACTMCMC && HAS_LOGDENSITYPROBLEMS
+    export AbstractParallelSampler
+    export ParallelHMCSampler, ParallelHMC
+    export ParallelMALASampler, ParallelMALA
+    export ParallelSamplerState, ParallelTransition, ParallelSamplerIterator
+    export parallel_sample, get_samples
+    export SimpleLogDensity
+    # Re-export LogDensityProblems for convenience
+    export LogDensityProblems
+end
+
+# Export metric types (for standalone testing)
+if !IS_SUBMODULE
+    export AbstractMetric, DiagEuclideanMetric, UnitEuclideanMetric, DenseEuclideanMetric
+end
 
 end # module
