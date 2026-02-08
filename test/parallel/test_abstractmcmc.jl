@@ -1,11 +1,5 @@
-using Test
-using LinearAlgebra
-using Random
-using Statistics
-
-# Include the parallel module directly for testing
-include(joinpath(@__DIR__, "../../src/parallel/Parallel.jl"))
-using .Parallel
+# Load common test setup (handles both installed package and standalone modes)
+include(joinpath(@__DIR__, "common.jl"))
 
 @testset "AbstractMCMC Integration" begin
     @testset "SimpleLogDensity" begin
@@ -96,7 +90,7 @@ using .Parallel
 
         # Test DiagEuclideanMetric
         custom_M = [1.0, 2.0, 0.5, 3.0, 1.5]
-        metric = DiagEuclideanMetric{Float64}(custom_M)
+        metric = DiagEuclideanMetric(custom_M)
         M_from_metric = Parallel.make_parallel_metric(metric, D, T)
         @test M_from_metric == custom_M
     end

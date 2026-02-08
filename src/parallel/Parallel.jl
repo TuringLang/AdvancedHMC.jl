@@ -35,29 +35,33 @@ module Parallel
 using LinearAlgebra
 using Random
 
-# Optional dependencies - only loaded if available
-const HAS_ABSTRACTMCMC = try
-    @eval using AbstractMCMC: AbstractMCMC
-    true
-catch
-    false
-end
-
-const HAS_LOGDENSITYPROBLEMS = try
-    @eval using LogDensityProblems: LogDensityProblems
-    true
-catch
-    false
-end
-
 # Check if we're a submodule of AdvancedHMC
 const IS_SUBMODULE = parentmodule(@__MODULE__) !== Main &&
                      nameof(parentmodule(@__MODULE__)) === :AdvancedHMC
 
-# Import metric types from parent module if available
+# Import dependencies based on context
 if IS_SUBMODULE
-    import ..AdvancedHMC: AbstractMetric, DiagEuclideanMetric, UnitEuclideanMetric, DenseEuclideanMetric
+    # When loaded as part of AdvancedHMC, use parent's dependencies
+    using AbstractMCMC: AbstractMCMC
+    using LogDensityProblems: LogDensityProblems
+    import ..AdvancedHMC:
+        AbstractMetric, DiagEuclideanMetric, UnitEuclideanMetric, DenseEuclideanMetric
+    const HAS_ABSTRACTMCMC = true
+    const HAS_LOGDENSITYPROBLEMS = true
 else
+    # Standalone mode: try to load optional dependencies
+    const HAS_ABSTRACTMCMC = try
+        @eval using AbstractMCMC: AbstractMCMC
+        true
+    catch
+        false
+    end
+    const HAS_LOGDENSITYPROBLEMS = try
+        @eval using LogDensityProblems: LogDensityProblems
+        true
+    catch
+        false
+    end
     # Define minimal metric type stubs for standalone testing
     abstract type AbstractMetric end
     struct DiagEuclideanMetric{T} <: AbstractMetric

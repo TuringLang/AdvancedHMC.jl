@@ -6,7 +6,7 @@
 ####
 
 using Random: AbstractRNG, default_rng
-using LogDensityProblems: LogDensityProblems
+# LogDensityProblems is already imported in Parallel.jl
 
 ####
 #### Abstract Type for Parallel Samplers

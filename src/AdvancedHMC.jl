@@ -130,6 +130,9 @@ export HMCSampler, HMC, NUTS, HMCDA
 
 include("abstractmcmc.jl")
 
+# Parallel MCMC module (DEER algorithm)
+include("parallel/Parallel.jl")
+
 ## Without explicit AD backend
 function Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel; kwargs...)
     return Hamiltonian(metric, ℓ.logdensity; kwargs...)

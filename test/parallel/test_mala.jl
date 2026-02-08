@@ -1,11 +1,5 @@
-using Test
-using LinearAlgebra
-using Random
-using Statistics
-
-# Include the parallel module directly for testing
-include(joinpath(@__DIR__, "../../src/parallel/Parallel.jl"))
-using .Parallel
+# Load common test setup (handles both installed package and standalone modes)
+include(joinpath(@__DIR__, "common.jl"))
 
 @testset "Parallel MALA" begin
     @testset "MALARandomInputs" begin

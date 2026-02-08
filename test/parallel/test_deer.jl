@@ -1,10 +1,5 @@
-using Test
-using LinearAlgebra
-using Random
-
-# Include the parallel module directly for testing
-include(joinpath(@__DIR__, "../../src/parallel/Parallel.jl"))
-using .Parallel
+# Load common test setup (handles both installed package and standalone modes)
+include(joinpath(@__DIR__, "common.jl"))
 
 @testset "DEER Algorithm" begin
     @testset "Sequential MCMC Reference" begin

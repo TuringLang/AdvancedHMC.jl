@@ -1,9 +1,5 @@
-using Test
-using LinearAlgebra
-
-# Include the parallel module directly for testing
-include(joinpath(@__DIR__, "../../src/parallel/Parallel.jl"))
-using .Parallel
+# Load common test setup (handles both installed package and standalone modes)
+include(joinpath(@__DIR__, "common.jl"))
 
 @testset "Parallel Scan" begin
     @testset "Matrix Affine Transform Composition" begin
