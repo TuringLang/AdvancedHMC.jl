@@ -36,8 +36,8 @@ using LinearAlgebra
 using Random
 
 # Check if we're a submodule of AdvancedHMC
-const IS_SUBMODULE = parentmodule(@__MODULE__) !== Main &&
-                     nameof(parentmodule(@__MODULE__)) === :AdvancedHMC
+const IS_SUBMODULE =
+    parentmodule(@__MODULE__) !== Main && nameof(parentmodule(@__MODULE__)) === :AdvancedHMC
 
 # Import dependencies based on context
 if IS_SUBMODULE

@@ -43,9 +43,7 @@ result = sample(model, sampler, 1000)
 ```
 """
 struct ParallelHMCSampler{
-    T<:AbstractFloat,
-    M<:AbstractParallelMethod,
-    I<:Union{Symbol,AbstractMetric},
+    T<:AbstractFloat,M<:AbstractParallelMethod,I<:Union{Symbol,AbstractMetric}
 } <: AbstractParallelSampler
     ε::T
     L::Int
@@ -99,9 +97,7 @@ result = sample(model, sampler, 1000)
 ```
 """
 struct ParallelMALASampler{
-    T<:AbstractFloat,
-    M<:AbstractParallelMethod,
-    I<:Union{Symbol,AbstractMetric},
+    T<:AbstractFloat,M<:AbstractParallelMethod,I<:Union{Symbol,AbstractMetric}
 } <: AbstractParallelSampler
     ε::T
     method::M
@@ -244,7 +240,7 @@ function parallel_sample(
 
     # Create log density and gradient functions
     logp = x -> LogDensityProblems.logdensity(logdensity, x)
-    ∇logp = function(x)
+    ∇logp = function (x)
         _, grad = LogDensityProblems.logdensity_and_gradient(logdensity, x)
         return grad
     end
@@ -267,11 +263,14 @@ function parallel_sample(
 
     # Run parallel HMC
     result = parallel_hmc(
-        config, s0, N, ω;
+        config,
+        s0,
+        N,
+        ω;
         method=sampler.method,
         tol=sampler.tol,
         max_iters=sampler.max_iters,
-        verbose=verbose
+        verbose=verbose,
     )
 
     # Estimate acceptance rate (from soft gating, approximate)
@@ -283,7 +282,7 @@ function parallel_sample(
         result.converged,
         result.iterations,
         result.max_residual,
-        acceptance_rate
+        acceptance_rate,
     )
 end
 
@@ -305,7 +304,7 @@ function parallel_sample(
 
     # Create log density and gradient functions
     logp = x -> LogDensityProblems.logdensity(logdensity, x)
-    ∇logp = function(x)
+    ∇logp = function (x)
         _, grad = LogDensityProblems.logdensity_and_gradient(logdensity, x)
         return grad
     end
@@ -325,11 +324,14 @@ function parallel_sample(
 
     # Run parallel MALA
     result = parallel_mala(
-        config, s0, N, ω;
+        config,
+        s0,
+        N,
+        ω;
         method=sampler.method,
         tol=sampler.tol,
         max_iters=sampler.max_iters,
-        verbose=verbose
+        verbose=verbose,
     )
 
     # Estimate acceptance rate
@@ -340,7 +342,7 @@ function parallel_sample(
         result.converged,
         result.iterations,
         result.max_residual,
-        acceptance_rate
+        acceptance_rate,
     )
 end
 
@@ -370,7 +372,7 @@ get_samples(state::ParallelSamplerState) = state.trajectory
 Extract samples after discarding burn-in period.
 """
 function get_samples(state::ParallelSamplerState, burn_in::Int)
-    return state.trajectory[(burn_in+1):end, :]
+    return state.trajectory[(burn_in + 1):end, :]
 end
 
 ####
@@ -396,10 +398,7 @@ function Base.iterate(state::ParallelSamplerState, i::Int)
         return nothing
     end
     θ = state.trajectory[i, :]
-    stat = (
-        iteration=i,
-        converged=state.converged,
-    )
+    stat = (iteration=i, converged=state.converged)
     return ParallelTransition(θ, stat), i + 1
 end
 
@@ -429,7 +428,9 @@ struct SimpleLogDensity{F,G}
 end
 
 LogDensityProblems.dimension(ld::SimpleLogDensity) = ld.dim
-LogDensityProblems.capabilities(::Type{<:SimpleLogDensity}) = LogDensityProblems.LogDensityOrder{1}()
+function LogDensityProblems.capabilities(::Type{<:SimpleLogDensity})
+    LogDensityProblems.LogDensityOrder{1}()
+end
 LogDensityProblems.logdensity(ld::SimpleLogDensity, x) = ld.logp(x)
 function LogDensityProblems.logdensity_and_gradient(ld::SimpleLogDensity, x)
     return ld.logp(x), ld.∇logp(x)

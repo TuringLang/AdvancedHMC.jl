@@ -68,7 +68,9 @@ include(joinpath(@__DIR__, "common.jl"))
         traj_seq, _ = sequential_mala(config, s0, T_len, ω)
 
         # Run parallel MALA with DEER
-        result = parallel_mala(config, s0, T_len, ω; method=QuasiDEER(), tol=1e-10, max_iters=200)
+        result = parallel_mala(
+            config, s0, T_len, ω; method=QuasiDEER(), tol=1e-10, max_iters=200
+        )
 
         @test result.converged
         @test result.trajectory ≈ traj_seq atol = 1e-6
@@ -91,7 +93,9 @@ include(joinpath(@__DIR__, "common.jl"))
 
         traj_seq, _ = sequential_mala(config, s0, T_len, ω)
 
-        result = parallel_mala(config, s0, T_len, ω; method=FullDEER(), tol=1e-10, max_iters=100)
+        result = parallel_mala(
+            config, s0, T_len, ω; method=FullDEER(), tol=1e-10, max_iters=100
+        )
 
         @test result.converged
         @test result.trajectory ≈ traj_seq atol = 1e-6
@@ -116,11 +120,14 @@ include(joinpath(@__DIR__, "common.jl"))
 
         # Stochastic method needs more samples for accuracy
         result = parallel_mala(
-            config, s0, T_len, ω;
+            config,
+            s0,
+            T_len,
+            ω;
             method=StochasticQuasiDEER(20),
             tol=1e-8,
             max_iters=200,
-            rng=MersenneTwister(999)
+            rng=MersenneTwister(999),
         )
 
         @test result.converged
@@ -195,10 +202,14 @@ include(joinpath(@__DIR__, "common.jl"))
 
         # Use convenience API that samples inputs automatically
         result = parallel_mala(
-            logp, ∇logp, ε, s0, T_len;
+            logp,
+            ∇logp,
+            ε,
+            s0,
+            T_len;
             rng=MersenneTwister(192021),
             method=QuasiDEER(),
-            tol=1e-10
+            tol=1e-10,
         )
 
         @test result isa DEERResult
@@ -265,7 +276,9 @@ include(joinpath(@__DIR__, "common.jl"))
 
         traj_seq, _ = sequential_mala(config, s0, T_len, ω)
 
-        result = parallel_mala(config, s0, T_len, ω; method=QuasiDEER(), tol=1e-10, max_iters=500)
+        result = parallel_mala(
+            config, s0, T_len, ω; method=QuasiDEER(), tol=1e-10, max_iters=500
+        )
 
         @test result.converged
         @test result.trajectory ≈ traj_seq atol = 1e-6

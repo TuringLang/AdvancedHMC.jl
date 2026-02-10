@@ -11,7 +11,8 @@ include(joinpath(@__DIR__, "common.jl"))
         ld = SimpleLogDensity(D, logp, ∇logp)
 
         @test LogDensityProblems.dimension(ld) == D
-        @test LogDensityProblems.capabilities(typeof(ld)) == LogDensityProblems.LogDensityOrder{1}()
+        @test LogDensityProblems.capabilities(typeof(ld)) ==
+            LogDensityProblems.LogDensityOrder{1}()
 
         x = randn(D)
         @test LogDensityProblems.logdensity(ld, x) ≈ logp(x)
@@ -33,11 +34,8 @@ include(joinpath(@__DIR__, "common.jl"))
         @test sampler.max_iters == 1000
 
         # Test with custom options
-        sampler2 = ParallelHMCSampler(0.05, 20;
-            method=FullDEER(),
-            metric=:unit,
-            tol=1e-8,
-            max_iters=500
+        sampler2 = ParallelHMCSampler(
+            0.05, 20; method=FullDEER(), metric=:unit, tol=1e-8, max_iters=500
         )
 
         @test sampler2.ε ≈ 0.05
@@ -63,10 +61,7 @@ include(joinpath(@__DIR__, "common.jl"))
         @test sampler.max_iters == 1000
 
         # Test with custom options
-        sampler2 = ParallelMALASampler(0.05;
-            method=FullDEER(),
-            tol=1e-10
-        )
+        sampler2 = ParallelMALASampler(0.05; method=FullDEER(), tol=1e-10)
 
         @test sampler2.ε ≈ 0.05
         @test sampler2.method isa FullDEER
@@ -105,7 +100,7 @@ include(joinpath(@__DIR__, "common.jl"))
             true,   # converged
             5,      # iterations
             1e-8,   # max_residual
-            0.85    # acceptance_rate
+            0.85,    # acceptance_rate
         )
 
         @test state.trajectory === trajectory
@@ -120,9 +115,7 @@ include(joinpath(@__DIR__, "common.jl"))
         D = 2
         trajectory = randn(T_len, D)
 
-        state = ParallelSamplerState(
-            trajectory, true, 3, 1e-10, 0.9
-        )
+        state = ParallelSamplerState(trajectory, true, 3, 1e-10, 0.9)
 
         # Get all samples
         samples = get_samples(state)
@@ -132,7 +125,7 @@ include(joinpath(@__DIR__, "common.jl"))
         burn_in = 20
         samples_after_burn = get_samples(state, burn_in)
         @test size(samples_after_burn) == (T_len - burn_in, D)
-        @test samples_after_burn == trajectory[(burn_in+1):end, :]
+        @test samples_after_burn == trajectory[(burn_in + 1):end, :]
     end
 
     @testset "ParallelSamplerState Iterator" begin
@@ -140,9 +133,7 @@ include(joinpath(@__DIR__, "common.jl"))
         D = 2
         trajectory = [Float64(i+j) for i in 1:T_len, j in 1:D]
 
-        state = ParallelSamplerState(
-            trajectory, true, 2, 1e-9, 0.95
-        )
+        state = ParallelSamplerState(trajectory, true, 2, 1e-9, 0.95)
 
         @test length(state) == T_len
 
@@ -267,7 +258,9 @@ include(joinpath(@__DIR__, "common.jl"))
 
         # Test with FullDEER
         sampler_full = ParallelHMCSampler(0.1, 5; method=FullDEER(), tol=1e-6)
-        state_full = parallel_sample(MersenneTwister(101112), ld, sampler_full, N; initial_params=zeros(D))
+        state_full = parallel_sample(
+            MersenneTwister(101112), ld, sampler_full, N; initial_params=zeros(D)
+        )
         @test state_full.converged
     end
 

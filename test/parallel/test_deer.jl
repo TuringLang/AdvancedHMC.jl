@@ -130,11 +130,14 @@ include(joinpath(@__DIR__, "common.jl"))
         # Stochastic Quasi-DEER with more samples for accuracy
         rng = MersenneTwister(999)
         result = deer(
-            f, s0, T_len, ω;
+            f,
+            s0,
+            T_len,
+            ω;
             method=StochasticQuasiDEER(10),  # 10 samples for better estimate
             tol=1e-8,
             max_iters=50,
-            rng=rng
+            rng=rng,
         )
 
         @test result.converged
@@ -230,10 +233,13 @@ include(joinpath(@__DIR__, "common.jl"))
         result_full = deer(f, s0, T_len, ω; method=FullDEER(), tol=1e-10)
         result_quasi = deer(f, s0, T_len, ω; method=QuasiDEER(), tol=1e-10)
         result_stoch = deer(
-            f, s0, T_len, ω;
+            f,
+            s0,
+            T_len,
+            ω;
             method=StochasticQuasiDEER(20),
             tol=1e-8,
-            rng=MersenneTwister(12345)
+            rng=MersenneTwister(12345),
         )
 
         @test result_full.trajectory ≈ trajectory_ref atol = 1e-8

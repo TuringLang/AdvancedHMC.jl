@@ -38,10 +38,7 @@ Sample random inputs for T_len HMC steps.
 - `M⁻¹`: Inverse mass matrix diagonal (for momentum sampling)
 """
 function sample_hmc_inputs(
-    rng::AbstractRNG,
-    D::Int,
-    T_len::Int;
-    M⁻¹::AbstractVector=ones(D),
+    rng::AbstractRNG, D::Int, T_len::Int; M⁻¹::AbstractVector=ones(D)
 )
     # Momentum is sampled from N(0, M), so r ~ N(0, M) means r = sqrt(M) * z where z ~ N(0, I)
     # For diagonal M, sqrt(M) = 1/sqrt(M⁻¹)
@@ -350,10 +347,7 @@ end
 Run HMC with pre-sampled random inputs.
 """
 function sequential_hmc(
-    config::HMCConfig{T},
-    s0::AbstractVector{T},
-    T_len::Int,
-    ω::Vector{<:HMCRandomInputs{T}},
+    config::HMCConfig{T}, s0::AbstractVector{T}, T_len::Int, ω::Vector{<:HMCRandomInputs{T}}
 ) where {T}
     D = length(s0)
     M⁻¹ = isempty(config.M⁻¹) ? ones(T, D) : config.M⁻¹
@@ -363,7 +357,9 @@ function sequential_hmc(
     n_accept = 0
 
     for t in 1:T_len
-        θ_new = hmc_transition(θ_curr, ω[t], config.logp, config.∇logp, config.ε, config.L; M⁻¹=M⁻¹)
+        θ_new = hmc_transition(
+            θ_curr, ω[t], config.logp, config.∇logp, config.ε, config.L; M⁻¹=M⁻¹
+        )
 
         if !all(θ_new .≈ θ_curr)
             n_accept += 1
@@ -411,8 +407,14 @@ function parallel_hmc(
     # Create transition function for DEER
     # Note: Using soft gating for differentiability
     f(θ, ω_t) = hmc_transition_soft(
-        θ, ω_t, config.logp, config.∇logp, config.ε, config.L;
-        M⁻¹=M⁻¹, τ=T(0.01)  # Small τ for near-hard gating
+        θ,
+        ω_t,
+        config.logp,
+        config.∇logp,
+        config.ε,
+        config.L;
+        M⁻¹=M⁻¹,
+        τ=T(0.01),  # Small τ for near-hard gating
     )
 
     return deer(f, s0, T_len, ω; method=method, kwargs...)
@@ -487,7 +489,7 @@ function leapfrog_transition(
 ) where {T}
     D = length(s) ÷ 2
     θ = s[1:D]
-    r = s[(D+1):end]
+    r = s[(D + 1):end]
 
     # Get gradient at current position
     grad = ∇logp(θ)
@@ -597,11 +599,7 @@ end
 
 Estimate Hessian diagonal via finite differences on the gradient.
 """
-function hessian_diagonal_fd(
-    ∇logp,
-    θ::AbstractVector{T};
-    δ::T=T(1e-5),
-) where {T}
+function hessian_diagonal_fd(∇logp, θ::AbstractVector{T}; δ::T=T(1e-5)) where {T}
     D = length(θ)
     H_diag = zeros(T, D)
     grad0 = ∇logp(θ)

@@ -37,16 +37,14 @@ Pre-sample all random inputs needed for T_len MALA steps.
 Returns a vector of MALARandomInputs.
 """
 function sample_mala_inputs(
-    rng::AbstractRNG,
-    D::Int,
-    T_len::Int,
-    ::Type{T}=Float64,
+    rng::AbstractRNG, D::Int, T_len::Int, (::Type{T})=Float64
 ) where {T}
     return [MALARandomInputs(randn(rng, T, D), rand(rng, T)) for _ in 1:T_len]
 end
 
-sample_mala_inputs(D::Int, T_len::Int, T::Type=Float64) =
+function sample_mala_inputs(D::Int, T_len::Int, T::Type=Float64)
     sample_mala_inputs(default_rng(), D, T_len, T)
+end
 
 ####
 #### MALA Proposal
@@ -67,10 +65,7 @@ Compute the MALA proposal: x̃ = x + ε∇log p(x) + √(2ε)ξ
 - Proposed state x̃
 """
 function mala_proposal(
-    x::AbstractVector{T},
-    ∇logp_x::AbstractVector{T},
-    ε::T,
-    ξ::AbstractVector{T},
+    x::AbstractVector{T}, ∇logp_x::AbstractVector{T}, ε::T, ξ::AbstractVector{T}
 ) where {T}
     return x .+ ε .* ∇logp_x .+ sqrt(2 * ε) .* ξ
 end
@@ -99,11 +94,7 @@ where q(x̃|x) ∝ exp(-||x̃ - x - ε∇log p(x)||² / (4ε))
 - Log acceptance ratio (can be > 0)
 """
 function mala_log_acceptance_ratio(
-    x::AbstractVector{T},
-    x̃::AbstractVector{T},
-    logp,
-    ∇logp,
-    ε::T,
+    x::AbstractVector{T}, x̃::AbstractVector{T}, logp, ∇logp, ε::T
 ) where {T}
     # Log density ratio
     log_ratio = logp(x̃) - logp(x)
@@ -194,11 +185,7 @@ Compute one MALA transition step.
 - Next state x_t (either accepted proposal or current state)
 """
 function mala_transition(
-    x::AbstractVector{T},
-    ω::MALARandomInputs{T},
-    logp,
-    ∇logp,
-    ε::T,
+    x::AbstractVector{T}, ω::MALARandomInputs{T}, logp, ∇logp, ε::T
 ) where {T}
     # Compute gradient at current state
     ∇logp_x = ∇logp(x)
@@ -378,12 +365,7 @@ end
 Convenience version that samples random inputs automatically.
 """
 function sequential_mala(
-    logp,
-    ∇logp,
-    ε::T,
-    s0::AbstractVector{T},
-    T_len::Int;
-    rng::AbstractRNG=default_rng(),
+    logp, ∇logp, ε::T, s0::AbstractVector{T}, T_len::Int; rng::AbstractRNG=default_rng()
 ) where {T}
     D = length(s0)
     ω = sample_mala_inputs(rng, D, T_len, T)

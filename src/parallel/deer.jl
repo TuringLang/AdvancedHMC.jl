@@ -106,8 +106,7 @@ function deer(
     for iter in 1:max_iters
         # Run one Newton iteration based on method
         trajectory_new = _deer_iteration(
-            f, s0, trajectory, ω, method;
-            jacobian_fn=jacobian_fn, jvp_fn=jvp_fn, rng=rng
+            f, s0, trajectory, ω, method; jacobian_fn=jacobian_fn, jvp_fn=jvp_fn, rng=rng
         )
 
         # Check convergence
@@ -139,27 +138,19 @@ end
 #### Newton Iteration Dispatch
 ####
 
-function _deer_iteration(
-    f, s0, trajectory, ω, method::FullDEER;
-    jacobian_fn, jvp_fn, rng
-)
+function _deer_iteration(f, s0, trajectory, ω, method::FullDEER; jacobian_fn, jvp_fn, rng)
     return _deer_iteration_full(f, s0, trajectory, ω; jacobian_fn=jacobian_fn)
 end
 
-function _deer_iteration(
-    f, s0, trajectory, ω, method::QuasiDEER;
-    jacobian_fn, jvp_fn, rng
-)
+function _deer_iteration(f, s0, trajectory, ω, method::QuasiDEER; jacobian_fn, jvp_fn, rng)
     return _deer_iteration_quasi(f, s0, trajectory, ω; jacobian_fn=jacobian_fn)
 end
 
 function _deer_iteration(
-    f, s0, trajectory, ω, method::StochasticQuasiDEER;
-    jacobian_fn, jvp_fn, rng
+    f, s0, trajectory, ω, method::StochasticQuasiDEER; jacobian_fn, jvp_fn, rng
 )
     return _deer_iteration_stochastic(
-        f, s0, trajectory, ω;
-        jvp_fn=jvp_fn, rng=rng, n_samples=method.n_samples
+        f, s0, trajectory, ω; jvp_fn=jvp_fn, rng=rng, n_samples=method.n_samples
     )
 end
 
@@ -176,11 +167,7 @@ Memory: O(T * D²)
 Work: O(T * D³) for matrix multiplications in scan
 """
 function _deer_iteration_full(
-    f,
-    s0::AbstractVector{T},
-    trajectory::AbstractMatrix{T},
-    ω;
-    jacobian_fn=jacobian_fd,
+    f, s0::AbstractVector{T}, trajectory::AbstractMatrix{T}, ω; jacobian_fn=jacobian_fd
 ) where {T}
     T_len, D = size(trajectory)
 
@@ -227,11 +214,7 @@ Memory: O(T * D)
 Work: O(T * D) for elementwise operations in scan
 """
 function _deer_iteration_quasi(
-    f,
-    s0::AbstractVector{T},
-    trajectory::AbstractMatrix{T},
-    ω;
-    jacobian_fn=jacobian_fd,
+    f, s0::AbstractVector{T}, trajectory::AbstractMatrix{T}, ω; jacobian_fn=jacobian_fd
 ) where {T}
     T_len, D = size(trajectory)
 
@@ -304,7 +287,9 @@ function _deer_iteration_stochastic(
 
         # Estimate Jacobian diagonal via Hutchinson's method
         f_t(s) = f(s, ω[t])
-        J_diag[t, :] = hutchinson_diagonal(f_t, s_prev, jvp_fn; rng=rng, n_samples=n_samples)
+        J_diag[t, :] = hutchinson_diagonal(
+            f_t, s_prev, jvp_fn; rng=rng, n_samples=n_samples
+        )
     end
 
     # Step 2: Compute inputs u_t = f_t(s_{t-1}) - diag(J_t) .* s_{t-1}
@@ -330,14 +315,16 @@ end
 Dispatch for Block Quasi-DEER method.
 """
 function _deer_iteration(
-    f, s0, trajectory, ω, method::BlockQuasiDEER;
-    jacobian_fn, jvp_fn, rng
+    f, s0, trajectory, ω, method::BlockQuasiDEER; jacobian_fn, jvp_fn, rng
 )
     return _deer_iteration_block(
-        f, s0, trajectory, ω;
+        f,
+        s0,
+        trajectory,
+        ω;
         hessian_diag_fn=method.hessian_diag_fn,
         ε=method.ε,
-        M⁻¹=method.M⁻¹
+        M⁻¹=method.M⁻¹,
     )
 end
 
@@ -406,10 +393,10 @@ function _deer_iteration_block(
     for t in 1:T_len
         s_prev = (t == 1) ? s0 : trajectory[t - 1, :]
         θ_prev = s_prev[1:D]
-        r_prev = s_prev[(D+1):end]
+        r_prev = s_prev[(D + 1):end]
 
         f_θ = f_vals[t, 1:D]
-        f_r = f_vals[t, (D+1):end]
+        f_r = f_vals[t, (D + 1):end]
 
         # u_x = f_θ - (J_a * θ_prev + J_b * r_prev)
         # u_v = f_r - (J_c * θ_prev + J_e * r_prev)
@@ -418,14 +405,15 @@ function _deer_iteration_block(
     end
 
     # Step 3: Build block transforms and solve via parallel scan
-    transforms = [Block2x2AffineTransform(
-        J_a[t, :], J_b[t, :], J_c[t, :], J_e[t, :],
-        u_x[t, :], u_v[t, :]
-    ) for t in 1:T_len]
+    transforms = [
+        Block2x2AffineTransform(
+            J_a[t, :], J_b[t, :], J_c[t, :], J_e[t, :], u_x[t, :], u_v[t, :]
+        ) for t in 1:T_len
+    ]
 
     # Initial state split
     θ0 = s0[1:D]
-    r0 = s0[(D+1):end]
+    r0 = s0[(D + 1):end]
 
     # Run parallel scan
     trajectory_θ, trajectory_r = parallel_scan_block(transforms, θ0, r0)
@@ -433,7 +421,7 @@ function _deer_iteration_block(
     # Combine into trajectory
     trajectory_new = zeros(T, T_len, state_dim)
     trajectory_new[:, 1:D] = trajectory_θ
-    trajectory_new[:, (D+1):end] = trajectory_r
+    trajectory_new[:, (D + 1):end] = trajectory_r
 
     return trajectory_new
 end
@@ -457,7 +445,7 @@ function parallel_scan_block(
     prefix = Vector{Block2x2AffineTransform{T}}(undef, T_len)
     prefix[1] = transforms[1]
     for t in 2:T_len
-        prefix[t] = compose(transforms[t], prefix[t-1])
+        prefix[t] = compose(transforms[t], prefix[t - 1])
     end
 
     # Apply each cumulative transform to initial state
@@ -485,19 +473,17 @@ end
 Run DEER with settings from a ParallelMCMCSettings struct.
 """
 function deer_with_settings(
-    f,
-    s0::AbstractVector,
-    T_len::Int,
-    ω,
-    settings::ParallelMCMCSettings;
-    kwargs...
+    f, s0::AbstractVector, T_len::Int, ω, settings::ParallelMCMCSettings; kwargs...
 )
     return deer(
-        f, s0, T_len, ω;
+        f,
+        s0,
+        T_len,
+        ω;
         method=settings.method,
         tol=settings.tol,
         max_iters=settings.max_iters,
-        kwargs...
+        kwargs...,
     )
 end
 
@@ -508,12 +494,7 @@ Run MCMC sequentially (for comparison/testing).
 
 Returns the trajectory as a (T × D) matrix.
 """
-function sequential_mcmc(
-    f,
-    s0::AbstractVector{T},
-    T_len::Int,
-    ω,
-) where {T}
+function sequential_mcmc(f, s0::AbstractVector{T}, T_len::Int, ω) where {T}
     D = length(s0)
     trajectory = zeros(T, T_len, D)
 

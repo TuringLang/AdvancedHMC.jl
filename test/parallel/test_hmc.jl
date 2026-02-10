@@ -158,7 +158,9 @@ include(joinpath(@__DIR__, "common.jl"))
 
         # Run parallel HMC with DEER
         # Note: soft gating means slight differences are expected
-        result = parallel_hmc(config, s0, T_len, ω; method=QuasiDEER(), tol=1e-8, max_iters=200)
+        result = parallel_hmc(
+            config, s0, T_len, ω; method=QuasiDEER(), tol=1e-8, max_iters=200
+        )
 
         @test result.converged
         # Allow larger tolerance due to soft gating
@@ -184,7 +186,9 @@ include(joinpath(@__DIR__, "common.jl"))
 
         traj_seq, _ = sequential_hmc(config, s0, T_len, ω)
 
-        result = parallel_hmc(config, s0, T_len, ω; method=FullDEER(), tol=1e-8, max_iters=100)
+        result = parallel_hmc(
+            config, s0, T_len, ω; method=FullDEER(), tol=1e-8, max_iters=100
+        )
 
         @test result.converged
         @test maximum(abs.(result.trajectory .- traj_seq)) < 0.5
@@ -202,10 +206,15 @@ include(joinpath(@__DIR__, "common.jl"))
         s0 = zeros(D)
 
         result = parallel_hmc(
-            logp, ∇logp, ε, L, s0, T_len;
+            logp,
+            ∇logp,
+            ε,
+            L,
+            s0,
+            T_len;
             rng=MersenneTwister(131415),
             method=QuasiDEER(),
-            tol=1e-8
+            tol=1e-8,
         )
 
         @test result isa DEERResult
@@ -247,7 +256,7 @@ include(joinpath(@__DIR__, "common.jl"))
 
         # Extract θ and r
         θ_new = s_new[1:D]
-        r_new = s_new[(D+1):end]
+        r_new = s_new[(D + 1):end]
 
         # Verify manually
         grad0 = ∇logp(θ0)
@@ -282,7 +291,7 @@ include(joinpath(@__DIR__, "common.jl"))
         # Extract final state
         s_final = result.trajectory[end, :]
         θ_par = s_final[1:D]
-        r_par = s_final[(D+1):end]
+        r_par = s_final[(D + 1):end]
 
         @test θ_par ≈ θ_seq atol = 1e-6
         @test r_par ≈ r_seq atol = 1e-6
@@ -330,7 +339,9 @@ include(joinpath(@__DIR__, "common.jl"))
         s0 = zeros(D)
 
         rng = MersenneTwister(161718)
-        trajectory, acceptance_rate = sequential_hmc(logp, ∇logp, ε, L, s0, T_len; rng=rng, M⁻¹=M⁻¹)
+        trajectory, acceptance_rate = sequential_hmc(
+            logp, ∇logp, ε, L, s0, T_len; rng=rng, M⁻¹=M⁻¹
+        )
 
         @test size(trajectory) == (T_len, D)
         @test acceptance_rate > 0.5
@@ -371,7 +382,7 @@ include(joinpath(@__DIR__, "common.jl"))
 
         # Discard burn-in
         burn_in = 100
-        samples = trajectory[(burn_in+1):end, :]
+        samples = trajectory[(burn_in + 1):end, :]
 
         # Sample mean should be close to 0
         sample_mean = vec(mean(samples, dims=1))
@@ -436,7 +447,7 @@ include(joinpath(@__DIR__, "common.jl"))
         # Extract final state
         s_final = result.trajectory[end, :]
         θ_par = s_final[1:D]
-        r_par = s_final[(D+1):end]
+        r_par = s_final[(D + 1):end]
 
         @test θ_par ≈ θ_seq atol = 1e-6
         @test r_par ≈ r_seq atol = 1e-6
@@ -472,7 +483,7 @@ include(joinpath(@__DIR__, "common.jl"))
 
         s_final = result.trajectory[end, :]
         @test s_final[1:D] ≈ θ_seq atol = 1e-5
-        @test s_final[(D+1):end] ≈ r_seq atol = 1e-5
+        @test s_final[(D + 1):end] ≈ r_seq atol = 1e-5
     end
 
     @testset "Block Quasi-DEER Convergence" begin

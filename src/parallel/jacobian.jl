@@ -115,7 +115,9 @@ Compute Jacobian diagonals at multiple points.
 # Returns
 - Matrix of shape (T, D) where result[t, :] is the Jacobian diagonal at xs[t, :]
 """
-function batch_jacobian_diagonals(f, xs::AbstractMatrix{T}, diag_fn=jacobian_diagonal_full) where {T}
+function batch_jacobian_diagonals(
+    f, xs::AbstractMatrix{T}, diag_fn=jacobian_diagonal_full
+) where {T}
     T_len, D = size(xs)
     diags = zeros(T, T_len, D)
     # This loop is parallelizable
@@ -207,7 +209,7 @@ Generate a Rademacher random vector (entries ±1 with equal probability).
 # Returns
 - Vector of length n with entries ±1
 """
-function rademacher_vector(rng::AbstractRNG, n::Int, ::Type{T}=Float64) where {T}
+function rademacher_vector(rng::AbstractRNG, n::Int, (::Type{T})=Float64) where {T}
     return T(2) .* (rand(rng, n) .< 0.5) .- T(1)
 end
 
@@ -238,11 +240,7 @@ Hutchinson, M.F. (1990). "A stochastic estimator of the trace of the influence
 matrix for Laplacian smoothing splines"
 """
 function hutchinson_diagonal(
-    f,
-    x::AbstractVector{T},
-    jvp_fn;
-    rng::AbstractRNG=default_rng(),
-    n_samples::Int=1,
+    f, x::AbstractVector{T}, jvp_fn; rng::AbstractRNG=default_rng(), n_samples::Int=1
 ) where {T}
     D = length(x)
     diag_estimate = zeros(T, D)
@@ -272,11 +270,7 @@ Estimate Jacobian diagonals at multiple points using Hutchinson's estimator.
 - Matrix of shape (T, D) where result[t, :] is the estimated diagonal at xs[t, :]
 """
 function batch_hutchinson_diagonals(
-    f,
-    xs::AbstractMatrix{T},
-    jvp_fn;
-    rng::AbstractRNG=default_rng(),
-    n_samples::Int=1,
+    f, xs::AbstractMatrix{T}, jvp_fn; rng::AbstractRNG=default_rng(), n_samples::Int=1
 ) where {T}
     T_len, D = size(xs)
     diags = zeros(T, T_len, D)
@@ -308,7 +302,9 @@ The Hessian diagonal is the Jacobian diagonal of the gradient.
 # Returns
 - Vector of length D containing diag(∇²log p(x))
 """
-function hessian_diagonal(grad_log_p, x::AbstractVector{T}, diag_fn=jacobian_diagonal_full) where {T}
+function hessian_diagonal(
+    grad_log_p, x::AbstractVector{T}, diag_fn=jacobian_diagonal_full
+) where {T}
     return diag_fn(grad_log_p, x)
 end
 
@@ -324,7 +320,9 @@ Compute Hessian diagonals at multiple points.
 # Returns
 - Matrix of shape (T, D) where result[t, :] is the Hessian diagonal at xs[t, :]
 """
-function batch_hessian_diagonals(grad_log_p, xs::AbstractMatrix{T}, diag_fn=jacobian_diagonal_full) where {T}
+function batch_hessian_diagonals(
+    grad_log_p, xs::AbstractMatrix{T}, diag_fn=jacobian_diagonal_full
+) where {T}
     return batch_jacobian_diagonals(grad_log_p, xs, diag_fn)
 end
 

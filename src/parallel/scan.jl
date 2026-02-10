@@ -259,7 +259,9 @@ Create vector of Block2x2AffineTransform for leapfrog integration.
 # Returns
 - Vector of Block2x2AffineTransform of length T
 """
-function make_block_transforms(H_diag::Matrix{T}, ε::T, u_x::Matrix{T}, u_v::Matrix{T}) where {T}
+function make_block_transforms(
+    H_diag::Matrix{T}, ε::T, u_x::Matrix{T}, u_v::Matrix{T}
+) where {T}
     T_len = size(H_diag, 1)
     return [
         Block2x2AffineTransform(

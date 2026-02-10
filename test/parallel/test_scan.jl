@@ -277,7 +277,9 @@ include(joinpath(@__DIR__, "common.jl"))
         @test compose(id_diag, id_diag) === id_diag
 
         # Block identity
-        t_block = Block2x2AffineTransform(rand(D), rand(D), rand(D), rand(D), rand(D), rand(D))
+        t_block = Block2x2AffineTransform(
+            rand(D), rand(D), rand(D), rand(D), rand(D), rand(D)
+        )
         id_block = IdentityBlockTransform{Float64,Int}(D)
 
         @test compose(id_block, t_block) === t_block
