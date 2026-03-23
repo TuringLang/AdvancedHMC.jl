@@ -1,5 +1,11 @@
 # AdvancedHMC Changelog
 
+## 0.8.5
+
+  - `rand_momentum(rng, metric, kinetic, θ)` is now part of the public API (exported).
+    Packages that extend AdvancedHMC with custom metric types can implement this method
+    without depending on an internal symbol.
+
 ## 0.8.4
 
   - Introduces an experimental way to improve the *diagonal* mass matrix adaptation using gradient information (similar to [nutpie](https://github.com/pymc-devs/nutpie)),
