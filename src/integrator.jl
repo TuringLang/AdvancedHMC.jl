@@ -209,7 +209,7 @@ function temper(
 end
 
 # `step` method for integrators above
-# method for `DiffEqIntegrator` is defined in the OrdinaryDiffEq extension
+# method for `DiffEqIntegrator` is defined in the OrdinaryDiffEqSymplecticRK extension
 const DefaultLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} = Union{
     Leapfrog{T},JitteredLeapfrog{FT,T},TemperedLeapfrog{FT,T}
 }

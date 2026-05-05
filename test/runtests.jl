@@ -3,7 +3,7 @@ using AdvancedHMC: AdvancedHMC
 using LogDensityProblems: LogDensityProblems
 using LogDensityProblemsAD: LogDensityProblemsAD
 using MCMCChains
-using OrdinaryDiffEq
+using OrdinaryDiffEqSymplecticRK
 using ReTest
 
 println("Environment variables for testing")
