@@ -1,6 +1,7 @@
 # Update of hamiltonian and proposal
 
 const MassMatrixAdaptors = Union{MassMatrixAdaptor,NaiveHMCAdaptor,StanHMCAdaptor}
+const StepSizeAdaptors = Union{StepSizeAdaptor,NaiveHMCAdaptor,StanHMCAdaptor}
 
 update(h::Hamiltonian, ::AbstractAdaptor) = h
 function update(h::Hamiltonian, adaptor::MassMatrixAdaptors)
@@ -9,7 +10,7 @@ function update(h::Hamiltonian, adaptor::MassMatrixAdaptors)
 end
 
 update(τ::Trajectory, ::AbstractAdaptor) = τ
-function update(τ::Trajectory, adaptor::MassMatrixAdaptors)
+function update(τ::Trajectory, adaptor::StepSizeAdaptors)
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
     integrator = update_nom_step_size(τ.integrator, getϵ(adaptor))
     @set τ.integrator = integrator
