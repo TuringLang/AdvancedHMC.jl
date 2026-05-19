@@ -1,4 +1,4 @@
-import LinearAlgebra
+using LinearAlgebra: LinearAlgebra
 
 ####
 #### Riemannian Metric Types
@@ -130,14 +130,64 @@ function Base.show(io::IO, m::SoftAbsRiemannianMetric)
     return print(io, "SoftAbsRiemannianMetric(size=", m.size, ", α=", m.α, ")")
 end
 
+# Compile-time cutoffs for the SoftAbs stability switches. `@generated` ensures
+# `eps(T)^(1//n)` is evaluated once per specialisation, not on every call.
+@generated _xcothx_cutoff(::Type{T}) where {T<:AbstractFloat} = eps(T)^(1//6)
+@generated _make_J_cutoff(::Type{T}) where {T<:AbstractFloat} = eps(T)^(1//3)
+
+# Branch implementations of x·coth(x). _exact is correct away from zero; _taylor
+# is correct near zero. _xcothx dispatches between them at _xcothx_cutoff(T).
+@inline _xcothx_taylor(x::T) where {T<:AbstractFloat} = one(T) + x^2 / 3 - x^4 / 45
+@inline _xcothx_exact(x::T) where {T<:AbstractFloat} = x * coth(x)
+
+"""
+    _xcothx(x)
+
+Compute `x * coth(x)` (i.e. `α * softabs(λ)` for `x = α*λ`) in a way that is
+numerically stable as `x → 0`.
+
+Naively, `x * coth(x)` evaluates to `0 * Inf = NaN` at exactly `x = 0`, even though
+the true limit is `1`. We switch to the two-term Taylor expansion
+`1 + x²/3 − x⁴/45` below `|x| < eps(T)^(1//6)`, whose truncation error
+(`O(x⁶) ≈ eps`) is at machine precision by the time we hit the switch.
+"""
+function _xcothx(x::T) where {T<:AbstractFloat}
+    return abs(x) < _xcothx_cutoff(T) ? _xcothx_taylor(x) : _xcothx_exact(x)
+end
+
+# Branch implementations of d/dx[x·coth(x)] = coth(x) − x·csch(x)².
+@inline _xcothx_deriv_taylor(x::T) where {T<:AbstractFloat} = T(2) / 3 * x - T(4) / 45 * x^3
+@inline _xcothx_deriv_exact(x::T) where {T<:AbstractFloat} = coth(x) - x * csch(x)^2
+
+"""
+    _xcothx_deriv(x)
+
+Compute the derivative `coth(x) − x * csch(x)²` of `x * coth(x)`, stably as `x → 0`.
+
+Naively, both `coth(x)` and `x * csch(x)²` behave like `1/x` near zero, so direct
+subtraction suffers catastrophic cancellation (relative error `~eps/x²`); at `x = 0`
+the result is `Inf − Inf = NaN`. The Taylor expansion is `2x/3 − 4x³/45 + O(x⁵)`.
+Balancing Taylor truncation (`~x⁴` relative) against cancellation (`~eps/x²` relative)
+gives the optimal switch at `|x| < eps(T)^(1//6)`, yielding ~13 digits across the range.
+"""
+function _xcothx_deriv(x::T) where {T<:AbstractFloat}
+    return abs(x) < _xcothx_cutoff(T) ? _xcothx_deriv_taylor(x) : _xcothx_deriv_exact(x)
+end
+
 """
     make_J(λ, α)
 
 Construct the J matrix for softabs gradient computation.
 J encodes the derivative of the softabs transformation using the divided difference formula.
 
-For i ≠ j: J[i,j] = (softabs(λᵢ) - softabs(λⱼ)) / (λᵢ - λⱼ)
-For i = j: J[i,i] = d/dλ [λ coth(αλ)] = coth(αλ) - αλ csch²(αλ)
+For `λᵢ` well separated from `λⱼ`:
+    J[i,j] = (softabs(λᵢ) − softabs(λⱼ)) / (λᵢ − λⱼ)
+For `λᵢ ≈ λⱼ` (including the diagonal):
+    J[i,j] = d/dλ [λ coth(αλ)] |_{λ = (λᵢ + λⱼ)/2}
+
+The branches are switched when `|α(λᵢ − λⱼ)| < eps(T)^(1//3)`: at that point the
+divided-difference cancellation (`~eps/(αδ)`) and the midpoint-rule truncation
+(`~(αδ)²`) balance, each contributing `~eps^(2/3)` relative error.
 
 # References
 - Betancourt (2012)
@@ -145,14 +195,16 @@ For i = j: J[i,i] = d/dλ [λ coth(αλ)] = coth(αλ) - αλ csch²(αλ)
 function make_J(λ::AbstractVector{T}, α::T) where {T<:AbstractFloat}
     d = length(λ)
     J = Matrix{T}(undef, d, d)
-    @inbounds for i in 1:d, j in 1:d
-        if λ[i] == λ[j]
-            # Derivative case (diagonal or degenerate eigenvalues)
-            # d/dλ [λ coth(αλ)] = coth(αλ) - αλ csch²(αλ)
-            J[i, j] = coth(α * λ[i]) - α * λ[i] * csch(α * λ[i])^2
+    deg_tol = _make_J_cutoff(T)
+    @inbounds for j in 1:d, i in 1:d
+        xi = α * λ[i]
+        xj = α * λ[j]
+        if abs(xi - xj) < deg_tol
+            # Diagonal or near-degenerate: derivative at the midpoint (stable at x = 0).
+            J[i, j] = _xcothx_deriv((xi + xj) / 2)
         else
-            # Divided difference
-            J[i, j] = (λ[i] * coth(α * λ[i]) - λ[j] * coth(α * λ[j])) / (λ[i] - λ[j])
+            # Divided difference written in terms of α·λ so _xcothx handles λ = 0 safely.
+            J[i, j] = (_xcothx(xi) - _xcothx(xj)) / (xi - xj)
         end
     end
     return J
@@ -169,8 +221,9 @@ function metric_eval(m::SoftAbsRiemannianMetric{T}, θ) where {T}
     λ = F.values
     Q = F.vectors
 
-    # SoftAbs transformation: G = Q * diag(softabsλ) * Q'
-    softabsλ = λ .* coth.(m.α .* λ)
+    # SoftAbs transformation: G = Q * diag(softabsλ) * Q'.
+    # Use _xcothx to avoid `0 * Inf = NaN` at exactly λ = 0 (limit is 1/α).
+    softabsλ = _xcothx.(m.α .* λ) ./ m.α
 
     # Compute J matrix for gradient chain rule
     J = make_J(λ, m.α)
@@ -272,7 +325,7 @@ function softabs(X, α=20.0)
     F = eigen(Symmetric(X))
     Q = F.vectors
     λ = F.values
-    softabsλ = λ .* coth.(α * λ)
+    softabsλ = _xcothx.(α .* λ) ./ α
     return Q * Diagonal(softabsλ) * Q', Q, λ, softabsλ
 end
 
@@ -332,7 +385,7 @@ function metric_eval(m::DenseRiemannianMetric{T,<:SoftAbsMap}, θ) where {T}
     F = eigen(Symmetric(H))
     λ = F.values
     Q = F.vectors
-    softabsλ = λ .* coth.(m.map.α .* λ)
+    softabsλ = _xcothx.(m.map.α .* λ) ./ m.map.α
     J = make_J(λ, m.map.α)
     R = Diagonal(one(T) ./ softabsλ)
     M_logdet = Q * (R .* J) * Q'

@@ -16,7 +16,15 @@ using AdvancedHMC:
     kinetic_grad_matrix,
     SoftAbsEval,
     RiemannianMetric,
-    SoftAbsRiemannianMetric
+    SoftAbsRiemannianMetric,
+    make_J,
+    _xcothx,
+    _xcothx_taylor,
+    _xcothx_exact,
+    _xcothx_deriv,
+    _xcothx_deriv_taylor,
+    _xcothx_deriv_exact,
+    _xcothx_cutoff
 using Statistics
 
 ####
@@ -74,6 +82,45 @@ function prepare_sample(ℓπ, initial_θ, λ)
 end
 
 δ(a, b) = maximum(abs.(a - b))
+
+####
+#### Tests for SoftAbs numerical-stability helpers (P0.1)
+####
+
+@testset "SoftAbs stability helpers" begin
+    @testset "no NaN at x = 0 (previously Inf − Inf)" begin
+        # Limits: x·coth(x) → 1, its derivative → 0 as x → 0.
+        @test _xcothx(0.0) == 1.0
+        @test _xcothx_deriv(0.0) == 0.0
+    end
+
+    @testset "Taylor and exact branches agree at the switch threshold" begin
+        # Compare the two branch implementations directly at the threshold.
+        # Tolerances are conservative — the actual disagreement is bounded by
+        # the larger of Taylor truncation (~eps at threshold for both) and exact-
+        # form cancellation (~6e-14 for _xcothx_deriv).
+        thresh = _xcothx_cutoff(Float64)
+        @test _xcothx_taylor(thresh) ≈ _xcothx_exact(thresh) atol = 1e-12
+        @test _xcothx_deriv_taylor(thresh) ≈ _xcothx_deriv_exact(thresh) atol = 1e-10
+    end
+
+    @testset "make_J: no NaN at λ = 0 and matches exact formula" begin
+        α = 20.0
+        # Mixed: one zero, one well-separated, one negative — the previously-broken case.
+        λ = [0.0, 1.7, -0.5]
+        J = make_J(λ, α)
+        @test all(isfinite, J)
+        @test J ≈ J'
+        # Off-diagonal entries not touching λ=0 match the analytic divided difference of
+        # softabs(λ) = λ·coth(αλ).
+        @test J[2, 3] ≈
+            (λ[2] * coth(α * λ[2]) - λ[3] * coth(α * λ[3])) / (λ[2] - λ[3]) rtol = 1e-10
+        # Diagonal at λ=0 is the well-defined limit softabs'(0) = 0.
+        @test J[1, 1] == 0.0
+        # Diagonal at λ≠0 matches softabs'(λ) = coth(αλ) − αλ·csch²(αλ).
+        @test J[2, 2] ≈ coth(α * λ[2]) - α * λ[2] * csch(α * λ[2])^2 rtol = 1e-10
+    end
+end
 
 ####
 #### Tests for unified API (RiemannianMetric, SoftAbsRiemannianMetric)
