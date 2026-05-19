@@ -66,6 +66,13 @@ Riemannian metric where the user provides a function returning a positive-defini
 matrix (or AbstractPDMat subtype). `T` is the element type used for momentum sampling
 and defaults to `$(DEFAULT_FLOAT_TYPE)` if not specified.
 
+For best performance, return an `AbstractPDMat` so that the kinetic and logdet gradients can
+reuse the stored Cholesky factor instead of refactorising on every call.
+
+If you need to stabilise `G` (e.g. by adding `λI`), do so *inside* the `PDMat` constructor 
+since `PDMat(G) + λ*I` and other variants may fall back to returning Symmetric or even dense
+matrices.
+
 # Fields
 - `size`: Tuple{Int} giving the dimension
 - `calc_G`: Function θ → G(θ), returns a positive-definite matrix
