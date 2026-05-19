@@ -113,8 +113,8 @@ end
         @test J ≈ J'
         # Off-diagonal entries not touching λ=0 match the analytic divided difference of
         # softabs(λ) = λ·coth(αλ).
-        @test J[2, 3] ≈
-            (λ[2] * coth(α * λ[2]) - λ[3] * coth(α * λ[3])) / (λ[2] - λ[3]) rtol = 1e-10
+        @test J[2, 3] ≈ (λ[2] * coth(α * λ[2]) - λ[3] * coth(α * λ[3])) / (λ[2] - λ[3]) rtol =
+            1e-10
         # Diagonal at λ=0 is the well-defined limit softabs'(0) = 0.
         @test J[1, 1] == 0.0
         # Diagonal at λ≠0 matches softabs'(λ) = coth(αλ) − αλ·csch²(αλ).
