@@ -213,3 +213,30 @@ function phasepoint(
     end
     return PhasePoint(θ, r, ℓπ, ℓκ)
 end
+
+####
+#### Momentum refreshment
+####
+
+# PartialMomentumRefreshment + Riemannian is mathematically well-defined at stationarity 
+# (both terms in α·r + √(1-α²)·n live at the same θ), but we were unable to verify the
+# validity of the sampler step emprically. This may simply be due to poor performance of the
+# sampler, but to be safe we are marking this as untested for now.
+function refresh(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    ref::PartialMomentumRefreshment,
+    h::Hamiltonian{<:AbstractRiemannianMetric},
+    z::PhasePoint,
+)
+    @warn (
+        "PartialMomentumRefreshment with Riemannian metrics is untested and may not " *
+        "target the correct posterior. Prefer FullMomentumRefreshment unless you have " *
+        "validated convergence for your model."
+    ) maxlog = 1
+    return @invoke refresh(
+        rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+        ref::PartialMomentumRefreshment,
+        h::Hamiltonian,
+        z::PhasePoint,
+    )
+end
