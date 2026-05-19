@@ -75,11 +75,15 @@ function step(
         end
 
         # Eq (18) of Girolami & Calderhead (2011) - explicit momentum half-step
-        (; value, gradient) = ∂H∂θ(h, θ_full, r_half)
+        # Use the cached G_eval at θ_full to avoid a redundant metric_eval in phasepoint
+        dv, cache = ∂H∂θ_cache(h, θ_full, r_half)
+        (; value, gradient) = dv
         r_full = r_half - ϵ / 2 * gradient
 
         # Create a new phase point by caching the logdensity and gradient
-        z = phasepoint(h, θ_full, r_full; ℓπ=DualValue(value, gradient))
+        z = phasepoint(
+            h, θ_full, r_full; ℓπ=DualValue(value, gradient), G_eval=cache.G_eval
+        )
 
         # Update result
         if FullTraj
