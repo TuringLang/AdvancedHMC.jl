@@ -1,7 +1,7 @@
-module AdvancedHMCOrdinaryDiffEqExt
+module AdvancedHMCOrdinaryDiffEqSymplecticRKExt
 
 using AdvancedHMC: AdvancedHMC
-using OrdinaryDiffEq: OrdinaryDiffEq
+using OrdinaryDiffEqSymplecticRK: OrdinaryDiffEqSymplecticRK
 
 function AdvancedHMC.step(
     integrator::AdvancedHMC.DiffEqIntegrator,
@@ -22,8 +22,8 @@ function AdvancedHMC.step(
 
     ϵ = fwd ? AdvancedHMC.step_size(integrator) : -AdvancedHMC.step_size(integrator)
     tspan = (0.0, sign(n_steps))
-    problem = OrdinaryDiffEq.DynamicalODEProblem(f1, f2, v0, u0, tspan)
-    diffeq_integrator = OrdinaryDiffEq.init(
+    problem = OrdinaryDiffEqSymplecticRK.DynamicalODEProblem(f1, f2, v0, u0, tspan)
+    diffeq_integrator = OrdinaryDiffEqSymplecticRK.init(
         problem,
         integrator.solver;
         save_everystep=false,
@@ -33,7 +33,7 @@ function AdvancedHMC.step(
     )
 
     for i in 1:abs(n_steps)
-        OrdinaryDiffEq.step!(diffeq_integrator)
+        OrdinaryDiffEqSymplecticRK.step!(diffeq_integrator)
         solution = diffeq_integrator.u.x  # (r, θ) at the proposed step
         z = AdvancedHMC.phasepoint(h, solution[2], solution[1])
         !isfinite(z) && break
