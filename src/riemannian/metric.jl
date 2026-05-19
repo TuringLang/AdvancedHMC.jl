@@ -60,10 +60,11 @@ end
 ####
 
 """
-    RiemannianMetric{TG, T∂G}
+    RiemannianMetric{T, TG, T∂G}
 
 Riemannian metric where the user provides a function returning a positive-definite
-matrix (or AbstractPDMat subtype).
+matrix (or AbstractPDMat subtype). `T` is the element type used for momentum sampling
+and defaults to `$(DEFAULT_FLOAT_TYPE)` if not specified.
 
 # Fields
 - `size`: Tuple{Int} giving the dimension
@@ -75,17 +76,29 @@ matrix (or AbstractPDMat subtype).
 # Simple Fisher information metric
 calc_G = θ -> PDMat(fisher_information(θ))
 calc_∂G∂θ = θ -> ForwardDiff.jacobian(θ -> vec(fisher_information(θ)), θ) |> reshape_∂G∂θ
-metric = RiemannianMetric((d,), calc_G, calc_∂G∂θ)
+metric = RiemannianMetric((d,), calc_G, calc_∂G∂θ)  # T = Float64
+metric_f32 = RiemannianMetric{Float32}((d,), calc_G, calc_∂G∂θ)
 ```
 """
-struct RiemannianMetric{TG,T∂G} <: AbstractRiemannianMetric
+struct RiemannianMetric{T<:AbstractFloat,TG,T∂G} <: AbstractRiemannianMetric
     size::Tuple{Int}
     calc_G::TG       # θ → Matrix or AbstractPDMat
     calc_∂G∂θ::T∂G   # θ → Array{T,3}
 end
 
+function RiemannianMetric{T}(
+    size::Tuple{Int}, calc_G::TG, calc_∂G∂θ::T∂G
+) where {T<:AbstractFloat,TG,T∂G}
+    return RiemannianMetric{T,TG,T∂G}(size, calc_G, calc_∂G∂θ)
+end
+
+function RiemannianMetric(size::Tuple{Int}, calc_G, calc_∂G∂θ)
+    return RiemannianMetric{DEFAULT_FLOAT_TYPE}(size, calc_G, calc_∂G∂θ)
+end
+
 Base.size(m::RiemannianMetric) = m.size
 Base.size(m::RiemannianMetric, dim::Int) = m.size[dim]
+Base.eltype(::RiemannianMetric{T}) where {T} = T
 
 function Base.show(io::IO, m::RiemannianMetric)
     return print(io, "RiemannianMetric(size=", m.size, ")")
@@ -293,8 +306,7 @@ function rand_momentum(
     θ::AbstractVecOrMat,
 )
     G = metric_eval(metric, θ)
-    T = eltype(metric) === Any ? eltype(θ) : eltype(metric)
-    z = _randn(rng, T, size(metric)...)
+    z = _randn(rng, eltype(metric), size(metric)...)
     return unwhiten(G, z)
 end
 
@@ -304,9 +316,6 @@ function unwhiten(G::AbstractMatrix, z::AbstractVector)
     chol = cholesky(Symmetric(G))
     return chol.L * z
 end
-
-# eltype for RiemannianMetric (needed for rand_momentum)
-Base.eltype(::RiemannianMetric) = Any  # Will use eltype(θ) as fallback
 
 ####
 #### Deprecated types (for backward compatibility)
