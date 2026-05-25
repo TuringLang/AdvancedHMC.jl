@@ -2,7 +2,20 @@ module AdvancedHMC
 
 using Statistics: mean, var, middle
 using LinearAlgebra:
-    Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
+    Symmetric,
+    UpperTriangular,
+    Diagonal,
+    mul!,
+    ldiv!,
+    dot,
+    I,
+    diag,
+    cholesky,
+    UniformScaling,
+    logdet,
+    tr,
+    eigen,
+    diagm
 using StatsFuns: logaddexp, logsumexp, loghalf
 using Random: Random, AbstractRNG
 using ProgressMeter: ProgressMeter
@@ -50,6 +63,13 @@ export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 include("riemannian/integrator.jl")
 export GeneralizedLeapfrog
 
+include("riemannian/metric.jl")
+export RiemannianMetric, SoftAbsRiemannianMetric
+# Deprecated exports (for backward compatibility)
+export IdentityMap, SoftAbsMap, DenseRiemannianMetric
+
+include("riemannian/hamiltonian.jl")
+
 include("trajectory.jl")
 export Trajectory,
     HMCKernel,
@@ -72,7 +92,12 @@ export find_good_eps
 include("adaptation/Adaptation.jl")
 using .Adaptation
 import .Adaptation:
-    StepSizeAdaptor, MassMatrixAdaptor, StanHMCAdaptor, NesterovDualAveraging, NoAdaptation, PositionOrPhasePoint
+    StepSizeAdaptor,
+    MassMatrixAdaptor,
+    StanHMCAdaptor,
+    NesterovDualAveraging,
+    NoAdaptation,
+    PositionOrPhasePoint
 
 # Helpers for initializing adaptors via AHMC structs
 

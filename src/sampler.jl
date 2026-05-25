@@ -1,20 +1,24 @@
 # Update of hamiltonian and proposal
 
+const MassMatrixAdaptors = Union{MassMatrixAdaptor,NaiveHMCAdaptor,StanHMCAdaptor}
+const StepSizeAdaptors = Union{StepSizeAdaptor,NaiveHMCAdaptor,StanHMCAdaptor}
+
 update(h::Hamiltonian, ::AbstractAdaptor) = h
-function update(
-    h::Hamiltonian, adaptor::Union{MassMatrixAdaptor,NaiveHMCAdaptor,StanHMCAdaptor}
-)
+function update(h::Hamiltonian, adaptor::MassMatrixAdaptors)
     metric = renew(h.metric, getM⁻¹(adaptor))
     return @set h.metric = metric
 end
 
 update(τ::Trajectory, ::AbstractAdaptor) = τ
-function update(
-    τ::Trajectory, adaptor::Union{StepSizeAdaptor,NaiveHMCAdaptor,StanHMCAdaptor}
-)
+function update(τ::Trajectory, adaptor::StepSizeAdaptors)
     # FIXME: this does not support change type of `ϵ` (e.g. Float to Vector)
     integrator = update_nom_step_size(τ.integrator, getϵ(adaptor))
     @set τ.integrator = integrator
+end
+
+# Error clearly if mass-matrix adaptation is attempted with a Riemannian metric
+function update(::Hamiltonian{<:AbstractRiemannianMetric}, ::MassMatrixAdaptors)
+    return error("Mass-matrix adaptation is not supported/required for Riemannian metrics")
 end
 
 function update(κ::AbstractMCMCKernel, adaptor::AbstractAdaptor)
