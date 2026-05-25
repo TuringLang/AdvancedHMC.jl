@@ -223,62 +223,31 @@ end
 end
 
 ####
-#### Tests for deprecated API (DenseRiemannianMetric)
+#### Deprecation forwards (DenseRiemannianMetric → {RiemannianMetric, SoftAbsRiemannianMetric})
 ####
 
-@testset "Deprecated DenseRiemannianMetric (backward compatibility)" begin
-    @testset "$(nameof(typeof(target)))" for target in [HighDimGaussian(2), Funnel()]
-        rng = MersenneTwister(1110)
-        λ = 1e-2
+@testset "Deprecated DenseRiemannianMetric forwards" begin
+    rng = MersenneTwister(1110)
+    target = HighDimGaussian(2)
+    D = dim(target)
+    θ₀ = rand(rng, D)
+    λ = 1e-2
 
-        θ₀ = rand(rng, dim(target))
+    ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
+    _, _, Gfunc, ∂G∂θfunc = prepare_sample(ℓπ, θ₀, λ)
 
-        ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
-        ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, θ₀)
+    # 3-arg form → RiemannianMetric
+    m1 = @test_deprecated DenseRiemannianMetric((D,), Gfunc, ∂G∂θfunc)
+    @test m1 isa RiemannianMetric
 
-        Vfunc, Hfunc, Gfunc, ∂G∂θfunc = prepare_sample(ℓπ, θ₀, λ)
+    # 4-arg form with IdentityMap → RiemannianMetric
+    m2 = @test_deprecated DenseRiemannianMetric((D,), Gfunc, ∂G∂θfunc, IdentityMap())
+    @test m2 isa RiemannianMetric
 
-        D = dim(target)
-        x = zeros(D)
-        r = randn(rng, D)
-
-        @testset "Autodiff utilities" begin
-            @test δ(finite_difference_gradient(ℓπ, x), ∂ℓπ∂θ(x)[end]) < 1e-4
-            @test δ(finite_difference_hessian(Vfunc, x), Hfunc(x)) < 1e-4
-            @test δ(reshape_∂G∂θ(finite_difference_jacobian(Gfunc, x)), ∂G∂θfunc(x)) < 1e-4
-        end
-
-        @testset "$(nameof(typeof(hessmap)))" for hessmap in
-                                                  [IdentityMap(), SoftAbsMap(20.0)]
-            # Suppress deprecation warning
-            metric = @test_deprecated DenseRiemannianMetric((D,), Gfunc, ∂G∂θfunc, hessmap)
-            kinetic = GaussianKinetic()
-            hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
-
-            if hessmap isa SoftAbsMap || all(iszero, x)
-                @testset "Kinetic energy" begin
-                    Σ = hamiltonian.metric.map(hamiltonian.metric.G(x))
-                    @test neg_energy(hamiltonian, r, x) ≈ logpdf(MvNormal(zeros(D), Σ), r)
-                end
-            end
-
-            Hamifunc = (x, r) -> energy(hamiltonian, r, x) + energy(hamiltonian, x)
-            Hamifuncx = x -> Hamifunc(x, r)
-            Hamifuncr = r -> Hamifunc(x, r)
-
-            @testset "∂H∂θ" begin
-                @test δ(
-                    finite_difference_gradient(Hamifuncx, x),
-                    ∂H∂θ(hamiltonian, x, r).gradient,
-                ) < 1e-4
-            end
-
-            @testset "∂H∂r" begin
-                @test δ(finite_difference_gradient(Hamifuncr, r), ∂H∂r(hamiltonian, x, r)) <
-                    1e-4
-            end
-        end
-    end
+    # 4-arg form with SoftAbsMap → SoftAbsRiemannianMetric (α threaded through)
+    m3 = @test_deprecated DenseRiemannianMetric((D,), Gfunc, ∂G∂θfunc, SoftAbsMap(20.0))
+    @test m3 isa SoftAbsRiemannianMetric
+    @test m3.α == 20.0
 end
 
 ####
@@ -313,46 +282,6 @@ end
     _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
 
     metric = SoftAbsRiemannianMetric((D,), G, ∂G∂θ, 20.0)
-    kinetic = GaussianKinetic()
-    hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
-
-    initial_ϵ = 0.01
-    integrator = GeneralizedLeapfrog(initial_ϵ, 6)
-    kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(8)))
-
-    samples, stats = sample(rng, hamiltonian, kernel, initial_θ, n_samples; progress=false)
-    @test length(samples) == n_samples
-    @test length(stats) == n_samples
-end
-
-@testset "Sampling with deprecated DenseRiemannianMetric (IdentityMap)" begin
-    n_samples = 100
-    rng = MersenneTwister(1110)
-    initial_θ = rand(rng, D)
-    λ = 1e-2
-    _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
-
-    metric = @test_deprecated DenseRiemannianMetric((D,), G, ∂G∂θ)
-    kinetic = GaussianKinetic()
-    hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
-
-    initial_ϵ = 0.01
-    integrator = GeneralizedLeapfrog(initial_ϵ, 6)
-    kernel = HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(8)))
-
-    samples, stats = sample(rng, hamiltonian, kernel, initial_θ, n_samples; progress=false)
-    @test length(samples) == n_samples
-    @test length(stats) == n_samples
-end
-
-@testset "Sampling with deprecated DenseRiemannianMetric (SoftAbsMap)" begin
-    n_samples = 100
-    rng = MersenneTwister(1110)
-    initial_θ = rand(rng, D)
-    λ = 1e-2
-    _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
-
-    metric = @test_deprecated DenseRiemannianMetric((D,), G, ∂G∂θ, SoftAbsMap(20.0))
     kinetic = GaussianKinetic()
     hamiltonian = Hamiltonian(metric, kinetic, ℓπ, ∂ℓπ∂θ)
 

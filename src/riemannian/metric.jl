@@ -325,87 +325,26 @@ function unwhiten(G::AbstractMatrix, z::AbstractVector)
 end
 
 ####
-#### Deprecated types (for backward compatibility)
+#### Deprecated API forwards: DenseRiemannianMetric → {RiemannianMetric, SoftAbsRiemannianMetric}
 ####
+#### `IdentityMap` and `SoftAbsMap` are retained as minimal tag types so the old
+#### `DenseRiemannianMetric(size, G, ∂G∂θ, map)` signature still parses; they have no
+#### runtime role beyond dispatching the @deprecate forwards below.
 
-abstract type AbstractHessianMap end
+struct IdentityMap end
 
-struct IdentityMap <: AbstractHessianMap end
-(::IdentityMap)(x) = x
-
-struct SoftAbsMap{T} <: AbstractHessianMap
+struct SoftAbsMap{T}
     α::T
 end
 
-function softabs(X, α=20.0)
-    F = eigen(Symmetric(X))
-    Q = F.vectors
-    λ = F.values
-    softabsλ = _xcothx.(α .* λ) ./ α
-    return Q * Diagonal(softabsλ) * Q', Q, λ, softabsλ
-end
-
-(map::SoftAbsMap)(x) = softabs(x, map.α)[1]
-
-"""
-    DenseRiemannianMetric (deprecated)
-
-Use `RiemannianMetric` or `SoftAbsRiemannianMetric` instead.
-"""
-struct DenseRiemannianMetric{
-    T,
-    TM<:AbstractHessianMap,
-    A<:Union{Tuple{Int},Tuple{Int,Int}},
-    AV<:AbstractVecOrMat{T},
-    TG,
-    T∂G∂θ,
-} <: AbstractRiemannianMetric
-    size::A
-    G::TG
-    ∂G∂θ::T∂G∂θ
-    map::TM
-    _temp::AV
-end
-
-function DenseRiemannianMetric(size, G, ∂G∂θ, map=IdentityMap())
-    Base.depwarn(
-        "DenseRiemannianMetric is deprecated. Use RiemannianMetric (for IdentityMap) or SoftAbsRiemannianMetric (for SoftAbsMap) instead.",
-        :DenseRiemannianMetric,
-    )
-    _temp = Vector{Float64}(undef, first(size))
-    return DenseRiemannianMetric(size, G, ∂G∂θ, map, _temp)
-end
-
-Base.size(e::DenseRiemannianMetric) = e.size
-Base.size(e::DenseRiemannianMetric, dim::Int) = e.size[dim]
-Base.eltype(::DenseRiemannianMetric{T}) where {T} = T
-
-function Base.show(io::IO, drm::DenseRiemannianMetric)
-    return print(
-        io,
-        "DenseRiemannianMetric",
-        drm.size,
-        " with ",
-        nameof(typeof(drm.map)),
-        " (deprecated)",
-    )
-end
-
-# metric_eval and metric_sensitivity for deprecated DenseRiemannianMetric
-function metric_eval(m::DenseRiemannianMetric{T,<:IdentityMap}, θ) where {T}
-    return m.G(θ)
-end
-
-function metric_eval(m::DenseRiemannianMetric{T,<:SoftAbsMap}, θ) where {T}
-    H = m.G(θ)
-    F = eigen(Symmetric(H))
-    λ = F.values
-    Q = F.vectors
-    softabsλ = _xcothx.(m.map.α .* λ) ./ m.map.α
-    J = make_J(λ, m.map.α)
-    R = Diagonal(one(T) ./ softabsλ)
-    M_logdet = Q * (R .* J) * Q'
-    return SoftAbsEval(Q, softabsλ, J, M_logdet)
-end
-
-metric_sensitivity(m::DenseRiemannianMetric, θ) = m.∂G∂θ(θ)
+@deprecate(
+    DenseRiemannianMetric(size::Tuple{Int}, G, ∂G∂θ), RiemannianMetric(size, G, ∂G∂θ),
+)
+@deprecate(
+    DenseRiemannianMetric(size::Tuple{Int}, G, ∂G∂θ, ::IdentityMap),
+    RiemannianMetric(size, G, ∂G∂θ),
+)
+@deprecate(
+    DenseRiemannianMetric(size::Tuple{Int}, G, ∂G∂θ, map::SoftAbsMap),
+    SoftAbsRiemannianMetric(size, G, ∂G∂θ, map.α),
+)

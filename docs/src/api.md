@@ -11,14 +11,20 @@ This modularity means that different HMC variants can be easily constructed by c
 
 where `dim` is the dimension of the sampling space.
 
-Furthermore, there is now an experimental dense Riemannian metric implementation, specifiable as `DenseRiemannianMetric(dim, premetric, premetric_sensitivities, metric_map=IdentityMap())`, with
+Two experimental position-dependent (Riemannian) metrics are also available:
 
-  - `dim`: again the dimension of the sampling space,
-  - `premetric`: a function which, for a given posterior position `pos`, computes either 
-     a) a symmetric, **positive definite** matrix acting as the position dependent Riemannian metric (if `metric_map = IdentityMap()`), or
-     b) a symmetric, **not necessarily positive definite** matrix acting as the position dependent Riemannian metric after being passed through the `metric_map` argument, which will have to ensure that its return value *is* positive definite (like `metric_map = SoftAbsMap(alpha)`),
-  - `premetric_sensitivities`: a function which, again for a given posterior position `pos`, computes the sensitivities with respect to this position of the **`premetric`** function,
-  - `metric_map=IdentityMap()`: a function which takes in `premetric(pos)` and returns a symmetric positive definite matrix. Provided options are `IdentityMap()` or `SoftAbsMap(alpha)`, with the `SoftAbsMap` type allowing to work directly with the `premetric` returning the Hessian of the log density function, which generally is not guaranteed to be positive definite..
+  - `RiemannianMetric((dim,), calc_G, calc_∂G∂θ)` — for user-supplied positive-definite
+    metrics `G(θ)` (e.g. Fisher information). `calc_G` should return either a plain
+    `Matrix` or an `AbstractPDMat` (preferred — reuses the stored Cholesky). `calc_∂G∂θ`
+    returns the `(d, d, d)` tensor `∂G/∂θ`.
+  - `SoftAbsRiemannianMetric((dim,), calc_H, calc_∂H∂θ, α)` — for Hessian-based metrics
+    where `H(θ)` is not guaranteed to be positive definite. The SoftAbs transformation
+    `G = Q · diag(λ · coth(αλ)) · Qᵀ` (Betancourt, 2012) regularises `H`'s eigenvalues
+    to a strictly positive spectrum. `α` controls how closely SoftAbs approximates `|λ|`.
+
+The legacy `DenseRiemannianMetric(dim, G, ∂G∂θ[, map])` constructor is deprecated and
+forwards to the appropriate type above based on whether `map` is `IdentityMap()` or
+`SoftAbsMap(α)`.
 
 ### [Integrator (`integrator`)](@id integrator)
 
@@ -40,15 +46,15 @@ where `ϵ` is the step size of leapfrog integration.
 ### Adaptor (`adaptor`)
 
   - Adapt the mass matrix `metric` of the Hamiltonian dynamics: `mma = MassMatrixAdaptor(metric)`
-
+    
       + This is lowered to `UnitMassMatrix`, `WelfordVar` or `WelfordCov` based on the type of the mass matrix `metric`
       + There is an experimental way to improve the *diagonal* mass matrix adaptation using gradient information (similar to [nutpie](https://github.com/pymc-devs/nutpie)),
-      currently to be initialized for a `metric` of type `DiagEuclideanMetric`
-      via `mma = AdvancedHMC.NutpieVar(size(metric); var=copy(metric.M⁻¹))`
-      until a new interface is introduced in an upcoming breaking release to specify the method of adaptation.
+        currently to be initialized for a `metric` of type `DiagEuclideanMetric`
+        via `mma = AdvancedHMC.NutpieVar(size(metric); var=copy(metric.M⁻¹))`
+        until a new interface is introduced in an upcoming breaking release to specify the method of adaptation.
 
   - Adapt the step size of the leapfrog integrator `integrator`: `ssa = StepSizeAdaptor(δ, integrator)`
-
+    
       + It uses Nesterov's dual averaging with `δ` as the target acceptance rate.
   - Combine the two above *naively*: `NaiveHMCAdaptor(mma, ssa)`
   - Combine the first two using Stan's windowed adaptation: `StanHMCAdaptor(mma, ssa)`
@@ -73,12 +79,12 @@ sample(
 Draw `n_samples` samples using the kernel `κ` under the Hamiltonian system `h`
 
   - The randomness is controlled by `rng`.
-
+    
       + If `rng` is not provided, the default random number generator (`Random.default_rng()`) will be used.
 
   - The initial point is given by `θ`.
   - The adaptor is set by `adaptor`, for which the default is no adaptation.
-
+    
       + It will perform `n_adapts` steps of adaptation, for which the default is `1_000` or 10% of `n_samples`, whichever is lower.
   - `drop_warmup` specifies whether to drop samples.
   - `verbose` controls the verbosity.
