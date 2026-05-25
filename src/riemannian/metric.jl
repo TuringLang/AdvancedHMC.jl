@@ -131,6 +131,11 @@ G = Q * diag(λ * coth(α*λ)) * Q' guarantees positive-definiteness.
 - `calc_H`: Function θ → H(θ), returns the Hessian matrix (the "pre-metric")
 - `calc_∂H∂θ`: Function θ → ∂H/∂θ, returns Array{T,3} of shape (d, d, d)
 - `α`: SoftAbs regularization parameter (larger = closer to |λ|)
+- `canonicalize`: If `true`, eigenvector signs are fixed after each `eigen` call so that
+  the largest-magnitude element of each column is positive. This makes momentum sampling
+  via `unwhiten` reproducible across BLAS/LAPACK implementations that may return the same
+  eigenvectors with opposite sign conventions (e.g. OpenBLAS on x86 vs arm64). Has no
+  effect on the metric matrix G or any gradient — those are sign-invariant. Default `false`.
 
 # References
 - Betancourt, M. "A general metric for Riemannian manifold Hamiltonian Monte Carlo" (2012)
@@ -140,6 +145,13 @@ struct SoftAbsRiemannianMetric{T<:AbstractFloat,TH,T∂H} <: AbstractRiemannianM
     calc_H::TH       # θ → Hessian matrix (pre-metric)
     calc_∂H∂θ::T∂H   # θ → Array{T,3}
     α::T
+    canonicalize::Bool
+end
+
+function SoftAbsRiemannianMetric(
+    size::Tuple{Int}, calc_H::TH, calc_∂H∂θ::T∂H, α::T; canonicalize::Bool=false
+) where {T<:AbstractFloat,TH,T∂H}
+    return SoftAbsRiemannianMetric{T,TH,T∂H}(size, calc_H, calc_∂H∂θ, α, canonicalize)
 end
 
 Base.size(m::SoftAbsRiemannianMetric) = m.size
@@ -147,7 +159,9 @@ Base.size(m::SoftAbsRiemannianMetric, dim::Int) = m.size[dim]
 Base.eltype(::SoftAbsRiemannianMetric{T}) where {T} = T
 
 function Base.show(io::IO, m::SoftAbsRiemannianMetric)
-    return print(io, "SoftAbsRiemannianMetric(size=", m.size, ", α=", m.α, ")")
+    print(io, "SoftAbsRiemannianMetric(size=", m.size, ", α=", m.α)
+    m.canonicalize && print(io, ", canonicalize=true")
+    return print(io, ")")
 end
 
 # Compile-time cutoffs for the SoftAbs stability switches. `@generated` ensures
@@ -240,6 +254,15 @@ function metric_eval(m::SoftAbsRiemannianMetric{T}, θ) where {T}
     F = eigen(Symmetric(H))
     λ = F.values
     Q = F.vectors
+
+    if m.canonicalize
+        @inbounds for j in axes(Q, 2)
+            col = view(Q, :, j)
+            if col[argmax(abs.(col))] < 0
+                col .*= -1
+            end
+        end
+    end
 
     # SoftAbs transformation: G = Q * diag(softabsλ) * Q'.
     # Use _xcothx to avoid `0 * Inf = NaN` at exactly λ = 0 (limit is 1/α).

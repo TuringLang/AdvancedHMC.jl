@@ -123,6 +123,50 @@ end
 end
 
 ####
+#### Tests for SoftAbsRiemannianMetric canonicalize option
+####
+
+@testset "SoftAbsRiemannianMetric canonicalize" begin
+    α = 10.0
+    # Fixed Hessian with known structure: mixed positive/negative eigenvalues.
+    H_fixed = [2.0 1.0; 1.0 -1.0]
+    calc_H = _ -> H_fixed
+    calc_∂H∂θ = _ -> zeros(2, 2, 2)
+    θ = [0.0, 0.0]
+
+    @testset "factorization is valid (G unchanged by canonicalization)" begin
+        G_raw = metric_eval(SoftAbsRiemannianMetric((2,), calc_H, calc_∂H∂θ, α), θ)
+        G_can = metric_eval(
+            SoftAbsRiemannianMetric((2,), calc_H, calc_∂H∂θ, α; canonicalize=true), θ
+        )
+        # Canonicalization must not change the metric matrix G = Q diag(softabsλ) Q'.
+        G_mat_raw = G_raw.Q * Diagonal(G_raw.softabsλ) * G_raw.Q'
+        G_mat_can = G_can.Q * Diagonal(G_can.softabsλ) * G_can.Q'
+        @test G_mat_raw ≈ G_mat_can
+        # The sign convention: largest-magnitude element of each column is positive.
+        for j in axes(G_can.Q, 2)
+            col = G_can.Q[:, j]
+            @test col[argmax(abs.(col))] > 0
+        end
+    end
+
+    @testset "sampler runs with canonicalize=true" begin
+        rng = MersenneTwister(1)
+        target = HighDimGaussian(2)
+        ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
+        ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, zeros(2))
+        _, _, G, ∂G∂θ = prepare_sample(ℓπ, zeros(2), 1e-2)
+        metric = SoftAbsRiemannianMetric((2,), G, ∂G∂θ, 10.0; canonicalize=true)
+        hamiltonian = Hamiltonian(metric, GaussianKinetic(), ℓπ, ∂ℓπ∂θ)
+        integrator = GeneralizedLeapfrog(0.01, 3)
+        kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
+        @test_nowarn sample(
+            rng, hamiltonian, kernel, zeros(2), 20; verbose=false, progress=false
+        )
+    end
+end
+
+####
 #### Tests for unified API (RiemannianMetric, SoftAbsRiemannianMetric)
 ####
 
