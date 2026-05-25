@@ -503,14 +503,15 @@ end
 
         D = dim(target)
 
-        n_samples = 1000
+        n_samples = 1500
         n_adapts = 500
+        n_post = n_samples - n_adapts
 
-        # True samples
-        v_true, X_true = funnel_iid(rng, n_samples)
+        # True samples (sized to match post-warmup chain samples)
+        v_true, X_true = funnel_iid(rng, n_post)
 
         # Wasserstein-1 distance tolerances
-        tols = funnel_w1_tols(; n=n_samples, rng=rng)
+        tols = funnel_w1_tols(; n=n_post, rng=rng)
 
         @testset "SoftAbsRiemannianMetric" begin
             metric = SoftAbsRiemannianMetric((D,), G, ∂G∂θ, 40.0)
@@ -532,6 +533,7 @@ end
                 n_samples,
                 adaptor,
                 n_adapts;
+                drop_warmup=true,
                 progress=false,
             )
 
