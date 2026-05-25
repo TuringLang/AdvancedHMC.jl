@@ -52,24 +52,20 @@ function step(
     for i in 1:n_steps
         θ_init, r_init = z.θ, z.r
 
+        # Cache θ-dependent quantities at θ_init once per step; reused across the Eq (16)
+        # fixed-point iterations and again for Eq (17) term_1.
+        cache = build_grad_cache(h, θ_init)
+
         # Eq (16) of Girolami & Calderhead (2011) - implicit momentum half-step
         r_half = r_init
-        local cache = nothing
-        for j in 1:(lf.n)
-            if j == 1
-                # First iteration: use cached values from phase point
-                (; value, gradient) = z.ℓπ
-            else
-                # Subsequent iterations: build/reuse cache for θ-dependent computations
-                retval, cache = ∂H∂θ_cache(h, θ_init, r_half; cache=cache)
-                (; value, gradient) = retval
-            end
+        for _ in 1:(lf.n)
+            gradient = ∂H∂θ_from_cache(cache, r_half).gradient
             r_half = r_init - ϵ / 2 * gradient
         end
 
         # Eq (17) of Girolami & Calderhead (2011) - implicit position step
+        term_1 = ∂H∂r(h, θ_init, r_half; G_eval=cache.G_eval)
         θ_full = θ_init
-        term_1 = ∂H∂r(h, θ_init, r_half)  # unchanged across the loop
         for j in 1:(lf.n)
             θ_full = θ_init + ϵ / 2 * (term_1 + ∂H∂r(h, θ_full, r_half))
         end
@@ -80,7 +76,11 @@ function step(
         (; value, gradient) = dv
         r_full = r_half - ϵ / 2 * gradient
 
-        # Create a new phase point by caching the logdensity and gradient
+        # Create a new phase point by caching the logdensity and gradient.
+        # The gradient stored in ℓπ here is `∂H/∂θ(θ_full, r_half)`, not the field's
+        # documented `-∂ℓπ/∂θ(θ_full)` contract, and is evaluated at `r_half` rather
+        # than `r_full`. No live consumer reads it on the Riemannian path; left as a
+        # placeholder pending a follow-up to clean up the `ℓπ`/`neg_energy` naming.
         z = phasepoint(
             h, θ_full, r_full; ℓπ=DualValue(value, gradient), G_eval=cache.G_eval
         )
