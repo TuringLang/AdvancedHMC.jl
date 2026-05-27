@@ -170,9 +170,13 @@ sampler_eltype(::HMCDA{T}) where {T} = T
 ### SGHMC ###
 #############
 """
-    SGHMC(learning_rate::Real, momentun_decay::Real, integrator = :leapfrog, metric = :diagonal)
+    SGHMC(learning_rate::Real, momentum_decay::Real, n_steps::Int)
 
-Stochastic Gradient Hamiltonian Monte Carlo sampler
+Stochastic Gradient Hamiltonian Monte Carlo sampler using the scalar Eq. 15
+parameterization of Chen et al. (2014), with `β̂ = 0` and identity mass.
+This sampler has no normal HMC trajectory, no momentum refreshment, and no
+Metropolis-Hastings correction. The Eq. 15 velocity is stored in the sampler
+state, not in `Transition.z.r`. Minibatch-gradient support is not yet exposed.
 
 # Fields
 
@@ -184,27 +188,31 @@ For more information, please view the following paper ([arXiv link](https://arxi
 
 - Chen, Tianqi, Emily Fox, and Carlos Guestrin. "Stochastic gradient hamiltonian monte carlo." International conference on machine learning. PMLR, 2014.
 """
-struct SGHMC{T<:Real,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <:
-       AbstractHMCSampler
-    "Learning rate for the gradient descent."
+struct SGHMC{T<:Real} <: AbstractHMCSampler
+    "Learning rate `η`."
     learning_rate::T
-    "Momentum decay rate."
+    "Momentum decay rate `α`."
     momentum_decay::T
-    "Number of leapfrog steps."
-    n_leapfrog::Int
-    "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
-    integrator::I
-    "Choice of initial metric;  `Symbol` means it is automatically initialised. The metric type will be preserved during automatic initialisation and adaption."
-    metric::M
+    "Number of SGHMC inner integration steps."
+    n_steps::Int
+    function SGHMC{T}(learning_rate::T, momentum_decay::T, n_steps::Int) where {T<:Real}
+        learning_rate >= 0 ||
+            throw(ArgumentError("learning_rate must be nonnegative"))
+        momentum_decay >= 0 ||
+            throw(ArgumentError("momentum_decay must be nonnegative"))
+        momentum_decay <= 1 || throw(
+            ArgumentError(
+                "momentum_decay must be <= 1 for this scalar Eq. 15 implementation",
+            ),
+        )
+        n_steps >= 1 || throw(ArgumentError("n_steps must be positive"))
+        return new{T}(learning_rate, momentum_decay, n_steps)
+    end
 end
 
-function SGHMC(
-    learning_rate, momentum_decay, n_leapfrog; integrator=:leapfrog, metric=:diagonal
-)
-    T = determine_sampler_eltype(
-        learning_rate, momentum_decay, n_leapfrog, integrator, metric
-    )
-    return SGHMC(T(learning_rate), T(momentum_decay), n_leapfrog, integrator, metric)
+function SGHMC(learning_rate, momentum_decay, n_steps::Int)
+    T = determine_sampler_eltype(learning_rate, momentum_decay)
+    return SGHMC{T}(T(learning_rate), T(momentum_decay), n_steps)
 end
 
 sampler_eltype(::SGHMC{T}) where {T} = T

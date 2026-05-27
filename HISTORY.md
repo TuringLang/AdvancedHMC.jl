@@ -2,7 +2,7 @@
 
 ## 0.9.0
 
-  - Stochastic gradient based methods `SGHMC` and `SGLD` are supported in AdvancedHMC.jl, please note there are similar methods with the same name in Turing.jl, so when using the two packages together, please specify the package exporting the method.
+  - Stochastic gradient based method `SGHMC` is supported in AdvancedHMC.jl, please note there is a similar method with the same name in Turing.jl, so when using the two packages together, please specify the package exporting the method.
 
 ## 0.8.0
 

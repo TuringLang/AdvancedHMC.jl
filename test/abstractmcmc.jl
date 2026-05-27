@@ -1,6 +1,20 @@
 using ReTest, Random, AdvancedHMC, ForwardDiff, AbstractMCMC
 using Statistics: mean
 
+mutable struct CountingLogDensity
+    n_gradient_calls::Int
+end
+
+LogDensityProblems.dimension(::CountingLogDensity) = 2
+LogDensityProblems.logdensity(::CountingLogDensity, θ) = -sum(abs2, θ) / 2
+function LogDensityProblems.logdensity_and_gradient(ℓ::CountingLogDensity, θ)
+    ℓ.n_gradient_calls += 1
+    return LogDensityProblems.logdensity(ℓ, θ), -θ
+end
+function LogDensityProblems.capabilities(::Type{<:CountingLogDensity})
+    return LogDensityProblems.LogDensityOrder{1}()
+end
+
 @testset "AbstractMCMC w/ gdemo" begin
     rng = MersenneTwister(0)
     n_samples = 10_000
@@ -40,6 +54,48 @@ using Statistics: mean
         new_θ = randn(rng, 2)
         new_state = AbstractMCMC.setparams!!(model, s, new_θ)
         @test AbstractMCMC.getparams(new_state) == new_θ
+
+        sghmc_rng = MersenneTwister(1)
+        t, s = AbstractMCMC.step(sghmc_rng, model, sghmc; initial_params=θ_init)
+        @test AbstractMCMC.getparams(s) == t.z.θ
+        new_state = AbstractMCMC.setparams!!(model, s, new_θ)
+        @test AbstractMCMC.getparams(new_state) == new_θ
+        @test new_state.velocity == s.velocity
+        @test new_state.transition.z.r == zero(new_θ)
+    end
+
+    @testset "SGHMC Eq. 15 dynamics" begin
+        sghmc_rng = MersenneTwister(2)
+        counted = CountingLogDensity(0)
+        counted_model = AbstractMCMC.LogDensityModel(counted)
+        counted_sghmc = SGHMC(0.01, 0.1, 4)
+        _, counted_state = AbstractMCMC.step(
+            sghmc_rng, counted_model, counted_sghmc; initial_params=zeros(2)
+        )
+        counted.n_gradient_calls = 0
+        counted_transition, _ = AbstractMCMC.step(
+            sghmc_rng, counted_model, counted_sghmc, counted_state
+        )
+
+        @test counted.n_gradient_calls == counted_sghmc.n_steps
+        @test counted_transition.stat.is_accept == true
+        @test counted_transition.stat.acceptance_rate == 1
+        @test counted_transition.stat.is_adapt == false
+        @test counted_transition.stat.numerical_error == false
+
+        deterministic_sghmc = SGHMC(0.0, 0.0, 3)
+        θ = [1.0, 2.0]
+        v = [0.25, -0.5]
+        h = AdvancedHMC.Hamiltonian(UnitEuclideanMetric(2), counted_model)
+        z = AdvancedHMC.phasepoint(h, θ, zero(θ))
+        deterministic_state = AdvancedHMC.SGHMCState(0, AdvancedHMC.Transition(z, NamedTuple()), v)
+        deterministic_transition, deterministic_state = AbstractMCMC.step(
+            sghmc_rng, counted_model, deterministic_sghmc, deterministic_state
+        )
+
+        @test deterministic_state.velocity == v
+        @test deterministic_transition.z.θ == θ .+ deterministic_sghmc.n_steps .* v
+        @test deterministic_transition.z.r == zero(θ)
     end
 
     samples_nuts = AbstractMCMC.sample(
