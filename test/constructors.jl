@@ -157,6 +157,28 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
             end
         end
     end
+
+    @testset "SGLD" begin
+        @testset "$T" for T in [Float32, Float64]
+            stepsize = PolynomialStepsize(T(0.25), zero(T), one(T))
+            for (sampler, metric_type) in (
+                (SGLD(stepsize; metric=:unit), UnitEuclideanMetric{T}),
+                (SGLD(stepsize; metric=:diagonal), DiagEuclideanMetric{T}),
+                (SGLD(stepsize; metric=:dense), DenseEuclideanMetric{T}),
+            )
+                @test AdvancedHMC.sampler_eltype(sampler) == T
+                transition, state = AbstractMCMC.step(
+                    rng, model, sampler; n_adapts=0, initial_params=θ_init
+                )
+                @test eltype(transition.z.θ) == T
+                @test eltype(transition.z.r) == T
+                @test transition.z.r == zero(transition.z.θ)
+                @test transition.stat.n_steps == 1
+                @test transition.stat.step_size == stepsize(1)
+                @test AdvancedHMC.getmetric(state) isa metric_type
+            end
+        end
+    end
 end
 
 @testset "Utils" begin

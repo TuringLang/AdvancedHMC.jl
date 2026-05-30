@@ -170,9 +170,25 @@ sampler_eltype(::HMCDA{T}) where {T} = T
 ### SGLD ###
 #############
 """
-    SGLD(step_size::S, n_leapfrog::Int, integrator = :leapfrog, metric = :diagonal)
+    SGLD(stepsize; metric = :unit)
 
-Stochastic gradient Langevin dynamics (SGLD) sampler.
+Stochastic Gradient Langevin Dynamics sampler using the Welling & Teh (2011)
+update with a decreasing step size and optional constant preconditioning.
+
+The model's gradient must be an unbiased stochastic gradient estimate of the
+full log posterior. If minibatching is used, the model must include the prior
+term and the `N / n` likelihood scaling. With a deterministic full gradient,
+this reduces to decreasing-step unadjusted Langevin dynamics; it is not exact at
+fixed step size and has no Metropolis-Hastings correction.
+
+AdvancedHMC does not compute the sampling-threshold diagnostic from the paper.
+Discard pre-threshold draws downstream, and use post-burn-in step-size weighted
+posterior estimates, e.g.
+
+```julia
+sum(t.stat.step_size * f(t.z.θ) for t in samples) /
+sum(t.stat.step_size for t in samples)
+```
 
 # Fields
 
@@ -183,20 +199,15 @@ $(FIELDS)
 For more information, please view the following paper:
  - Max Welling & Yee Whye Teh (2011). Bayesian Learning via Stochastic Gradient Langevin Dynamics. In: Proceedings of the 28th International Conference on Machine Learning (pp. 681–688).
 """
-struct SGLD{S,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <:
-       AbstractHMCSampler
+struct SGLD{S,M<:Union{Symbol,AbstractMetric}} <: AbstractHMCSampler
     "Polynomial step size function."
     stepsize::S
-    "Number of leapfrog steps."
-    n_leapfrog::Int
-    "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
-    integrator::I
-    "Choice of initial metric;  `Symbol` means it is automatically initialised. The metric type will be preserved during automatic initialisation and adaption."
+    "Fixed preconditioning metric. `Symbol` means it is automatically initialised."
     metric::M
 end
 
-function SGLD(stepsize, n_leapfrog; integrator=:leapfrog, metric=:diagonal)
-    return SGLD(stepsize, n_leapfrog, integrator, metric)
+function SGLD(stepsize; metric=:unit)
+    return SGLD(stepsize, metric)
 end
 
-sampler_eltype(sampler::SGLD) = eltype(sampler.stepsize)
+sampler_eltype(sampler::SGLD) = determine_sampler_eltype(sampler.stepsize, sampler.metric)

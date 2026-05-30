@@ -205,26 +205,46 @@ function AbstractMCMC.step(
     return Transition(t.z, tstat), newstate
 end
 
-struct SGLDState{
-    TTrans<:Transition,
-    TMetric<:AbstractMetric,
-    TKernel<:AbstractMCMCKernel,
-    TAdapt<:Adaptation.AbstractAdaptor,
-}
+struct SGLDState{TTrans<:Transition,TMetric<:AbstractMetric}
     "Index of current iteration."
     i::Int
     "Current [`Transition`](@ref)."
     transition::TTrans
-    "Current [`AbstractMetric`](@ref), possibly adapted."
+    "Fixed [`AbstractMetric`](@ref) preconditioner."
     metric::TMetric
-    "Current [`AbstractMCMCKernel`](@ref)."
-    κ::TKernel
-    "Current [`AbstractAdaptor`](@ref)."
-    adaptor::TAdapt
 end
-getadaptor(state::SGLDState) = state.adaptor
 getmetric(state::SGLDState) = state.metric
-getintegrator(state::SGLDState) = state.κ.τ.integrator
+
+function AbstractMCMC.getparams(state::SGLDState)
+    return state.transition.z.θ
+end
+
+function AbstractMCMC.setparams!!(
+    model::AbstractMCMC.LogDensityModel, state::SGLDState, params
+)
+    hamiltonian = Hamiltonian(state.metric, model)
+    return Setfield.@set state.transition.z = phasepoint(
+        hamiltonian, params, zero(params)
+    )
+end
+
+_sgld_preconditioned_gradient(::UnitEuclideanMetric, grad) = grad
+_sgld_preconditioned_noise(::UnitEuclideanMetric, noise) = noise
+
+function _sgld_preconditioned_gradient(metric::DiagEuclideanMetric, grad)
+    return _sgld_scale(metric.M⁻¹, grad)
+end
+function _sgld_preconditioned_noise(metric::DiagEuclideanMetric, noise)
+    return _sgld_scale(metric.sqrtM⁻¹, noise)
+end
+
+_sgld_preconditioned_gradient(metric::DenseEuclideanMetric, grad) = metric.M⁻¹ * grad
+_sgld_preconditioned_noise(metric::DenseEuclideanMetric, noise) =
+    metric.cholM⁻¹' * noise
+
+_sgld_scale(scale::AbstractVector, x::AbstractVector) = scale .* x
+_sgld_scale(scale::AbstractVector, x::AbstractMatrix) = reshape(scale, :, 1) .* x
+_sgld_scale(scale::AbstractMatrix, x::AbstractVecOrMat) = scale .* x
 
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
@@ -244,19 +264,12 @@ function AbstractMCMC.step(
 
     # Compute initial sample and state.
     initial_params = make_initial_params(rng, spl, logdensity, initial_params)
-    ϵ = make_step_size(rng, spl, hamiltonian, initial_params)
-    integrator = make_integrator(spl, ϵ)
+    hamiltonian = resize(hamiltonian, initial_params)
+    metric = hamiltonian.metric
 
-    # Make kernel
-    κ = make_kernel(spl, integrator)
-
-    # Make adaptor
-    adaptor = make_adaptor(spl, metric, integrator)
-
-    # Get an initial sample.
-    h, t = AdvancedHMC.sample_init(rng, hamiltonian, initial_params)
-
-    state = SGLDState(0, t, metric, κ, adaptor)
+    # SGLD has no momentum; keep this zero to avoid random draws and spurious kinetic energy.
+    t = Transition(phasepoint(hamiltonian, initial_params, zero(initial_params)), NamedTuple())
+    state = SGLDState(0, t, metric)
 
     return AbstractMCMC.step(rng, model, spl, state; kwargs...)
 end
@@ -279,8 +292,6 @@ function AbstractMCMC.step(
 
     i = state.i + 1
     t_old = state.transition
-    adaptor = state.adaptor
-    κ = state.κ
     metric = state.metric
 
     # Reconstruct hamiltonian.
@@ -291,25 +302,30 @@ function AbstractMCMC.step(
         LogDensityProblems.logdensity_and_gradient, model.logdensity
     )
     θ = copy(t_old.z.θ)
-    grad = last(logdensity_and_gradient(θ))
+    _, grad = logdensity_and_gradient(θ)
 
     stepsize = spl.stepsize(i)
-    θ .+= (stepsize / 2) .* grad .+ sqrt(stepsize) .* randn(rng, eltype(θ), length(θ))
+    noise = randn(rng, eltype(θ), size(θ)...)
+    θ .+= (stepsize / 2) .* _sgld_preconditioned_gradient(metric, grad) .+
+          sqrt(stepsize) .* _sgld_preconditioned_noise(metric, noise)
 
     # Make new transition.
-    z = phasepoint(h, θ, t_old.z.r)
-    t = transition(rng, h, κ, z)
-
-    # Adapt h and spl.
-    tstat = stat(t)
-    h, κ, isadapted = adapt!(h, κ, adaptor, i, n_adapts, θ, tstat.acceptance_rate)
-    tstat = merge(tstat, (is_adapt=isadapted,))
+    z = phasepoint(h, θ, zero(θ))
+    tstat = (
+        n_steps=1,
+        step_size=stepsize,
+        is_accept=true,
+        acceptance_rate=one(eltype(θ)),
+        log_density=z.ℓπ.value,
+        numerical_error=!isfinite(z),
+        is_adapt=false,
+    )
+    t = Transition(z, tstat)
 
     # Compute next sample and state.
-    sample = Transition(t.z, tstat)
-    newstate = SGLDState(i, t, h.metric, κ, adaptor)
+    newstate = SGLDState(i, t, metric)
 
-    return sample, newstate
+    return t, newstate
 end
 
 ################
@@ -344,8 +360,6 @@ function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; n_adapts::Int=0
     pm = cb.pm
 
     metric = state.metric
-    adaptor = state.adaptor
-    κ = state.κ
     tstat = t.stat
     isadapted = tstat.is_adapt
     if isadapted
@@ -380,8 +394,9 @@ function (cb::HMCProgressCallback)(rng, model, spl, t, state, i; n_adapts::Int=0
             ),
         )
         # Report finish of adapation
-    elseif verbose && isadapted && i == n_adapts
-        @info "Finished $(n_adapts) adapation steps" adaptor κ.τ.integrator metric
+    elseif verbose && isadapted && i == n_adapts && hasproperty(state, :adaptor) &&
+        hasproperty(state, :κ)
+        @info "Finished $(n_adapts) adapation steps" state.adaptor state.κ.τ.integrator metric
     end
 end
 
@@ -505,10 +520,6 @@ function make_adaptor(
     return spl.adaptor
 end
 
-function make_adaptor(spl::SGLD, metric::AbstractMetric, integrator::AbstractIntegrator)
-    return NoAdaptation()
-end
-
 #########
 
 function make_kernel(spl::NUTS, integrator::AbstractIntegrator)
@@ -527,8 +538,4 @@ end
 
 function make_kernel(spl::HMCSampler, integrator::AbstractIntegrator)
     return spl.κ
-end
-
-function make_kernel(spl::SGLD, integrator::AbstractIntegrator)
-    return HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(spl.n_leapfrog)))
 end
