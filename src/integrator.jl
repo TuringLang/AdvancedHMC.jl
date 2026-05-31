@@ -14,9 +14,9 @@ Represents an integrator used to simulate the Hamiltonian system.
 
 # Implementation
 A `AbstractIntegrator` is expected to have the following implementations:
-- `stat`(@ref)
-- `nom_step_size`(@ref)
-- `step_size`(@ref)
+- [`stat`](@ref)
+- [`nom_step_size`](@ref)
+- [`step_size`](@ref)
 """
 abstract type AbstractIntegrator end
 
