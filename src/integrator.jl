@@ -14,9 +14,9 @@ Represents an integrator used to simulate the Hamiltonian system.
 
 # Implementation
 A `AbstractIntegrator` is expected to have the following implementations:
-- `stat`(@ref)
-- `nom_step_size`(@ref)
-- `step_size`(@ref)
+- [`stat`](@ref)
+- [`nom_step_size`](@ref)
+- [`step_size`](@ref)
 """
 abstract type AbstractIntegrator end
 
@@ -209,7 +209,7 @@ function temper(
 end
 
 # `step` method for integrators above
-# method for `DiffEqIntegrator` is defined in the OrdinaryDiffEq extension
+# method for `DiffEqIntegrator` is defined in the OrdinaryDiffEqSymplecticRK extension
 const DefaultLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} = Union{
     Leapfrog{T},JitteredLeapfrog{FT,T},TemperedLeapfrog{FT,T}
 }

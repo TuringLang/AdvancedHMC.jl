@@ -3,7 +3,8 @@ module AdvancedHMC
 using Statistics: mean, var, middle
 using LinearAlgebra:
     Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
-using StatsFuns: logaddexp, logsumexp, loghalf
+using IrrationalConstants: loghalf
+using LogExpFunctions: logaddexp, logsumexp
 using Random: Random, AbstractRNG
 using ProgressMeter: ProgressMeter
 
@@ -192,7 +193,7 @@ end
 export DiffEqIntegrator
 
 function __init__()
-    # Better error message if users forgot to load OrdinaryDiffEq
+    # Better error message if users forgot to load OrdinaryDiffEqSymplecticRK
     Base.Experimental.register_error_hint(MethodError) do io, exc, arg_types, kwargs
         n = length(arg_types)
         if exc.f === step &&
@@ -201,7 +202,7 @@ function __init__()
             arg_types[2] <: Hamiltonian &&
             arg_types[3] <: PhasePoint &&
             (n == 3 || arg_types[4] === Int)
-            print(io, "\\nDid you forget to load OrdinaryDiffEq?")
+            print(io, "\\nDid you forget to load OrdinaryDiffEqSymplecticRK?")
         end
     end
 end

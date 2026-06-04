@@ -1,6 +1,6 @@
 using ReTest, Random, AdvancedHMC, ForwardDiff
 
-using OrdinaryDiffEq
+using OrdinaryDiffEqSymplecticRK
 using LinearAlgebra: dot
 using Statistics: mean
 
