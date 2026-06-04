@@ -53,10 +53,10 @@ samples, stats = sample(
 )
 ```
 
-## Parallel Sampling
+## [Parallel Sampling](@id parallel_sampling)
 
 AdvancedHMC enables parallel sampling (either distributed or multi-thread) via Julia's [parallel computing functions](https://docs.julialang.org/en/v1/manual/parallel-computing/).
-It also supports vectorized sampling for static HMC.
+It also supports [vectorized HMC sampling](@ref vectorized_hmc) for static HMC.
 
 The below example utilizes the `@threads` macro to sample 4 chains across 4 threads.
 
