@@ -25,6 +25,7 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
     include("trajectory.jl")
     include("adaptation.jl")
     include("sampler.jl")
+    include("sghmc.jl")
     include("sampler-vec.jl")
     include("demo.jl")
     include("models.jl")

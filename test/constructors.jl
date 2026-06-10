@@ -158,17 +158,6 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
         end
     end
 
-    @testset "SGHMC" begin
-        @testset "$T" for T in [Float32, Float64]
-            sampler = SGHMC(T(0.01), T(0.1), 10)
-            @test AdvancedHMC.sampler_eltype(sampler) == T
-            @test sampler.n_steps == 10
-        end
-        @test_throws ArgumentError SGHMC(-0.01, 0.1, 10)
-        @test_throws ArgumentError SGHMC(0.01, -0.1, 10)
-        @test_throws ArgumentError SGHMC(0.01, 1.1, 10)
-        @test_throws ArgumentError SGHMC(0.01, 0.1, 0)
-    end
 end
 
 @testset "Utils" begin

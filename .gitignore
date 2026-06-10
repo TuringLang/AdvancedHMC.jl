@@ -4,4 +4,3 @@
 .ipynb_checkpoints
 Manifest.toml
 !test/experimental/Manifest.toml
-.codex_tmp/

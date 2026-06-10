@@ -125,9 +125,10 @@ include("sampler.jl")
 export sample
 
 include("constructors.jl")
-export HMCSampler, HMC, NUTS, HMCDA, SGHMC
-
 include("abstractmcmc.jl")
+include("sghmc.jl")
+
+export HMCSampler, HMC, NUTS, HMCDA, SGHMC
 
 ## Without explicit AD backend
 function Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel; kwargs...)
