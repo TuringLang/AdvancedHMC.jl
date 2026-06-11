@@ -29,6 +29,7 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
     include("demo.jl")
     include("models.jl")
     include("abstractmcmc.jl")
+    include("sgld.jl")
     include("mcmcchains.jl")
     include("constructors.jl")
     retest(; dry=false, verbose=Inf)

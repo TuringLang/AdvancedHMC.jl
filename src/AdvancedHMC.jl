@@ -24,7 +24,6 @@ import StatsBase: sample
 const DEFAULT_FLOAT_TYPE = typeof(float(0))
 
 include("utilities.jl")
-export PolynomialStepsize
 # Notations
 # ℓπ: log density of the target distribution
 # θ: position variables / model parameters
@@ -125,9 +124,12 @@ include("sampler.jl")
 export sample
 
 include("constructors.jl")
-export HMCSampler, HMC, NUTS, HMCDA, SGLD
+export HMCSampler, HMC, NUTS, HMCDA
 
 include("abstractmcmc.jl")
+
+include("sgld.jl")
+export SGLD, PolynomialStepsize
 
 ## Without explicit AD backend
 function Hamiltonian(metric::AbstractMetric, ℓ::LogDensityModel; kwargs...)
