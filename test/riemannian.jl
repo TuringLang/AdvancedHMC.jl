@@ -6,7 +6,7 @@ include("../src/riemannian_hmc_utility.jl")
 using FiniteDiff:
     finite_difference_gradient, finite_difference_hessian, finite_difference_jacobian
 using Distributions: MvNormal
-using AdvancedHMC: neg_energy, energy
+using AdvancedHMC: neg_kinetic_energy, energy
 
 # Taken from https://github.com/JuliaDiff/FiniteDiff.jl/blob/master/test/finitedifftests.jl
 δ(a, b) = maximum(abs.(a - b))
@@ -45,7 +45,7 @@ using AdvancedHMC: neg_energy, energy
                 all(iszero, x) # or for x==0 that I know it's PD
                 @testset "Kinetic energy" begin
                     Σ = hamiltonian.metric.map(hamiltonian.metric.G(x))
-                    @test neg_energy(hamiltonian, r, x) ≈ logpdf(MvNormal(zeros(D), Σ), r)
+                    @test neg_kinetic_energy(hamiltonian, r, x) ≈ logpdf(MvNormal(zeros(D), Σ), r)
                 end
             end
 

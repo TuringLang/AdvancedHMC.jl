@@ -67,7 +67,7 @@ function ∂H∂r(h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::A
     return M⁻¹ * r
 end
 
-# TODO (kai) make the order of θ and r consistent with neg_energy
+# TODO (kai) make the order of θ and r consistent with neg_kinetic_energy
 # TODO (kai) add stricter types to block hamiltonian.jl#L37 from working on unknown metric/kinetic
 # The gradient of a position-dependent Hamiltonian system depends on both θ and r. 
 ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat, r::AbstractVecOrMat) = ∂H∂θ(h, θ)
@@ -101,7 +101,7 @@ function Base.similar(z::PhasePoint{<:AbstractVecOrMat{T}}) where {T<:AbstractFl
 end
 
 function phasepoint(
-    h::Hamiltonian, θ::T, r::T; ℓπ=∂H∂θ(h, θ), ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, r))
+    h::Hamiltonian, θ::T, r::T; ℓπ=∂H∂θ(h, θ), ℓκ=DualValue(neg_kinetic_energy(h, r, θ), ∂H∂r(h, r))
 ) where {T<:AbstractVecOrMat}
     return PhasePoint(θ, r, ℓπ, ℓκ)
 end
@@ -115,7 +115,7 @@ function phasepoint(
     _r::T2;
     r=safe_rsimilar(θ, _r),
     ℓπ=∂H∂θ(h, θ),
-    ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, r)),
+    ℓκ=DualValue(neg_kinetic_energy(h, r, θ), ∂H∂r(h, r)),
 ) where {T1<:AbstractVecOrMat,T2<:AbstractVecOrMat}
     return PhasePoint(θ, r, ℓπ, ℓκ)
 end
@@ -140,31 +140,31 @@ neg_energy(h::Hamiltonian, θ::AbstractVecOrMat) = h.ℓπ(θ)
 
 # GaussianKinetic
 
-function neg_energy(
+function neg_kinetic_energy(
     h::Hamiltonian{<:UnitEuclideanMetric,<:GaussianKinetic}, r::T, θ::T
 ) where {T<:AbstractVector}
     return -sum(abs2, r) / 2
 end
 
-function neg_energy(
+function neg_kinetic_energy(
     h::Hamiltonian{<:UnitEuclideanMetric,<:GaussianKinetic}, r::T, θ::T
 ) where {T<:AbstractMatrix}
     return -vec(sum(abs2, r; dims=1)) / 2
 end
 
-function neg_energy(
+function neg_kinetic_energy(
     h::Hamiltonian{<:DiagEuclideanMetric,<:GaussianKinetic}, r::T, θ::T
 ) where {T<:AbstractVector}
     return -sum(abs2.(r) .* h.metric.M⁻¹) / 2
 end
 
-function neg_energy(
+function neg_kinetic_energy(
     h::Hamiltonian{<:DiagEuclideanMetric,<:GaussianKinetic}, r::T, θ::T
 ) where {T<:AbstractMatrix}
     return -vec(sum(abs2.(r) .* h.metric.M⁻¹; dims=1)) / 2
 end
 
-function neg_energy(
+function neg_kinetic_energy(
     h::Hamiltonian{<:DenseEuclideanMetric,<:GaussianKinetic}, r::T, θ::T
 ) where {T<:AbstractVecOrMat}
     mul!(h.metric._temp, h.metric.M⁻¹, r)
@@ -172,6 +172,7 @@ function neg_energy(
 end
 
 energy(args...) = -neg_energy(args...)
+energy(h::Hamiltonian, r::AbstractVecOrMat, θ::AbstractVecOrMat) = -neg_kinetic_energy(h, r, θ)
 
 ####
 #### Momentum refreshment

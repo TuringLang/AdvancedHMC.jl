@@ -103,7 +103,7 @@ function step(
     return res
 end
 
-# TODO Make the order of θ and r consistent with neg_energy
+# TODO Make the order of θ and r consistent with neg_kinetic_energy
 ∂H∂θ(h::Hamiltonian, θ::AbstractVecOrMat, r::AbstractVecOrMat) = ∂H∂θ(h, θ)
 ∂H∂r(h::Hamiltonian, θ::AbstractVecOrMat, r::AbstractVecOrMat) = ∂H∂r(h, r)
 
@@ -221,7 +221,7 @@ end
 
 ### hamiltonian.jl
 
-import AdvancedHMC: phasepoint, neg_energy, ∂H∂θ, ∂H∂r
+import AdvancedHMC: phasepoint, neg_kinetic_energy, ∂H∂θ, ∂H∂r
 using LinearAlgebra: logabsdet, tr
 
 # QUES Do we want to change everything to position dependent by default?
@@ -231,14 +231,14 @@ function phasepoint(
     θ::T,
     r::T;
     ℓπ=∂H∂θ(h, θ),
-    ℓκ=DualValue(neg_energy(h, r, θ), ∂H∂r(h, θ, r)),
+    ℓκ=DualValue(neg_kinetic_energy(h, r, θ), ∂H∂r(h, θ, r)),
 ) where {T<:AbstractVecOrMat}
     return PhasePoint(θ, r, ℓπ, ℓκ)
 end
 
 # Negative kinetic energy
 #! Eq (13) of Girolami & Calderhead (2011)
-function neg_energy(
+function neg_kinetic_energy(
     h::Hamiltonian{<:DenseRiemannianMetric}, r::T, θ::T
 ) where {T<:AbstractVecOrMat}
     G = h.metric.map(h.metric.G(θ))
