@@ -194,10 +194,8 @@ chosen such that `M⁻¹` is positive definite. The element type `T` defaults to
 
 $(TYPEDFIELDS)
 
-# References
+# Reference
 
-  - Bales, Pourzanjani, Vehtari & Petzold (2019). Selecting the Metric in Hamiltonian Monte
-    Carlo. arXiv:1905.11916.
   - Zhang, Carpenter, Gelman & Vehtari (2022). Pathfinder: Parallel quasi-Newton variational
     inference. Journal of Machine Learning Research 23(306), 1-49.
 """
