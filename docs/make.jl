@@ -16,6 +16,7 @@ makedocs(;
     pages=[
         "AdvancedHMC.jl" => "index.md",
         "Get Started" => "get_started.md",
+        "Vectorized HMC" => "vectorized.md",
         "Automatic Differentiation Backends" => "autodiff.md",
         "Detailed API" => "api.md",
         "Interfaces" => "interfaces.md",
