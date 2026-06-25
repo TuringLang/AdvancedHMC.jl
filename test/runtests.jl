@@ -32,6 +32,14 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
     include("mcmcchains.jl")
     include("constructors.jl")
     retest(; dry=false, verbose=Inf)
+
+    # Run parallel MCMC tests (DEER algorithm)
+    include(joinpath(@__DIR__, "parallel", "test_scan.jl"))
+    include(joinpath(@__DIR__, "parallel", "test_jacobian.jl"))
+    include(joinpath(@__DIR__, "parallel", "test_deer.jl"))
+    include(joinpath(@__DIR__, "parallel", "test_mala.jl"))
+    include(joinpath(@__DIR__, "parallel", "test_hmc.jl"))
+    include(joinpath(@__DIR__, "parallel", "test_abstractmcmc.jl"))
 end
 
 if GROUP == "All" || GROUP == "Experimental"
