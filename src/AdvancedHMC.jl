@@ -12,9 +12,11 @@ using LinearAlgebra:
     cholesky,
     UniformScaling,
     Diagonal,
+    AbstractQ,
     qr,
     lmul!
-using StatsFuns: logaddexp, logsumexp, loghalf
+using IrrationalConstants: loghalf
+using LogExpFunctions: logaddexp, logsumexp
 using Random: Random, AbstractRNG
 using ProgressMeter: ProgressMeter
 
@@ -84,7 +86,12 @@ export find_good_eps
 include("adaptation/Adaptation.jl")
 using .Adaptation
 import .Adaptation:
-    StepSizeAdaptor, MassMatrixAdaptor, StanHMCAdaptor, NesterovDualAveraging, NoAdaptation
+    StepSizeAdaptor,
+    MassMatrixAdaptor,
+    StanHMCAdaptor,
+    NesterovDualAveraging,
+    NoAdaptation,
+    PositionOrPhasePoint
 
 # Helpers for initializing adaptors via AHMC structs
 
@@ -126,6 +133,7 @@ export StepSizeAdaptor,
     MassMatrixAdaptor,
     UnitMassMatrix,
     WelfordVar,
+    NutpieVar,
     WelfordCov,
     NaiveHMCAdaptor,
     StanHMCAdaptor,
@@ -203,7 +211,7 @@ end
 export DiffEqIntegrator
 
 function __init__()
-    # Better error message if users forgot to load OrdinaryDiffEq
+    # Better error message if users forgot to load OrdinaryDiffEqSymplecticRK
     Base.Experimental.register_error_hint(MethodError) do io, exc, arg_types, kwargs
         n = length(arg_types)
         if exc.f === step &&
@@ -212,7 +220,7 @@ function __init__()
             arg_types[2] <: Hamiltonian &&
             arg_types[3] <: PhasePoint &&
             (n == 3 || arg_types[4] === Int)
-            print(io, "\\nDid you forget to load OrdinaryDiffEq?")
+            print(io, "\\nDid you forget to load OrdinaryDiffEqSymplecticRK?")
         end
     end
 end

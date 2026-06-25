@@ -5,7 +5,13 @@ struct Hamiltonian{M<:AbstractMetric,K<:AbstractKinetic,Tlogπ,T∂logπ∂θ}
     ∂ℓπ∂θ::T∂logπ∂θ
 end
 function Base.show(io::IO, h::Hamiltonian)
-    return print(io, "Hamiltonian(metric=$(h.metric), kinetic=$(h.kinetic))")
+    return print(
+        io,
+        "Hamiltonian with ",
+        nameof(typeof(h.metric)),
+        " and ",
+        nameof(typeof(h.kinetic)),
+    )
 end
 
 # By default we use Gaussian kinetic energy; also to ensure backward compatibility at the time this was introduced
@@ -64,13 +70,14 @@ end
 function ∂H∂r(
     h::Hamiltonian{<:RankUpdateEuclideanMetric,<:GaussianKinetic}, r::AbstractVecOrMat
 )
-    (; M⁻¹) = h.metric
-    axes_M⁻¹ = __axes(M⁻¹)
+    (; A, B, D) = h.metric
+    axes_A = __axes(A)
     axes_r = __axes(r)
-    (first(axes_M⁻¹) !== first(axes_r)) && throw(
-        ArgumentError("AxesMismatch: M⁻¹ has axes $(axes_M⁻¹) but r has axes $(axes_r)")
+    (last(axes_A) !== first(axes_r)) && throw(
+        ArgumentError(lazy"AxesMismatch: A has axes $(axes_A) but r has axes $(axes_r)")
     )
-    return M⁻¹ * r
+    # M⁻¹ * r = A * r + B * (D * (Bᵀ * r))
+    return muladd(A, r, B * (D * (B' * r)))
 end
 
 # TODO (kai) make the order of θ and r consistent with neg_energy
@@ -179,9 +186,11 @@ end
 
 function neg_energy(
     h::Hamiltonian{<:RankUpdateEuclideanMetric,<:GaussianKinetic}, r::T, θ::T
-) where {T<:AbstractVecOrMat}
-    M⁻¹ = h.metric.M⁻¹
-    return -r' * M⁻¹ * r / 2
+) where {T<:AbstractVector}
+    (; A, B, D) = h.metric
+    Btr = B' * r
+    # rᵀ M⁻¹ r = rᵀ A r + (Bᵀ r)ᵀ D (Bᵀ r)
+    return -(dot(r, A, r) + dot(Btr, D, Btr)) / 2
 end
 
 energy(args...) = -neg_energy(args...)

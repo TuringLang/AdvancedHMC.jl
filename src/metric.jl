@@ -7,7 +7,7 @@ abstract type AbstractMetric end
 
 _string_M⁻¹(mat::AbstractMatrix, n_chars::Int=32) = _string_M⁻¹(diag(mat), n_chars)
 function _string_M⁻¹(vec::AbstractVector, n_chars::Int=32)
-    s_vec = string(vec)
+    s_vec = repr(vec; context=(:compact => true))
     l = length(s_vec)
     s_dots = " ...]"
     n_diag_chars = n_chars - length(s_dots)
@@ -33,8 +33,20 @@ renew(ue::UnitEuclideanMetric, M⁻¹) = UnitEuclideanMetric(M⁻¹, ue.size)
 Base.eltype(::UnitEuclideanMetric{T}) where {T} = T
 Base.size(e::UnitEuclideanMetric) = e.size
 Base.size(e::UnitEuclideanMetric, dim::Int) = e.size[dim]
-function Base.show(io::IO, uem::UnitEuclideanMetric)
-    return print(io, "UnitEuclideanMetric($(_string_M⁻¹(ones(uem.size))))")
+
+function Base.show(io::IO, uem::UnitEuclideanMetric{T}) where {T}
+    return print(io, "UnitEuclideanMetric(", T, ", ", uem.size, ")")
+end
+function Base.show(io::IO, ::MIME"text/plain", uem::UnitEuclideanMetric{T}) where {T}
+    return print(
+        io,
+        "UnitEuclideanMetric{",
+        T,
+        "} with size ",
+        size(uem),
+        " mass matrix:\n",
+        _string_M⁻¹(ones(uem.size)),
+    )
 end
 
 struct DiagEuclideanMetric{T,A<:AbstractVecOrMat{T}} <: AbstractMetric
@@ -58,8 +70,20 @@ renew(ue::DiagEuclideanMetric, M⁻¹) = DiagEuclideanMetric(M⁻¹)
 
 Base.eltype(::DiagEuclideanMetric{T}) where {T} = T
 Base.size(e::DiagEuclideanMetric, dim...) = size(e.M⁻¹, dim...)
+
 function Base.show(io::IO, dem::DiagEuclideanMetric)
-    return print(io, "DiagEuclideanMetric($(_string_M⁻¹(dem.M⁻¹)))")
+    return print(io, "DiagEuclideanMetric(", _string_M⁻¹(dem.M⁻¹), ")")
+end
+function Base.show(io::IO, ::MIME"text/plain", dem::DiagEuclideanMetric{T}) where {T}
+    return print(
+        io,
+        "DiagEuclideanMetric{",
+        T,
+        "} with size ",
+        size(dem),
+        " mass matrix:\n",
+        _string_M⁻¹(dem.M⁻¹),
+    )
 end
 
 struct DenseEuclideanMetric{
@@ -94,73 +118,121 @@ renew(ue::DenseEuclideanMetric, M⁻¹) = DenseEuclideanMetric(M⁻¹)
 
 Base.eltype(::DenseEuclideanMetric{T}) where {T} = T
 Base.size(e::DenseEuclideanMetric, dim...) = size(e._temp, dim...)
+
 function Base.show(io::IO, dem::DenseEuclideanMetric)
-    return print(io, "DenseEuclideanMetric(diag=$(_string_M⁻¹(dem.M⁻¹)))")
+    return print(io, "DenseEuclideanMetric(", _string_M⁻¹(dem.M⁻¹), ")")
+end
+function Base.show(io::IO, ::MIME"text/plain", dem::DenseEuclideanMetric{T}) where {T}
+    return print(
+        io,
+        "DenseEuclideanMetric{",
+        T,
+        "} with size ",
+        size(dem),
+        " mass matrix:\n",
+        _string_M⁻¹(dem.M⁻¹),
+    )
 end
 
 """
-    RankUpdateEuclideanMetric{T,AM,AB,AD,F} <: AbstractMetric
+    WoodburyFactorization(U, Q, V)
 
-A Gaussian Euclidean metric whose inverse is constructed by rank-updates.
+A factorization of a positive definite Woodbury matrix `W = A + B*D*Bᵀ`, with positive
+definite diagonal `A`, as returned by [`woodbury_factorize`](@ref).
+
+The factors `U`, `Q`, and `V` are defined by the field descriptions below; together they
+allow sampling from `N(0, W⁻¹)` without forming `W`.
+
+# Fields
+
+$(TYPEDFIELDS)
+"""
+struct WoodburyFactorization{T,TU<:Diagonal{T},TQ<:AbstractQ{T},TV<:UpperTriangular{T}}
+    "diagonal Cholesky factor of `A`, i.e. `Uᵀ*U = A`"
+    U::TU
+    "orthogonal factor of the thin QR decomposition `Uᵀ \\ B = Q*R`"
+    Q::TQ
+    "upper-triangular Cholesky factor of `I + R*D*Rᵀ`, i.e. `Vᵀ*V = I + R*D*Rᵀ`"
+    V::TV
+end
+
+"""
+    woodbury_factorize(A::Diagonal, B::AbstractMatrix, D::AbstractMatrix)
+
+Return a [`WoodburyFactorization`](@ref) of the positive definite Woodbury matrix
+`W = A + B*D*Bᵀ`, where `A` is a positive definite diagonal matrix.
+"""
+function woodbury_factorize(
+    A::Diagonal{T}, B::AbstractMatrix{T}, D::AbstractMatrix{T}
+) where {T}
+    U = cholesky(A).U
+    Q, R = qr(U' \ B)
+    V = cholesky(Symmetric(muladd(R, D * R', I))).U
+    return WoodburyFactorization(U, Q, V)
+end
+
+"""
+    RankUpdateEuclideanMetric([T::Type=Float64,] n::Int)
+    RankUpdateEuclideanMetric([T::Type=Float64,] sz::Tuple{Int})
+    RankUpdateEuclideanMetric(A::Diagonal, B::AbstractMatrix, D::AbstractMatrix)
+
+A Gaussian Euclidean metric in `n` dimensions whose inverse mass matrix `M⁻¹ = A + B*D*Bᵀ`
+is a low-rank update of a positive definite diagonal matrix `A`.
+
+The rank `k` of the update equals the number of columns of `B`. Evaluating the kinetic
+energy and its gradient then costs `O(n*k)`, compared with `O(n^2)` for a dense metric, so
+the metric is useful when most of the posterior covariance lies in a low-dimensional
+subspace. As for the other metrics, `M⁻¹` denotes the full inverse mass matrix; here it is
+reconstructed from the fields rather than stored explicitly.
+
+`RankUpdateEuclideanMetric(n)` constructs an `n`-by-`n` metric with `M⁻¹` equal to the
+identity (a rank-0 update). `RankUpdateEuclideanMetric(A, B, D)` constructs the metric from
+a positive definite `Diagonal` matrix `A` and matrices `B` and `D` of matching element type,
+chosen such that `M⁻¹` is positive definite. The element type `T` defaults to `Float64`.
 
 # Fields
 
 $(TYPEDFIELDS)
 
-# Constructors
-
-    RankUpdateEuclideanMetric(n::Int)
-    RankUpdateEuclideanMetric(M⁻¹, B, D)
-
- - Construct a Gaussian Euclidean metric of size `(n, n)` with `M⁻¹` being diagonal matrix.
- - Construct a Gaussian Euclidean metric of `M⁻¹`, where `M⁻¹` should be a full rank positive definite matrix,
-    and `B` `D` must be chose so that the Woodbury matrix `W = M⁻¹ + B D B^\\mathrm{T}` is positive definite.
-
-# Example
-
-```julia
-julia> RankUpdateEuclideanMetric(3)
-RankUpdateEuclideanMetric(diag=[1.0, 1.0, 1.0])
-```
-
 # References
 
- - Ben Bales, Arya Pourzanjani, Aki Vehtari, Linda Petzold, Selecting the Metric in Hamiltonian Monte Carlo, 2019
+  - Bales, Pourzanjani, Vehtari & Petzold (2019). Selecting the Metric in Hamiltonian Monte
+    Carlo. arXiv:1905.11916.
+  - Zhang, Carpenter, Gelman & Vehtari (2022). Pathfinder: Parallel quasi-Newton variational
+    inference. Journal of Machine Learning Research 23(306), 1-49.
 """
-struct RankUpdateEuclideanMetric{T,AM<:AbstractVecOrMat{T},AB,AD,F} <: AbstractMetric
-    "Diagnal of the inverse of the mass matrix"
-    M⁻¹::AM
+struct RankUpdateEuclideanMetric{
+    T,
+    AA<:Diagonal{T},
+    AB<:AbstractMatrix{T},
+    AD<:AbstractMatrix{T},
+    F<:WoodburyFactorization{T},
+} <: AbstractMetric
+    "positive definite diagonal matrix `A` in `M⁻¹ = A + B*D*Bᵀ`"
+    A::AA
+    "factor `B` of the low-rank update `B*D*Bᵀ`"
     B::AB
+    "inner matrix `D` of the low-rank update `B*D*Bᵀ`"
     D::AD
+    "[`WoodburyFactorization`](@ref) of `M⁻¹`, used for momentum sampling"
     factorization::F
 end
 
-function woodbury_factorize(A, B, D)
-    cholA = cholesky(A isa Diagonal ? A : Symmetric(A))
-    U = cholA.U
-    Q, R = qr(U' \ B)
-    V = cholesky(Symmetric(muladd(R, D * R', I))).U
-    return (U=U, Q=Q, V=V)
-end
-
-function RankUpdateEuclideanMetric(n::Int)
-    M⁻¹ = Diagonal(ones(n))
-    B = zeros(n, 0)
-    D = zeros(0, 0)
-    factorization = woodbury_factorize(M⁻¹, B, D)
-    return RankUpdateEuclideanMetric(M⁻¹, B, D, factorization)
-end
 function RankUpdateEuclideanMetric(::Type{T}, n::Int) where {T}
-    M⁻¹ = Diagonal(ones(T, n))
+    A = Diagonal(ones(T, n))
     B = Matrix{T}(undef, n, 0)
     D = Matrix{T}(undef, 0, 0)
-    factorization = woodbury_factorize(M⁻¹, B, D)
-    return RankUpdateEuclideanMetric(M⁻¹, B, D, factorization)
+    # For the identity (rank-0) metric the Woodbury factors are trivial: `U = A`, `Q` is the
+    # identity, and `V` is empty, so we build them directly instead of via `cholesky`.
+    factorization = WoodburyFactorization(A, qr(B).Q, UpperTriangular(D))
+    return RankUpdateEuclideanMetric(A, B, D, factorization)
 end
+RankUpdateEuclideanMetric(n::Int) = RankUpdateEuclideanMetric(Float64, n)
 
-function RankUpdateEuclideanMetric(M⁻¹, B, D)
-    factorization = woodbury_factorize(M⁻¹, B, D)
-    return RankUpdateEuclideanMetric(M⁻¹, B, D, factorization)
+function RankUpdateEuclideanMetric(
+    A::Diagonal{T}, B::AbstractMatrix{T}, D::AbstractMatrix{T}
+) where {T}
+    return RankUpdateEuclideanMetric(A, B, D, woodbury_factorize(A, B, D))
 end
 
 function RankUpdateEuclideanMetric(::Type{T}, sz::Tuple{Int}) where {T}
@@ -168,12 +240,37 @@ function RankUpdateEuclideanMetric(::Type{T}, sz::Tuple{Int}) where {T}
 end
 RankUpdateEuclideanMetric(sz::Tuple{Int}) = RankUpdateEuclideanMetric(Float64, sz)
 
-renew(::RankUpdateEuclideanMetric, (M⁻¹, B, D)) = RankUpdateEuclideanMetric(M⁻¹, B, D)
+function renew(::RankUpdateEuclideanMetric, (A, B, D))
+    return RankUpdateEuclideanMetric(A, B, D)
+end
 
-Base.size(metric::RankUpdateEuclideanMetric, dim...) = size(metric.M⁻¹.diag, dim...)
+Base.eltype(::RankUpdateEuclideanMetric{T}) where {T} = T
+Base.size(metric::RankUpdateEuclideanMetric, dim...) = size(metric.A.diag, dim...)
 
-function Base.show(io::IO, ::MIME"text/plain", metric::RankUpdateEuclideanMetric)
-    return print(io, "RankUpdateEuclideanMetric(diag=$(diag(metric.M⁻¹)))")
+# Diagonal of the full inverse mass matrix `M⁻¹ = A + B*D*Bᵀ`, i.e. `diag(A) + [bᵢᵀ*D*bᵢ]`.
+function _diag_inv_metric(metric::RankUpdateEuclideanMetric)
+    return broadcast(
+        (aii, b) -> aii + dot(b, metric.D, b), metric.A.diag, eachrow(metric.B)
+    )
+end
+
+function Base.show(io::IO, metric::RankUpdateEuclideanMetric)
+    return print(
+        io, "RankUpdateEuclideanMetric(", _string_M⁻¹(_diag_inv_metric(metric)), ")"
+    )
+end
+function Base.show(
+    io::IO, ::MIME"text/plain", metric::RankUpdateEuclideanMetric{T}
+) where {T}
+    return print(
+        io,
+        "RankUpdateEuclideanMetric{",
+        T,
+        "} with size ",
+        size(metric),
+        " mass matrix:\n",
+        _string_M⁻¹(_diag_inv_metric(metric)),
+    )
 end
 
 # `rand` functions for `metric` types.
@@ -216,12 +313,15 @@ function rand_momentum(
     kinetic::GaussianKinetic,
     ::AbstractVecOrMat,
 ) where {T}
-    M⁻¹ = metric.M⁻¹
-    r = _randn(rng, T, size(M⁻¹.diag)...)
-    F = metric.factorization
-    k = min(size(F.U, 1), size(F.V, 1))
-    @views ldiv!(F.V, r isa AbstractVector ? r[1:k] : r[1:k, :])
-    lmul!(F.Q, r)
-    ldiv!(F.U, r)
+    (; U, Q, V) = metric.factorization
+    r = _randn(rng, T, size(metric)...)
+    k = min(size(U, 1), size(V, 1))
+    if r isa AbstractVector
+        ldiv!(V, @view(r[begin:(begin + (k - 1))]))
+    else
+        ldiv!(V, @view(r[begin:(begin + (k - 1)), :]))
+    end
+    lmul!(Q, r)
+    ldiv!(U, r)
     return r
 end

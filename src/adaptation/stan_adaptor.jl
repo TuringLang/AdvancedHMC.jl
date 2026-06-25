@@ -50,12 +50,9 @@ function initialize!(
 end
 
 function Base.show(io::IO, state::StanHMCAdaptorState)
-    return print(
-        io,
-        "window($(state.window_start), $(state.window_end)), window_splits(" *
-        string(join(state.window_splits, ", ")) *
-        ")",
-    )
+    print(io, "window(", state.window_start, ", ", state.window_end, "), window_splits(")
+    join(io, state.window_splits, ", ")
+    return print(io, ")")
 end
 
 ### Stan's windowed adaptation
@@ -69,10 +66,39 @@ struct StanHMCAdaptor{M<:MassMatrixAdaptor,Tssa<:StepSizeAdaptor} <: AbstractAda
     window_size::Int
     state::StanHMCAdaptorState
 end
+
 function Base.show(io::IO, a::StanHMCAdaptor)
     return print(
         io,
-        "StanHMCAdaptor(\n    pc=$(a.pc),\n    ssa=$(a.ssa),\n    init_buffer=$(a.init_buffer), term_buffer=$(a.term_buffer), window_size=$(a.window_size),\n    state=$(a.state)\n)",
+        "StanHMCAdaptor(",
+        a.pc,
+        ", ",
+        a.ssa,
+        "; init_buffer=",
+        a.init_buffer,
+        ", term_buffer=",
+        a.term_buffer,
+        ", window_size=",
+        a.window_size,
+        ")",
+    )
+end
+function Base.show(io::IO, mime::MIME"text/plain", a::StanHMCAdaptor)
+    return print(
+        io,
+        "StanHMCAdaptor(\n    pc=",
+        a.pc,
+        ",\n    ssa=",
+        a.ssa,
+        ",\n    init_buffer=",
+        a.init_buffer,
+        ", term_buffer=",
+        a.term_buffer,
+        ", window_size=",
+        a.window_size,
+        ",\n    state=",
+        a.state,
+        "\n)",
     )
 end
 
@@ -110,20 +136,20 @@ is_window_end(a::StanHMCAdaptor) = a.state.i in a.state.window_splits
 
 function adapt!(
     tp::StanHMCAdaptor,
-    θ::AbstractVecOrMat{<:AbstractFloat},
+    z_or_theta::PositionOrPhasePoint,
     α::AbstractScalarOrVec{<:AbstractFloat},
 )
     tp.state.i += 1
 
-    adapt!(tp.ssa, θ, α)
+    adapt!(tp.ssa, z_or_theta, α)
 
-    resize_adaptor!(tp.pc, size(θ)) # Resize pre-conditioner if necessary.
+    resize_adaptor!(tp.pc, size(get_position(z_or_theta))) # Resize pre-conditioner if necessary.
 
     # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/adapt_diag_e_nuts.hpp
     if is_in_window(tp)
         # We accumlate stats from θ online and only trigger the update of M⁻¹ in the end of window.
         is_update_M⁻¹ = is_window_end(tp)
-        adapt!(tp.pc, θ, α, is_update_M⁻¹)
+        adapt!(tp.pc, z_or_theta, α, is_update_M⁻¹)
     end
 
     if is_window_end(tp)

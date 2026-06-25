@@ -1,0 +1,106 @@
+cff-version: 1.2.0
+message: "If you use AdvancedHMC.jl in your work, please cite this repository and the references below."
+title: "AdvancedHMC.jl"
+type: software
+license: "MIT"
+repository-code: "https://github.com/TuringLang/AdvancedHMC.jl"
+url: "https://github.com/TuringLang/AdvancedHMC.jl"
+version: "0.8.4"
+authors:
+  - family-names: "Xu"
+    given-names: "Kai"
+  - family-names: "Ge"
+    given-names: "Hong"
+  - family-names: "Tebbutt"
+    given-names: "Will"
+  - family-names: "Tarek"
+    given-names: "Mohamed"
+  - family-names: "Trapp"
+    given-names: "Martin"
+  - family-names: "Ghahramani"
+    given-names: "Zoubin"
+preferred-citation:
+  type: conference-paper
+  title: "AdvancedHMC.jl: A robust, modular and efficient implementation of advanced HMC algorithms"
+  authors:
+    - family-names: "Xu"
+      given-names: "Kai"
+    - family-names: "Ge"
+      given-names: "Hong"
+    - family-names: "Tebbutt"
+      given-names: "Will"
+    - family-names: "Tarek"
+      given-names: "Mohamed"
+    - family-names: "Trapp"
+      given-names: "Martin"
+    - family-names: "Ghahramani"
+      given-names: "Zoubin"
+  year: 2020
+  conference: "Symposium on Advances in Approximate Bayesian Inference"
+  start: 1
+  end: 10
+  publisher: "PMLR"
+  url: "http://proceedings.mlr.press/v118/xu20a.html"
+references:
+  - type: article
+    title: "Turing.jl: a general-purpose probabilistic programming language"
+    authors:
+      - family-names: "Fjelde"
+        given-names: "Tor Erlend"
+      - family-names: "Xu"
+        given-names: "Kai"
+      - family-names: "Widmann"
+        given-names: "David"
+      - family-names: "Tarek"
+        given-names: "Mohamed"
+      - family-names: "Pfiffer"
+        given-names: "Cameron"
+      - family-names: "Trapp"
+        given-names: "Martin"
+      - family-names: "Axen"
+        given-names: "Seth D."
+      - family-names: "Sun"
+        given-names: "Xianda"
+      - family-names: "Hauru"
+        given-names: "Markus"
+      - family-names: "Yong"
+        given-names: "Penelope"
+      - family-names: "Tebbutt"
+        given-names: "Will"
+      - family-names: "Ghahramani"
+        given-names: "Zoubin"
+      - family-names: "Ge"
+        given-names: "Hong"
+    journal: "ACM Trans. Probab. Mach. Learn."
+    year: 2025
+    month: 2
+    publisher: "Association for Computing Machinery"
+    city: "New York"
+    region: "NY"
+    country: "USA"
+    doi: "10.1145/3711897"
+    url: "https://doi.org/10.1145/3711897"
+    note: "Just Accepted"
+  - type: conference-paper
+    title: "Turing: A Language for Flexible Probabilistic Inference"
+    authors:
+      - family-names: "Ge"
+        given-names: "Hong"
+      - family-names: "Xu"
+        given-names: "Kai"
+      - family-names: "Ghahramani"
+        given-names: "Zoubin"
+    editors:
+      - family-names: "Storkey"
+        given-names: "Amos"
+      - family-names: "Perez-Cruz"
+        given-names: "Fernando"
+    year: 2018
+    collection-title: "Proceedings of Machine Learning Research"
+    volume: 84
+    conference: "Proceedings of the Twenty-First International Conference on Artificial Intelligence and Statistics"
+    start: 1682
+    end: 1690
+    publisher: "PMLR"
+    month: 4
+    url: "https://proceedings.mlr.press/v84/ge18b.html"

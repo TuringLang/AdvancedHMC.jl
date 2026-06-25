@@ -109,10 +109,5 @@ function LogDensityProblems.capabilities(::Type{typeof(ℓπ_gdemo)})
     return LogDensityProblems.LogDensityOrder{0}()
 end
 
-test_show(x) = test_show(s -> length(s) > 0, x)
-function test_show(pred, x)
-    io = IOBuffer(; append=true)
-    show(io, x)
-    s = read(io, String)
-    @test pred(s)
-end
+test_show(x) = test_show(!isempty, x)
+test_show(pred, x) = @test pred(repr(x))

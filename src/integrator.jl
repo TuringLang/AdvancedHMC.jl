@@ -14,9 +14,9 @@ Represents an integrator used to simulate the Hamiltonian system.
 
 # Implementation
 A `AbstractIntegrator` is expected to have the following implementations:
-- `stat`(@ref)
-- `nom_step_size`(@ref)
-- `step_size`(@ref)
+- [`stat`](@ref)
+- [`nom_step_size`](@ref)
+- [`step_size`](@ref)
 """
 abstract type AbstractIntegrator end
 
@@ -72,7 +72,9 @@ struct Leapfrog{T<:AbstractScalarOrVec{<:AbstractFloat}} <: AbstractLeapfrog{T}
     "Step size."
     ϵ::T
 end
-Base.show(io::IO, l::Leapfrog) = print(io, "Leapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)))")
+function Base.show(io::IO, l::Leapfrog)
+    return print(io, "Leapfrog with step size ϵ=", round.(l.ϵ; sigdigits=3))
+end
 integrator_eltype(i::AbstractLeapfrog{T}) where {T<:AbstractFloat} = T
 
 ### Jittering
@@ -87,14 +89,14 @@ Leapfrog integrator with randomly "jittered" step size `ϵ` for every trajectory
 $(TYPEDFIELDS)
 
 # Description
-This is the same as `LeapFrog`(@ref) but with a "jittered" step size. This means 
-that at the beginning of each trajectory we sample a step size `ϵ` by adding or 
-subtracting from the nominal/base step size `ϵ0` some random proportion of `ϵ0`, 
+This is the same as `LeapFrog`(@ref) but with a "jittered" step size. This means
+that at the beginning of each trajectory we sample a step size `ϵ` by adding or
+subtracting from the nominal/base step size `ϵ0` some random proportion of `ϵ0`,
 with the proportion specified by `jitter`, i.e. `ϵ = ϵ0 - jitter * ϵ0 * rand()`.
 p
 Jittering might help alleviate issues related to poor interactions with a fixed step size:
-- In regions with high "curvature" the current choice of step size might mean over-shoot 
-  leading to almost all steps being rejected. Randomly sampling the step size at the 
+- In regions with high "curvature" the current choice of step size might mean over-shoot
+  leading to almost all steps being rejected. Randomly sampling the step size at the
   beginning of the trajectories can therefore increase the probability of escaping such
   high-curvature regions.
 - Exact periodicity of the simulated trajectories might occur, i.e. you might be so
@@ -121,7 +123,12 @@ JitteredLeapfrog(ϵ0, jitter) = JitteredLeapfrog(ϵ0, jitter, ϵ0)
 function Base.show(io::IO, l::JitteredLeapfrog)
     return print(
         io,
-        "JitteredLeapfrog(ϵ0=$(round.(l.ϵ0; sigdigits=3)), jitter=$(round.(l.jitter; sigdigits=3)), ϵ=$(round.(l.ϵ; sigdigits=3)))",
+        "JitteredLeapfrog with step size ",
+        round.(l.ϵ0; sigdigits=3),
+        ", jitter ",
+        round.(l.jitter; sigdigits=3),
+        ", jittered step size ",
+        round.(l.ϵ; sigdigits=3),
     )
 end
 
@@ -161,7 +168,7 @@ $(TYPEDFIELDS)
 
 # Description
 
-Tempering can potentially allow greater exploration of the posterior, e.g. 
+Tempering can potentially allow greater exploration of the posterior, e.g.
 in a multi-modal posterior jumps between the modes can be more likely to occur.
 """
 struct TemperedLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} <: AbstractLeapfrog{T}
@@ -173,7 +180,11 @@ end
 
 function Base.show(io::IO, l::TemperedLeapfrog)
     return print(
-        io, "TemperedLeapfrog(ϵ=$(round.(l.ϵ; sigdigits=3)), α=$(round.(l.α; sigdigits=3)))"
+        io,
+        "TemperedLeapfrog with step size ϵ=",
+        round.(l.ϵ; sigdigits=3),
+        " and temperature parameter α=",
+        round.(l.α; sigdigits=3),
     )
 end
 
@@ -198,7 +209,7 @@ function temper(
 end
 
 # `step` method for integrators above
-# method for `DiffEqIntegrator` is defined in the OrdinaryDiffEq extension
+# method for `DiffEqIntegrator` is defined in the OrdinaryDiffEqSymplecticRK extension
 const DefaultLeapfrog{FT<:AbstractFloat,T<:AbstractScalarOrVec{FT}} = Union{
     Leapfrog{T},JitteredLeapfrog{FT,T},TemperedLeapfrog{FT,T}
 }
@@ -215,11 +226,7 @@ function step(
     ϵ = fwd ? step_size(lf) : -step_size(lf)
     ϵ = ϵ'
 
-    res = if FullTraj
-        Vector{P}(undef, n_steps)
-    else
-        Vector{P}(undef, 1)
-    end
+    res = FullTraj ? Vector{P}(undef, n_steps) : nothing
 
     (; θ, r) = z
     (; value, gradient) = z.ℓπ
@@ -239,15 +246,13 @@ function step(
         # Create a new phase point by caching the logdensity and gradient
         z = phasepoint(h, θ, r; ℓπ=DualValue(value, gradient))
         # Update result
-        if FullTraj
+        if !isnothing(res)
             res[i] = z
-        else
-            res[1] = z
         end
         if !isfinite(z)
             # Remove undef
-            if FullTraj
-                res = res[isassigned.(Ref(res), 1:n_steps)]
+            if !isnothing(res)
+                resize!(res, i)
             end
             break
         end
@@ -255,6 +260,6 @@ function step(
     return if FullTraj
         res
     else
-        first(res)
+        z
     end
 end

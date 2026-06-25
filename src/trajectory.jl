@@ -108,7 +108,15 @@ struct SliceTS{F<:AbstractFloat,P<:PhasePoint} <: AbstractTrajectorySampler
     n::Int
 end
 
-Base.show(io::IO, s::SliceTS) = print(io, "SliceTS(ℓu=$(s.ℓu), n=$(s.n))")
+function Base.show(io::IO, s::SliceTS)
+    return print(
+        io,
+        "SliceTS with slice variable ℓu=",
+        s.ℓu,
+        " and number of acceptable candiadtes n=",
+        s.n,
+    )
+end
 
 """
 $(TYPEDEF)
@@ -219,7 +227,13 @@ ConstructionBase.constructorof(::Type{<:Trajectory{TS}}) where {TS} = Trajectory
 
 function Base.show(io::IO, τ::Trajectory{TS}) where {TS}
     return print(
-        io, "Trajectory{$TS}(integrator=$(τ.integrator), tc=$(τ.termination_criterion))"
+        io,
+        "Trajectory{",
+        TS,
+        "} with ",
+        τ.integrator,
+        " and termination criterion ",
+        τ.termination_criterion,
     )
 end
 
@@ -469,7 +483,9 @@ struct Termination
 end
 
 function Base.show(io::IO, d::Termination)
-    return print(io, "Termination(dynamic=$(d.dynamic), numerical=$(d.numerical))")
+    return print(
+        io, "Termination reasons of (dynamic=", d.dynamic, ", numerical=", d.numerical, ")"
+    )
 end
 function Base.:*(d1::Termination, d2::Termination)
     return Termination(d1.dynamic || d2.dynamic, d1.numerical || d2.numerical)
@@ -484,12 +500,6 @@ Check termination of a Hamiltonian trajectory.
 function Termination(s::SliceTS, nt::Trajectory, H0::F, H′::F) where {F<:AbstractFloat}
     return Termination(false, !(s.ℓu < nt.termination_criterion.Δ_max + -H′))
 end
-
-"""
-$(SIGNATURES)
-
-Check termination of a Hamiltonian trajectory.
-"""
 function Termination(
     s::MultinomialTS, nt::Trajectory, H0::F, H′::F
 ) where {F<:AbstractFloat}

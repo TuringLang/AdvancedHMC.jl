@@ -1,10 +1,24 @@
 ### Mutable states
+"""
+$(TYPEDEF)
 
+Dual Averaging state
+
+Mutable state for storing the current iteration of the dual averaging algorithm.
+
+# Fields
+
+$(TYPEDFIELDS)
+"""
 mutable struct DAState{T<:AbstractScalarOrVec{<:AbstractFloat}}
+    "Adaptation iteration"
     m::Int
     ϵ::T
+    "Asymptotic mean of parameter"
     μ::T
+    "Moving average parameter"
     x_bar::T
+    "Moving average statistic"
     H_bar::T
 end
 
@@ -63,48 +77,85 @@ getϵ(ss::StepSizeAdaptor) = ss.state.ϵ
 struct FixedStepSize{T<:AbstractScalarOrVec{<:AbstractFloat}} <: StepSizeAdaptor
     ϵ::T
 end
-Base.show(io::IO, a::FixedStepSize) = print(io, "FixedStepSize(", a.ϵ, ")")
+function Base.show(io::IO, a::FixedStepSize)
+    return print(io, "FixedStepSize adaptor with step size ", a.ϵ)
+end
 
 getϵ(fss::FixedStepSize) = fss.ϵ
 
 struct ManualSSAdaptor{T<:AbstractScalarOrVec{<:AbstractFloat}} <: StepSizeAdaptor
     state::MSSState{T}
 end
-Base.show(io::IO, a::ManualSSAdaptor) = print(io, "ManualSSAdaptor()")
+function Base.show(io::IO, a::ManualSSAdaptor{T}) where {T}
+    return print(io, "ManualSSAdaptor{", T, "} with step size of ", a.state.ϵ)
+end
 
 function ManualSSAdaptor(initϵ::T) where {T<:AbstractScalarOrVec{<:AbstractFloat}}
     return ManualSSAdaptor{T}(MSSState(initϵ))
 end
 
 """
+$(TYPEDEF)
+
 An implementation of the Nesterov dual averaging algorithm to tune step size.
 
-References
+# Fields
+
+$(TYPEDFIELDS)
+
+# References
 
 Hoffman, M. D., & Gelman, A. (2014). The No-U-Turn Sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593-1623.
 Nesterov, Y. (2009). Primal-dual subgradient methods for convex problems. Mathematical programming, 120(1), 221-259.
 """
 struct NesterovDualAveraging{T<:AbstractFloat,S<:AbstractScalarOrVec{T}} <: StepSizeAdaptor
+    "Adaption scaling"
     γ::T
+    "Effective starting iteration"
     t_0::T
+    "Adaption shrinkage"
     κ::T
+    "Target value of statistic"
     δ::T
     state::DAState{S}
 end
+
 function Base.show(io::IO, a::NesterovDualAveraging)
+    print(
+        io,
+        "NesterovDualAveraging(",
+        a.γ,
+        ", ",
+        a.t_0,
+        ", ",
+        a.κ,
+        ", ",
+        a.δ,
+        ", ",
+        a.state.ϵ,
+        ")",
+    )
+end
+function Base.show(io::IO, mime::MIME"text/plain", a::NesterovDualAveraging{T}) where {T}
     return print(
         io,
-        "NesterovDualAveraging(γ=",
+        "NesterovDualAveraging{",
+        T,
+        "} with\n",
+        "Scaling γ=",
         a.γ,
-        ", t_0=",
+        "\n",
+        "Starting iter t_0=",
         a.t_0,
-        ", κ=",
+        "\n",
+        "Shrinkage κ=",
         a.κ,
-        ", δ=",
+        "\n",
+        "Target statistic δ=",
         a.δ,
-        ", state.ϵ=",
+        "\n",
+        "Curret ϵ=",
         getϵ(a),
-        ")",
     )
 end
 
@@ -123,7 +174,7 @@ end
 # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/stepsize_adaptation.hpp
 # Note: This function is not merged with `adapt!` to empahsize the fact that
 #       step size adaptation is not dependent on `θ`.
-# Note 2: `da.state` and `α` support vectorised HMC but should do so together. 
+# Note 2: `da.state` and `α` support vectorised HMC but should do so together.
 function adapt_stepsize!(
     da::NesterovDualAveraging{T}, α::AbstractScalarOrVec{T}
 ) where {T<:AbstractFloat}
@@ -160,7 +211,7 @@ end
 
 function adapt!(
     da::NesterovDualAveraging,
-    θ::AbstractVecOrMat{<:AbstractFloat},
+    ::PositionOrPhasePoint,
     α::AbstractScalarOrVec{<:AbstractFloat},
 )
     adapt_stepsize!(da, α)

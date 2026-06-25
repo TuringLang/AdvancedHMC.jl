@@ -1,8 +1,22 @@
 # AdvancedHMC Changelog
 
+## 0.8.5
+
+  - Adds `RankUpdateEuclideanMetric`, a Gaussian Euclidean metric whose inverse mass matrix
+      `M⁻¹ = A + B D Bᵀ` is a low-rank update of a positive definite diagonal matrix.
+
+## 0.8.4
+
+  - Introduces an experimental way to improve the *diagonal* mass matrix adaptation using gradient information (similar to [nutpie](https://github.com/pymc-devs/nutpie)),
+      currently to be initialized for a `metric` of type `DiagEuclideanMetric`
+      via `mma = AdvancedHMC.NutpieVar(size(metric); var=copy(metric.M⁻¹))`
+      until a new interface is introduced in an upcoming breaking release to specify the method of adaptation.
+
 ## 0.8.0
 
   - To make an MCMC transtion from phasepoint `z` using trajectory `τ`(or HMCKernel `κ`) under Hamiltonian `h`, use `transition(h, τ, z)` or `transition(rng, h, τ, z)`(if using HMCKernel, use `transition(h, κ, z)` or `transition(rng, h, κ, z)`).
+  - The `initial_step_size` in `find_good_stepsize` for heuristic search of a good initial leap-frog step-size can be manually specified, default as `1//10`.
+  - The printing interface has been upgraded to a more user-friendly design.
 
 ## v0.7.1
 

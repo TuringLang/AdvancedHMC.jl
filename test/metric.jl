@@ -1,4 +1,4 @@
-using ReTest, Random, AdvancedHMC
+using ReTest, Random, AdvancedHMC, LinearAlgebra, Statistics
 
 @testset "Metric" begin
     @testset "Sample momentum variables from metric via vector of RNGs" begin
@@ -35,6 +35,59 @@ using ReTest, Random, AdvancedHMC
             h = Hamiltonian(metric, ℓπ, ℓπ)
             h = AdvancedHMC.resize(h, θ)
             @test size(h.metric) == size(θ)
+        end
+    end
+
+    @testset "RankUpdateEuclideanMetric" begin
+        rng = MersenneTwister(1)
+        n, k = 5, 2
+        A = Diagonal(rand(rng, n) .+ 0.5)
+        B = randn(rng, n, k)
+        M = randn(rng, k, k)
+        Dmat = Symmetric(M * M' + I)
+        metric = @inferred RankUpdateEuclideanMetric(A, B, Matrix(Dmat))
+        # The full inverse mass matrix `M⁻¹ = A + B D Bᵀ`.
+        W = A + B * Dmat * B'
+        @test size(metric) == (n,)
+        @test eltype(metric) === Float64
+        @test AdvancedHMC._diag_inv_metric(metric) ≈ diag(W)
+
+        # Energy and gradient must use the full Woodbury inverse metric, so they have to
+        # agree with a `DenseEuclideanMetric` whose inverse mass matrix is `W`.
+        dense = DenseEuclideanMetric(Matrix(W))
+        ℓπ(θ) = -sum(abs2, θ) / 2
+        ∂ℓπ∂θ(θ) = (ℓπ(θ), -θ)
+        h_rank = Hamiltonian(metric, ℓπ, ∂ℓπ∂θ)
+        h_dense = Hamiltonian(dense, ℓπ, ∂ℓπ∂θ)
+        r = randn(rng, n)
+        @test (@inferred AdvancedHMC.∂H∂r(h_rank, r)) ≈ AdvancedHMC.∂H∂r(h_dense, r)
+        @test (@inferred AdvancedHMC.neg_energy(h_rank, r, r)) ≈
+            AdvancedHMC.neg_energy(h_dense, r, r)
+
+        # Sampled momenta have covariance `M = (M⁻¹)⁻¹ = W⁻¹`, which ties `rand_momentum`
+        # to the kinetic energy defined above.
+        @test (@inferred AdvancedHMC.rand_momentum(rng, metric, GaussianKinetic(), r)) isa
+            AbstractVector
+        samples = stack(
+            AdvancedHMC.rand_momentum(rng, metric, GaussianKinetic(), r) for _ in 1:200_000
+        )
+        @test cov(samples; dims=2) ≈ inv(W) rtol = 0.05
+
+        @testset "convenience constructors" begin
+            # All build the same identity (rank-0) `Float64` metric of size `(n,)`.
+            for m in (
+                RankUpdateEuclideanMetric(n),
+                RankUpdateEuclideanMetric(Float64, n),
+                RankUpdateEuclideanMetric((n,)),
+                RankUpdateEuclideanMetric(Float64, (n,)),
+            )
+                @test m isa RankUpdateEuclideanMetric{Float64}
+                @test size(m) == (n,)
+                @test AdvancedHMC._diag_inv_metric(m) == ones(n)
+            end
+            m32 = @inferred RankUpdateEuclideanMetric(Float32, n)
+            @test eltype(m32) === Float32
+            @test AdvancedHMC._diag_inv_metric(m32) == ones(Float32, n)
         end
     end
 end

@@ -1,10 +1,9 @@
-using Comonicon
 using FillArrays
 using AdvancedHMC: AdvancedHMC
 using LogDensityProblems: LogDensityProblems
 using LogDensityProblemsAD: LogDensityProblemsAD
 using MCMCChains
-using OrdinaryDiffEq
+using OrdinaryDiffEqSymplecticRK
 using ReTest
 
 println("Environment variables for testing")
@@ -32,10 +31,7 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
     include("abstractmcmc.jl")
     include("mcmcchains.jl")
     include("constructors.jl")
-
-    Comonicon.@main function runtests(patterns...; dry::Bool=false)
-        return retest(patterns...; dry=dry, verbose=Inf)
-    end
+    retest(; dry=false, verbose=Inf)
 end
 
 if GROUP == "All" || GROUP == "Experimental"
