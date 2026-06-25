@@ -41,7 +41,7 @@ struct GaussianKinetic <: AbstractKinetic end
 export GaussianKinetic
 
 include("metric.jl")
-export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
+export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric, rand_momentum
 
 include("hamiltonian.jl")
 export Hamiltonian
