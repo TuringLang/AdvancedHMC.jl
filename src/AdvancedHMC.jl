@@ -25,7 +25,7 @@ import StatsBase: sample
 const DEFAULT_FLOAT_TYPE = typeof(float(0))
 
 include("utilities.jl")
-
+export PolynomialStepsize
 # Notations
 # ℓπ: log density of the target distribution
 # θ: position variables / model parameters
@@ -127,7 +127,7 @@ include("sampler.jl")
 export sample
 
 include("constructors.jl")
-export HMCSampler, HMC, NUTS, HMCDA
+export HMCSampler, HMC, NUTS, HMCDA, SGLD
 
 include("abstractmcmc.jl")
 
