@@ -96,5 +96,16 @@ using ReTest, Random, AdvancedHMC, LinearAlgebra, Statistics
             @test (@inferred AdvancedHMC.∂H∂r(h0, r0)) ≈ r0
             @test (@inferred AdvancedHMC.neg_energy(h0, r0, r0)) ≈ -sum(abs2, r0) / 2
         end
+
+        @testset "show" begin
+            # Rank-1 update with clean values: `M⁻¹ = A + b*bᵀ = [2 0; 0 2]`.
+            metric_show = RankUpdateEuclideanMetric(
+                Diagonal([1.0, 2.0]), reshape([1.0, 0.0], 2, 1), fill(1.0, 1, 1)
+            )
+            @test AdvancedHMC._diag_inv_metric(metric_show) == [2.0, 2.0]
+            @test sprint(show, metric_show) == "RankUpdateEuclideanMetric([2.0, 2.0])"
+            @test sprint(show, MIME("text/plain"), metric_show) ==
+                "RankUpdateEuclideanMetric{Float64} with size (2,) mass matrix:\n[2.0, 2.0]"
+        end
     end
 end

@@ -238,10 +238,6 @@ function RankUpdateEuclideanMetric(::Type{T}, sz::Tuple{Int}) where {T}
 end
 RankUpdateEuclideanMetric(sz::Tuple{Int}) = RankUpdateEuclideanMetric(Float64, sz)
 
-function renew(::RankUpdateEuclideanMetric, (A, B, D))
-    return RankUpdateEuclideanMetric(A, B, D)
-end
-
 Base.eltype(::RankUpdateEuclideanMetric{T}) where {T} = T
 Base.size(metric::RankUpdateEuclideanMetric, dim...) = size(metric.A.diag, dim...)
 
@@ -317,20 +313,18 @@ function rand_momentum(
     return r
 end
 
+# Restricted to a single chain (vector momentum): the metric has no multi-chain
+# `(n, n_chains)` form, so `size(metric)` is always a 1-tuple and `r` is always a vector.
 function rand_momentum(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     metric::RankUpdateEuclideanMetric{T},
     kinetic::GaussianKinetic,
-    ::AbstractVecOrMat,
+    ::AbstractVector,
 ) where {T}
     (; U, Q, V) = metric.factorization
     r = _randn(rng, T, size(metric)...)
     k = min(size(U, 1), size(V, 1))
-    if r isa AbstractVector
-        ldiv!(V, @view(r[begin:(begin + (k - 1))]))
-    else
-        ldiv!(V, @view(r[begin:(begin + (k - 1)), :]))
-    end
+    ldiv!(V, @view(r[begin:(begin + (k - 1))]))
     lmul!(Q, r)
     ldiv!(U, r)
     return r
