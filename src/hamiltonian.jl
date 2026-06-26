@@ -190,7 +190,7 @@ function neg_energy(
     (; A, B, D) = h.metric
     Btr = B' * r
     # rᵀ M⁻¹ r = rᵀ A r + (Bᵀ r)ᵀ D (Bᵀ r)
-    return -(dot(r, A, r) + dot(Btr, D, Btr)) / 2
+    return -(dot(r, A, r) + _dot(Btr, D, Btr)) / 2
 end
 
 energy(args...) = -neg_energy(args...)

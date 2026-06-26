@@ -88,6 +88,13 @@ using ReTest, Random, AdvancedHMC, LinearAlgebra, Statistics
             m32 = @inferred RankUpdateEuclideanMetric(Float32, n)
             @test eltype(m32) === Float32
             @test AdvancedHMC._diag_inv_metric(m32) == ones(Float32, n)
+
+            # For the rank-0 metric `M⁻¹ = I`, so energy and gradient reduce to the plain
+            # Euclidean kinetic term (and must not error on the empty 3-arg `dot`, #1485).
+            h0 = Hamiltonian(RankUpdateEuclideanMetric(n), ℓπ, ∂ℓπ∂θ)
+            r0 = randn(rng, n)
+            @test (@inferred AdvancedHMC.∂H∂r(h0, r0)) ≈ r0
+            @test (@inferred AdvancedHMC.neg_energy(h0, r0, r0)) ≈ -sum(abs2, r0) / 2
         end
     end
 end

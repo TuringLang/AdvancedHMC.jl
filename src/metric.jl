@@ -245,10 +245,22 @@ end
 Base.eltype(::RankUpdateEuclideanMetric{T}) where {T} = T
 Base.size(metric::RankUpdateEuclideanMetric, dim...) = size(metric.A.diag, dim...)
 
+# Work around JuliaLang/LinearAlgebra.jl#1485: 3-arg `dot` errored on empty `x`/`y` before
+# Julia 1.12.3, which the rank-0 metric triggers.
+@static if VERSION < v"1.12.3"
+    function _dot(x::AbstractVector, A::AbstractMatrix, y::AbstractVector)
+        any(isempty, (x, y)) &&
+            return zero(dot(zero(eltype(x)), zero(eltype(A)), zero(eltype(y))))
+        return dot(x, A, y)
+    end
+else
+    _dot(x::AbstractVector, A::AbstractMatrix, y::AbstractVector) = dot(x, A, y)
+end
+
 # Diagonal of the full inverse mass matrix `M⁻¹ = A + B*D*Bᵀ`, i.e. `diag(A) + [bᵢᵀ*D*bᵢ]`.
 function _diag_inv_metric(metric::RankUpdateEuclideanMetric)
     return broadcast(
-        (aii, b) -> aii + dot(b, metric.D, b), metric.A.diag, eachrow(metric.B)
+        (aii, b) -> aii + _dot(b, metric.D, b), metric.A.diag, eachrow(metric.B)
     )
 end
 
