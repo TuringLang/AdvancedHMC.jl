@@ -56,6 +56,13 @@ include("metric.jl")
 export UnitEuclideanMetric,
     DiagEuclideanMetric, DenseEuclideanMetric, RankUpdateEuclideanMetric
 
+# Users are not expected to work with WoodburyFactorization but it's used by Pathfinder
+# to avoid recomputing the factorization when constructing a `RankUpdateEuclideanMetric`
+# https://github.com/JuliaLang/julia/pull/50105
+@static if VERSION >= v"1.11.0-DEV.469"
+    eval(Expr(:public, :WoodburyFactorization))
+end
+
 include("hamiltonian.jl")
 export Hamiltonian
 
