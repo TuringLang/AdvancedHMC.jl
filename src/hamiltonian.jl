@@ -73,10 +73,9 @@ function ∂H∂r(
     (; A, B, D) = h.metric
     axes_A = __axes(A)
     axes_r = __axes(r)
-    (last(axes_A) !== first(axes_r)) && throw(
+    (last(axes_A) != first(axes_r)) && throw(
         ArgumentError(lazy"AxesMismatch: A has axes $(axes_A) but r has axes $(axes_r)")
     )
-    # M⁻¹ * r = A * r + B * (D * (Bᵀ * r))
     return muladd(A, r, B * (D * (B' * r)))
 end
 
@@ -189,7 +188,6 @@ function neg_energy(
 ) where {T<:AbstractVector}
     (; A, B, D) = h.metric
     Btr = B' * r
-    # rᵀ M⁻¹ r = rᵀ A r + (Bᵀ r)ᵀ D (Bᵀ r)
     return -(dot(r, A, r) + _dot(Btr, D, Btr)) / 2
 end
 

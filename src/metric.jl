@@ -165,8 +165,8 @@ Return a [`WoodburyFactorization`](@ref) of the positive definite Woodbury matri
 function woodbury_factorize(
     A::Diagonal{T}, B::AbstractMatrix{T}, D::AbstractMatrix{T}
 ) where {T}
-    U = cholesky(A).U
-    Q, R = qr(U' \ B)
+    U = sqrt(A)
+    Q, R = qr(U \ B)
     V = cholesky(Symmetric(muladd(R, D * R', I))).U
     return WoodburyFactorization(U, Q, V)
 end
