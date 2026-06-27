@@ -146,6 +146,11 @@ allow sampling from `N(0, W⁻¹)` without forming `W`.
 # Fields
 
 $(TYPEDFIELDS)
+
+# References
+
+Zhang, Carpenter, Gelman & Vehtari (2022). Pathfinder: Parallel quasi-Newton variational
+inference. Journal of Machine Learning Research 23(306), 1-49.
 """
 struct WoodburyFactorization{T,TU<:Diagonal{T},TQ<:AbstractQ{T},TV<:UpperTriangular{T}}
     "diagonal Cholesky factor of `A`, i.e. `Uᵀ*U = A`"
@@ -177,7 +182,8 @@ end
     RankUpdateEuclideanMetric(A::Diagonal, B::AbstractMatrix, D::AbstractMatrix)
 
 A Gaussian Euclidean metric in `n` dimensions whose inverse mass matrix `M⁻¹ = A + B*D*Bᵀ`
-is a low-rank update of a positive definite diagonal matrix `A`.
+is a low-rank update of a positive definite diagonal matrix `A` with a low-rank matrix `B`
+and a symmetric matrix `D`.
 
 The rank `k` of the update equals the number of columns of `B`. Evaluating the kinetic
 energy and its gradient then costs `O(n*k)`, compared with `O(n^2)` for a dense metric, so
@@ -194,10 +200,10 @@ chosen such that `M⁻¹` is positive definite. The element type `T` defaults to
 
 $(TYPEDFIELDS)
 
-# Reference
+# References
 
-  - Zhang, Carpenter, Gelman & Vehtari (2022). Pathfinder: Parallel quasi-Newton variational
-    inference. Journal of Machine Learning Research 23(306), 1-49.
+Zhang, Carpenter, Gelman & Vehtari (2022). Pathfinder: Parallel quasi-Newton variational
+inference. Journal of Machine Learning Research 23(306), 1-49.
 """
 struct RankUpdateEuclideanMetric{
     T,
@@ -250,7 +256,7 @@ Base.size(metric::RankUpdateEuclideanMetric, dim...) = size(metric.A.diag, dim..
         return dot(x, A, y)
     end
 else
-    _dot(x::AbstractVector, A::AbstractMatrix, y::AbstractVector) = dot(x, A, y)
+    const _dot = dot
 end
 
 # Diagonal of the full inverse mass matrix `M⁻¹ = A + B*D*Bᵀ`, i.e. `diag(A) + [bᵢᵀ*D*bᵢ]`.
