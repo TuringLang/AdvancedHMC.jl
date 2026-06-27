@@ -2,7 +2,19 @@ module AdvancedHMC
 
 using Statistics: mean, var, middle
 using LinearAlgebra:
-    Symmetric, UpperTriangular, mul!, ldiv!, dot, I, diag, cholesky, UniformScaling
+    Symmetric,
+    UpperTriangular,
+    mul!,
+    ldiv!,
+    dot,
+    I,
+    diag,
+    cholesky,
+    UniformScaling,
+    Diagonal,
+    AbstractQ,
+    qr,
+    lmul!
 using IrrationalConstants: loghalf
 using LogExpFunctions: logaddexp, logsumexp
 using Random: Random, AbstractRNG
@@ -41,7 +53,15 @@ struct GaussianKinetic <: AbstractKinetic end
 export GaussianKinetic
 
 include("metric.jl")
-export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
+export UnitEuclideanMetric,
+    DiagEuclideanMetric, DenseEuclideanMetric, RankUpdateEuclideanMetric
+
+# Users are not expected to work with WoodburyFactorization but it's used by Pathfinder
+# to avoid recomputing the factorization when constructing a `RankUpdateEuclideanMetric`
+# https://github.com/JuliaLang/julia/pull/50105
+@static if VERSION >= v"1.11.0-DEV.469"
+    eval(Expr(:public, :WoodburyFactorization))
+end
 
 include("hamiltonian.jl")
 export Hamiltonian
@@ -73,7 +93,12 @@ export find_good_eps
 include("adaptation/Adaptation.jl")
 using .Adaptation
 import .Adaptation:
-    StepSizeAdaptor, MassMatrixAdaptor, StanHMCAdaptor, NesterovDualAveraging, NoAdaptation, PositionOrPhasePoint
+    StepSizeAdaptor,
+    MassMatrixAdaptor,
+    StanHMCAdaptor,
+    NesterovDualAveraging,
+    NoAdaptation,
+    PositionOrPhasePoint
 
 # Helpers for initializing adaptors via AHMC structs
 

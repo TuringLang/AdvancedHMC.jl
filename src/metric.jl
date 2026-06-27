@@ -35,7 +35,7 @@ Base.size(e::UnitEuclideanMetric) = e.size
 Base.size(e::UnitEuclideanMetric, dim::Int) = e.size[dim]
 
 function Base.show(io::IO, uem::UnitEuclideanMetric{T}) where {T}
-    print(io, "UnitEuclideanMetric(", T, ", ", uem.size, ")")
+    return print(io, "UnitEuclideanMetric(", T, ", ", uem.size, ")")
 end
 function Base.show(io::IO, ::MIME"text/plain", uem::UnitEuclideanMetric{T}) where {T}
     return print(
@@ -72,7 +72,7 @@ Base.eltype(::DiagEuclideanMetric{T}) where {T} = T
 Base.size(e::DiagEuclideanMetric, dim...) = size(e.M⁻¹, dim...)
 
 function Base.show(io::IO, dem::DiagEuclideanMetric)
-    print(io, "DiagEuclideanMetric(", _string_M⁻¹(dem.M⁻¹), ")")
+    return print(io, "DiagEuclideanMetric(", _string_M⁻¹(dem.M⁻¹), ")")
 end
 function Base.show(io::IO, ::MIME"text/plain", dem::DiagEuclideanMetric{T}) where {T}
     return print(
@@ -120,7 +120,7 @@ Base.eltype(::DenseEuclideanMetric{T}) where {T} = T
 Base.size(e::DenseEuclideanMetric, dim...) = size(e._temp, dim...)
 
 function Base.show(io::IO, dem::DenseEuclideanMetric)
-    print(io, "DenseEuclideanMetric(", _string_M⁻¹(dem.M⁻¹), ")")
+    return print(io, "DenseEuclideanMetric(", _string_M⁻¹(dem.M⁻¹), ")")
 end
 function Base.show(io::IO, ::MIME"text/plain", dem::DenseEuclideanMetric{T}) where {T}
     return print(
@@ -131,6 +131,157 @@ function Base.show(io::IO, ::MIME"text/plain", dem::DenseEuclideanMetric{T}) whe
         size(dem),
         " mass matrix:\n",
         _string_M⁻¹(dem.M⁻¹),
+    )
+end
+
+"""
+    WoodburyFactorization(U, Q, V)
+
+A factorization of a positive definite Woodbury matrix `W = A + B*D*Bᵀ`, with positive
+definite diagonal `A`, as returned by [`woodbury_factorize`](@ref).
+
+The factors `U`, `Q`, and `V` are defined by the field descriptions below; together they
+allow sampling from `N(0, W⁻¹)` without forming `W`.
+
+# Fields
+
+$(TYPEDFIELDS)
+
+# References
+
+Zhang, Carpenter, Gelman & Vehtari (2022). Pathfinder: Parallel quasi-Newton variational
+inference. Journal of Machine Learning Research 23(306), 1-49.
+"""
+struct WoodburyFactorization{T,TU<:Diagonal{T},TQ<:AbstractQ{T},TV<:UpperTriangular{T}}
+    "diagonal Cholesky factor of `A`, i.e. `Uᵀ*U = A`"
+    U::TU
+    "orthogonal factor of the thin QR decomposition `Uᵀ \\ B = Q*R`"
+    Q::TQ
+    "upper-triangular Cholesky factor of `I + R*D*Rᵀ`, i.e. `Vᵀ*V = I + R*D*Rᵀ`"
+    V::TV
+end
+
+"""
+    woodbury_factorize(A::Diagonal, B::AbstractMatrix, D::AbstractMatrix)
+
+Return a [`WoodburyFactorization`](@ref) of the positive definite Woodbury matrix
+`W = A + B*D*Bᵀ`, where `A` is a positive definite diagonal matrix.
+"""
+function woodbury_factorize(
+    A::Diagonal{T}, B::AbstractMatrix{T}, D::AbstractMatrix{T}
+) where {T}
+    U = sqrt(A)
+    Q, R = qr(U \ B)
+    V = cholesky(Symmetric(muladd(R, D * R', I))).U
+    return WoodburyFactorization(U, Q, V)
+end
+
+"""
+    RankUpdateEuclideanMetric([T::Type=Float64,] n::Int)
+    RankUpdateEuclideanMetric([T::Type=Float64,] sz::Tuple{Int})
+    RankUpdateEuclideanMetric(A::Diagonal, B::AbstractMatrix, D::AbstractMatrix)
+
+A Gaussian Euclidean metric in `n` dimensions whose inverse mass matrix `M⁻¹ = A + B*D*Bᵀ`
+is a low-rank update of a positive definite diagonal matrix `A` with a low-rank matrix `B`
+and a symmetric matrix `D`.
+
+The rank `k` of the update equals the number of columns of `B`. Evaluating the kinetic
+energy and its gradient then costs `O(n*k)`, compared with `O(n^2)` for a dense metric, so
+the metric is useful when most of the posterior covariance lies in a low-dimensional
+subspace. As for the other metrics, `M⁻¹` denotes the full inverse mass matrix; here it is
+reconstructed from the fields rather than stored explicitly.
+
+`RankUpdateEuclideanMetric(n)` constructs an `n`-by-`n` metric with `M⁻¹` equal to the
+identity (a rank-0 update). `RankUpdateEuclideanMetric(A, B, D)` constructs the metric from
+a positive definite `Diagonal` matrix `A` and matrices `B` and `D` of matching element type,
+chosen such that `M⁻¹` is positive definite. The element type `T` defaults to `Float64`.
+
+# Fields
+
+$(TYPEDFIELDS)
+
+# References
+
+Zhang, Carpenter, Gelman & Vehtari (2022). Pathfinder: Parallel quasi-Newton variational
+inference. Journal of Machine Learning Research 23(306), 1-49.
+"""
+struct RankUpdateEuclideanMetric{
+    T,
+    AA<:Diagonal{T},
+    AB<:AbstractMatrix{T},
+    AD<:AbstractMatrix{T},
+    F<:WoodburyFactorization{T},
+} <: AbstractMetric
+    "positive definite diagonal matrix `A` in `M⁻¹ = A + B*D*Bᵀ`"
+    A::AA
+    "factor `B` of the low-rank update `B*D*Bᵀ`"
+    B::AB
+    "inner matrix `D` of the low-rank update `B*D*Bᵀ`"
+    D::AD
+    "[`WoodburyFactorization`](@ref) of `M⁻¹`, used for momentum sampling"
+    factorization::F
+end
+
+function RankUpdateEuclideanMetric(::Type{T}, n::Int) where {T}
+    A = Diagonal(ones(T, n))
+    B = Matrix{T}(undef, n, 0)
+    D = Matrix{T}(undef, 0, 0)
+    # For the identity (rank-0) metric the Woodbury factors are trivial: `U = A`, `Q` is the
+    # identity, and `V` is empty, so we build them directly instead of via `cholesky`.
+    factorization = WoodburyFactorization(A, qr(B).Q, UpperTriangular(D))
+    return RankUpdateEuclideanMetric(A, B, D, factorization)
+end
+RankUpdateEuclideanMetric(n::Int) = RankUpdateEuclideanMetric(Float64, n)
+
+function RankUpdateEuclideanMetric(
+    A::Diagonal{T}, B::AbstractMatrix{T}, D::AbstractMatrix{T}
+) where {T}
+    return RankUpdateEuclideanMetric(A, B, D, woodbury_factorize(A, B, D))
+end
+
+function RankUpdateEuclideanMetric(::Type{T}, sz::Tuple{Int}) where {T}
+    return RankUpdateEuclideanMetric(T, first(sz))
+end
+RankUpdateEuclideanMetric(sz::Tuple{Int}) = RankUpdateEuclideanMetric(Float64, sz)
+
+Base.eltype(::RankUpdateEuclideanMetric{T}) where {T} = T
+Base.size(metric::RankUpdateEuclideanMetric, dim...) = size(metric.A.diag, dim...)
+
+# Work around JuliaLang/LinearAlgebra.jl#1485: 3-arg `dot` errored on empty `x`/`y` before
+# Julia 1.12.3, which the rank-0 metric triggers.
+@static if VERSION < v"1.12.3"
+    function _dot(x::AbstractVector, A::AbstractMatrix, y::AbstractVector)
+        any(isempty, (x, y)) &&
+            return zero(dot(zero(eltype(x)), zero(eltype(A)), zero(eltype(y))))
+        return dot(x, A, y)
+    end
+else
+    const _dot = dot
+end
+
+# Diagonal of the full inverse mass matrix `M⁻¹ = A + B*D*Bᵀ`, i.e. `diag(A) + [bᵢᵀ*D*bᵢ]`.
+function _diag_inv_metric(metric::RankUpdateEuclideanMetric)
+    return broadcast(
+        (aii, b) -> aii + _dot(b, metric.D, b), metric.A.diag, eachrow(metric.B)
+    )
+end
+
+function Base.show(io::IO, metric::RankUpdateEuclideanMetric)
+    return print(
+        io, "RankUpdateEuclideanMetric(", _string_M⁻¹(_diag_inv_metric(metric)), ")"
+    )
+end
+function Base.show(
+    io::IO, ::MIME"text/plain", metric::RankUpdateEuclideanMetric{T}
+) where {T}
+    return print(
+        io,
+        "RankUpdateEuclideanMetric{",
+        T,
+        "} with size ",
+        size(metric),
+        " mass matrix:\n",
+        _string_M⁻¹(_diag_inv_metric(metric)),
     )
 end
 
@@ -165,5 +316,22 @@ function rand_momentum(
 ) where {T}
     r = _randn(rng, T, size(metric)...)
     ldiv!(metric.cholM⁻¹, r)
+    return r
+end
+
+# Restricted to a single chain (vector momentum): the metric has no multi-chain
+# `(n, n_chains)` form, so `size(metric)` is always a 1-tuple and `r` is always a vector.
+function rand_momentum(
+    rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
+    metric::RankUpdateEuclideanMetric{T},
+    kinetic::GaussianKinetic,
+    ::AbstractVector,
+) where {T}
+    (; U, Q, V) = metric.factorization
+    r = _randn(rng, T, size(metric)...)
+    k = min(size(U, 1), size(V, 1))
+    ldiv!(V, @view(r[begin:(begin + (k - 1))]))
+    lmul!(Q, r)
+    ldiv!(U, r)
     return r
 end
