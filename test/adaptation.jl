@@ -1,8 +1,15 @@
 using ReTest, LinearAlgebra, Distributions, AdvancedHMC, Random, ForwardDiff
-using AdvancedHMC:
-    PhasePoint, DualValue
+using AdvancedHMC: PhasePoint, DualValue
 using AdvancedHMC.Adaptation:
-    DiagMatrixEstimator, WelfordVar, NutpieVar, NaiveVar, WelfordCov, NaiveCov, get_estimation, get_estimation, reset!
+    DiagMatrixEstimator,
+    WelfordVar,
+    NutpieVar,
+    NaiveVar,
+    WelfordCov,
+    NaiveCov,
+    get_estimation,
+    get_estimation,
+    reset!
 
 function runnuts(ℓπ, metric; n_samples=10_000)
     D = size(metric, 1)
@@ -35,7 +42,7 @@ function runnuts_nutpie(ℓπ, metric::DiagEuclideanMetric; n_samples=10_000)
     # Constructing like this until we've settled on a different interface
     adaptor = AdvancedHMC.StanHMCAdaptor(
         AdvancedHMC.Adaptation.NutpieVar(size(metric); var=copy(metric.M⁻¹)),
-        AdvancedHMC.StepSizeAdaptor(nuts.δ, integrator)
+        AdvancedHMC.StepSizeAdaptor(nuts.δ, integrator),
     )
     samples, stats = sample(h, κ, θ_init, n_samples, adaptor, n_adapts; verbose=false)
     return (samples=samples, stats=stats, adaptor=adaptor)
@@ -47,7 +54,8 @@ This is a simple but serviceable proxy for eventual sampling efficiency, but see
 
 (A lower number generally means that the estimated mass matrix is better).
 """
-preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) = cond(sqrt(Diagonal(a.var)) \ cov / sqrt(Diagonal(a.var)))
+preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) =
+    cond(sqrt(Diagonal(a.var)) \ cov / sqrt(Diagonal(a.var)))
 
 @testset "Adaptation" begin
     Random.seed!(1)
@@ -92,13 +100,11 @@ preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) = cond(sqrt(Dia
 
     @testset "MassMatrixAdaptor constructors" begin
         θ = [0.0, 0.0, 0.0, 0.0]
-        z = PhasePoint(
-            θ, θ, DualValue(0., θ), DualValue(0., θ)
-        )
+        z = PhasePoint(θ, θ, DualValue(0.0, θ), DualValue(0.0, θ))
         pc1 = MassMatrixAdaptor(UnitEuclideanMetric) # default dim = 2
         pc2 = MassMatrixAdaptor(DiagEuclideanMetric)
         # Constructing like this until we've settled on a different interface
-        pc2_nutpie = NutpieVar{Float64}((2, ))
+        pc2_nutpie = NutpieVar{Float64}((2,))
         pc3 = MassMatrixAdaptor(DenseEuclideanMetric)
 
         # Var adaptor dimension should be increased to length(θ) from 2
@@ -133,7 +139,7 @@ preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) = cond(sqrt(Dia
         )
         # Constructing like this until we've settled on a different interface
         adaptor2_nutpie = StanHMCAdaptor(
-            NutpieVar{Float64}((2, )), NesterovDualAveraging(0.8, 0.5)
+            NutpieVar{Float64}((2,)), NesterovDualAveraging(0.8, 0.5)
         )
         adaptor3 = StanHMCAdaptor(
             MassMatrixAdaptor(DenseEuclideanMetric), NesterovDualAveraging(0.8, 0.5)
@@ -183,7 +189,8 @@ preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) = cond(sqrt(Dia
                 # For this target, Nutpie (without regularization) will arrive at the true variances after two draws.
                 res_nutpie = runnuts_nutpie(ℓπ, DiagEuclideanMetric(D))
                 @test res.adaptor.pc.var ≈ σ² rtol = 0.2
-                @test preconditioned_cond(res_nutpie.adaptor.pc, Σ) < preconditioned_cond(res.adaptor.pc, Σ)
+                @test preconditioned_cond(res_nutpie.adaptor.pc, Σ) <
+                    preconditioned_cond(res.adaptor.pc, Σ)
 
                 res = runnuts(ℓπ, DenseEuclideanMetric(D))
                 @test res.adaptor.pc.cov ≈ Diagonal(σ²) rtol = 0.25
@@ -208,7 +215,9 @@ preconditioned_cond(a::DiagMatrixEstimator, cov::AbstractMatrix) = cond(sqrt(Dia
                 # find the best preconditioner for the target.
                 # As these are statistical algorithms, superiority is not always guaranteed, hence this way of testing.
                 res_nutpie = runnuts_nutpie(ℓπ, DiagEuclideanMetric(D))
-                n_nutpie_superior += preconditioned_cond(res_nutpie.adaptor.pc, Σ) < preconditioned_cond(res.adaptor.pc, Σ)
+                n_nutpie_superior +=
+                    preconditioned_cond(res_nutpie.adaptor.pc, Σ) <
+                    preconditioned_cond(res.adaptor.pc, Σ)
 
                 res = runnuts(ℓπ, DenseEuclideanMetric(D))
                 @test res.adaptor.pc.cov ≈ Σ rtol = 0.25

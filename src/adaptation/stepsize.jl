@@ -121,7 +121,7 @@ struct NesterovDualAveraging{T<:AbstractFloat,S<:AbstractScalarOrVec{T}} <: Step
 end
 
 function Base.show(io::IO, a::NesterovDualAveraging)
-    print(
+    return print(
         io,
         "NesterovDualAveraging(",
         a.γ,
