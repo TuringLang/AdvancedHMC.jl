@@ -8,9 +8,9 @@
 ## 0.8.4
 
   - Introduces an experimental way to improve the *diagonal* mass matrix adaptation using gradient information (similar to [nutpie](https://github.com/pymc-devs/nutpie)),
-      currently to be initialized for a `metric` of type `DiagEuclideanMetric`
-      via `mma = AdvancedHMC.NutpieVar(size(metric); var=copy(metric.M⁻¹))`
-      until a new interface is introduced in an upcoming breaking release to specify the method of adaptation.
+    currently to be initialized for a `metric` of type `DiagEuclideanMetric`
+    via `mma = AdvancedHMC.NutpieVar(size(metric); var=copy(metric.M⁻¹))`
+    until a new interface is introduced in an upcoming breaking release to specify the method of adaptation.
 
 ## 0.8.0
 

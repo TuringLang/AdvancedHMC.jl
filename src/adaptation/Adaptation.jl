@@ -23,7 +23,7 @@ export AbstractAdaptor, adapt!, initialize!, finalize!, reset!, getϵ, getM⁻¹
 
 get_position(x::PhasePoint) = x.θ
 get_position(x::AbstractVecOrMat{<:AbstractFloat}) = x
-const PositionOrPhasePoint = Union{AbstractVecOrMat{<:AbstractFloat}, PhasePoint}
+const PositionOrPhasePoint = Union{AbstractVecOrMat{<:AbstractFloat},PhasePoint}
 
 struct NoAdaptation <: AbstractAdaptor end
 export NoAdaptation

@@ -19,7 +19,9 @@ function adapt!(
     return nothing
 end
 
-Base.push!(a::MassMatrixAdaptor, z_or_theta::PositionOrPhasePoint) = push!(a, get_position(z_or_theta))
+function Base.push!(a::MassMatrixAdaptor, z_or_theta::PositionOrPhasePoint)
+    return push!(a, get_position(z_or_theta))
+end
 
 ## Unit mass matrix adaptor
 
@@ -167,7 +169,8 @@ Can be initialized via `NutpieVar(sz)` where `sz` is either a `Tuple{Int}` or a 
 
 $(FIELDS)
 """
-mutable struct NutpieVar{T<:AbstractFloat,E<:AbstractVecOrMat{T},V<:AbstractVecOrMat{T}} <: DiagMatrixEstimator{T}
+mutable struct NutpieVar{T<:AbstractFloat,E<:AbstractVecOrMat{T},V<:AbstractVecOrMat{T}} <:
+               DiagMatrixEstimator{T}
     "Online variance estimator of the posterior positions."
     position_estimator::WelfordVar{T,E,V}
     "Online variance estimator of the posterior gradients."
@@ -182,7 +185,9 @@ mutable struct NutpieVar{T<:AbstractFloat,E<:AbstractVecOrMat{T},V<:AbstractVecO
         return new{eltype(E),E,V}(
             WelfordVar(n, n_min, copy(μ), copy(M), copy(δ), copy(var)),
             WelfordVar(n, n_min, copy(μ), copy(M), copy(δ), copy(var)),
-            n, n_min, var
+            n,
+            n_min,
+            var,
         )
     end
 end
@@ -223,10 +228,12 @@ end
 function reset!(nv::NutpieVar)
     nv.n = 0
     reset!(nv.position_estimator)
-    reset!(nv.gradient_estimator)
+    return reset!(nv.gradient_estimator)
 end
 
-Base.push!(::NutpieVar, x::AbstractVecOrMat{<:AbstractFloat}) = error("`NutpieVar` adaptation requires position and gradient information!")
+function Base.push!(::NutpieVar, x::AbstractVecOrMat{<:AbstractFloat})
+    return error("`NutpieVar` adaptation requires position and gradient information!")
+end
 
 function Base.push!(nv::NutpieVar, z::PhasePoint)
     nv.n += 1
@@ -236,7 +243,11 @@ function Base.push!(nv::NutpieVar, z::PhasePoint)
 end
 
 # Ref: https://github.com/pymc-devs/nutpie
-get_estimation(nv::NutpieVar) = sqrt.(get_estimation(nv.position_estimator) ./ get_estimation(nv.gradient_estimator))
+function get_estimation(nv::NutpieVar)
+    return sqrt.(
+        get_estimation(nv.position_estimator) ./ get_estimation(nv.gradient_estimator)
+    )
+end
 
 ## Dense mass matrix adaptor
 
