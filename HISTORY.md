@@ -1,5 +1,10 @@
 # AdvancedHMC Changelog
 
+## 0.8.6
+
+  - Adds `RankUpdateEuclideanMetric`, a Gaussian Euclidean metric whose inverse mass matrix
+    `M⁻¹ = A + B D Bᵀ` is a low-rank update of a positive definite diagonal matrix.
+
 ## 0.8.4
 
   - Introduces an experimental way to improve the *diagonal* mass matrix adaptation using gradient information (similar to [nutpie](https://github.com/pymc-devs/nutpie)),

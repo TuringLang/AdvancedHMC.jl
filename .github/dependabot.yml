@@ -1,7 +1,25 @@
-# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 version: 2
+
 updates:
   - package-ecosystem: "github-actions"
-    directory: "/" # Location of package manifests
+    directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
+    groups:
+      all-github-actions-packages:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "julia"
+    directories:
+      - "/"
+      - "/docs"
+      - "/test"
+      - "/test/CUDA"
+      - "/test/turing"
+    schedule:
+      interval: "weekly"
+    groups:
+      all-julia-packages:
+        patterns:
+          - "*"

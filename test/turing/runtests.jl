@@ -5,7 +5,7 @@ using LinearAlgebra
 using Turing
 using Turing.DynamicPPL
 
-using StatsFuns: logistic
+using LogExpFunctions: logistic
 
 @testset "Turing" begin
     Turing.setprogress!(false)

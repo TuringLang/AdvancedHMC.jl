@@ -4,7 +4,6 @@ using Statistics: mean, var, middle
 using LinearAlgebra:
     Symmetric,
     UpperTriangular,
-    Diagonal,
     mul!,
     ldiv!,
     dot,
@@ -12,11 +11,16 @@ using LinearAlgebra:
     diag,
     cholesky,
     UniformScaling,
+    Diagonal,
+    AbstractQ,
+    qr,
+    lmul!,
     logdet,
     tr,
     eigen,
     diagm
-using StatsFuns: logaddexp, logsumexp, loghalf
+using IrrationalConstants: loghalf
+using LogExpFunctions: logaddexp, logsumexp
 using Random: Random, AbstractRNG
 using ProgressMeter: ProgressMeter
 
@@ -53,7 +57,15 @@ struct GaussianKinetic <: AbstractKinetic end
 export GaussianKinetic
 
 include("metric.jl")
-export UnitEuclideanMetric, DiagEuclideanMetric, DenseEuclideanMetric
+export UnitEuclideanMetric,
+    DiagEuclideanMetric, DenseEuclideanMetric, RankUpdateEuclideanMetric
+
+# Users are not expected to work with WoodburyFactorization but it's used by Pathfinder
+# to avoid recomputing the factorization when constructing a `RankUpdateEuclideanMetric`
+# https://github.com/JuliaLang/julia/pull/50105
+@static if VERSION >= v"1.11.0-DEV.469"
+    eval(Expr(:public, :WoodburyFactorization))
+end
 
 include("hamiltonian.jl")
 export Hamiltonian
