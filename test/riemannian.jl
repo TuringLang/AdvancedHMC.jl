@@ -2,7 +2,6 @@ using ReTest, Random
 using AdvancedHMC, ForwardDiff, AbstractMCMC
 using LinearAlgebra
 using Distributions: MvNormal, logpdf
-using MCMCLogDensityProblems
 using FiniteDiff:
     finite_difference_gradient, finite_difference_hessian, finite_difference_jacobian
 using AdvancedHMC:
@@ -26,6 +25,45 @@ using AdvancedHMC:
     _xcothx_deriv_exact,
     _xcothx_cutoff
 using Statistics
+
+####
+#### Local toy targets
+####
+#### These replace the `MCMCLogDensityProblems` test dependency, which transitively
+#### pulls in DistributionsAD/ReverseDiff — a stack that currently fails to precompile
+#### against recent Distributions releases. We only need two densities and their
+#### (value, gradient) closures, so we define them here directly, matching the original
+#### definitions (standard Gaussian; Neal's funnel with v ~ N(0,3), xᵢ ~ N(0, exp(v/2))).
+
+struct HighDimGaussian
+    dim::Int
+end
+
+struct Funnel
+    dim::Int
+end
+Funnel() = Funnel(2)
+
+dim(target::Union{HighDimGaussian,Funnel}) = target.dim
+
+_logpdf_normal_std(x, m, s) = -(log(2π) + 2 * log(s) + ((x - m) / s)^2) / 2
+
+target_logpdf(::HighDimGaussian, θ) = sum(x -> _logpdf_normal_std(x, 0, 1), θ)
+function target_logpdf(::Funnel, θ)
+    v = θ[1]
+    lp = _logpdf_normal_std(v, 0, 3)
+    s = exp(v / 2)
+    @inbounds for i in 2:length(θ)
+        lp += _logpdf_normal_std(θ[i], 0, s)
+    end
+    return lp
+end
+
+gen_logpdf(target) = θ -> target_logpdf(target, θ)
+function gen_logpdf_grad(target, _)
+    f = gen_logpdf(target)
+    return θ -> (f(θ), ForwardDiff.gradient(f, θ))
+end
 
 ####
 #### Test utilities
@@ -153,8 +191,8 @@ end
     @testset "sampler runs with canonicalize=true" begin
         rng = MersenneTwister(1)
         target = HighDimGaussian(2)
-        ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
-        ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, zeros(2))
+        ℓπ = gen_logpdf(target)
+        ∂ℓπ∂θ = gen_logpdf_grad(target, zeros(2))
         _, _, G, ∂G∂θ = prepare_sample(ℓπ, zeros(2), 1e-2)
         metric = SoftAbsRiemannianMetric((2,), G, ∂G∂θ, 10.0; canonicalize=true)
         hamiltonian = Hamiltonian(metric, GaussianKinetic(), ℓπ, ∂ℓπ∂θ)
@@ -177,8 +215,8 @@ end
 
         θ₀ = rand(rng, dim(target))
 
-        ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
-        ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, θ₀)
+        ℓπ = gen_logpdf(target)
+        ∂ℓπ∂θ = gen_logpdf_grad(target, θ₀)
 
         _, _, Gfunc, ∂G∂θfunc = prepare_sample(ℓπ, θ₀, λ)
 
@@ -277,7 +315,7 @@ end
     θ₀ = rand(rng, D)
     λ = 1e-2
 
-    ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
+    ℓπ = gen_logpdf(target)
     _, _, Gfunc, ∂G∂θfunc = prepare_sample(ℓπ, θ₀, λ)
 
     # 3-arg form → RiemannianMetric
@@ -349,8 +387,8 @@ end
     θ₀ = rand(rng, D_test)
     λ = 1e-2
 
-    ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
-    ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, θ₀)
+    ℓπ = gen_logpdf(target)
+    ∂ℓπ∂θ = gen_logpdf_grad(target, θ₀)
     _, _, G, ∂G∂θ = prepare_sample(ℓπ, θ₀, λ)
 
     @testset "SoftAbsRiemannianMetric energy conservation" begin
@@ -413,8 +451,8 @@ end
 
         initial_θ = rand(rng, dim(target))
 
-        ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
-        ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, initial_θ)
+        ℓπ = gen_logpdf(target)
+        ∂ℓπ∂θ = gen_logpdf_grad(target, initial_θ)
 
         _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
 
@@ -540,8 +578,8 @@ end
 
         initial_θ = rand(rng, dim(target))
 
-        ℓπ = MCMCLogDensityProblems.gen_logpdf(target)
-        ∂ℓπ∂θ = MCMCLogDensityProblems.gen_logpdf_grad(target, initial_θ)
+        ℓπ = gen_logpdf(target)
+        ∂ℓπ∂θ = gen_logpdf_grad(target, initial_θ)
 
         _, _, G, ∂G∂θ = prepare_sample(ℓπ, initial_θ, λ)
 
