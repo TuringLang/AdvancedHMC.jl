@@ -163,3 +163,40 @@ function HMCDA(δ, λ; integrator=:leapfrog, metric=:diagonal)
 end
 
 sampler_eltype(::HMCDA{T}) where {T} = T
+
+########### Static Hamiltonian Monte Carlo ###########
+
+#############
+### SGLD ###
+#############
+"""
+    SGLD(step_size::S, n_leapfrog::Int, integrator = :leapfrog, metric = :diagonal)
+
+Stochastic gradient Langevin dynamics (SGLD) sampler.
+
+# Fields
+
+$(FIELDS)
+
+# Notes
+
+For more information, please view the following paper:
+ - Max Welling & Yee Whye Teh (2011). Bayesian Learning via Stochastic Gradient Langevin Dynamics. In: Proceedings of the 28th International Conference on Machine Learning (pp. 681–688).
+"""
+struct SGLD{S,I<:Union{Symbol,AbstractIntegrator},M<:Union{Symbol,AbstractMetric}} <:
+       AbstractHMCSampler
+    "Polynomial step size function."
+    stepsize::S
+    "Number of leapfrog steps."
+    n_leapfrog::Int
+    "Choice of integrator, specified either using a `Symbol` or [`AbstractIntegrator`](@ref)"
+    integrator::I
+    "Choice of initial metric;  `Symbol` means it is automatically initialised. The metric type will be preserved during automatic initialisation and adaption."
+    metric::M
+end
+
+function SGLD(stepsize, n_leapfrog; integrator=:leapfrog, metric=:diagonal)
+    return SGLD(stepsize, n_leapfrog, integrator, metric)
+end
+
+sampler_eltype(sampler::SGLD) = eltype(sampler.stepsize)
