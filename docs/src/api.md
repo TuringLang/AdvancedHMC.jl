@@ -10,7 +10,22 @@ This modularity means that different HMC variants can be easily constructed by c
   - Dense metric: `DenseEuclideanMetric(dim)`
   - Rank update metric: `RankUpdateEuclideanMetric(dim)`
 
-where `dim` is the dimensionality of the sampling space.
+where `dim` is the dimension of the sampling space.
+
+Two experimental position-dependent (Riemannian) metrics are also available:
+
+  - `RiemannianMetric((dim,), calc_G, calc_∂G∂θ)` — for user-supplied positive-definite
+    metrics `G(θ)` (e.g. Fisher information). `calc_G` should return either a plain
+    `Matrix` or an `AbstractPDMat` (preferred — reuses the stored Cholesky). `calc_∂G∂θ`
+    returns the `(d, d, d)` tensor `∂G/∂θ`.
+  - `SoftAbsRiemannianMetric((dim,), calc_H, calc_∂H∂θ, α)` — for Hessian-based metrics
+    where `H(θ)` is not guaranteed to be positive definite. The SoftAbs transformation
+    `G = Q · diag(λ · coth(αλ)) · Qᵀ` (Betancourt, 2012) regularises `H`'s eigenvalues
+    to a strictly positive spectrum. `α` controls how closely SoftAbs approximates `|λ|`.
+
+The legacy `DenseRiemannianMetric(dim, G, ∂G∂θ[, map])` constructor is deprecated and
+forwards to the appropriate type above based on whether `map` is `IdentityMap()` or
+`SoftAbsMap(α)`.
 
 ### [Integrator (`integrator`)](@id integrator)
 

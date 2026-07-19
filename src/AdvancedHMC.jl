@@ -14,7 +14,11 @@ using LinearAlgebra:
     Diagonal,
     AbstractQ,
     qr,
-    lmul!
+    lmul!,
+    logdet,
+    tr,
+    eigen,
+    diagm
 using IrrationalConstants: loghalf
 using LogExpFunctions: logaddexp, logsumexp
 using Random: Random, AbstractRNG
@@ -70,6 +74,13 @@ include("integrator.jl")
 export Leapfrog, JitteredLeapfrog, TemperedLeapfrog
 include("riemannian/integrator.jl")
 export GeneralizedLeapfrog
+
+include("riemannian/metric.jl")
+export RiemannianMetric, SoftAbsRiemannianMetric
+# Deprecated exports (for backward compatibility)
+export IdentityMap, SoftAbsMap, DenseRiemannianMetric
+
+include("riemannian/hamiltonian.jl")
 
 include("trajectory.jl")
 export Trajectory,

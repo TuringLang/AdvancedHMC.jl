@@ -31,6 +31,7 @@ if GROUP == "All" || GROUP == "AdvancedHMC"
     include("abstractmcmc.jl")
     include("mcmcchains.jl")
     include("constructors.jl")
+    include("riemannian.jl")
     retest(; dry=false, verbose=Inf)
 end
 
