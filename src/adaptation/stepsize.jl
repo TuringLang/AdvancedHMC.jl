@@ -154,7 +154,7 @@ function Base.show(io::IO, mime::MIME"text/plain", a::NesterovDualAveraging{T}) 
         "Target statistic δ=",
         a.δ,
         "\n",
-        "Curret ϵ=",
+        "Current ϵ=",
         getϵ(a),
     )
 end

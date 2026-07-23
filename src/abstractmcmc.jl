@@ -284,9 +284,9 @@ function (cb::HMCProgressCallback)(
                 tstat,
             ),
         )
-        # Report finish of adapation
+        # Report finish of adaptation
     elseif verbose && isadapted && i == n_adapts
-        @info "Finished $(n_adapts) adapation steps" adaptor κ.τ.integrator metric
+        @info "Finished $(n_adapts) adaptation steps" adaptor κ.τ.integrator metric
     end
 end
 

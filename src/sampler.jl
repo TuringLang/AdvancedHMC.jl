@@ -216,9 +216,9 @@ function sample(
                     mass_matrix=h.metric,
                 ),
             )
-            # Report finish of adapation
+            # Report finish of adaptation
         elseif verbose && isadapted && i == n_adapts
-            @info "Finished $n_adapts adapation steps" adaptor κ.τ.integrator h.metric
+            @info "Finished $n_adapts adaptation steps" adaptor κ.τ.integrator h.metric
         end
         # Store sample
         if !drop_warmup || i > n_adapts
