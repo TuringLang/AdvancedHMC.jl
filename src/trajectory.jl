@@ -4,8 +4,8 @@
 #### Developers' Notes
 ####
 #### Not all functions that use `rng` require a fallback function with `Random.default_rng()`
-#### as default. In short, only those exported to other libries need such a fallback
-#### function. Internal uses shall always use the explict `rng` version. (Kai Xu 6/Jul/19)
+#### as default. In short, only those exported to other libraries need such a fallback
+#### function. Internal uses shall always use the explicit `rng` version. (Kai Xu 6/Jul/19)
 
 """
 $(TYPEDEF)
@@ -27,13 +27,13 @@ stat(t::Transition) = t.stat
 
 """
 $(TYPEDEF)
-Abstract type for HMC kernels. 
+Abstract type for HMC kernels.
 """
 abstract type AbstractMCMCKernel end
 
 """
 $(TYPEDEF)
-Abstract type for termination criteria for Hamiltonian trajectories, e.g. no-U-turn and fixed number of leapfrog integration steps. 
+Abstract type for termination criteria for Hamiltonian trajectories, e.g. no-U-turn and fixed number of leapfrog integration steps.
 """
 abstract type AbstractTerminationCriterion end
 
@@ -45,7 +45,7 @@ abstract type StaticTerminationCriterion <: AbstractTerminationCriterion end
 
 """
 $(TYPEDEF)
-Abstract type for dynamic Hamiltonian trajectory termination criteria. 
+Abstract type for dynamic Hamiltonian trajectory termination criteria.
 """
 abstract type DynamicTerminationCriterion <: AbstractTerminationCriterion end
 
@@ -72,7 +72,7 @@ Standard HMC implementation with a fixed integration time.
 $(TYPEDFIELDS)
 
 # References
-1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901)) 
+1. Neal, R. M. (2011). MCMC using Hamiltonian dynamics. Handbook of Markov chain Monte Carlo, 2(11), 2. ([arXiv](https://arxiv.org/pdf/1206.1901))
 """
 struct FixedIntegrationTime{F<:AbstractFloat} <: StaticTerminationCriterion
     "Total length of the trajectory, i.e. take `floor(λ / integrator_step_size)` number of leapfrog steps."
@@ -93,7 +93,7 @@ struct EndPointTS <: AbstractTrajectorySampler end
 $(TYPEDEF)
 
 Trajectory slice sampler carried during the building of the tree.
-It contains the slice variable and the number of acceptable condidates in the tree.
+It contains the slice variable and the number of acceptable candidates in the tree.
 
 # Fields
 
@@ -281,7 +281,7 @@ function transition(
     z = accept_phasepoint!(z, z′, is_accept)    # NOTE: this function changes `z′` in place in matrix-parallel mode
     # Reverse momentum variable to preserve reversibility
     z = PhasePoint(z.θ, -z.r, z.ℓπ, z.ℓκ)
-    # Get cached hamiltonian energy 
+    # Get cached hamiltonian energy
     H, H′ = energy(z), energy(z′)
     tstat = merge(
         (
@@ -291,7 +291,7 @@ function transition(
             log_density=z.ℓπ.value,
             hamiltonian_energy=H,
             hamiltonian_energy_error=H - H0,
-            # check numerical error in proposed phase point. 
+            # check numerical error in proposed phase point.
             numerical_error=!all(isfinite, H′),
         ),
         stat(τ.integrator),
@@ -433,7 +433,7 @@ end
 
 """
 $(TYPEDEF)
-Generalised No-U-Turn criterion as described in Section A.4.2 in [1] with 
+Generalised No-U-Turn criterion as described in Section A.4.2 in [1] with
 added U-turn check as described in [2].
 
 # Fields
@@ -474,7 +474,7 @@ combine(tsl::T, tsr::T) where {T<:TurnStatistic} = TurnStatistic(tsl.rho + tsr.r
     Termination
 
 Termination reasons
-- `dynamic`: due to stoping criteria
+- `dynamic`: due to stopping criteria
 - `numerical`: due to large energy deviation from starting (possibly numerical errors)
 """
 struct Termination
@@ -590,7 +590,7 @@ end
 
 """
 $(SIGNATURES)
-Do a U-turn check between the leftmost phase point of `t` and the leftmost 
+Do a U-turn check between the leftmost phase point of `t` and the leftmost
 phase point of `tright`, the right subtree.
 """
 function check_left_subtree(h::Hamiltonian, t::T, tleft::T, tright::T) where {T<:BinaryTree}
@@ -622,7 +622,7 @@ function isterminated(
     return isterminated(tc, h, t)
 end
 
-"Recursivly build a tree for a given depth `j`."
+"Recursively build a tree for a given depth `j`."
 function build_tree(
     rng::AbstractRNG,
     nt::Trajectory{TS,I,TC},
@@ -800,7 +800,7 @@ function find_good_stepsize(
         _, H′ = A(h, z, ϵ)
         ΔH = H - H′
         @debug "Crossing step" H′ ϵ α = min(1, exp(ΔH))
-        # stop if there is no crossing; otherwise, continue to half or double stepsize. 
+        # stop if there is no crossing; otherwise, continue to half or double stepsize.
         if xor(ratio_too_high, ΔH > log_a_cross)
             break
         else
@@ -867,8 +867,8 @@ function mh_accept_ratio(
 ) where {T<:AbstractFloat}
     # NOTE: There is a chance that sharing the RNG over multiple
     #       chains for accepting / rejecting might couple
-    #       the chains. We need to revisit this more rigirously 
-    #       in the future. See discussions at 
+    #       the chains. We need to revisit this more rigirously
+    #       in the future. See discussions at
     #       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
     accept = if rng isa AbstractRNG
         Hproposal .< Horiginal .+ Random.randexp(rng, T, length(Hproposal))
