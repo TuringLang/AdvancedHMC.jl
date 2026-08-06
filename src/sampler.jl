@@ -228,12 +228,13 @@ function sample(
     end
     # Report end of sampling
     if verbose
-        EBFMI_est = EBFMI(map(s -> s.hamiltonian_energy, stats))
         average_acceptance_rate = mean(map(s -> s.acceptance_rate, stats))
         if θ isa AbstractVector
             n_chains = 1
+            EBFMI_est = length(stats) > 1 ? EBFMI(map(s -> s.hamiltonian_energy, stats)) : NaN
         else
             n_chains = size(θ, 2)
+            EBFMI_est = length(stats) > 1 ? EBFMI(map(s -> s.hamiltonian_energy, stats)) : fill(NaN, n_chains)
             # Make sure that arrays are on CPU before printing.
             EBFMI_est = convert(Vector{eltype(EBFMI_est)}, EBFMI_est)
             average_acceptance_rate = convert(

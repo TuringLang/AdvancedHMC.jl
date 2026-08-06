@@ -186,3 +186,14 @@ end
         @test length(stats) == n_samples
     end
 end
+
+@testset "n_samples=1 does not crash" begin
+    # Regression test for https://github.com/TuringLang/AdvancedHMC.jl/issues/281
+    # verbose=true triggers EBFMI computation which failed on a 1-element stats vector
+    θ_init = rand(MersenneTwister(1), D)
+    h = Hamiltonian(DiagEuclideanMetric(D), ℓπ, ∂ℓπ∂θ)
+    κ = HMCKernel(Trajectory{MultinomialTS}(Leapfrog(0.1), GeneralisedNoUTurn()))
+    samples, stats = sample(h, κ, θ_init, 1; verbose=true, progress=false)
+    @test length(samples) == 1
+    @test length(stats) == 1
+end
