@@ -213,7 +213,7 @@ end
     HMCProgressCallback
 
 A callback to be used with AbstractMCMC.jl's interface, replicating the
-logging behavior of the non-AbstractMCMC [`sample`](@ref).
+logging behavior of the non-AbstractMCMC `sample`.
 
 # Fields
 $(FIELDS)
@@ -361,7 +361,7 @@ function make_integrator(i::Symbol, ϵ::Real)
     if i === :leapfrog
         return Leapfrog(float_ϵ)
     elseif i === :jitteredleapfrog
-        return JitteredLeapfrog(float_ϵ, float_ϵ / 10)
+        return JitteredLeapfrog(float_ϵ, oftype(float_ϵ, 0.1))
     elseif i === :temperedleapfrog
         return TemperedLeapfrog(float_ϵ, oneunit(float_ϵ))
     else
