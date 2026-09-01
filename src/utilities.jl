@@ -30,16 +30,16 @@ Return the axes of input `r`, where `r` can be `AbstractArrays`, `ComponentArray
 @inline __axes(r::AbstractVecOrMat) = axes(r)
 
 """
-`rand_coupled` produces coupled randomness given a vector of RNGs. For example,
-when a vector of RNGs is provided, `rand_coupled` performs a single `rand` call
-(rather than a `rand` call for each RNG) while keep all RNGs synchronised.
+`rand_coupled` produces coupled randomness given a vector of RNGs. It returns a
+value from the first RNG and advances every other RNG by calling `rand` with the
+same arguments, keeping the RNGs synchronised.
 This is important if we want to couple multiple Markov chains.
 """
 
 rand_coupled(rng::AbstractRNG, args...) = rand(rng, args...)
 
 function rand_coupled(rngs::AbstractVector{<:AbstractRNG}, args...)
-    # Dummpy calles to sync RNGs
+    # Dummy calls to synchronise the RNGs
     foreach(rngs[2:end]) do rng
         rand(rng, args...)
     end

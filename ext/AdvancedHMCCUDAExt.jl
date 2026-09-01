@@ -24,8 +24,8 @@ function AdvancedHMC.mh_accept_ratio(
     α = min.(one(T), exp.(Horiginal .- Hproposal))
     # NOTE: There is a chance that sharing the RNG over multiple
     #       chains for accepting / rejecting might couple
-    #       the chains. We need to revisit this more rigirously 
-    #       in the future. See discussions at 
+    #       the chains. We need to revisit this more rigorously
+    #       in the future. See discussions at
     #       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
     r = CUDA.CuArray{T,1}(undef, length(Horiginal))
     CUDA.CURAND.rand!(r)

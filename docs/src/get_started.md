@@ -40,8 +40,8 @@ integrator = Leapfrog(initial_ϵ)
 
 # Define an HMC sampler with the following components
 #   - multinomial sampling scheme,
-#   - generalised No-U-Turn criteria, and
-#   - windowed adaption for step-size and diagonal mass matrix
+#   - generalised No-U-Turn criterion, and
+#   - windowed adaptation for step size and diagonal mass matrix
 kernel = HMCKernel(Trajectory{MultinomialTS}(integrator, GeneralisedNoUTurn()))
 adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.8, integrator))
 
@@ -170,7 +170,7 @@ In the previous examples, we built the sampler by manually specifying the integr
     ```
 
 Moreover, there's some flexibility in how these samplers can be initialized.
-For example, a user can initialize a NUTS (HMC and HMCDA) sampler with their own metrics and integrators.
+For example, users can initialize NUTS, HMC, and HMCDA samplers with their own metrics and integrators.
 This can be done as follows:
 
 ```julia
@@ -182,7 +182,7 @@ metric = DiagEuclideanMetric(10)
 nuts = NUTS(δ; metric=metric)
 
 nuts = NUTS(δ; integrator=:leapfrog)         #integrator = Leapfrog(ϵ) (Default!)
-nuts = NUTS(δ; integrator=:jitteredleapfrog) #integrator = JitteredLeapfrog(ϵ, 0.1ϵ)
+nuts = NUTS(δ; integrator=:jitteredleapfrog) #integrator = JitteredLeapfrog(ϵ, 0.1)
 nuts = NUTS(δ; integrator=:temperedleapfrog) #integrator = TemperedLeapfrog(ϵ, 1.0)
 
 # Provide your own AbstractIntegrator
@@ -194,10 +194,10 @@ nuts = NUTS(δ; integrator=integrator)
 
 There is experimental support for running static HMC on the GPU using CUDA.
 To do so, the user needs to have [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) installed, ensure the logdensity of the `Hamiltonian` can be executed on the GPU and that the initial points are a `CuArray`.
-A small working example can be found at `test/cuda.jl`.
+A small working example can be found at `test/CUDA/cuda.jl`.
 
 ## Footnotes
 
-[^1]: The Euclidean metric is also known as the mass matrix in the physical perspective. See [Hamiltonian mass matrix](@ref hamiltonian-mm) for available metrics.
+[^1]: The Euclidean metric is also known as the mass matrix in the physical perspective. See [Hamiltonian mass matrix](@ref hamiltonian_mm) for available metrics.
 [^2]: About the leapfrog integration scheme: Suppose ${\bf x}$ and ${\bf v}$ are the position and velocity of an individual particle respectively; $i$ and $i+1$ are the indices for time values $t_i$ and $t_{i+1}$ respectively; $dt = t_{i+1} - t_i$ is the time step size (constant and regularly spaced intervals), and ${\bf a}$ is the acceleration induced on a particle by the forces of all other particles. Furthermore, suppose positions are defined at times $t_i, t_{i+1}, t_{i+2}, \dots $, spaced at constant intervals $dt$, the velocities are defined at halfway times in between, denoted by $t_{i-1/2}, t_{i+1/2}, t_{i+3/2}, \dots $, where $t_{i+1} - t_{i + 1/2} = t_{i + 1/2} - t_i = dt / 2$, and the accelerations ${\bf a}$ are defined only on integer times, just like the positions. Then the leapfrog integration scheme is given as: $x_{i} = x_{i-1} + v_{i-1/2} dt; \quad v_{i+1/2} = v_{i-1/2} + a_i dt$. For available integrators refer to [Integrator](@ref integrator).
 [^3]: On kernels: In the classical HMC approach, during the first step, new values for the momentum variables are randomly drawn from their Gaussian distribution, independently of the current values of the position variables. A Metropolis update is performed during the second step, using Hamiltonian dynamics to provide a new state. For available kernels refer to [Kernel](@ref kernel).

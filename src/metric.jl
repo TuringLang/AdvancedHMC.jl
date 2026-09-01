@@ -50,9 +50,9 @@ function Base.show(io::IO, ::MIME"text/plain", uem::UnitEuclideanMetric{T}) wher
 end
 
 struct DiagEuclideanMetric{T,A<:AbstractVecOrMat{T}} <: AbstractMetric
-    # Diagnal of the inverse of the mass matrix
+    # Diagonal of the inverse of the mass matrix
     M⁻¹::A
-    # Sqare root of the inverse of the mass matrix
+    # Square root of the inverse of the mass matrix
     sqrtM⁻¹::A
     # Pre-allocation for intermediate variables
     _temp::A
@@ -138,7 +138,7 @@ end
     WoodburyFactorization(U, Q, V)
 
 A factorization of a positive definite Woodbury matrix `W = A + B*D*Bᵀ`, with positive
-definite diagonal `A`, as returned by [`woodbury_factorize`](@ref).
+definite diagonal `A`, as returned by `woodbury_factorize`.
 
 The factors `U`, `Q`, and `V` are defined by the field descriptions below; together they
 allow sampling from `N(0, W⁻¹)` without forming `W`.

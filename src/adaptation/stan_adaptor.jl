@@ -57,7 +57,7 @@ end
 
 ### Stan's windowed adaptation
 
-# Acknowledgement: this adaption settings is mimicing Stan's 3-phase adaptation.
+# These adaptation settings mimic Stan's three-phase adaptation.
 struct StanHMCAdaptor{M<:MassMatrixAdaptor,Tssa<:StepSizeAdaptor} <: AbstractAdaptor
     pc::M
     ssa::Tssa
@@ -147,7 +147,7 @@ function adapt!(
 
     # Ref: https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/hmc/nuts/adapt_diag_e_nuts.hpp
     if is_in_window(tp)
-        # We accumlate stats from θ online and only trigger the update of M⁻¹ in the end of window.
+        # Accumulate statistics from θ online and update M⁻¹ only at the end of the window.
         is_update_M⁻¹ = is_window_end(tp)
         adapt!(tp.pc, z_or_theta, α, is_update_M⁻¹)
     end

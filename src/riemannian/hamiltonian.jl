@@ -224,7 +224,7 @@ end
 import AdvancedHMC: phasepoint, neg_energy, ∂H∂θ, ∂H∂r
 using LinearAlgebra: logabsdet, tr
 
-# QUES Do we want to change everything to position dependent by default?
+# QUESTION: Should everything be position-dependent by default?
 # Add θ to ∂H∂r for DenseRiemannianMetric
 function phasepoint(
     h::Hamiltonian{<:DenseRiemannianMetric},
@@ -249,7 +249,7 @@ function neg_energy(
     return -logZ - dot(r, h.metric._temp) / 2
 end
 
-# QUES L31 of hamiltonian.jl now reads a bit weird (semantically)
+# QUESTION: Does line 31 of `hamiltonian.jl` still have the intended meaning?
 function ∂H∂θ(
     h::Hamiltonian{<:DenseRiemannianMetric{T,<:IdentityMap}},
     θ::AbstractVecOrMat{T},

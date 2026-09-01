@@ -161,7 +161,7 @@ end
 
 Nutpie-style diagonal mass matrix estimator (using positions and gradients).
 
-Expected to converge faster and to a better mass matrix than [`WelfordVar`](@ref), for which it is a drop-in replacement.
+Expected to converge faster and to a better mass matrix than `WelfordVar`, for which it is a drop-in replacement.
 
 Can be initialized via `NutpieVar(sz)` where `sz` is either a `Tuple{Int}` or a `Tuple{Int,Int}`.
 
@@ -179,7 +179,7 @@ mutable struct NutpieVar{T<:AbstractFloat,E<:AbstractVecOrMat{T},V<:AbstractVecO
     n::Int
     "The minimal number of observations after which the estimate of the variances can be updated."
     n_min::Int
-    "The estimated variances - initialized to ones, updated after calling [`update!`](@ref) if `n > n_min`."
+    "The estimated variances - initialized to ones, updated after calling `update!` if `n > n_min`."
     var::V
     function NutpieVar(n::Int, n_min::Int, μ::E, M::E, δ::E, var::V) where {E,V}
         return new{eltype(E),E,V}(

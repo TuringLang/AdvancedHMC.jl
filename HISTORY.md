@@ -14,13 +14,13 @@
 
 ## 0.8.0
 
-  - To make an MCMC transtion from phasepoint `z` using trajectory `τ`(or HMCKernel `κ`) under Hamiltonian `h`, use `transition(h, τ, z)` or `transition(rng, h, τ, z)`(if using HMCKernel, use `transition(h, κ, z)` or `transition(rng, h, κ, z)`).
+  - To make an MCMC transition from phasepoint `z` using trajectory `τ` (or HMCKernel `κ`) under Hamiltonian `h`, use `transition(h, τ, z)` or `transition(rng, h, τ, z)` (if using HMCKernel, use `transition(h, κ, z)` or `transition(rng, h, κ, z)`).
   - The `initial_step_size` in `find_good_stepsize` for heuristic search of a good initial leap-frog step-size can be manually specified, default as `1//10`.
   - The printing interface has been upgraded to a more user-friendly design.
 
 ## v0.7.1
 
-  - README has been simplified, many docs transfered to docs: https://turinglang.org/AdvancedHMC.jl/dev/.
+  - README has been simplified, and much of its content has been transferred to the documentation: https://turinglang.org/AdvancedHMC.jl/dev/.
   - ADTypes.jl can be used for specifying the AD backend in `Hamiltonian(metric, ℓπ, AutoForwardDiff())`.
   - SimpleUnpack.jl and Requires.jl are removed from the dependency.
   - `find_good_stepsize` now has fewer allocations.
