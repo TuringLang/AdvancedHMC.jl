@@ -47,7 +47,7 @@ where `ϵ` is the step size of leapfrog integration.
 
 ## The `sample` functions
 
-```julia
+```text
 sample(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
