@@ -4,7 +4,7 @@ using Random, LinearAlgebra, ReverseDiff, ForwardDiff, MCMCLogDensityProblems
 function gen_∂G∂θ_rev(Vfunc, x; f=identity)
     _Hfunc = MCMCLogDensityProblems.gen_hess(Vfunc, ReverseDiff.track.(x))
     Hfunc = x -> _Hfunc(x)[3]
-    # QUES What's the best output format of this function?
+    # QUESTION: What is the best output format for this function?
     return x -> ReverseDiff.jacobian(x -> f(Hfunc(x)), x) # default output shape [∂H∂x₁; ∂H∂x₂; ...]
 end
 
@@ -19,7 +19,7 @@ end
 function gen_∂G∂θ_fwd(Vfunc, x; f=identity)
     _Hfunc = gen_hess_fwd(Vfunc, x)
     Hfunc = x -> _Hfunc(x)[3]
-    # QUES What's the best output format of this function?
+    # QUESTION: What is the best output format for this function?
     cfg = ForwardDiff.JacobianConfig(Hfunc, x)
     d = length(x)
     out = zeros(eltype(x), d^2, d)

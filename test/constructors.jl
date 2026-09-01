@@ -159,6 +159,13 @@ get_kernel_hyperparamsT(spl::NUTS, state) = typeof(state.κ.τ.termination_crite
     end
 end
 
+@testset "Symbolic integrator constructors" begin
+    @testset "$T" for T in (Float32, Float64)
+        integrator = AdvancedHMC.make_integrator(:jitteredleapfrog, T(0.01))
+        @test integrator.jitter === T(0.1)
+    end
+end
+
 @testset "Utils" begin
     @testset "initial_params" begin
         d = 2

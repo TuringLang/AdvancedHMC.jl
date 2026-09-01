@@ -1,4 +1,4 @@
-# TODO: add more target distributions and make them iteratable
+# TODO: add more target distributions and make them iterable
 # TODO: Integrate with https://github.com/xukai92/VecTargets.jl to achieve goal noted 
 #       above.
 

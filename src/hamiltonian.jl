@@ -207,7 +207,7 @@ end
 
 abstract type AbstractMomentumRefreshment end
 
-"Completly resample new momentum."
+"Completely resample new momentum."
 struct FullMomentumRefreshment <: AbstractMomentumRefreshment end
 
 function refresh(

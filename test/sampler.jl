@@ -128,7 +128,7 @@ end
 
                     Random.seed!(1)
                     # For `MassMatrixAdaptor`, we use the pre-defined step size as the method cannot adapt the step size.
-                    # For other adapatation methods that are able to adapt the step size, we use `find_good_stepsize`.
+                    # For other adaptation methods that are able to adapt the step size, we use `find_good_stepsize`.
                     τ_used = if adaptorsym == :MassMatrixAdaptorOnly
                         τ
                     else

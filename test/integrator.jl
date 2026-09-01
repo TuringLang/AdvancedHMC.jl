@@ -144,7 +144,7 @@ using Statistics: mean
             ps = ps[1_000:end]
             Hs = Hs[1_000:end]
 
-            # Check if all points located at a cirle centered at the origin
+            # Check if all points are located on a circle centered at the origin
             rs = sqrt.(qs .^ 2 + ps .^ 2)
             @test all(x -> abs(x - mean(rs)) < 2e-3, rs)
 

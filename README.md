@@ -7,7 +7,7 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://turinglang.github.io/AdvancedHMC.jl/dev/)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-**AdvancedHMC.jl** provides robust, modular, and efficient implementation of advanced Hamiltonian Monte Carlo (HMC) algorithms in Julia. It is a backend for probabilistic programming languages like [Turing.jl](https://github.com/TuringLang/Turing.jl), but can also be used directly for flexible MCMC sampling when fine-grained control is desired.
+**AdvancedHMC.jl** provides a robust, modular, and efficient implementation of advanced Hamiltonian Monte Carlo (HMC) algorithms in Julia. It is a backend for probabilistic programming languages like [Turing.jl](https://github.com/TuringLang/Turing.jl), but can also be used directly for flexible MCMC sampling when fine-grained control is desired.
 
 **Key Features**
 
@@ -103,7 +103,7 @@ with the following BibTeX entry:
 
 ```
 @inproceedings{xu2020advancedhmc,
-  title={AdvancedHMC. jl: A robust, modular and efficient implementation of advanced HMC algorithms},
+  title={AdvancedHMC.jl: A robust, modular and efficient implementation of advanced HMC algorithms},
   author={Xu, Kai and Ge, Hong and Tebbutt, Will and Tarek, Mohamed and Trapp, Martin and Ghahramani, Zoubin},
   booktitle={Symposium on Advances in Approximate Bayesian Inference},
   pages={1--10},

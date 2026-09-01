@@ -1,7 +1,7 @@
 # Detailed API for AdvancedHMC.jl
 
 An important design goal of AdvancedHMC.jl is modularity; we would like to support algorithmic research on HMC.
-This modularity means that different HMC variants can be easily constructed by composing various components, such as preconditioning metric (i.e., mass matrix), leapfrog integrators, trajectories (static or dynamic), adaption schemes, etc. In this section, we will explain the detailed usage of different modules in AdancedHMC.jl to provide a comprehensive udnerstanding of how AdvancedHMC.jl can achieve both modularity and efficiency. The section highlights the key components of AdvancedHMC.jl, with a complete documentation provided at the end.
+This modularity allows different HMC variants to be constructed by composing components such as a preconditioning metric (i.e. a mass matrix), leapfrog integrators, static or dynamic trajectories, and adaptation schemes. This section explains how these components provide modularity and efficiency. Complete API documentation appears at the end.
 
 ### [Hamiltonian mass matrix (`metric`)](@id hamiltonian_mm)
 
@@ -22,7 +22,7 @@ where `ϵ` is the step size of leapfrog integration.
 
 ### [Kernel (`kernel`)](@id kernel)
 
-  - Static HMC with a fixed number of steps (`n_steps`) from [neal2011mcmc](@Citet): `HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(integrator)))`
+  - Static HMC with a fixed number of steps (`n_steps`) from [neal2011mcmc](@Citet): `HMCKernel(Trajectory{EndPointTS}(integrator, FixedNSteps(n_steps)))`
   - HMC with a fixed total trajectory length (`trajectory_length`) from [neal2011mcmc](@Citet): `HMCKernel(Trajectory{EndPointTS}(integrator, FixedIntegrationTime(trajectory_length)))`
   - Original NUTS with slice sampling from [hoffman2014no](@Citet): `HMCKernel(Trajectory{SliceTS}(integrator, ClassicNoUTurn()))`
   - Generalised NUTS with slice sampling from [betancourt2017conceptual](@Citet): `HMCKernel(Trajectory{SliceTS}(integrator, GeneralisedNoUTurn()))`
@@ -47,15 +47,15 @@ where `ϵ` is the step size of leapfrog integration.
 
 ## The `sample` functions
 
-```julia
+```text
 sample(
     rng::Union{AbstractRNG,AbstractVector{<:AbstractRNG}},
     h::Hamiltonian,
     κ::HMCKernel,
     θ::AbstractVector{<:AbstractFloat},
-    n_samples::Int;
+    n_samples::Int,
     adaptor::AbstractAdaptor=NoAdaptation(),
-    n_adapts::Int=min(div(n_samples, 10), 1_000),
+    n_adapts::Int=min(div(n_samples, 10), 1_000);
     drop_warmup=false,
     verbose::Bool=true,
     progress::Bool=false,

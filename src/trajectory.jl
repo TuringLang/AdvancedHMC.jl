@@ -704,7 +704,7 @@ function transition(
             )
             treeleft, treeright = tree, tree′
         end
-        # Perform a MH step and increse depth if not terminated
+        # Perform an MH step and increase depth if not terminated
         if !isterminated(termination′)
             j = j + 1   # increment tree depth
             if mh_accept(rng, sampler, sampler′)
@@ -867,7 +867,7 @@ function mh_accept_ratio(
 ) where {T<:AbstractFloat}
     # NOTE: There is a chance that sharing the RNG over multiple
     #       chains for accepting / rejecting might couple
-    #       the chains. We need to revisit this more rigirously
+    #       the chains. We need to revisit this more rigorously
     #       in the future. See discussions at
     #       https://github.com/TuringLang/AdvancedHMC.jl/pull/166#pullrequestreview-367216534
     accept = if rng isa AbstractRNG

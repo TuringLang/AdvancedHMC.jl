@@ -4,8 +4,8 @@
 
 # TODO: The type `<:Tuple{Integer,Bool}` is introduced to address
 # https://github.com/TuringLang/Turing.jl/pull/941#issuecomment-549191813
-# We might want to simplify it to `Tuple{Int,Bool}` when we figured out
-# why the it behaves unexpected on Windows 32.
+# We might want to simplify it to `Tuple{Int,Bool}` once we understand
+# why it behaves unexpectedly on 32-bit Windows.
 
 """
 $(TYPEDEF)
@@ -13,10 +13,10 @@ $(TYPEDEF)
 Represents an integrator used to simulate the Hamiltonian system.
 
 # Implementation
-A `AbstractIntegrator` is expected to have the following implementations:
-- [`stat`](@ref)
-- [`nom_step_size`](@ref)
-- [`step_size`](@ref)
+An `AbstractIntegrator` is expected to implement:
+- `stat`
+- `nom_step_size`
+- `step_size`
 """
 abstract type AbstractIntegrator end
 
@@ -41,7 +41,7 @@ function step_size end
 """
     update_nom_step_size(i::AbstractIntegrator, ϵ) -> AbstractIntegrator
 
-Return a copy of the integrator `i` with the new nominal step size ([`nom_step_size`](@ref))
+Return a copy of the integrator `i` with the new nominal step size (`nom_step_size`)
 `ϵ`.
 """
 function update_nom_step_size end
@@ -89,13 +89,14 @@ Leapfrog integrator with randomly "jittered" step size `ϵ` for every trajectory
 $(TYPEDFIELDS)
 
 # Description
-This is the same as `LeapFrog`(@ref) but with a "jittered" step size. This means
+This is the same as [`Leapfrog`](@ref) but with a "jittered" step size. This means
 that at the beginning of each trajectory we sample a step size `ϵ` by adding or
 subtracting from the nominal/base step size `ϵ0` some random proportion of `ϵ0`,
-with the proportion specified by `jitter`, i.e. `ϵ = ϵ0 - jitter * ϵ0 * rand()`.
-p
+with the proportion specified by `jitter`, i.e.
+`ϵ = ϵ0 * (1 + jitter * (2 * rand() - 1))`.
+
 Jittering might help alleviate issues related to poor interactions with a fixed step size:
-- In regions with high "curvature" the current choice of step size might mean over-shoot
+- In regions with high "curvature" the current choice of step size might cause overshooting,
   leading to almost all steps being rejected. Randomly sampling the step size at the
   beginning of the trajectories can therefore increase the probability of escaping such
   high-curvature regions.

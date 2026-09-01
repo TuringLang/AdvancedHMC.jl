@@ -7,7 +7,7 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://turinglang.github.io/AdvancedHMC.jl/dev/)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-AdvancedHMC.jl provides a robust, modular, and efficient implementation of advanced Hamiltonian Monte Carlo(HMC) algorithms. AdvancedHMC.jl is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia.
+AdvancedHMC.jl provides a robust, modular, and efficient implementation of advanced Hamiltonian Monte Carlo (HMC) algorithms. AdvancedHMC.jl is part of [Turing.jl](https://github.com/TuringLang/Turing.jl), a probabilistic programming library in Julia.
 If you are interested in using AdvancedHMC.jl through a probabilistic programming language, please check it out!
 
 ## Citing AdvancedHMC.jl
@@ -20,7 +20,7 @@ with the following BibTeX entry:
 
 ```
 @inproceedings{xu2020advancedhmc,
-  title={AdvancedHMC. jl: A robust, modular and efficient implementation of advanced HMC algorithms},
+  title={AdvancedHMC.jl: A robust, modular and efficient implementation of advanced HMC algorithms},
   author={Xu, Kai and Ge, Hong and Tebbutt, Will and Tarek, Mohamed and Trapp, Martin and Ghahramani, Zoubin},
   booktitle={Symposium on Advances in Approximate Bayesian Inference},
   pages={1--10},
@@ -29,7 +29,7 @@ with the following BibTeX entry:
 }
 ```
 
-If you using AdvancedHMC.jl directly through Turing.jl, please consider citing the following publication:
+If you use AdvancedHMC.jl directly through Turing.jl, please consider citing the following publication:
 
 Hong Ge, Kai Xu, and Zoubin Ghahramani: "Turing: a language for flexible probabilistic inference.", *International Conference on Artificial Intelligence and Statistics*, 2018. ([abs](http://proceedings.mlr.press/v84/ge18b.html), [pdf](http://proceedings.mlr.press/v84/ge18b/ge18b.pdf))
 
