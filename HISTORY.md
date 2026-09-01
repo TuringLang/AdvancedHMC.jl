@@ -1,5 +1,9 @@
 # AdvancedHMC Changelog
 
+## 0.8.7
+
+  - Uses a fixed 10% jitter proportion for the `:jitteredleapfrog` convenience constructor.
+
 ## 0.8.6
 
   - Adds `RankUpdateEuclideanMetric`, a Gaussian Euclidean metric whose inverse mass matrix
