@@ -797,9 +797,9 @@ function find_good_stepsize(
         # `ratio_too_high` being `false` means MH ratio too small
         #     - this means our step size is too large, thus we decrease
         ϵ′ = ratio_too_high ? d * ϵ : invd * ϵ
-        _, H′ = A(h, z, ϵ)
+        _, H′ = A(h, z, ϵ′)
         ΔH = H - H′
-        @debug "Crossing step" H′ ϵ α = min(1, exp(ΔH))
+        @debug "Crossing step" H′ ϵ′ α = min(1, exp(ΔH))
         # stop if there is no crossing; otherwise, continue to half or double stepsize.
         if xor(ratio_too_high, ΔH > log_a_cross)
             break

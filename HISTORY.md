@@ -1,5 +1,10 @@
 # AdvancedHMC Changelog
 
+## 0.8.8
+
+  - Fixes `find_good_stepsize` evaluating the current step size rather than the next candidate
+    in its crossing loop, which left the bisection interval above the acceptance-probability crossing.
+
 ## 0.8.7
 
   - Uses a fixed 10% jitter proportion for the `:jitteredleapfrog` convenience constructor.
