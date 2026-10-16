@@ -1,5 +1,9 @@
 # AdvancedHMC Changelog
 
+## 0.8.8
+
+  - The leapfrog integrator fuses its momentum and position updates into single broadcasts, so each update allocates one vector instead of two. Results are unchanged.
+
 ## 0.8.7
 
   - Uses a fixed 10% jitter proportion for the `:jitteredleapfrog` convenience constructor.
