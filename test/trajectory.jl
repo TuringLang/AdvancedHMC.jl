@@ -324,3 +324,20 @@ end
         end
     end
 end
+
+@testset "find_good_stepsize" begin
+    h = Hamiltonian(
+        UnitEuclideanMetric(1),
+        get_ℓπ(Gaussian(zeros(1), ones(1))),
+        get_∇ℓπ(Gaussian(zeros(1), ones(1))),
+    )
+    θ = zeros(1)
+    ϵ = find_good_stepsize(MersenneTwister(1), h, θ)
+
+    r = AdvancedHMC.rand_momentum(MersenneTwister(1), h.metric, h.kinetic, θ)
+    z = AdvancedHMC.phasepoint(h, θ, r)
+    _, H′ = AdvancedHMC.A(h, z, ϵ)
+    α = min(1, exp(AdvancedHMC.energy(z) - H′))
+
+    @test 0.25 <= α <= 0.75
+end
