@@ -9,5 +9,5 @@ Test.@testset "Aqua" begin
 end
 
 Test.@testset "JET" begin
-    JET.test_package(AdvancedHMC; target_defined_modules=true)
+    JET.test_package(AdvancedHMC; target_modules=(AdvancedHMC,))
 end
