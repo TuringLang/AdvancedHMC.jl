@@ -235,13 +235,13 @@ function step(
         # Tempering
         r = temper(lf, r, (i=i, is_half=true), n_steps)
         # Take a half leapfrog step for momentum variable
-        r = r - ϵ / 2 .* gradient
+        r = r .- ϵ / 2 .* gradient
         # Take a full leapfrog step for position variable
         ∇r = ∂H∂r(h, r)
-        θ = θ + ϵ .* ∇r
+        θ = θ .+ ϵ .* ∇r
         # Take a half leapfrog step for momentum variable
         (; value, gradient) = ∂H∂θ(h, θ)
-        r = r - ϵ / 2 .* gradient
+        r = r .- ϵ / 2 .* gradient
         # Tempering
         r = temper(lf, r, (i=i, is_half=false), n_steps)
         # Create a new phase point by caching the logdensity and gradient

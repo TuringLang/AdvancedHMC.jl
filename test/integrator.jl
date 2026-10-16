@@ -31,6 +31,20 @@ using Statistics: mean
         @test z_step_loop.r ≈ z_step.r atol = DETATOL
     end
 
+    @testset "step allocations" begin
+        # Each leapfrog update is a single fused broadcast, so it makes one new vector.
+        # On a large problem those vectors dominate what a step allocates: 8 per step with
+        # a diagonal metric, against 11 when the updates were not fused.
+        D_large = 10_000
+        ℓπ_large(θ) = -dot(θ, θ) / 2
+        ∂ℓπ∂θ_large(θ) = (ℓπ_large(θ), -θ)
+        h_large = Hamiltonian(DiagEuclideanMetric(D_large), ℓπ_large, ∂ℓπ∂θ_large)
+        z = AdvancedHMC.phasepoint(h_large, randn(D_large), randn(D_large))
+        AdvancedHMC.step(lf, h_large, z, n_steps)
+        bytes = @allocated AdvancedHMC.step(lf, h_large, z, n_steps)
+        @test bytes / (n_steps * sizeof(Float64) * D_large) < 9
+    end
+
     @testset "jitter" begin
         @testset "Leapfrog" begin
             ϵ0 = 0.1
