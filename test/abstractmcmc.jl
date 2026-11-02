@@ -76,14 +76,8 @@ using Statistics: mean
         verbose=false,
     )
 
-    # Transform back to original space.
-    # NOTE: We're not correcting for the `logabsdetjac` here since, but
-    # we're only interested in the mean it doesn't matter.
-    for t in samples_nuts
-        t.z.θ .= invlink_gdemo(t.z.θ)
-    end
     m_est_nuts = mean(samples_nuts[(n_adapts + 1):end]) do t
-        t.z.θ
+        invlink_gdemo(t.z.θ)
     end
 
     @test m_est_nuts ≈ [49 / 24, 7 / 6] atol = RNDATOL
@@ -99,14 +93,8 @@ using Statistics: mean
         verbose=false,
     )
 
-    # Transform back to original space.
-    # NOTE: We're not correcting for the `logabsdetjac` here since, but
-    # we're only interested in the mean it doesn't matter.
-    for t in samples_hmc
-        t.z.θ .= invlink_gdemo(t.z.θ)
-    end
     m_est_hmc = mean(samples_hmc) do t
-        t.z.θ
+        invlink_gdemo(t.z.θ)
     end
 
     @test m_est_hmc ≈ [49 / 24, 7 / 6] atol = RNDATOL
@@ -122,14 +110,8 @@ using Statistics: mean
         verbose=false,
     )
 
-    # Transform back to original space.
-    # NOTE: We're not correcting for the `logabsdetjac` here since, but
-    # we're only interested in the mean it doesn't matter.
-    for t in samples_custom
-        t.z.θ .= invlink_gdemo(t.z.θ)
-    end
     m_est_custom = mean(samples_custom[(n_adapts + 1):end]) do t
-        t.z.θ
+        invlink_gdemo(t.z.θ)
     end
 
     @test m_est_custom ≈ [49 / 24, 7 / 6] atol = RNDATOL
